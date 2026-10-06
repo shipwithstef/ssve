@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { familyOf } from "./cognitive-family.mjs";
-import { EXTERNAL_REVIEW_LAUNCHER_VERSION, validateExternalReviewReceiptSemantics } from "../run-external-review.mjs";
+import { validateExternalReviewReceiptSemantics } from "../run-external-review.mjs";
 import { candidateTreeIdentity, verifyExternalReviewProvenance } from "./external-review-provenance.mjs";
 import { getObject, lookupRelocation, resolveEvidenceBytes } from "./review-evidence-store.mjs";
 import { validateBoundedExitAdjudication, isPlanCertificationCloseout } from "./bounded-exit.mjs";
@@ -15,13 +15,26 @@ const digest = (bytes) => crypto.createHash("sha256").update(bytes).digest("hex"
 const sameJson = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 const SCHEMA_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../schemas");
 const EXTERNAL_RECEIPT_SCHEMA = JSON.parse(fs.readFileSync(path.join(SCHEMA_DIR, "external-review-receipt.schema.json"), "utf8"));
-const EXTERNAL_FINDINGS_SCHEMA = JSON.parse(fs.readFileSync(path.join(SCHEMA_DIR, "external-review-findings.schema.json"), "utf8"));
-// 2.5.5 changed cycle locking/atomic issuance, not the successful receipt
-// contract. Compatibility still requires all schema, semantic and signed
-// provenance checks below; version strings alone never grant authority.
-// Resolve after module initialization: review input preparation now shares the
-// issuance gate, which also consumes this verifier.
-const supportedLauncherVersions = () => new Set([EXTERNAL_REVIEW_LAUNCHER_VERSION, "2.5.8", "2.5.7", "2.5.6", "2.5.5", "2.5.4"]);
+// Bind each supported producer version to the exact schema bytes it issued.
+// The historical blob is preserved byte-for-byte from db29209^.
+const HISTORICAL_FINDINGS_SCHEMA = Object.freeze({file:"external-review-findings-v1-pre-rv1.schema.json",sha256:"bf012594cbd4a0500398beeb506538f5d6050379e0d6e31a30628cf55eb5a3fa"});
+const CURRENT_FINDINGS_SCHEMA = Object.freeze({file:"external-review-findings.schema.json",sha256:"56683eca38f3f6c3fdd29ab0d4308e24ff6ce553c937f6991f6300694814831a"});
+const FINDINGS_SCHEMA_BY_LAUNCHER = Object.freeze({
+  "2.5.4":HISTORICAL_FINDINGS_SCHEMA,"2.5.5":HISTORICAL_FINDINGS_SCHEMA,
+  "2.5.6":HISTORICAL_FINDINGS_SCHEMA,"2.5.7":HISTORICAL_FINDINGS_SCHEMA,
+  "2.5.8":HISTORICAL_FINDINGS_SCHEMA,"2.5.9":CURRENT_FINDINGS_SCHEMA,
+});
+function findingsSchemaBinding(receipt) {
+  const version=receipt?.launcher_version, binding=Object.hasOwn(FINDINGS_SCHEMA_BY_LAUNCHER,version)?FINDINGS_SCHEMA_BY_LAUNCHER[version]:null;
+  if(!binding)return {schema:null,error:`launcher version is unsupported: ${version}`};
+  let bytes;
+  try{bytes=fs.readFileSync(path.join(SCHEMA_DIR,binding.file));}
+  catch(error){return {schema:null,error:`pinned findings schema unavailable for ${version}: ${error.message}`};}
+  if(digest(bytes)!==binding.sha256)return {schema:null,error:`pinned findings schema bytes mismatch for ${version}`};
+  if(receipt.findings_schema_sha256!==binding.sha256)return {schema:null,error:`launcher findings schema digest mismatch for ${version}`};
+  try{return {schema:JSON.parse(bytes.toString("utf8")),error:null};}
+  catch(error){return {schema:null,error:`pinned findings schema invalid JSON for ${version}: ${error.message}`};}
+}
 
 function localCheckoutArtifact(root, value, { externalOnly = true } = {}) {
   const absolute = path.isAbsolute(value.path) ? path.resolve(value.path) : path.resolve(root, value.path);
@@ -132,10 +145,10 @@ function verifyReviewerEvidenceInternal({ root = process.cwd(), reviewKind, body
       if (schemaErrors.length) throw new Error(`launcher receipt schema invalid: ${schemaErrors.slice(0, 3).join("; ")}`);
       const semanticErrors = validateExternalReviewReceiptSemantics(receipt);
       if (semanticErrors.length) throw new Error(`launcher receipt semantics invalid: ${semanticErrors.slice(0, 3).join("; ")}`);
-      if (!supportedLauncherVersions().has(receipt.launcher_version)) reasons.push(`launcher version is unsupported: ${entry.path}`);
+      const selectedFindingsSchema=findingsSchemaBinding(receipt);
+      if(selectedFindingsSchema.error)reasons.push(`${selectedFindingsSchema.error}: ${entry.path}`);
       if (receipt.fixture_mode !== false || !Array.isArray(runReceipt.attempts) || runReceipt.attempts.length === 0) reasons.push(`launcher receipt is not a real external attempt: ${entry.path}`);
       if (!selfBindHolds(repository, entry, receipt, bytes)) reasons.push(`launcher receipt does not self-bind its canonical path: ${entry.path}`);
-      if (receipt.findings_schema_sha256 !== digest(fs.readFileSync(path.join(SCHEMA_DIR, "external-review-findings.schema.json")))) reasons.push(`launcher findings schema digest mismatch: ${entry.path}`);
       if (receipt.status !== "success" || !["success", "cache_hit"].includes(receipt.classification)) reasons.push(`launcher receipt is not a successful review: ${entry.path}`);
       if (receipt.review_kind !== reviewKind) reasons.push(`launcher review_kind=${receipt.review_kind} expected ${reviewKind}`);
       const packageEntry={path:receipt.artifacts?.package,sha256:receipt.package_sha256};const packageArtifact=secureArtifact(repository,packageEntry,{extraPaths:[receipt.artifacts?.package]});
@@ -143,8 +156,10 @@ function verifyReviewerEvidenceInternal({ root = process.cwd(), reviewKind, body
       const findingsEntry = { path: receipt.artifacts?.findings, sha256: receipt.findings_sha256 };
       const findingsBytes = secureArtifact(repository, findingsEntry, { extraPaths: [receipt.artifacts?.findings] }); const findings = JSON.parse(findingsBytes.bytes.toString("utf8"));
       if (receipt.classification === "cache_hit" && !["pass", "pass-with-findings"].includes(findings.verdict)) reasons.push(`cached non-passing reviews are unsupported; retain original review rounds for disposition: ${entry.path}`);
-      const findingsSchemaErrors = validateEvidenceSchema(findings, EXTERNAL_FINDINGS_SCHEMA);
-      if (findingsSchemaErrors.length) reasons.push(`launcher findings schema invalid: ${findingsSchemaErrors.slice(0, 3).join("; ")}`);
+      if(selectedFindingsSchema.schema){
+        const findingsSchemaErrors=validateEvidenceSchema(findings,selectedFindingsSchema.schema);
+        if(findingsSchemaErrors.length)reasons.push(`launcher findings schema invalid: ${findingsSchemaErrors.slice(0,3).join("; ")}`);
+      }
       if (findings.review_kind !== reviewKind) reasons.push(`launcher findings review_kind=${findings.review_kind} expected ${reviewKind}: ${entry.path}`);
       const orchestrator = receipt.effective_tuple?.orchestrator; const reviewerFamily = familyOf(receipt.effective_tuple?.family || receipt.effective_tuple?.host); const authorFamily = familyOf(body.self_review?.orchestrator);
       if (orchestrator !== body.self_review?.orchestrator || authorFamily === "unknown" || reviewerFamily === "unknown" || authorFamily === reviewerFamily) reasons.push(`launcher reviewer is not independently cross-family: ${entry.path}`);

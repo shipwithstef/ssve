@@ -35,10 +35,11 @@ const finding = (id, severity) => ({ id, severity, claim: `${id} claim`, analysi
 const terminalFindings = [finding("H-1", "high"), finding("H-2", "high"), finding("H-3", "high"), finding("M-1", "medium")];
 
 function artifact(file) { return { path: path.relative(temp, file), sha256: sha(fs.readFileSync(file)) }; }
-function fixtureSet(reviewKind, count = 2, lastFindings = terminalFindings, { wi = `WI-MARKETPLACE-${reviewKind.toUpperCase()}`, targetDigests = [], rubricFailures = [], launcherVersion } = {}) {
+function fixtureSet(reviewKind, count = 2, lastFindings = terminalFindings, { wi = `WI-MARKETPLACE-${reviewKind.toUpperCase()}`, targetDigests = [], rubricFailures = [], launcherVersion, findingsSchemaVersion } = {}) {
   return Array.from({ length: count }, (_, index) => createExternalReviewFixture({
     frameworkRoot,
     launcherVersion,
+    findingsSchemaVersion,
     repo: temp,
     reviewKind,
     candidateSha,
@@ -584,11 +585,44 @@ console.log("PASS: bounded review exits are candidate-bound, cap-bound, census-c
 // Earlier negative cases intentionally poison their isolated issuance index.
 process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT = path.join(temp, ".svc/archive-test-authority");
 process.env.SVC_REVIEW_EVIDENCE_STORE = path.join(temp, ".svc/archive-test-objects");
+const archivedSchemaPath = path.join(frameworkRoot, "schemas/external-review-findings-v1-pre-rv1.schema.json");
+assert.equal(sha(fs.readFileSync(archivedSchemaPath)), "bf012594cbd4a0500398beeb506538f5d6050379e0d6e31a30628cf55eb5a3fa", "archived producer schema bytes remain pinned");
+assert.equal(sha(fs.readFileSync(path.join(frameworkRoot, "schemas/external-review-findings.schema.json"))), "56683eca38f3f6c3fdd29ab0d4308e24ff6ce553c937f6991f6300694814831a", "current producer schema bytes remain pinned");
+for (const version of ["2.5.5", "2.5.6", "2.5.7", "2.5.8"]) {
+  const wi = `WI-ARCHIVED-${version.replaceAll(".", "-")}`;
+  const rounds = fixtureSet("exec", 2, terminalFindings, { wi, launcherVersion: version });
+  assert.deepEqual(verifyReviewerEvidence({ root: temp, reviewKind: "exec", body: boundedBody("exec", rounds, wi) }), [], `${version} historical schema evidence should validate`);
+}
+const wrongHistoricalWi = "WI-HISTORICAL-WRONG-SCHEMA";
+const wrongHistoricalRounds = fixtureSet("exec", 2, terminalFindings, { wi: wrongHistoricalWi, launcherVersion: "2.5.4", findingsSchemaVersion: "2.5.9" });
+assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "exec", body: boundedBody("exec", wrongHistoricalRounds, wrongHistoricalWi) }).join("\n"), /launcher findings schema digest mismatch/, "signed historical version with current schema digest must fail");
+const wrongCurrentWi = "WI-CURRENT-WRONG-SCHEMA";
+const wrongCurrentRounds = fixtureSet("exec", 2, terminalFindings, { wi: wrongCurrentWi, launcherVersion: "2.5.9", findingsSchemaVersion: "2.5.4" });
+assert.match(verifyReviewerEvidence({ root: temp, reviewKind: "exec", body: boundedBody("exec", wrongCurrentRounds, wrongCurrentWi) }).join("\n"), /launcher findings schema digest mismatch/, "signed current version with historical schema digest must fail");
 const archivedWi = "WI-ARCHIVED-BOUNDED";
 const archivedRounds = fixtureSet("exec", 2, terminalFindings, { wi: archivedWi, launcherVersion: "2.5.4" });
 const archivedBody = boundedBody("exec", archivedRounds, archivedWi);
 const archivedCheck = () => verifyReviewerEvidence({ root: temp, reviewKind: "exec", body: archivedBody });
 assert.deepEqual(archivedCheck(), [], "compatible producer evidence remains valid");
+const wrongHistoricalCandidate = structuredClone(archivedBody);
+wrongHistoricalCandidate.candidate_digest = "a".repeat(64);
+assert.match(verifyReviewerEvidence({root:temp,reviewKind:"exec",body:wrongHistoricalCandidate}).join("\n"), /candidate digest/, "historical evidence never authorizes a different candidate");
+const archivedReceipt = JSON.parse(fs.readFileSync(archivedRounds[0].receiptPath));
+const archivedMarkerPath = path.join(process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT,"issuance",`${archivedReceipt.request_id}.json`);
+const archivedMarkerBytes = fs.readFileSync(archivedMarkerPath);
+const badHistoricalMarker = JSON.parse(archivedMarkerBytes);
+badHistoricalMarker.authority_hmac_sha256 = "0".repeat(64);
+fs.writeFileSync(archivedMarkerPath,JSON.stringify(badHistoricalMarker),{mode:0o600});
+try { assert.match(archivedCheck().join("\n"), /HMAC mismatch/, "historical schema compatibility cannot bypass issuance authenticity"); }
+finally { fs.writeFileSync(archivedMarkerPath,archivedMarkerBytes,{mode:0o600}); }
+assert.deepEqual(archivedCheck(),[],"historical positive control is restored after provenance negative");
+const originalReadFileSync = fs.readFileSync;
+fs.readFileSync = function(file, ...args) {
+  if (path.resolve(String(file)) === archivedSchemaPath) return Buffer.from("tampered archived schema");
+  return originalReadFileSync.call(this, file, ...args);
+};
+try { assert.match(archivedCheck().join("\n"), /pinned findings schema bytes mismatch/, "tampered bundled historical schema must fail"); }
+finally { fs.readFileSync = originalReadFileSync; }
 const boundedDir = path.join(temp, ".svc/bounded-exit/exec");
 const stored = fs.readdirSync(boundedDir).map(name => {
   const file = path.join(boundedDir, name);

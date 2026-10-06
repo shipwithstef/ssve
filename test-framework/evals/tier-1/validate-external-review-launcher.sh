@@ -873,7 +873,7 @@ cp "$ROOT/scripts/lib/review-report-recovery.mjs" "$ROOT/scripts/lib/review-inpu
 cp "$ROOT/scripts/lib/two-box-protocol.mjs" "$ROOT/scripts/lib/receipt-issuance-epoch.mjs" "$ROOT/scripts/lib/control-plan-validate.mjs" "$ROOT/scripts/lib/transmutation-seal.mjs" "$ROOT/scripts/lib/isolated-plan-analysis.mjs" "$ROOT/scripts/lib/frozen-request-input.mjs" "$ROOT/scripts/lib/native-planning-request-capture.mjs" "$ROOT/scripts/lib/native-codex-team-collaboration.wrapper.txt" "$ROOT/scripts/lib/two-box-role-launch.mjs" "$ROOT/scripts/lib/two-box-scout-assign.mjs" "$TMP/runtime-copy/scripts/lib/"
 mkdir -p "$TMP/runtime-copy/schemas/receipts"
 cp "$ROOT/schemas/receipts/plan-manifest.schema.json" "$ROOT/schemas/receipts/control-plan.schema.json" "$TMP/runtime-copy/schemas/receipts/"
-cp "$ROOT/scripts/lib/reviewer-evidence.mjs" "$ROOT/scripts/lib/bounded-exit.mjs" "$TMP/runtime-copy/scripts/lib/"
+cp "$ROOT/scripts/lib/reviewer-evidence.mjs" "$ROOT/scripts/lib/bounded-exit.mjs" "$ROOT/scripts/lib/secret-redaction.mjs" "$TMP/runtime-copy/scripts/lib/"
 cp "$ROOT/schemas/receipts/bounded-exit.schema.json" "$ROOT/schemas/receipts/bounded-exit-evidence.schema.json" "$TMP/runtime-copy/schemas/receipts/"
 cp "$ROOT/scripts/review-topology-v2.mjs" "$TMP/runtime-copy/scripts/review-topology-v2.mjs"
 cp "$ROOT/scripts/resolve-dispatch.mjs" "$TMP/runtime-copy/scripts/resolve-dispatch.mjs"

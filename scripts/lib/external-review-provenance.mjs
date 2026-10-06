@@ -108,6 +108,10 @@ function reviewAuthority(receipt){
   const reviewer=familyOf(receipt?.effective_tuple?.family||receipt?.effective_tuple?.host);
   return author!=="unknown"&&reviewer!=="unknown"&&author!==reviewer?"independent":"advisory";
 }
+function sameNonemptyWi(known, requestedWi){
+  const knownWi=String(known.wi||"").trim(), wantedWi=String(requestedWi||"").trim();
+  return Boolean(knownWi&&wantedWi&&knownWi===wantedWi);
+}
 function receiptClassification(receipt){
   const wi=String(receipt?.phase_guard?.wi||"").trim()||null;
   return {review_kind:receipt?.review_kind||null,wi,review_cycle_id:wi?externalReviewCycleIdFromReceipt(receipt):null,review_authority:reviewAuthority(receipt),candidate_digest:receipt?.candidate_digest||null};
@@ -143,12 +147,52 @@ function readClassification(directory,requestId,key){
   if(typeof authority_hmac_sha256!=="string"||!/^[0-9a-f]{64}$/.test(authority_hmac_sha256)||!crypto.timingSafeEqual(Buffer.from(expected,"hex"),Buffer.from(authority_hmac_sha256,"hex")))throw new Error(`external review classification HMAC mismatch: ${requestId}`);
   if(payload.schema_version!==1||payload.request_id!==requestId)throw new Error(`external review classification identity mismatch: ${requestId}`);return payload;
 }
-function mergeClassification(marker,indexed){
-  if(!indexed)return {...marker};
-  for(const key of ["request_id","candidate_digest","review_kind","wi","review_cycle_id","review_authority"]){
-    if(marker[key]!==undefined&&canonical(marker[key])!==canonical(indexed[key]))throw new Error(`external review classification conflicts with issuance marker: ${marker.request_id}`);
+function legacyPhaseCycleIdFromReceipt(receipt) {
+  const guard = receipt?.phase_guard || {};
+  const wi = guard.wi;
+  const kind = receipt?.review_kind;
+  const digest = receipt?.candidate_digest;
+  const base = guard.pre_execution_base;
+  const override = guard.override?.actual_sha256 || null;
+  if (!String(wi || '').trim() || !['plan', 'exec', 'design'].includes(kind)) return null;
+  if (kind === 'plan' && !/^[0-9a-f]{40}$/.test(String(base || ''))) return null;
+  if (kind !== 'plan' && !/^[0-9a-f]{64}$/.test(String(digest || ''))) return null;
+  if (override !== null && !/^[0-9a-f]{64}$/.test(String(override))) return null;
+  const subject = kind === 'plan' ? `${base}:${override || 'no-override'}` : digest;
+  return sha(Buffer.from(`external-review-cycle:v1:${kind}:${wi}:${subject}`));
+}
+function authenticatedHistoricalCycleMigration(marker, indexed) {
+  const bytes = markerReceiptBytes(marker, 'historical external review cycle receipt');
+  if (!bytes) return false;
+  try {
+    const receipt = JSON.parse(bytes);
+    const derived = receiptClassification(receipt);
+    if (receipt.request_id !== marker.request_id ||
+        receipt.candidate_digest !== marker.candidate_digest ||
+        receipt.review_kind !== marker.review_kind ||
+        derived.wi !== marker.wi ||
+        receipt.launcher_version !== marker.launcher_version ||
+        canonical(receipt.effective_tuple) !== canonical(marker.effective_tuple) ||
+        receipt.package_sha256 !== marker.package_sha256 ||
+        receipt.findings_sha256 !== marker.findings_sha256) return false;
+    for (const field of ['candidate_digest', 'review_kind', 'wi', 'review_cycle_id', 'review_authority']) {
+      if (canonical(indexed[field]) !== canonical(derived[field])) return false;
+    }
+    const legacyCycle = legacyPhaseCycleIdFromReceipt(receipt);
+    return typeof legacyCycle === "string" && /^[0-9a-f]{64}$/.test(legacyCycle) &&
+      marker.review_cycle_id === legacyCycle &&
+      indexed.review_cycle_id === externalReviewCycleIdFromReceipt(receipt);
+  } catch { return false; }
+}
+function mergeClassification(marker, indexed) {
+  if (!indexed) return {...marker};
+  for (const key of ['request_id', 'candidate_digest', 'review_kind', 'wi', 'review_cycle_id', 'review_authority']) {
+    if (marker[key] !== undefined && canonical(marker[key]) !== canonical(indexed[key])) {
+      if (key === 'review_cycle_id' && authenticatedHistoricalCycleMigration(marker, indexed)) continue;
+      throw new Error(`external review classification conflicts with issuance marker: ${marker.request_id}`);
+    }
   }
-  return {...marker,...indexed};
+  return {...marker, ...indexed};
 }
 function writeClassification(directory,payload,key){
   const body={schema_version:1,request_id:payload.request_id,candidate_digest:payload.candidate_digest,review_kind:payload.review_kind,wi:payload.wi,review_cycle_id:payload.review_cycle_id,review_authority:payload.review_authority};
@@ -175,7 +219,7 @@ export function issueExternalReviewProvenance({receiptPath,packagePath,findingsP
     if(!reviewCycleId&&known.candidate_digest!==receipt.candidate_digest)continue;
     let priorKind=known.review_kind;
     let priorReceipt=null;
-    if(!priorKind||!known.wi||!known.review_cycle_id||!known.review_authority){const priorBytes=markerReceiptBytes(prior,"legacy external review inventory receipt");if(!priorBytes){const related=(known.review_kind===receipt.review_kind&&known.wi===wi)||known.candidate_digest===receipt.candidate_digest;if(related)throw new Error(`external review legacy receipt is unavailable or digest-mismatched: ${prior.request_id}`);continue;}try{priorReceipt=JSON.parse(priorBytes);const derived=writeClassification(classifications,{request_id:prior.request_id,...receiptClassification(priorReceipt)},key);Object.assign(known,mergeClassification(prior,derived));priorKind=known.review_kind;}catch(error){if(/classification conflict/.test(error.message))throw error;throw new Error(`external review legacy receipt is invalid: ${prior.request_id}`);}}
+    if(!priorKind||!known.wi||!known.review_cycle_id||!known.review_authority){const priorBytes=markerReceiptBytes(prior,"legacy external review inventory receipt");if(!priorBytes){const related=sameNonemptyWi(known,wi)||known.candidate_digest===receipt.candidate_digest;if(related)throw new Error(`external review legacy receipt is unavailable or digest-mismatched: ${prior.request_id}`);continue;}try{priorReceipt=JSON.parse(priorBytes);const derived=writeClassification(classifications,{request_id:prior.request_id,...receiptClassification(priorReceipt)},key);Object.assign(known,mergeClassification(prior,derived));priorKind=known.review_kind;}catch(error){if(/classification conflict/.test(error.message))throw error;throw new Error(`external review legacy receipt is invalid: ${prior.request_id}`);}}
     if(known.review_authority!=="independent")continue;
     if(reviewCycleId){
       const priorWi=String(known.wi||"").trim();
@@ -269,7 +313,7 @@ export function listExternalReviewCycleProvenance({receiptPath,wi,reviewKind,cyc
     const indexed=readClassification(classifications,payload.request_id,key);const known=mergeClassification(payload,indexed);
     if(known.review_authority==="advisory")continue;
     const receiptBytes=markerReceiptBytes(payload,`external review inventory receipt ${payload.request_id}`);
-    if(!receiptBytes){const related=known.review_cycle_id===cycleId||(known.review_kind===reviewKind&&known.wi===wi)||declaredDigests.has(known.candidate_digest);if(related)throw new Error(`external review ${known.review_cycle_id?"cycle":"legacy"} receipt is unavailable or digest-mismatched: ${payload.request_id}`);continue;}
+    if(!receiptBytes){const related=known.review_cycle_id===cycleId||sameNonemptyWi(known,wi)||declaredDigests.has(known.candidate_digest);if(related)throw new Error(`external review ${known.review_cycle_id?"cycle":"legacy"} receipt is unavailable or digest-mismatched: ${payload.request_id}`);continue;}
     const receipt=JSON.parse(receiptBytes);
     if(receipt.request_id!==payload.request_id||receipt.candidate_digest!==payload.candidate_digest)throw new Error(`external review inventory receipt identity mismatch: ${payload.request_id}`);
     if(!indexed&&(!known.review_kind||!known.wi||!known.review_cycle_id||!known.review_authority)){const derived=writeClassification(classifications,{request_id:payload.request_id,...receiptClassification(receipt)},key);Object.assign(known,mergeClassification(payload,derived));}

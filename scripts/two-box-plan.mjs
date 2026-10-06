@@ -33,8 +33,9 @@ import {
 } from "./lib/two-box-protocol.mjs";
 import { diagnosePromptContamination, isolationProofContractDigest } from "./lib/isolated-plan-analysis.mjs";
 import { assertRetainedStageProof } from "./lib/control-plan-validate.mjs";
-import { assignDualPass, assignmentCoverage, constraintSources } from "./lib/two-box-scout-assign.mjs";
-import { buildRolePrompt, launchRole, preflightRole, parseCodexJsonl } from "./lib/two-box-role-launch.mjs";
+import { assignDualPass, assignmentCoverage, constraintSources, preflightDeclaredScoutExposure, freezeScoutExposure, frozenScoutExposure } from "./lib/two-box-scout-assign.mjs";
+import { buildRolePrompt, renderRolePrompt, assertCompleteRequestBudget, launchRole, preflightRole, parseCodexJsonl, PLANNING_REQUEST_MAX_BYTES } from "./lib/two-box-role-launch.mjs";
+import { redactSecrets } from "./lib/secret-redaction.mjs";
 
 const PROBE = "CAPABILITY_PROBE_NOT_STAGE_RESULT";
 const DESCENDANTS = Object.freeze({
@@ -381,7 +382,7 @@ function verifyEnvelope(ref, { consumerRoot, wi, role, input, policyDigest, sour
   if (evidenceClass === "LIVE" || stdout.bytes.length) {
     if(canonicalJson(parseCodexJsonl(stdout.bytes,role)) !== canonicalJson(envelope.output)) return null;
   }
-  if(envelope.launch.prompt_digest !== sha256Utf8(buildRolePrompt({role,payload:input}))) return null;
+  if(envelope.launch.prompt_digest !== sha256Utf8(renderRolePrompt({role,payload:input}))) return null;
   if(envelope.launch.exit_code !== 0 || envelope.input_digest !== sha256Utf8(canonicalJson(input))) return null;
   return envelope;
 }
@@ -524,6 +525,38 @@ async function loadValidateControlPlan() {
   }
 }
 
+// Inspect both actual scout requests before either role can launch.
+export function preflightAssignedScouts({ consumerRoot, tuples, payloads, requestMaxBytes, mode = "live", offline = {} }) {
+  const measured = {};
+  const cleanups = [];
+  let primaryError;
+  try {
+    for (const role of ["scout_forward", "scout_reverse"]) {
+      const pre = preflightRole({ role, tuple: tuples[role].tuple, payload: payloads[role],
+        schema: outputSchemaForCall(role),
+        sourceBindings: { consumerRoot, planning_transport: tuples[role].planning_transport },
+        mode, ...(mode === "offline" ? { offline } : {}) });
+      cleanups.push(pre.cleanup);
+      try { measured[role] = assertCompleteRequestBudget(pre.proof, requestMaxBytes).bytes; }
+      catch (error) { throw new CoverageGap(`${role}: ${error.message}`); }
+      if (mode === "live" && pre.proof?.effective?.usable_live !== true) {
+        throw new IsolationUnsupported(`${role} isolation proof is not usable live`);
+      }
+    }
+    return measured;
+  } catch (error) {
+    primaryError = error;
+    throw error;
+  } finally {
+    let cleanupError;
+    for (const cleanup of cleanups) {
+      try { cleanup?.(); } catch (error) { cleanupError ??= error; }
+    }
+    if (cleanupError && primaryError) primaryError.cleanup_error = cleanupError;
+    else if (cleanupError) throw cleanupError;
+  }
+}
+
 async function runSix(ctx) {
   const {
     mode, offline, consumerRoot, wi, requirements, snapshot, bindings, tuples,
@@ -537,6 +570,28 @@ async function runSix(ctx) {
   const factsPayload = frozenFacts;
   const constraints = readConstraints(consumerRoot, snapshot.base_sha, contractContext);
   constraintSources(constraints);
+  const scoutExposure = frozenScoutExposure(frozenFacts);
+  preflightDeclaredScoutExposure({ sourceSnapshot: snapshot, consumerRoot, constraints, scoutExposure });
+  const promptCap = scoutExposure ? Math.min(scoutExposure.request_max_bytes, scoutExposure.framework_request_max_bytes, PLANNING_REQUEST_MAX_BYTES) : null;
+  const checkPromptCap = (role, payload) => {
+    const bytes = Buffer.byteLength(buildRolePrompt({ role, payload }), "utf8");
+    if (promptCap && bytes > promptCap) throw new CoverageGap(`${role} full prompt ${bytes} bytes exceeds configured cap ${promptCap}`);
+  };
+  const openPayload = { bindings, requirements, facts: factsPayload };
+  const contractPayload = { bindings, requirements, facts: factsPayload, constraints };
+  if (scoutExposure) {
+    checkPromptCap("open_box", openPayload);
+    checkPromptCap("contract_box", contractPayload);
+    for (const [role, payload] of [["open_box", openPayload], ["contract_box", contractPayload]]) {
+      const pre = preflightRole({ role, tuple: tuples[role].tuple, payload,
+        schema: outputSchemaForCall(role),
+        sourceBindings: { consumerRoot, planning_transport: tuples[role].planning_transport },
+        mode: isoMode, ...(mode === "OFFLINE" ? { offline: offlineIsolation(offlineOpts) } : {}) });
+      try { assertCompleteRequestBudget(pre.proof, promptCap); }
+      finally { pre.cleanup?.(); }
+    }
+  }
+
   const probeRef = putJson({ [PROBE]: true }, start);
   const cleanups = [];
   try {
@@ -572,6 +627,9 @@ async function runSix(ctx) {
     const schema = outputSchemaForCall(role);
     const tuple = tuples[role].tuple;
     const prompt = buildRolePrompt({ role, payload });
+    if (promptCap && Buffer.byteLength(prompt, "utf8") > promptCap) {
+      throw new CoverageGap(`${role} full prompt ${Buffer.byteLength(prompt, "utf8")} bytes exceeds configured cap ${promptCap}`);
+    }
     const pre = preflightRole({
       role, tuple, payload, schema,
       sourceBindings: sourceBindingsFor(role),
@@ -579,6 +637,7 @@ async function runSix(ctx) {
       ...(mode === "OFFLINE" ? { offline: offlineIsolation(offlineOpts) } : {}),
     });
     try {
+      if (scoutExposure) assertCompleteRequestBudget(pre.proof, promptCap);
       const key = stageKey({
         role, input: payload, prompt, schema, sourceDigest: sourceHash, policyDigest: policyHash,
         tuple, proof: pre.proof, parents, evidenceClass,
@@ -605,14 +664,16 @@ async function runSix(ctx) {
       }
       if (newProviderCalls >= maxNewCalls) throw new Error("new provider call budget exhausted; retained stages remain resumable");
       newProviderCalls += 1;
+      const attemptStamp = new Date().toISOString();
       patchJournal(journalPath, wi, (j) => ({
         ...j,
-        stages: { ...j.stages, [role]: { status: "running", key, started_at: new Date().toISOString() } },
-        attempts: [...(j.attempts || []), {role,key,started_at:new Date().toISOString()}],
+        stages: { ...j.stages, [role]: { status: "running", key, started_at: attemptStamp } },
+        attempts: [...(j.attempts || []), {role,key,started_at:attemptStamp}],
       }));
       let launch, output;
       try {
         launch = await launchRole({
+          requestMaxBytes: scoutExposure?.request_max_bytes ?? null,
           role, tuple, payload, schema,
           sourceBindings: sourceBindingsFor(role),
           signal, limits,
@@ -646,10 +707,17 @@ async function runSix(ctx) {
             },
           }));
         } else {
+          // A final launch preflight may refuse after this stage reserved an
+          // attempt. A typed preflight has not spawned a paid role, so remove
+          // only this reservation; all prior attempts/history remain intact.
+          if (error.preflight_diagnostic) newProviderCalls -= 1;
           patchJournal(journalPath, wi, (j) => {
             const stages = { ...j.stages };
             if (stages[role]?.status === "running" && stages[role].key === key) delete stages[role];
-            return { ...j, stages };
+            const attempts = error.preflight_diagnostic
+              ? (j.attempts || []).filter(a => !(a.role === role && a.key === key && a.started_at === attemptStamp))
+              : j.attempts;
+            return { ...j, stages, attempts };
           });
         }
         throw error;
@@ -669,9 +737,7 @@ async function runSix(ctx) {
     }
   }
 
-  const openPayload = { bindings, requirements, facts: factsPayload };
   await runStage("open_box", openPayload, []);
-  const contractPayload = { bindings, requirements, facts: factsPayload, constraints };
   await runStage("contract_box", contractPayload, []);
   const initialContract = collected.contract_box.envelope.output;
   const assignments = assignDualPass({
@@ -680,18 +746,49 @@ async function runSix(ctx) {
     consumerRoot,
     constraints,
     changeArchetype: typeof frozenFacts.annotations?.change_archetype === "string" ? frozenFacts.annotations.change_archetype : "feature",
+    scoutExposure,
   });
   const assignRefs = {
     scout_forward: putJson(assignments.scout_forward, start),
     scout_reverse: putJson(assignments.scout_reverse, start),
   };
   const contractParents = [collected.contract_box.ref];
+  const scoutPayloads = Object.fromEntries(["scout_forward", "scout_reverse"].map(role => [role, {
+    bindings,
+    initial_contract: { ref: collected.contract_box.ref, output: initialContract },
+    assignment: { ref: assignRefs[role], value: assignments[role] },
+  }]));
+  if (scoutExposure) {
+    for (const role of ["scout_forward", "scout_reverse"]) checkPromptCap(role, scoutPayloads[role]);
+    // These are size lower bounds, not stage evidence or future output claims.
+    const zeroRef = objectRef("0".repeat(64));
+    const minimumReports = ["scout_forward", "scout_reverse"].map(role => ({
+      role, ref: zeroRef,
+      output: { findings: [], citations: [], unread_gaps: [], supplied_denominator: assignments[role].supplied_denominator, incomplete: true },
+      assignment_ref: assignRefs[role], assignment: assignments[role], coverage_ref: zeroRef, coverage: {},
+    }));
+    const minimumRevisePayload = { bindings, requirements, facts: factsPayload, constraints,
+      initial_contract: { ref: collected.contract_box.ref, output: initialContract }, scout_reports: minimumReports };
+    const minimumAssessorPayload = { bindings, requirements, facts: factsPayload,
+      ...(constraints.paths.length ? { constraints } : {}),
+      original_open: { ref: collected.open_box.ref, output: collected.open_box.envelope.output },
+      original_contract: { ref: collected.contract_box.ref, output: initialContract },
+      revised_contract: { ref: zeroRef, output: {} },
+      scout_reports: minimumReports, open_paragraphs: openParagraphs(collected.open_box.envelope.output.plan) };
+    for (const [role, payload] of [["contract_revise", minimumRevisePayload], ["assessor", minimumAssessorPayload]]) {
+      checkPromptCap(role, payload);
+      const pre = preflightRole({ role, tuple: tuples[role].tuple, payload,
+        schema: outputSchemaForCall(role), sourceBindings: sourceBindingsFor(role), mode: isoMode,
+        ...(mode === "OFFLINE" ? { offline: offlineIsolation(offlineOpts) } : {}) });
+      try { assertCompleteRequestBudget(pre.proof, promptCap); }
+      finally { pre.cleanup?.(); }
+    }
+    preflightAssignedScouts({ consumerRoot, tuples, payloads: scoutPayloads,
+      requestMaxBytes: promptCap, mode: isoMode,
+      ...(mode === "OFFLINE" ? { offline: offlineIsolation(offlineOpts) } : {}) });
+  }
   for (const role of ["scout_forward", "scout_reverse"]) {
-    await runStage(role, {
-      bindings,
-      initial_contract: { ref: collected.contract_box.ref, output: initialContract },
-      assignment: { ref: assignRefs[role], value: assignments[role] },
-    }, contractParents);
+    await runStage(role, scoutPayloads[role], contractParents);
   }
   const coverages = {
     scout_forward: assignmentCoverage({ assignment: assignments.scout_forward, parsed: collected.scout_forward.envelope.output, observed_reads: [] }),
@@ -863,8 +960,16 @@ export async function runTwoBox(opts = {}) {
     scope: opts.scope,
     ranges: Array.isArray(facts.ranges) ? facts.ranges : [],
   });
+  const frozenFactsBody = { annotations: facts, source_exposure: sourceExposure(snapshot, consumerRoot),
+    prompt_format: { version: 1, kind: "scout_context_projection" } };
+  const scoutExposure = freezeScoutExposure(facts.scout_exposure, PLANNING_REQUEST_MAX_BYTES);
+  if (scoutExposure) {
+    frozenFactsBody.scout_exposure = scoutExposure;
+    const constraints = readConstraints(consumerRoot, snapshot.base_sha, opts.contractContext);
+    preflightDeclaredScoutExposure({ sourceSnapshot: snapshot, consumerRoot, constraints, scoutExposure });
+  }
   const persisted = persistOriginalInputs({ originalRequirements: requirements,
-    facts: { annotations: facts, source_exposure: sourceExposure(snapshot, consumerRoot) },
+    facts: frozenFactsBody,
   }, { start: consumerRoot });
   const source_snapshot_ref = putJson(snapshot, consumerRoot);
   const sourceHash = canonicalSourceHash(snapshot);
@@ -1031,7 +1136,13 @@ async function main(argv) {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main(process.argv.slice(2)).catch((error) => {
-    process.stderr.write(`${error.message}\n`);
+    if (error.preflight_diagnostic) {
+      process.stderr.write(`${JSON.stringify({
+        kind: "two_box_preflight_error",
+        message: redactSecrets(String(error.message)).slice(0, 512),
+        preflight_diagnostic: error.preflight_diagnostic,
+      })}\n`);
+    } else process.stderr.write(`${error.message}\n`);
     process.exitCode = 1;
   });
 }

@@ -14,6 +14,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { IsolationUnsupported, sha256Bytes, sha256Utf8, canonicalJson } from "./two-box-protocol.mjs";
 import { PLANNING_REQUEST_MAX_BYTES, freezeRequestBytes, readFrozenFile, assertArgvFits } from "./frozen-request-input.mjs";
+import { redactSecrets } from "./secret-redaction.mjs";
 
 const CAPTURE_KEY = "SSVE_CAPTURE_KEY";
 const PROVIDER = "ssve_cap";
@@ -433,13 +434,45 @@ function closeServer(server) {
   });
 }
 
+function boundedNativeDiagnostic(error, context) {
+  const childText = Buffer.concat([context.stderr.bytes, Buffer.from("\n"), context.stdout.bytes]).toString("utf8");
+  const matchCode = childText.match(/"input_error_code"\s*:\s*"([a-z_]+)"/i);
+  const matchMax = childText.match(/"max_chars"\s*:\s*(\d+)/);
+  const matchActual = childText.match(/"actual_chars"\s*:\s*(\d+)/);
+  const safeSummary = context.stdout.overflow || context.stderr.overflow
+    ? "Capture child output exceeded byte limit; partial output is omitted."
+    : redactSecrets(childText).slice(0, 2048);
+  const safePositive = (match) => {
+    const value = match ? Number(match[1]) : null;
+    return Number.isSafeInteger(value) && value >= 0 ? value : null;
+  };
+  return {
+    kind: "native_capture_failure", qualification_phase: context.qualificationPhase,
+    exit_code: context.ended?.code ?? null, signal: context.ended?.signal ?? null,
+    spawn_code: context.spawnCode == null ? null : redactSecrets(String(context.spawnCode)).slice(0, 128),
+    models_hits: context.modelsHits, responses_hits: context.responsesHits,
+    retry_hits: context.retryHits, timed_out: context.timedOut,
+    child_output_overflow: context.stdout.overflow || context.stderr.overflow,
+    body_overflow: context.bodyOverflow,
+    prompt_sha256: context.frozen.sha256,
+    schema_sha256: context.schema == null ? null : sha256Utf8(canonicalJson(context.schema)),
+    binary_sha256: context.binarySha256 ?? null,
+    input_error_code: matchCode?.[1]?.slice(0, 64) ?? null,
+    max_chars: safePositive(matchMax),
+    actual_chars: safePositive(matchActual),
+    summary: safeSummary || redactSecrets(String(error.message)).slice(0, 512),
+  };
+}
+
 export async function capturePlanningRequest({
   binary, cwd, env, execArgs, frozenPath, prompt, expectedSha256, timeoutMs = 60000,
   maxBodyBytes = PLANNING_CAPTURE_BODY_MAX_BYTES, maxChildBytes = MAX_CHILD_BYTES, signal, model, effort, schema, binarySha256,
-  killGraceMs = 2000,
+  killGraceMs = 2000, qualificationPhase = "full",
 } = {}) {
   if (typeof binary !== "string" || !binary) fail("capture binary required");
   if (typeof cwd !== "string" || !cwd) fail("capture cwd required");
+  if (!["probe", "full"].includes(qualificationPhase)) fail("known capture qualification phase required");
+  if (binarySha256 != null && !/^[a-f0-9]{64}$/.test(binarySha256)) fail("capture binary digest must be SHA256");
   if (!Array.isArray(execArgs)) fail("live exec args required");
   if (execArgs.includes("-") || (typeof prompt === "string" && execArgs.includes(prompt))) {
     fail("live exec argv must not carry the frozen prompt");
@@ -522,8 +555,16 @@ export async function capturePlanningRequest({
     child = spawn(binary, args, { cwd, env: captureEnv(env || process.env), stdio: ["pipe", "pipe", "pipe"], detached: true });
   } catch (error) {
     spawnCode = error.code || error.message;
-    await closeServer(server);
-    fail(`native capture spawn failed (${spawnCode})`);
+    const failure = new IsolationUnsupported(`native capture spawn failed (${redactSecrets(String(spawnCode)).slice(0, 128)})`);
+    failure.preflight_diagnostic = {
+      kind: "native_capture_failure", qualification_phase: qualificationPhase,
+      spawn_code: redactSecrets(String(spawnCode)).slice(0, 128), exit_code: null, signal: null,
+      models_hits: 0, responses_hits: 0, retry_hits: 0,
+      prompt_sha256: frozen.sha256, binary_sha256: binarySha256 ?? null,
+    };
+    try { await closeServer(server); }
+    catch (cleanupError) { failure.preflight_diagnostic.cleanup_summary = redactSecrets(String(cleanupError.message)).slice(0, 256); }
+    throw failure;
   }
   closeP = waitClose(child);
   child.on("error", (error) => { spawnCode = error.code || error.message; });
@@ -539,8 +580,10 @@ export async function capturePlanningRequest({
   if (signal) signal.addEventListener("abort", onAbort, { once: true });
   let timedOut = false;
   const timer = setTimeout(() => { timedOut = true; void terminate(child, closeP, { graceMs: killGraceMs }); }, timeoutMs);
+  let ended = null;
+  let primaryError = null;
   try {
-    const ended = await closeP;
+    ended = await closeP;
     if (signal?.aborted) fail("capture cancelled", { pid: child.pid });
     if (timedOut) fail("capture timed out before a complete request", { pid: child.pid });
     if (stdout.overflow || stderr.overflow) fail("capture child output exceeded byte limit", { pid: child.pid });
@@ -586,16 +629,29 @@ export async function capturePlanningRequest({
       stderr: stderr.bytes,
       pid: child.pid,
     };
+  } catch (error) {
+    primaryError = error;
+    error.preflight_diagnostic = boundedNativeDiagnostic(error, {
+      stderr, stdout, qualificationPhase, ended, spawnCode,
+      modelsHits, responsesHits, retryHits, timedOut, bodyOverflow,
+      frozen, schema, binarySha256,
+    });
+    throw error;
   } finally {
     clearTimeout(timer);
     if (signal) signal.removeEventListener("abort", onAbort);
+    const cleanupErrors = [];
     for (const socket of sockets) {
       try { socket.destroy(); } catch { /* already closed */ }
     }
-    await closeServer(server);
+    try { await closeServer(server); } catch (error) { cleanupErrors.push(error); }
     if (child?.pid && !processGone(child.pid)) {
-      await terminate(child, closeP, { graceMs: Math.min(killGraceMs, 200) });
+      try { await terminate(child, closeP, { graceMs: Math.min(killGraceMs, 200) }); }
+      catch (error) { cleanupErrors.push(error); }
     }
+    if (cleanupErrors.length && !primaryError) throw cleanupErrors[0];
+    if (cleanupErrors.length) primaryError.preflight_diagnostic.cleanup_summary =
+      redactSecrets(cleanupErrors.map(error => String(error.message)).join("; ")).slice(0, 256);
   }
 }
 
@@ -612,12 +668,14 @@ export async function qualifyNativePlanningRequest(opts = {}) {
     frozenPath: probe.path,
     expectedSha256: probe.sha256,
     prompt: NATIVE_PROFILE_PROBE,
+    qualificationPhase: "probe",
   });
   const result = await capturePlanningRequest({
     ...opts,
     frozenPath: frozen.path,
     expectedSha256: frozen.sha256,
     prompt: opts.prompt ?? frozen.bytes.toString("utf8"),
+    qualificationPhase: "full",
   });
   const tuple = { model: opts.model, effort: opts.effort };
   const probeProfile = nativeProfileFromCapture(probeResult, {
@@ -677,7 +735,14 @@ async function main() {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((error) => {
-    process.stderr.write(`${error.message}\n`);
+    const message = redactSecrets(String(error.message)).slice(0, 512);
+    const envelope = {
+      schema_version: 1, kind: "native_planning_preflight_error", message,
+      preflight_diagnostic: error.preflight_diagnostic || {
+        kind: "native_capture_helper_failure", summary: message,
+      },
+    };
+    process.stderr.write(`${JSON.stringify(envelope)}\n`);
     process.exitCode = 2;
   });
 }

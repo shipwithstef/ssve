@@ -267,6 +267,24 @@ export function listControllers({ stateRoot, repoId, worktreeRoot = null, princi
   return matches;
 }
 
+// Strict read-only session inspection. Unlike the UI inventory above, malformed
+// authority evidence must not disappear and thereby permit a second baton.
+export function inspectPrincipalControllers({ stateRoot, repoId, principal }) {
+  const root = assertNoFollowDirectoryPath(path.resolve(stateRoot), { requireFinalOwner: true });
+  const dir = path.join(root, 'leases');
+  if (!fs.existsSync(dir)) return [];
+  assertNoFollowDirectoryPath(dir, { requireFinalOwner: true });
+  const matches = [];
+  for (const name of fs.readdirSync(dir).sort()) {
+    if (!name.endsWith('.json')) continue;
+    if (!/^[0-9a-f]{64}\.json$/.test(name)) throw new Error(`malformed controller lease filename: ${name}`);
+    const lease = assertLease(readJson(path.join(dir, name), { required: true }));
+    if (lease.repo_id !== repoId || lease.controller_principal !== principal) continue;
+    matches.push(lease);
+  }
+  return matches;
+}
+
 // Serialize a compound compatibility operation with every controller mutation.
 // The callback receives the exact lease observed while the repository-shared
 // controller lock is held; no handover, takeover, recovery, release, or
@@ -277,6 +295,36 @@ export function withControllerLeaseLock({ stateRoot, repoId, wi }, operation) {
   return withLock(paths.root, paths.key, () => {
     const lease = readJson(paths.lease);
     return operation(lease ? assertLease(lease, { repoId, wi }) : null);
+  });
+}
+
+// Read-only inspection under the same lock as lifecycle writers. Do not
+// forward-complete pending transitions while deciding whether another worktree
+// owns this session's mutation baton.
+export function inspectControllerForSession({ stateRoot, repoId, wi }) {
+  const paths = pathsFor(stateRoot, repoId, wi);
+  return withLock(paths.root, paths.key, () => {
+    const raw = readJson(paths.lease);
+    const lease = raw ? assertLease(raw, { repoId, wi }) : null;
+    return { lease, mutation_ready: leaseIsMutationReady(paths, lease) };
+  });
+}
+
+// Projection is a compatibility write, never a second authority transition.
+// Refuse if a handover or release won between the durable transition and the
+// v1 claim/binding update. In particular, do not repair pending lifecycle here.
+export function withCurrentControllerProjection({ stateRoot, repoId, wi, expectedLease, principal, worktreeRoot }, operation) {
+  if (typeof operation !== 'function') throw new Error('controller projection operation is required');
+  const paths = pathsFor(stateRoot, repoId, wi);
+  return withLock(paths.root, paths.key, () => {
+    const raw = readJson(paths.lease);
+    const lease = raw ? assertLease(raw, { repoId, wi }) : null;
+    if (!lease || !leaseIsMutationReady(paths, lease)
+        || lease.lease_id !== expectedLease?.lease_id || lease.generation !== expectedLease?.generation
+        || lease.controller_principal !== principal || fs.realpathSync(lease.worktree_root) !== fs.realpathSync(worktreeRoot)) {
+      throw new Error('controller changed before compatibility projection; retry against current authority');
+    }
+    return operation(lease);
   });
 }
 
@@ -1560,6 +1608,87 @@ export function migrateV1Claim({ stateRoot, claimPath, repoId, worktreeRoot, hos
       atomicWrite(receipt_path, receipt);
     }
     return { lease, backup_path, receipt_path, resumed: Boolean(existingReceipt || leaseMatchesPlan) };
+  });
+}
+
+// Forward-complete only a migration whose durable intent and original backup
+// predate the active v2 lease. The live v1 projection may have changed since
+// the interrupted write, so it is never used to recreate migration history.
+export function completeRecordedV1MigrationReceipt({ stateRoot, repoId, wi, worktreeRoot, principal, claimPath, host, sessionId, agentId = null }) {
+  const canonicalWorktree = fs.realpathSync(requireString(worktreeRoot, 'worktree root'));
+  const absoluteClaim = path.resolve(requireString(claimPath, 'claim path'));
+  const paths = pathsFor(stateRoot, repoId, wi);
+  return withLock(paths.root, paths.key, () => {
+    const lease = assertLease(readJson(paths.lease, { required: true }), { repoId, wi });
+    if (lease.state !== 'active' || lease.controller_principal !== principal ||
+        fs.realpathSync(lease.worktree_root) !== canonicalWorktree) {
+      throw new Error('active controller differs from migration actor or worktree');
+    }
+    const migrations = path.join(path.resolve(stateRoot), 'migrations');
+    if (!fs.existsSync(migrations)) return null;
+    assertNoFollowDirectoryPath(migrations, { requireFinalOwner: true });
+    const matches = [];
+    for (const name of fs.readdirSync(migrations)) {
+      if (!/^[a-f0-9]{64}$/.test(name)) throw new Error('invalid migration directory name');
+      const dir = path.join(migrations, name);
+      assertNoFollowDirectoryPath(dir, { requireFinalOwner: true });
+      const intentPath = path.join(dir, 'migration-intent.json');
+      const intent = readJson(intentPath);
+      if (!intent || intent.repo_id !== repoId || intent.wi !== wi ||
+          intent.claim_path !== absoluteClaim || intent.worktree_root !== canonicalWorktree ||
+          intent.controller_principal !== principal) continue;
+      const backupPath = path.join(dir, 'v1-claim.backup');
+      const backupStat = fs.lstatSync(backupPath);
+      if (!backupStat.isFile() || backupStat.isSymbolicLink() ||
+          (typeof process.getuid === 'function' && backupStat.uid !== process.getuid())) {
+        throw new Error('v1 migration backup is not a secure regular file');
+      }
+      const backup = fs.readFileSync(backupPath);
+      const digest = sha256(backup);
+      const migrationId = crypto.createHash('sha256')
+        .update(`${repoId}\0${wi}\0${absoluteClaim}\0${digest}`).digest('hex');
+      let oldClaim;
+      try { oldClaim = JSON.parse(backup.toString('utf8')); }
+      catch { throw new Error('v1 migration backup claim is malformed'); }
+      const oldOwner = normalizeClaimOwner(oldClaim);
+      const oldGeneration = Number.isInteger(oldClaim.generation) && oldClaim.generation > 0 ? oldClaim.generation : 1;
+      const planned = assertLease(intent.planned_lease, { repoId, wi });
+      const receiptPath = path.join(dir, 'migration-receipt.json');
+      const receipt = readJson(receiptPath);
+      if (receipt && (receipt.schema_version !== 1 || receipt.migration_id !== name ||
+          receipt.claim_path !== absoluteClaim || receipt.backup_path !== backupPath ||
+          receipt.source_sha256 !== digest || receipt.backup_sha256 !== digest ||
+          receipt.repo_id !== repoId || receipt.wi !== wi || receipt.lease_id !== planned.lease_id ||
+          receipt.intent_path !== intentPath)) {
+        throw new Error('v1 migration receipt conflicts with recorded intent');
+      }
+      if (intent.schema_version !== 1 || intent.migration_id !== name || migrationId !== name ||
+          intent.backup_path !== backupPath || intent.source_sha256 !== digest || intent.backup_sha256 !== digest ||
+          intent.source_generation !== oldGeneration || oldClaim.wi !== wi ||
+          !oldOwner.attributable || oldOwner.session_id !== sessionId ||
+          principalId({ host, session_id: oldOwner.session_id, agent_id: agentId }) !== principal ||
+          (oldClaim.worktree_root && fs.realpathSync(oldClaim.worktree_root) !== canonicalWorktree) ||
+          planned.controller_principal !== principal || planned.worktree_root !== canonicalWorktree ||
+          planned.state !== 'active') {
+        throw new Error('v1 migration intent, backup, and active lease do not match');
+      }
+      if (planned.lease_id !== lease.lease_id || planned.generation !== lease.generation) {
+        if (receipt) continue; // Authenticated completed history is not a pending migration.
+        throw new Error('pending v1 migration does not match the active lease');
+      }
+      matches.push({ dir, intentPath, backupPath, digest });
+    }
+    if (matches.length === 0) return null;
+    if (matches.length !== 1) throw new Error('ambiguous recorded v1 migrations for active lease');
+    const match = matches[0];
+    const receiptPath = path.join(match.dir, 'migration-receipt.json');
+    const existing = readJson(receiptPath);
+    if (!existing) atomicWrite(receiptPath, {
+      schema_version: 1, migration_id: path.basename(match.dir), claim_path: absoluteClaim,
+      backup_path: match.backupPath, source_sha256: match.digest, backup_sha256: match.digest,
+      repo_id: repoId, wi, lease_id: lease.lease_id, intent_path: match.intentPath, migrated_at: iso(),
+    });
+    return { lease, backup_path: match.backupPath, receipt_path: receiptPath, resumed: true };
   });
 }
 

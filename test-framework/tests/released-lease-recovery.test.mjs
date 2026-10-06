@@ -14,6 +14,7 @@ import {
   readController,
   writeControllerForTest,
   migrateV1Claim,
+  completeRecordedV1MigrationReceipt,
   rearmReleasedController,
   rearmExpiredController,
   resumeController,
@@ -26,6 +27,7 @@ import {
 } from '../../hooks/lib/authority-store.mjs';
 import {
   writeSessionBinding,
+  withSessionControllerTransition,
   readSessionBinding,
   bindingPath,
   releaseAssociatedCompatibilityBindings,
@@ -125,6 +127,74 @@ function fixture() {
   return { tmp, repo, original, temp, env, origCtx, origLease, tempCtx, tempLease: releasedTemp };
 }
 
+function authorityBytes(dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => {
+      const file = path.join(entry.parentPath, entry.name);
+      return [path.relative(dir, file), fs.readFileSync(file).toString('base64')];
+    }).sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+test('sibling authority blocks recovery before any v2 lease or compatibility mutation', () => {
+  const f = fixture();
+  try {
+    fs.writeFileSync(path.join(f.temp, '.svc', 'session-contract.jsonl'),
+      `${JSON.stringify({ wi: tempWi, ts: '2026-09-15T00:00:00Z' })}\n`);
+    const before = authorityBytes(f.env.SVC_AUTHORITY_STATE_ROOT);
+    const tempBinding = fs.readFileSync(bindingPath(f.temp, sid));
+    const originalBinding = fs.readFileSync(bindingPath(f.original, sid));
+    assert.throws(() => adoptExistingWorktree({ wi: tempWi, cwd: f.temp, prepareSession: true, sessionId: sid }, f.env),
+      /session already (?:bound|has controller authority)|principal.*another|sibling/i);
+    assert.deepEqual(authorityBytes(f.env.SVC_AUTHORITY_STATE_ROOT), before);
+    assert.deepEqual(fs.readFileSync(bindingPath(f.temp, sid)), tempBinding);
+    assert.deepEqual(fs.readFileSync(bindingPath(f.original, sid)), originalBinding);
+    const cli = spawnSync(process.execPath, [path.join(root, 'scripts/svc-authority.mjs'), 'bootstrap',
+      '--wi', tempWi, '--worktree', f.temp, '--session-id', sid], { env: f.env, encoding: 'utf8' });
+    assert.notEqual(cli.status, 0);
+    assert.match(cli.stderr, /session already (?:bound|has controller authority)|principal.*another|sibling/i);
+    assert.deepEqual(authorityBytes(f.env.SVC_AUTHORITY_STATE_ROOT), before);
+    assert.deepEqual(fs.readFileSync(bindingPath(f.temp, sid)), tempBinding);
+  } finally { fs.rmSync(f.tmp, { recursive: true, force: true }); }
+});
+
+test('only an authenticated interrupted v1 migration can finish its recorded receipt', () => {
+  const f = fixture();
+  try {
+    const wi = 'WI-PARTIAL-DIRECT-01';
+    const claimPath = path.join(f.tmp, 'original-v1-claim.json');
+    fs.writeFileSync(claimPath, `${JSON.stringify({ wi, session_id: sid, generation: 3, worktree_root: f.temp })}\n`);
+    const ctx = { stateRoot: f.tempCtx.stateRoot, repoId: f.tempCtx.repoId, wi };
+    const principal = principalId({ host: 'codex', session_id: sid });
+    assert.throws(() => migrateV1Claim({ ...ctx, claimPath, worktreeRoot: f.temp, host: 'codex',
+      env: { ...f.env, SVC_AUTHORITY_MIGRATION_FAILPOINT: 'after-lease-before-receipt' } }),
+    /after-lease-before-receipt/);
+    const lease = readController(ctx);
+    assert.equal(lease.state, 'active');
+    const migrationDir = path.join(ctx.stateRoot, 'migrations', fs.readdirSync(path.join(ctx.stateRoot, 'migrations'))[0]);
+    const backupPath = path.join(migrationDir, 'v1-claim.backup');
+    const originalBackup = fs.readFileSync(backupPath);
+    fs.writeFileSync(claimPath, `${JSON.stringify({ wi, session_id: sid, generation: 3, worktree_root: f.temp, projected: true })}\n`);
+    const args = { ...ctx, claimPath, worktreeRoot: f.temp, principal, host: 'codex', sessionId: sid };
+    fs.writeFileSync(backupPath, 'tampered backup');
+    assert.throws(() => completeRecordedV1MigrationReceipt(args), /backup|intent/i);
+    assert.equal(fs.existsSync(path.join(migrationDir, 'migration-receipt.json')), false);
+    fs.writeFileSync(backupPath, originalBackup);
+    const completed = completeRecordedV1MigrationReceipt(args);
+    assert.equal(completed.lease.lease_id, lease.lease_id);
+    assert.equal(completed.resumed, true);
+    assert.equal(fs.existsSync(completed.receipt_path), true);
+    assert.equal(completeRecordedV1MigrationReceipt(args).receipt_path, completed.receipt_path);
+    assert.equal(completeRecordedV1MigrationReceipt({ ...args, claimPath: path.join(f.tmp, 'other.json') }), null);
+    const released = releaseController({ ...ctx, principal });
+    const rearmed = rearmReleasedController({ ...ctx, principal, worktreeRoot: f.temp,
+      expectedGeneration: released.generation, expectedLeaseId: released.lease_id });
+    assert.ok(rearmed.generation > lease.generation);
+    assert.equal(completeRecordedV1MigrationReceipt(args), null);
+  } finally { fs.rmSync(f.tmp, { recursive: true, force: true }); }
+});
+
 test('stale released-lease binding is not authoritative and does not mask the original controller', () => {
   const f = fixture();
   try {
@@ -192,6 +262,8 @@ test('same-owner exact worktree recovers a released lease without a magic phrase
     assert.ok(readController(f.origCtx).generation > released.generation);
     const bound = readSessionBinding(f.original, sid);
     assert.ok(!bound.released_at);
+    assert.equal(bound.generation, readController(f.origCtx).generation);
+    assert.equal(JSON.parse(fs.readFileSync(bound.claim_path, 'utf8')).generation, bound.generation);
     const second = adoptExistingWorktree({ wi: origWi, cwd: f.original, prepareSession: true, sessionId: sid }, f.env);
     assert.equal(second.authority_v2.lease.generation, first.authority_v2.lease.generation);
     const ensured = ensureWorktree({ wi: origWi, branch: 'feature/original', cwd: f.original }, f.env);
@@ -203,6 +275,8 @@ test('same-owner exact worktree recovers a released lease without a magic phrase
     assert.equal(migrate.status, 0, migrate.stderr);
     const migrated = JSON.parse(migrate.stdout);
     assert.equal(migrated.authority_v2.lease.state, 'active');
+    assert.equal(migrated.authority_v2.preexisting_controller, true);
+    assert.equal(migrated.authority_v2.receipt_path, null);
   } finally { fs.rmSync(f.tmp, { recursive: true, force: true }); }
 });
 
@@ -1212,5 +1286,66 @@ test('collectSessionBatons conflicts when an authoritative v1 baton and a v2-onl
     plantUnreleasedBinding(extra, sid, 'WI-V1-ONLY', f.repo, 'feature/v1-only');
     const across = collectSessionBatons({ repo: f.repo, sessionId: sid, host: 'codex', env: f.env });
     assert.equal(across?.conflict, true, JSON.stringify(across));
+  } finally { fs.rmSync(f.tmp, { recursive: true, force: true }); }
+});
+
+
+test('read-only sibling binding permits same-owner controller resume', () => {
+  const f = fixture();
+  try {
+    const file = bindingPath(f.temp, sid);
+    const binding = JSON.parse(fs.readFileSync(file, 'utf8'));
+    fs.writeFileSync(file, JSON.stringify({ ...binding, role: 'reviewer', wi: '', claim_path: '' }));
+    const resumed = withSessionControllerTransition({ worktree_root: f.original, repo_root: f.repo,
+      wi: origWi, session_id: sid, host: 'codex', env: f.env }, ctx =>
+      resumeController({ ...ctx, worktreeRoot: ctx.worktreeRoot, principal: ctx.principal }));
+    assert.equal(resumed.binding.generation, resumed.lease.generation);
+    assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).role, 'reviewer');
+  } finally { fs.rmSync(f.tmp, { recursive: true, force: true }); }
+});
+
+test('public binding options cannot skip sibling preflight or claim locking', () => {
+  const f = fixture();
+  try {
+    const before = authorityBytes(f.env.SVC_AUTHORITY_STATE_ROOT);
+    const bindingBefore = fs.readFileSync(bindingPath(f.temp, sid));
+    const bound = writeSessionBinding({ worktree_root: f.temp, repo_root: f.repo,
+      wi: tempWi, branch: 'bugfix-temp-compat', session_id: sid, host: 'codex', env: f.env,
+      sibling_preflight_done: true, claim_lock_held: true });
+    assert.equal(bound.ok, false);
+    assert.match(bound.warning, /already bound/);
+    assert.deepEqual(authorityBytes(f.env.SVC_AUTHORITY_STATE_ROOT), before);
+    assert.deepEqual(fs.readFileSync(bindingPath(f.temp, sid)), bindingBefore);
+  } finally { fs.rmSync(f.tmp, { recursive: true, force: true }); }
+});
+
+test('target branch conflict refuses before controller transition', () => {
+  const f = fixture();
+  try {
+    const file = bindingPath(f.original, sid);
+    const binding = JSON.parse(fs.readFileSync(file, 'utf8'));
+    fs.writeFileSync(file, JSON.stringify({ ...binding, branch: 'feature/wrong' }));
+    const before = authorityBytes(f.env.SVC_AUTHORITY_STATE_ROOT);
+    let called = false;
+    assert.throws(() => withSessionControllerTransition({ worktree_root: f.original, repo_root: f.repo,
+      wi: origWi, session_id: sid, host: 'codex', env: f.env }, () => { called = true; }), /target binding conflicts/);
+    assert.equal(called, false);
+    assert.deepEqual(authorityBytes(f.env.SVC_AUTHORITY_STATE_ROOT), before);
+  } finally { fs.rmSync(f.tmp, { recursive: true, force: true }); }
+});
+
+
+test('linked checkout repo_root uses the shared canonical session lock and binding identity', () => {
+  const f = fixture();
+  try {
+    const bound = writeSessionBinding({ worktree_root: f.original, repo_root: f.temp,
+      wi: origWi, branch: 'feature/original', session_id: sid, host: 'codex', env: f.env });
+    assert.equal(bound.ok, true, JSON.stringify(bound));
+    assert.equal(bound.binding.repo_root, f.repo);
+    const resumed = withSessionControllerTransition({ worktree_root: f.original, repo_root: f.temp,
+      wi: origWi, session_id: sid, host: 'codex', env: f.env }, ctx =>
+      resumeController({ ...ctx, worktreeRoot: ctx.worktreeRoot, principal: ctx.principal }));
+    assert.equal(resumed.binding.repo_root, f.repo);
+    assert.equal(resumed.binding.generation, resumed.lease.generation);
   } finally { fs.rmSync(f.tmp, { recursive: true, force: true }); }
 });

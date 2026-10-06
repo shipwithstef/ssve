@@ -26,7 +26,7 @@ const EVENTS = new Set(["thread.started", "turn.started", "turn.completed", "tur
 const ITEM_OK = new Set(["reasoning", "agent_message"]);
 const ITEM_TOOL = new Set(["command_execution", "file_change", "web_search", "mcp_tool_call"]);
 const INJECT = ["env", "launchImpl", "inspector", "customenv", "binary", "fsImpl", "spawnImpl"];
-const LAUNCH_KEYS = new Set(["role", "tuple", "payload", "schema", "sourceBindings", "signal", "limits", "mode", "offline"]);
+const LAUNCH_KEYS = new Set(["role", "tuple", "payload", "schema", "sourceBindings", "signal", "limits", "requestMaxBytes", "mode", "offline"]);
 const PRE_KEYS = new Set(["role", "tuple", "payload", "schema", "sourceBindings", "mode", "offline"]);
 const ISO_OFFLINE = ["binary", "helpText", "featuresText", "inspectPrompt", "discoveredSkills", "customenv", "extraRoots", "includeSystem", "version"];
 const ROLE_INSTRUCTIONS = Object.freeze({
@@ -121,7 +121,103 @@ function localCatalogSupport(tuple) {
   };
 }
 
-export function buildRolePrompt({role, payload} = {}) {
+const SCOUT_CONTEXT_FORMAT = Object.freeze({ version: 1, kind: "scout_context_projection" });
+const PROJECTION_NOTICE = "Scout assignments below are a prompt projection. Relationship edges and other omitted assignment metadata are not re-supplied or claimed read here; full original inputs remain in immutable evidence for deterministic verification. Every shown finding, coverage, gap, root, question, denominator, and unique excerpt text remains supplied.";
+
+function promptFormat(facts) {
+  if (!isPlainObject(facts) || !Object.hasOwn(facts, "prompt_format")) return null;
+  const marker = facts.prompt_format;
+  if (!isPlainObject(marker) || Object.keys(marker).sort().join() !== "kind,version"
+      || marker.version !== SCOUT_CONTEXT_FORMAT.version || marker.kind !== SCOUT_CONTEXT_FORMAT.kind) {
+    throw new IsolationUnsupported("unsupported frozen prompt_format marker");
+  }
+  return marker;
+}
+
+function projectedScoutPayload(payload) {
+  const dictionary = {};
+  const sourceFiles = Array.isArray(payload.facts?.source_exposure?.files) ? payload.facts.source_exposure.files : [];
+  const constraintFiles = Array.isArray(payload.constraints?.paths) ? payload.constraints.paths : [];
+  for (const source of sourceFiles) {
+    if (!isPlainObject(source) || typeof source.path !== "string" || typeof source.text !== "string"
+        || !/^[a-f0-9]{64}$/.test(source.sha256)
+        || typeof source.truncated !== "boolean"
+        || (!source.truncated && sha256Utf8(source.text) !== source.sha256)) {
+      throw new IsolationUnsupported("projection source text/hash identity is invalid");
+    }
+  }
+  for (const constraint of constraintFiles) {
+    if (!isPlainObject(constraint) || typeof constraint.path !== "string" || typeof constraint.text !== "string"
+        || sha256Utf8(constraint.text) !== constraint.sha256) {
+      throw new IsolationUnsupported("projection constraint text/hash identity is invalid");
+    }
+  }
+  const exactLines = (text, excerpt) => text.split("\n").slice(excerpt.start_line - 1, excerpt.end_line).join("\n") === excerpt.text;
+  const reports = payload.scout_reports.map((report) => {
+    const assignment = report.assignment;
+    if (!isPlainObject(assignment) || !Array.isArray(assignment.excerpts)
+        || !Array.isArray(assignment.roots) || !Array.isArray(assignment.questions)
+        || !Array.isArray(assignment.known_gaps) || !isPlainObject(assignment.supplied_denominator)) {
+      throw new IsolationUnsupported("projection requires complete original scout assignment");
+    }
+    const excerpts = assignment.excerpts.map((excerpt) => {
+      if (!isPlainObject(excerpt) || typeof excerpt.text !== "string"
+          || typeof excerpt.path !== "string" || !Number.isInteger(excerpt.start_line)
+          || !Number.isInteger(excerpt.end_line) || excerpt.start_line < 1
+          || excerpt.end_line < excerpt.start_line
+          || !/^[a-f0-9]{64}$/.test(excerpt.source_blob_sha256)
+          || !/^[a-f0-9]{64}$/.test(excerpt.input_excerpt_sha256)
+          || sha256Utf8(excerpt.text) !== excerpt.input_excerpt_sha256) {
+        throw new IsolationUnsupported("projection requires exact authenticated excerpt text/hash and range");
+      }
+      const source = sourceFiles.find((file) => file.path === excerpt.path
+        && file.sha256 === excerpt.source_blob_sha256 && exactLines(file.text, excerpt));
+      const constraint = !source && constraintFiles.find((file) => file.path === excerpt.path
+        && file.sha256 === excerpt.source_blob_sha256 && exactLines(file.text, excerpt));
+      const digest = sha256Utf8(excerpt.text);
+      let content_ref;
+      if (source) content_ref = {
+        kind: "supplied_source_exposure", path: source.path,
+        start_line: excerpt.start_line, end_line: excerpt.end_line,
+        source_blob_sha256: source.sha256, retained_text_sha256: sha256Utf8(source.text), sha256: digest,
+      };
+      else if (constraint) content_ref = {
+        kind: "supplied_constraint", path: constraint.path,
+        start_line: excerpt.start_line, end_line: excerpt.end_line,
+        source_blob_sha256: constraint.sha256, sha256: digest,
+      };
+      else {
+        dictionary[digest] = excerpt.text;
+        content_ref = { kind: "excerpt_dictionary", sha256: digest };
+      }
+      return {
+        path: excerpt.path, start_line: excerpt.start_line, end_line: excerpt.end_line,
+        source_blob_sha256: excerpt.source_blob_sha256,
+        input_excerpt_sha256: excerpt.input_excerpt_sha256,
+        content_ref,
+      };
+    });
+    return {
+      role: report.role, ref: report.ref, output: report.output,
+      assignment_ref: report.assignment_ref,
+      assignment: {
+        id: assignment.id, role: assignment.role, change_archetype: assignment.change_archetype,
+        roots: assignment.roots, questions: assignment.questions,
+        known_gaps: assignment.known_gaps, supplied_denominator: assignment.supplied_denominator,
+        excerpts,
+      },
+      coverage_ref: report.coverage_ref, coverage: report.coverage,
+    };
+  });
+  return {
+    ...payload,
+    scout_reports: reports,
+    scout_excerpt_dictionary: Object.fromEntries(Object.entries(dictionary).sort(([a], [b]) => a.localeCompare(b))),
+    scout_projection_notice: PROJECTION_NOTICE,
+  };
+}
+
+export function renderRolePrompt({role, payload} = {}) {
   if (!PLANNING_ROLES.includes(role) || !isPlainObject(payload)) throw new Error("known role and concrete payload required");
   const common = ["bindings"];
   const fields = {
@@ -139,11 +235,37 @@ export function buildRolePrompt({role, payload} = {}) {
   for (const key of candidateKeys) if (!isPlainObject(payload[key]) || !payload[key].ref || !isPlainObject(payload[key].output)) throw new Error(`${key} requires ref and actual output`);
   if (fields.includes("assignment") && (!payload.assignment.ref || !isPlainObject(payload.assignment.value) || !Array.isArray(payload.assignment.value.excerpts))) throw new Error("actual assignment excerpts required");
   if (fields.includes("scout_reports") && (!Array.isArray(payload.scout_reports) || payload.scout_reports.length !== 2 || payload.scout_reports.some(report => !report.ref || !isPlainObject(report.output)))) throw new Error("both actual scout reports required");
-  const prompt = `${ROLE_INSTRUCTIONS[role]}\n\n${canonicalJson(payload)}\n`;
+  const format = promptFormat(payload.facts);
+  const rendered = format && (role === "contract_revise" || role === "assessor")
+    ? projectedScoutPayload(payload) : payload;
+  const prompt = `${ROLE_INSTRUCTIONS[role]}\n\n${canonicalJson(rendered)}\n`;
+  return prompt;
+}
+
+export function buildRolePrompt(opts = {}) {
+  const prompt = renderRolePrompt(opts);
   if (Buffer.byteLength(prompt) > PLANNING_REQUEST_MAX_BYTES) {
     throw new IsolationUnsupported(`frozen role input exceeds byte limit ${PLANNING_REQUEST_MAX_BYTES}; token/context/output budgets are separate`);
   }
   return prompt;
+}
+
+export function assertCompleteRequestBudget(proof, requestMaxBytes) {
+  const recorded = proof?.limits?.request_bytes;
+  if (!Number.isSafeInteger(recorded) || recorded < 1) throw new IsolationUnsupported("recorded request byte limit required");
+  if (!Number.isSafeInteger(requestMaxBytes) || requestMaxBytes < 1) throw new IsolationUnsupported("configured request byte limit must be positive integer");
+  const cap = Math.min(recorded, requestMaxBytes);
+  const captured = proof?.token_budget?.captured_body_bytes;
+  const envelope = proof?.token_budget?.envelope_bytes;
+  if (Number.isInteger(captured) && Number.isInteger(envelope) && captured !== envelope) {
+    throw new IsolationUnsupported("complete native request measurements disagree");
+  }
+  // Offline fixtures have no native transport body and remain nonauthoritative.
+  const bytes = proof?.mode === "OFFLINE" && !Number.isInteger(envelope)
+    ? proof?.frozen_request?.byteLength : Number.isInteger(captured) ? captured : envelope;
+  if (!Number.isSafeInteger(bytes) || bytes < 1) throw new IsolationUnsupported("complete native request byte measurement required");
+  if (bytes > cap) throw new IsolationUnsupported(`complete native request ${bytes} bytes exceeds request cap ${cap}`);
+  return { bytes, cap };
 }
 
 function enforceClosedAndBounds(schema, data, p) {
@@ -533,7 +655,7 @@ function runOffline(offline, role) {
 }
 
 export async function launchRole({
-  role, tuple, payload, schema, sourceBindings, signal, limits, mode = "live", offline = {},
+  role, tuple, payload, schema, sourceBindings, signal, limits, requestMaxBytes = null, mode = "live", offline = {},
 } = {}) {
   const opts = arguments[0] || {};
   const modeName = modeNameOf(mode, "live");
@@ -545,6 +667,20 @@ export async function launchRole({
   let pre;
   try {
     pre = preflightRole({ role, tuple, payload, schema, sourceBindings, mode: modeName, offline });
+    if (requestMaxBytes != null) {
+      try { assertCompleteRequestBudget(pre.proof, requestMaxBytes); }
+      catch (error) {
+        // This boundary is before runOffline/runLive. Preserve real failures
+        // after execution, but do not record an unlaunched role as a paid try.
+        error.preflight_diagnostic = {
+          kind: "complete_request_budget", role,
+          prompt_sha256: sha256Utf8(pre.prompt),
+          configured_cap: requestMaxBytes,
+          measured_request_bytes: pre.proof?.token_budget?.captured_body_bytes ?? null,
+        };
+        throw error;
+      }
+    }
     if (isOfflineMode(modeName)) {
       if (pre.proof?.effective?.usable_live) throw new IsolationUnsupported("OFFLINE proof cannot be usable_live");
       const result = runOffline(offline, role);

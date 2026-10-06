@@ -114,3 +114,165 @@ test('two feature reservations survive digest, kind, reviewer, session and WI al
   assert.throws(()=>reserveExternalReviewRound({...first,request_id:crypto.randomUUID(),protocol:{feature_id:'new-cycle'}}),/cannot be reset/);
  } finally {for(const key of keys)if(old[key]===undefined)delete process.env[key];else process.env[key]=old[key];fs.rmSync(dir,{recursive:true,force:true});}
 });
+
+
+test('authenticated phase-cycle issuance reads through feature-cycle classification without losing two-round accounting', () => {
+ const repo=fs.mkdtempSync(path.join(os.tmpdir(),'review-historical-cycle-'));
+ const keys=['SVC_EXTERNAL_REVIEW_PROVENANCE_FIXTURE','SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT','SVC_REVIEW_EVIDENCE_STORE'];
+ const old=Object.fromEntries(keys.map(k=>[k,process.env[k]]));
+ process.env.SVC_EXTERNAL_REVIEW_PROVENANCE_FIXTURE='1';
+ process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT=path.join(repo,'.svc/authority');
+ process.env.SVC_REVIEW_EVIDENCE_STORE=path.join(repo,'.svc/store');
+ try {
+  const wi='WI-HISTORICAL-PHASE';
+  const base='b'.repeat(40);
+  const make=(label,which=wi)=>createExternalReviewFixture({frameworkRoot,repo,wi:which,reviewKind:'plan',
+   candidateDigestOverride:digest,preExecutionBaseOverride:base,roundLabel:label,launcherVersion:'2.5.3'});
+  const first=make('first');
+  const receiptBytes=fs.readFileSync(first.receiptPath);
+  const receipt=JSON.parse(receiptBytes);
+  const authority=process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT;
+  const markerPath=path.join(authority,'issuance',`${receipt.request_id}.json`);
+  const classificationPath=path.join(authority,'classifications',`${receipt.request_id}.json`);
+  const originalClassification=fs.readFileSync(classificationPath);
+  const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:value&&typeof value==='object'?`{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}`:JSON.stringify(value);
+  const sign=body=>crypto.createHmac('sha256',fs.readFileSync(path.join(authority,'authority.key'))).update(canonical(body)).digest('hex');
+  const marker=JSON.parse(fs.readFileSync(markerPath));
+  delete marker.authority_hmac_sha256;
+  marker.review_cycle_id=crypto.createHash('sha256').update(`external-review-cycle:v1:plan:${wi}:${base}:no-override`).digest('hex');
+  delete marker.review_authority;
+  fs.writeFileSync(markerPath,JSON.stringify({...marker,authority_hmac_sha256:sign(marker)}),{mode:0o600});
+  const historicalMarkerBytes=fs.readFileSync(markerPath);
+  const currentCycle=externalReviewCycleIdFromReceipt(receipt);
+  assert.notEqual(marker.review_cycle_id,currentCycle);
+  assert.equal(JSON.parse(originalClassification).review_cycle_id,currentCycle);
+  const oldIndex=JSON.parse(originalClassification);
+  delete oldIndex.authority_hmac_sha256;
+  oldIndex.review_cycle_id=marker.review_cycle_id;
+  fs.writeFileSync(classificationPath,JSON.stringify({...oldIndex,authority_hmac_sha256:sign(oldIndex)}),{mode:0o600});
+  assert.equal(externalReviewCycleCapacity(receipt,{receiptPath:first.receiptPath}).issued,1);
+  assert.deepEqual(listExternalReviewCycleProvenance({receiptPath:first.receiptPath,wi,reviewKind:'plan',cycleId:currentCycle}).map(r=>r.request_id),[receipt.request_id]);
+  assert.deepEqual(fs.readFileSync(markerPath),historicalMarkerBytes);
+  fs.unlinkSync(classificationPath);
+  assert.equal(externalReviewCycleCapacity(receipt,{receiptPath:first.receiptPath}).issued,1);
+  const rebuilt=JSON.parse(fs.readFileSync(classificationPath));
+  const {authority_hmac_sha256:rebuiltTag,...rebuiltBody}=rebuilt;
+  assert.equal(rebuiltTag,sign(rebuiltBody));
+  assert.equal(rebuilt.review_cycle_id,currentCycle);
+  assert.deepEqual(rebuilt,JSON.parse(originalClassification));
+  assert.deepEqual(fs.readFileSync(markerPath),historicalMarkerBytes);
+
+  assert.equal(externalReviewCycleCapacity(receipt,{receiptPath:first.receiptPath}).issued,1);
+  assert.equal(listExternalReviewCycleProvenance({receiptPath:first.receiptPath,wi,reviewKind:'plan',cycleId:currentCycle}).length,1);
+  const unrelated=make('unrelated','WI-UNRELATED');
+  assert.equal(externalReviewCycleCapacity(JSON.parse(fs.readFileSync(unrelated.receiptPath)),{receiptPath:unrelated.receiptPath}).issued,1);
+  const execSecond=createExternalReviewFixture({frameworkRoot,repo,wi,reviewKind:'exec',
+    candidateDigestOverride:'e'.repeat(64),roundLabel:'exec-second'});
+  const execReceipt=JSON.parse(fs.readFileSync(execSecond.receiptPath));
+  assert.equal(externalReviewCycleIdFromReceipt(execReceipt),currentCycle);
+  assert.deepEqual(listExternalReviewCycleProvenance({receiptPath:first.receiptPath,wi,reviewKind:'plan',cycleId:currentCycle})
+    .map(r=>r.cycle_sequence),[1,2]);
+  assert.equal(externalReviewCycleCapacity(receipt,{receiptPath:first.receiptPath}).issued,2);
+  assert.equal(externalReviewCycleCapacity(receipt,{receiptPath:first.receiptPath}).allowed,false);
+  assert.throws(()=>make('third'),/hard cap reached/);
+  assert.deepEqual(fs.readFileSync(first.receiptPath),receiptBytes);
+  assert.deepEqual(fs.readFileSync(markerPath),historicalMarkerBytes);
+  assert.deepEqual(fs.readFileSync(classificationPath),originalClassification);
+  const wrong=JSON.parse(originalClassification);delete wrong.authority_hmac_sha256;
+  wrong.review_cycle_id='f'.repeat(64);
+  fs.writeFileSync(classificationPath,JSON.stringify({...wrong,authority_hmac_sha256:sign(wrong)}),{mode:0o600});
+  assert.throws(()=>externalReviewCycleCapacity(receipt,{receiptPath:first.receiptPath}),/classification conflicts with issuance marker/);
+  fs.writeFileSync(classificationPath,originalClassification);
+  for (const badGuard of [{...receipt.phase_guard,pre_execution_base:null}, {...receipt.phase_guard,override:{actual_sha256:'invalid'}}]) {
+    const malformed={...receipt,phase_guard:badGuard};const bytes=Buffer.from(JSON.stringify(malformed));
+    fs.writeFileSync(first.receiptPath,bytes,{mode:0o600});
+    const malformedMarker={...marker,review_cycle_id:null,receipt_sha256:crypto.createHash('sha256').update(bytes).digest('hex')};
+    fs.writeFileSync(markerPath,JSON.stringify({...malformedMarker,authority_hmac_sha256:sign(malformedMarker)}),{mode:0o600});
+    assert.throws(()=>externalReviewCycleCapacity(receipt,{receiptPath:first.receiptPath}),/classification conflicts with issuance marker/);
+  }
+ } finally {
+  for(const k of keys)if(old[k]===undefined)delete process.env[k];else process.env[k]=old[k];
+  fs.rmSync(repo,{recursive:true,force:true});
+ }
+});
+
+
+test('missing signed phase-v1 receipt and CAS refuse opposite-phase admission before any second issuance', () => {
+ const keys=['SVC_EXTERNAL_REVIEW_PROVENANCE_FIXTURE','SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT','SVC_REVIEW_EVIDENCE_STORE'];
+ const old=Object.fromEntries(keys.map(k=>[k,process.env[k]]));
+ try {
+ for (const [legacyKind,incomingKind] of [['plan','exec'],['exec','plan']]) {
+  const repo=fs.mkdtempSync(path.join(os.tmpdir(),`review-missing-${legacyKind}-`));
+  process.env.SVC_EXTERNAL_REVIEW_PROVENANCE_FIXTURE='1';
+  process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT=path.join(repo,'.svc/authority');
+  process.env.SVC_REVIEW_EVIDENCE_STORE=path.join(repo,'.svc/store');
+  try {
+   const wi=`WI-MISSING-${legacyKind.toUpperCase()}`,base='b'.repeat(40),authority=process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT;
+   const make=(label,kind,which,candidate)=>createExternalReviewFixture({frameworkRoot,repo,wi:which,reviewKind:kind,
+    candidateDigestOverride:candidate.repeat(64),preExecutionBaseOverride:base,roundLabel:label,launcherVersion:'2.5.3'});
+   const legacy=make('only-issued',legacyKind,wi,'a');
+   const legacyReceipt=JSON.parse(fs.readFileSync(legacy.receiptPath));
+   assert.equal(externalReviewCycleCapacity(legacyReceipt,{receiptPath:legacy.receiptPath}).issued,1);
+   const markerPath=path.join(authority,'issuance',`${legacyReceipt.request_id}.json`);
+   const classificationPath=path.join(authority,'classifications',`${legacyReceipt.request_id}.json`);
+   const currentIndexBytes=fs.readFileSync(classificationPath);
+   const marker=JSON.parse(fs.readFileSync(markerPath));delete marker.authority_hmac_sha256;
+   const subject=legacyKind==='plan'?`${base}:no-override`:legacyReceipt.candidate_digest;
+   marker.review_cycle_id=crypto.createHash('sha256').update(`external-review-cycle:v1:${legacyKind}:${wi}:${subject}`).digest('hex');
+   delete marker.review_authority;
+   const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:value&&typeof value==='object'?`{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}`:JSON.stringify(value);
+   const sign=body=>crypto.createHmac('sha256',fs.readFileSync(path.join(authority,'authority.key'))).update(canonical(body)).digest('hex');
+   fs.writeFileSync(markerPath,JSON.stringify({...marker,authority_hmac_sha256:sign(marker)}),{mode:0o600});
+   const signedOldMarker=fs.readFileSync(markerPath);
+   const oldIndex=JSON.parse(currentIndexBytes);delete oldIndex.authority_hmac_sha256;
+   oldIndex.review_cycle_id=marker.review_cycle_id;
+   fs.writeFileSync(classificationPath,JSON.stringify({...oldIndex,authority_hmac_sha256:sign(oldIndex)}),{mode:0o600});
+   const casPath=path.join(process.env.SVC_REVIEW_EVIDENCE_STORE,'objects',marker.receipt_sha256.slice(0,2),marker.receipt_sha256.slice(2));
+   assert.ok(fs.existsSync(casPath),'the only issued receipt was retained in fixture CAS');
+   fs.unlinkSync(legacy.receiptPath);fs.unlinkSync(casPath);
+   const provisionalPath=path.join(repo,'.svc/provisional',`${incomingKind}.json`);
+   fs.mkdirSync(path.dirname(provisionalPath),{recursive:true,mode:0o700});
+   const provisional={...legacyReceipt,request_id:crypto.randomUUID(),review_kind:incomingKind,candidate_digest:'e'.repeat(64),
+    phase_guard:{...legacyReceipt.phase_guard,kind:incomingKind,plan_manifest_sha256:incomingKind==='plan'?'e'.repeat(64):null},
+    artifacts:{...legacyReceipt.artifacts,receipt:provisionalPath}};
+   fs.writeFileSync(provisionalPath,JSON.stringify(provisional),{mode:0o600});
+   const cycleId=externalReviewCycleIdFromReceipt(provisional);
+   assert.notEqual(marker.review_cycle_id,cycleId);
+   assert.equal(fs.readdirSync(path.join(authority,'issuance')).filter(n=>n.endsWith('.json')).length,1,
+    'a modern second receipt cannot mask the missing-history undercount');
+   assert.throws(()=>listExternalReviewCycleProvenance({receiptPath:provisionalPath,wi,reviewKind:incomingKind,cycleId,candidateDigests:[]}),
+    /cycle receipt is unavailable or digest-mismatched/);
+   assert.throws(()=>externalReviewCycleCapacity(provisional,{receiptPath:provisionalPath}),
+    /cycle receipt is unavailable or digest-mismatched/);
+   assert.throws(()=>reserveExternalReviewRound(provisional,{receiptPath:provisionalPath}),
+    /cycle receipt is unavailable or digest-mismatched/);
+   const rounds=path.join(authority,'rounds');
+   assert.deepEqual(fs.existsSync(rounds)?fs.readdirSync(rounds):[],[],'refusal precedes any feature-round reservation');
+   fs.unlinkSync(classificationPath);
+   assert.throws(()=>issueExternalReviewProvenance({receiptPath:provisionalPath,
+    packagePath:legacyReceipt.artifacts.package,findingsPath:legacyReceipt.artifacts.findings}),
+    /legacy receipt is unavailable or digest-mismatched/,
+    'issuer also refuses same-WI cross-phase missing history when no classification exists');
+   assert.equal(fs.existsSync(path.join(authority,'issuance',`${provisional.request_id}.json`)),false,
+    'refused issuer created no new signed marker');
+   const unrelated=make('unrelated',incomingKind,'WI-GENUINELY-UNRELATED','c');
+   const unrelatedReceipt=JSON.parse(fs.readFileSync(unrelated.receiptPath));
+   assert.equal(externalReviewCycleCapacity(unrelatedReceipt,{receiptPath:unrelated.receiptPath}).issued,1,
+    'consistent unrelated history remains admissible with missing index');
+   fs.writeFileSync(classificationPath,JSON.stringify({...oldIndex,authority_hmac_sha256:sign(oldIndex)}),{mode:0o600});
+   assert.equal(externalReviewCycleCapacity(unrelatedReceipt,{receiptPath:unrelated.receiptPath}).issued,1,
+    'consistent unrelated history remains admissible with signed old index');
+   fs.writeFileSync(classificationPath,currentIndexBytes,{mode:0o600});
+   assert.throws(()=>externalReviewCycleCapacity(unrelatedReceipt,{receiptPath:unrelated.receiptPath}),
+    /classification conflicts with issuance marker/,
+    'unreconcilable old marker/current index fails even for an unrelated WI');
+   assert.throws(()=>make('conflicted-index',incomingKind,'WI-ANOTHER-UNRELATED','d'),
+    /classification conflicts with issuance marker/);
+   assert.deepEqual(fs.readFileSync(markerPath),signedOldMarker,'signed historical marker remains byte-identical');
+   assert.deepEqual(fs.existsSync(rounds)?fs.readdirSync(rounds):[],[],'neither direction created a reservation');
+  } finally {fs.rmSync(repo,{recursive:true,force:true});}
+ }
+ } finally {
+  for(const k of keys)if(old[k]===undefined)delete process.env[k];else process.env[k]=old[k];
+ }
+});

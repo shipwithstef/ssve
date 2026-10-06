@@ -117,6 +117,10 @@ function loadSources(snapshot, consumerRoot) {
       ranges: Array.isArray(sf.ranges) ? sf.ranges : [],
       lines: bytes.toString("utf8").split("\n"),
     };
+    const completePrefix = bytes.subarray(0, bytes.lastIndexOf(10) + 1);
+    const completePrefixText = completePrefix.toString("utf8");
+    rec.complete_line_count = completePrefix.length ? completePrefixText.split("\n").length - 1 : 0;
+    rec.complete_prefix_exact = Buffer.from(completePrefixText, "utf8").equals(completePrefix);
     rec.symbols = scanSymbols(rec.lines);
     rec.refs = scanRefs(rec.lines);
     files.push(rec);
@@ -549,6 +553,148 @@ function fingerprint(a) {
   });
 }
 
+
+function mergeSpans(spans) {
+  const sorted = spans.map(({ path, start_line, end_line }) => ({ path, start_line, end_line }))
+    .sort((a, b) => a.path.localeCompare(b.path) || a.start_line - b.start_line || a.end_line - b.end_line);
+  const out = [];
+  for (const span of sorted) {
+    const last = out.at(-1);
+    if (last?.path === span.path && span.start_line <= last.end_line + 1) last.end_line = Math.max(last.end_line, span.end_line);
+    else out.push({ ...span });
+  }
+  return out;
+}
+
+function exposureConfig(value) {
+  if (value == null) return null;
+  if (!isPlainObject(value) || Object.keys(value).sort().join() !== "framework_request_max_bytes,request_max_bytes,required_ranges,version"
+      || value.version !== 2 || !Array.isArray(value.required_ranges)
+      || !Number.isSafeInteger(value.request_max_bytes) || value.request_max_bytes < 1
+      || !Number.isSafeInteger(value.framework_request_max_bytes) || value.framework_request_max_bytes < 1) {
+    throw new CoverageGap("scout_exposure requires version 2, required_ranges, positive request_max_bytes and framework_request_max_bytes");
+  }
+  for (const range of value.required_ranges) {
+    if (!isPlainObject(range) || Object.keys(range).sort().join() !== "end_line,path,start_line"
+        || typeof range.path !== "string" || !range.path || posixNorm(range.path) !== range.path || range.path.includes("\\")
+        || !Number.isSafeInteger(range.start_line) || !Number.isSafeInteger(range.end_line)
+        || range.start_line < 1 || range.end_line < range.start_line) throw new CoverageGap("invalid scout_exposure required range");
+  }
+  return value;
+}
+
+
+export function freezeScoutExposure(value, frameworkMaxBytes) {
+  if (value == null) return null;
+  if (!Number.isSafeInteger(frameworkMaxBytes) || frameworkMaxBytes < 1) {
+    throw new CoverageGap("framework request byte ceiling must be a positive safe integer");
+  }
+  if (!isPlainObject(value) || !["required_ranges,version", "request_max_bytes,required_ranges,version"].includes(Object.keys(value).sort().join())) {
+    throw new CoverageGap("scout_exposure requires version, required_ranges and optional request_max_bytes");
+  }
+  const validated = exposureConfig({ ...value, request_max_bytes: value.request_max_bytes ?? frameworkMaxBytes,
+    framework_request_max_bytes: frameworkMaxBytes });
+  return { version: validated.version, required_ranges: mergeSpans(validated.required_ranges),
+    request_max_bytes: Math.min(validated.request_max_bytes, frameworkMaxBytes), framework_request_max_bytes: frameworkMaxBytes };
+}
+
+export function frozenScoutExposure(facts) {
+  if (facts.scout_exposure == null) {
+    if (Object.hasOwn(facts, "scout_exposure_request_ceiling")) throw new CoverageGap("obsolete scout exposure ceiling sibling refused");
+    return null;
+  }
+  if (Object.hasOwn(facts, "scout_exposure_request_ceiling")) throw new CoverageGap("obsolete scout exposure ceiling sibling refused");
+  const frozen = exposureConfig(facts.scout_exposure);
+  const expected = freezeScoutExposure(facts.annotations?.scout_exposure, frozen.framework_request_max_bytes);
+  if (!expected || canonicalJson(expected) !== canonicalJson(facts.scout_exposure)) {
+    throw new CoverageGap("frozen scout exposure differs from declared configuration and recorded ceiling");
+  }
+  return expected;
+}
+
+function normalizeRetained(files) {
+  for (const file of files) {
+    if (file.truncated) {
+      if (!file.complete_prefix_exact) throw new CoverageGap(`retained source prefix is not exact UTF-8: ${file.path}`);
+      file.lines = file.lines.slice(0, file.complete_line_count);
+      file.symbols = scanSymbols(file.lines);
+      file.refs = scanRefs(file.lines);
+    }
+    file.ranges = mergeSpans(file.ranges.map(range => ({
+      path: file.path, start_line: range.start_line, end_line: Math.min(range.end_line, file.lines.length),
+    })).filter(range => range.start_line <= range.end_line)).map(({ start_line, end_line }) => ({ start_line, end_line }));
+  }
+}
+
+function missingRetainedLines(file, span) {
+  if (!file) return [span];
+  const available = (file.ranges.length ? file.ranges : [{ start_line: 1, end_line: file.lines.length }])
+    .map(range => ({ start_line: range.start_line, end_line: Math.min(range.end_line, file.lines.length) }))
+    .filter(range => range.start_line <= range.end_line).sort((a, b) => a.start_line - b.start_line);
+  const missing = [];
+  let cursor = span.start_line;
+  for (const range of available) {
+    if (range.end_line < cursor) continue;
+    if (range.start_line > span.end_line) break;
+    if (range.start_line > cursor) missing.push({ path: span.path, start_line: cursor, end_line: Math.min(span.end_line, range.start_line - 1) });
+    cursor = Math.max(cursor, range.end_line + 1);
+    if (cursor > span.end_line) break;
+  }
+  if (cursor <= span.end_line) missing.push({ path: span.path, start_line: cursor, end_line: span.end_line });
+  return missing;
+}
+
+function exactExcerpts(supplied, required, maxExcerptLines, maxTotalBytes) {
+  requireInt(maxExcerptLines, "maxExcerptLines");
+  requireInt(maxTotalBytes, "maxTotalBytes");
+  if (maxExcerptLines > 200 || maxTotalBytes > 64000) throw new CoverageGap("scout input limits exceed reviewed bounds");
+  for (const span of required) {
+    if (!Number.isSafeInteger(span.start_line) || !Number.isSafeInteger(span.end_line) || span.start_line < 1 || span.end_line < span.start_line) {
+      throw new CoverageGap(`mandatory scout range must use positive safe integers: ${span.path}`);
+    }
+    const missing = missingRetainedLines(supplied.get(span.path), span);
+    if (missing.length) throw new CoverageGap(`mandatory scout source unavailable: ${span.path}:${span.start_line}-${span.end_line}; missing retained complete lines: ${missing.map(r => `${r.path}:${r.start_line}-${r.end_line}`).join(", ")}`);
+  }
+  const spans = mergeSpans(required);
+  const excerpts = [];
+  for (const span of spans) {
+    const file = supplied.get(span.path);
+    if (!file.truncated && sha256Utf8(file.lines.join("\n")) !== file.sha256) throw new CoverageGap(`mandatory scout source hash mismatch: ${span.path}`);
+    for (let start = span.start_line; start <= span.end_line; start += maxExcerptLines) {
+      const end = Math.min(span.end_line, start + maxExcerptLines - 1);
+      const text = file.lines.slice(start - 1, end).join("\n");
+      excerpts.push({ path: span.path, start_line: start, end_line: end, text,
+        source_blob_sha256: file.sha256, input_excerpt_sha256: sha256Utf8(text) });
+    }
+  }
+  const requiredBytes = excerpts.reduce((sum, excerpt) => sum + Buffer.byteLength(excerpt.text, "utf8"), 0);
+  if (requiredBytes > maxTotalBytes) {
+    const shown = spans.slice(0, 8).map(range => `${range.path}:${range.start_line}-${range.end_line}`).join(", ");
+    throw new CoverageGap(`mandatory scout exposure ${requiredBytes} bytes exceeds ${maxTotalBytes} bytes; required ranges: ${shown}${spans.length > 8 ? ` (+${spans.length - 8} more)` : ""}`);
+  }
+  return { excerpts, supplied_denominator: { files: [...new Set(excerpts.map(excerpt => excerpt.path))].sort(), ranges: mergeSpans(excerpts) } };
+}
+
+export function preflightDeclaredScoutExposure({ sourceSnapshot, consumerRoot, constraints = { paths: [] }, scoutExposure,
+  maxExcerptLines = 200, maxTotalBytes = 64000 } = {}) {
+  const exposure = exposureConfig(scoutExposure);
+  if (!exposure) return;
+  requireInt(maxExcerptLines, "maxExcerptLines");
+  requireInt(maxTotalBytes, "maxTotalBytes");
+  if (maxExcerptLines > 200 || maxTotalBytes > 64000) throw new CoverageGap("scout input limits exceed reviewed bounds");
+  const { files, byPath } = loadSources(requireSnapshot(sourceSnapshot), consumerRoot);
+  normalizeRetained(files);
+  const contextFiles = constraintSources(constraints);
+  for (const file of contextFiles) {
+    const factual = byPath.get(file.path);
+    if (factual && (factual.truncated || factual.retained_sha256 !== file.sha256)) {
+      throw new CoverageGap(`conflicting factual and constraint bytes: ${file.path}`);
+    }
+  }
+  const required = [...exposure.required_ranges, ...contextFiles.map(file => ({ path: file.path, start_line: 1, end_line: file.lines.length }))];
+  if (required.length) exactExcerpts(new Map([...byPath, ...contextFiles.map(file => [file.path, file])]), required, maxExcerptLines, maxTotalBytes);
+}
+
 export function assignDualPass({
   sourceSnapshot,
   initialContract,
@@ -557,6 +703,7 @@ export function assignDualPass({
   maxExcerptLines = 200,
   maxTotalBytes = 64000,
   constraints = { paths: [] },
+  scoutExposure = null,
   ...rest
 } = {}) {
   if (Object.keys(rest).some((k) => /open/i.test(k))) {
@@ -569,6 +716,8 @@ export function assignDualPass({
   const contract = requireContract(initialContract);
   const snapshot = requireSnapshot(sourceSnapshot);
   const { files, byPath } = loadSources(snapshot, consumerRoot);
+  const exposure = exposureConfig(scoutExposure);
+  if (exposure) normalizeRetained(files);
   if (!files.length) throw new CoverageGap("empty scout assignment");
   const contextFiles = constraintSources(constraints);
   for (const file of contextFiles) {
@@ -578,10 +727,49 @@ export function assignDualPass({
     }
   }
   const contextByPath = new Map(contextFiles.map(file => [file.path, file]));
+  const required = exposure ? [...exposure.required_ranges] : [];
+  if (exposure) {
+    for (const decision of contract.decisions) for (const citation of decision.source_citations) {
+      const file = byPath.get(citation.path) || contextByPath.get(citation.path);
+      if (citation.sha256 != null && (!file || citation.sha256 !== file.sha256)) {
+        throw new CoverageGap(`Contract citation hash mismatch: ${citation.path}:${citation.start_line}-${citation.end_line}`);
+      }
+      required.push({ path: citation.path, start_line: citation.start_line, end_line: citation.end_line });
+    }
+    for (const file of contextFiles) required.push({ path: file.path, start_line: 1, end_line: file.lines.length });
+    if (!required.length) throw new CoverageGap("empty mandatory scout exposure; declare required_ranges or cite source in Contract");
+    exactExcerpts(new Map([...byPath, ...contextFiles.map(file => [file.path, file])]), required, maxExcerptLines, maxTotalBytes);
+  }
+
   const { edges, gaps: graphGaps } = buildGraph(files);
   const seedGaps = [];
   const cands = collectCandidates(contract, files, byPath, edges, changeArchetype, seedGaps, contextByPath);
   const { forward, reverse } = pickDual(cands, files);
+  if (exposure) {
+    const truncationGaps = files.filter(file => file.truncated).map(file => ({
+      id: sid("gap", { path: file.path, reason: "scoped source truncated in snapshot", start: file.lines.length + 1 }),
+      path: file.path, reason: "scoped source truncated in snapshot", start_line: file.lines.length + 1,
+      end_line: file.lines.length + 1, consequential: true,
+    }));
+    const supplied = new Map([...byPath, ...contextFiles.map(file => [file.path, file])]);
+    const buildV2 = (role, rawRoots) => {
+      const roots = stampRoots(role, rawRoots);
+      const mandatory = [...required, ...roots.map(({ path, start_line, end_line }) => ({ path, start_line, end_line }))];
+      const { excerpts, supplied_denominator } = exactExcerpts(supplied, mandatory, maxExcerptLines, maxTotalBytes);
+      const coveredNode = node => supplied_denominator.ranges.some(range => range.path === node.path && range.start_line <= node.line && range.end_line >= node.line);
+      const body = { exposure_version: 2, change_archetype: changeArchetype, roots,
+        questions: questionsFor(role, roots, changeArchetype),
+        relationship_edges: edges.filter(edge => coveredNode(edge.from) && coveredNode(edge.to)),
+        excerpts, supplied_denominator, known_gaps: uniqueGaps([...graphGaps, ...seedGaps, ...truncationGaps]) };
+      return { id: sha256Utf8(canonicalJson({ role, ...body })), role, ...body };
+    };
+    const scout_forward = buildV2("scout_forward", forward);
+    const scout_reverse = buildV2("scout_reverse", reverse);
+    if (!scout_forward.roots.length || !scout_reverse.roots.length || !scout_forward.questions.length || !scout_reverse.questions.length) throw new CoverageGap("empty scout assignment");
+    if (fingerprint(scout_forward) === fingerprint(scout_reverse)) throw new CoverageGap("identical scout assignments");
+    return { scout_forward, scout_reverse };
+  }
+
   const scout_forward = buildAssignment("scout_forward", forward, byPath, edges, changeArchetype, maxExcerptLines, maxTotalBytes, [...graphGaps, ...seedGaps], contextFiles);
   const scout_reverse = buildAssignment("scout_reverse", reverse, byPath, edges, changeArchetype, maxExcerptLines, maxTotalBytes, [...graphGaps, ...seedGaps], contextFiles);
   if (!scout_forward.roots.length || !scout_reverse.roots.length || !scout_forward.questions.length || !scout_reverse.questions.length) {
@@ -589,6 +777,23 @@ export function assignDualPass({
   }
   if (fingerprint(scout_forward) === fingerprint(scout_reverse)) throw new CoverageGap("identical scout assignments");
   return { scout_forward, scout_reverse };
+}
+
+
+function suppliedText(assignment, path, start, end) {
+  const lines = [];
+  let sourceHash;
+  for (let line = start; line <= end; line++) {
+    const hits = assignment.excerpts.filter(excerpt => excerpt.path === path && excerpt.start_line <= line && excerpt.end_line >= line);
+    if (hits.length !== 1) throw new CoverageGap("missing or overlapping supplied source lines");
+    const excerpt = hits[0];
+    if (sourceHash != null && sourceHash !== excerpt.source_blob_sha256) throw new CoverageGap("inconsistent supplied source hashes");
+    sourceHash = excerpt.source_blob_sha256;
+    const text = excerpt.text.split("\n")[line - excerpt.start_line];
+    if (text === undefined) throw new CoverageGap("missing supplied source text");
+    lines.push(text);
+  }
+  return lines.join("\n");
 }
 
 function assertCitation(c, assignment) {
@@ -599,9 +804,13 @@ function assertCitation(c, assignment) {
   if (!assignment.supplied_denominator.files.includes(c.path)) throw new CoverageGap(`unknown cited path: ${c.path}`);
   const covered = assignment.supplied_denominator.ranges.some((r) => r.path === c.path && r.start_line <= c.start_line && r.end_line >= c.end_line);
   if (!covered) throw new CoverageGap("citation outside supplied ranges");
+  if (assignment.exposure_version === 2) suppliedText(assignment, c.path, c.start_line, c.end_line);
   if (c.sha256 != null) {
     if (typeof c.sha256 !== "string" || !/^[0-9a-f]{64}$/.test(c.sha256)) throw new Error("citation.sha256 must be SHA256 64-hex or null");
-    const ok = assignment.excerpts.some((e) => e.path === c.path && e.start_line <= c.start_line && e.end_line >= c.end_line && (e.source_blob_sha256 === c.sha256 || e.input_excerpt_sha256 === c.sha256));
+    const ok = assignment.excerpts.some((e) => e.path === c.path
+      && (assignment.exposure_version === 2
+        ? (e.start_line <= c.end_line && e.end_line >= c.start_line && e.source_blob_sha256 === c.sha256) || (e.start_line <= c.start_line && e.end_line >= c.end_line && e.input_excerpt_sha256 === c.sha256)
+        : e.start_line <= c.start_line && e.end_line >= c.end_line && (e.source_blob_sha256 === c.sha256 || e.input_excerpt_sha256 === c.sha256)));
     if (!ok) throw new CoverageGap("citation hash mismatch");
   }
 }
@@ -657,8 +866,10 @@ export function assignmentCoverage({ assignment, parsed, observed_reads = [] }) 
         if (f.end_line < f.start_line) throw new Error("finding range inverted");
         const covered = assignment.supplied_denominator.ranges.some((r) => r.path === f.path && r.start_line <= f.start_line && r.end_line >= f.end_line);
         if (!covered) throw new CoverageGap("overclaimed coverage");
-        if (f.excerpt != null && !assignment.excerpts.some(e => e.path === f.path && e.start_line <= f.start_line && e.end_line >= f.end_line
-            && e.text.split("\n").slice(f.start_line-e.start_line, f.end_line-e.start_line+1).join("\n") === f.excerpt)) {
+        if (f.excerpt != null && !(assignment.exposure_version === 2
+          ? suppliedText(assignment, f.path, f.start_line, f.end_line) === f.excerpt
+          : assignment.excerpts.some(e => e.path === f.path && e.start_line <= f.start_line && e.end_line >= f.end_line
+            && e.text.split("\n").slice(f.start_line-e.start_line, f.end_line-e.start_line+1).join("\n") === f.excerpt))) {
           throw new CoverageGap("finding excerpt differs from supplied source lines");
         }
       }
