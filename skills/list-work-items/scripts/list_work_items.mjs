@@ -52,6 +52,45 @@ function activeFieldValue(raw) {
   return String(raw ?? '').replace(/~~[\s\S]*?~~/g, ' ').trim();
 }
 
+// Whitespace, em dash, en dash, comma, and parenthesis end a status token.
+// ASCII hyphen stays inside the token (`in-progress`, `change-set-approved`).
+const STATUS_CLAUSE_SPLIT = /[\s—–(,]/;
+
+function statusToken(raw) {
+  const clause = activeFieldValue(raw).split(STATUS_CLAUSE_SPLIT)[0] ?? '';
+  return clause.replace(/;+$/g, '').toLowerCase();
+}
+
+function isDoneStatus(token) {
+  // VERIFIED-L3, closed-duplicate, and implemented-as-skill stay closed.
+  // DEPLOYED-UNVERIFIED stays open: its head is `deployed`, not a done word.
+  return DONE_STATUSES.has(String(token).split('-')[0]);
+}
+
+function dropMatchedCloser(rest) {
+  let depth = 1;
+  for (let i = 0; i < rest.length; i++) {
+    const ch = rest[i];
+    if (ch === '(') depth++;
+    else if (ch === ')') {
+      depth--;
+      if (depth === 0) {
+        if (rest.slice(i + 1).trim() === '') return rest.slice(0, i).trim();
+        return rest;
+      }
+    }
+  }
+  return rest;
+}
+
+function statusRemainder(raw) {
+  const match = String(raw ?? '').match(/^([^\s—–\-(,]+)([\s—–\-(,]*)([\s\S]*)$/);
+  if (!match) return '';
+  let rest = match[3].trim();
+  if (match[2].includes('(')) rest = dropMatchedCloser(rest);
+  return rest;
+}
+
 function parseArgs(argv) {
   const args = { all: false, detail: null, json: false };
   for (let i = 2; i < argv.length; i++) {
@@ -82,9 +121,8 @@ function readWorkItem(file) {
 
   // Status: read the literal field. Default to 'backlog' if absent.
   const statusRaw = fieldValue(content, frontmatter, ['Status'], ['status']) ?? 'backlog';
-  // First word, stripped of surrounding markdown/punctuation, is the bucket key.
-  const statusKey = activeFieldValue(statusRaw).split(/[\s—–\-(,]/)[0].toLowerCase();
-  const isDone = DONE_STATUSES.has(statusKey);
+  const statusKey = statusToken(statusRaw);
+  const isDone = isDoneStatus(statusKey);
 
   // Priority: accept either **Priority:** or **Severity:** (newer WIs use Severity).
   const priorityRaw = fieldValue(content, frontmatter, ['Priority', 'Severity'], ['priority', 'severity']) ?? 'low';
@@ -154,7 +192,7 @@ function nextCell(it) {
   if (it.dependencies.length) return `after ${it.dependencies.join(', ')}`;
   if (WAITING_STATUS.has(it.statusKey)) {
     if (it.holdRaw) return it.holdRaw;
-    const rest = String(it.statusRaw).replace(/^[^\s—–\-(,]+[\s—–\-(,]*/, '').trim();
+    const rest = statusRemainder(it.statusRaw);
     if (rest) return rest;
   }
   return '—';
