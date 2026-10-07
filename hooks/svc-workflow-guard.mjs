@@ -445,6 +445,7 @@ function checkWorkflowScope(filePath) {
       `Declared outputs: ${declaredPaths.join(", ")}\n` +
       `This may be intentional (dependency fix, shared type update). ` +
       `If not, consider logging this as a finding instead of modifying directly.\n` +
+      `You can continue — this write is not blocked. Fix or revert only if the edit was accidental; an intentional dependency or shared-type edit can stay.\n` +
       `See references/anti-patterns.md AP-9.`
     );
   }

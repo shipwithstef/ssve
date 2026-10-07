@@ -23,9 +23,11 @@ export SVC_BUILDER_CAPABILITY_REGISTRY="$TMP/registry.json"
 export SVC_STATE_SNAPSHOT="$TMP/snapshot.json"
 export SVC_REPO_ROOT="$REPO_ROOT"
 
-# Case A: registry missing → refused (capture first; node exits 1 under pipefail)
+# Case A: registry missing → refused (capture first; node exits 1 under pipefail).
+# grep -q must not run in a pipe: it exits on the first match, SIGPIPE fails the
+# writer, and pipefail then reports a real refusal as a miss.
 OUT_A=$(node "$SCRIPT" --out "$TMP/out.md" 2>&1 || true)
-if echo "$OUT_A" | grep -q '"verdict": "refused"'; then
+if grep -q '"verdict": "refused"' <<< "$OUT_A"; then
   PASS=$((PASS+1))
 else
   ERRORS+="  FAIL: did not refuse on missing registry. got: $OUT_A\n"; FAIL=$((FAIL+1))
@@ -36,7 +38,7 @@ node "$REG_SCRIPT" seed >/dev/null
 
 # Case B: snapshot missing → refused
 OUT_B=$(node "$SCRIPT" --out "$TMP/out.md" 2>&1 || true)
-if echo "$OUT_B" | grep -q '"verdict": "refused"'; then
+if grep -q '"verdict": "refused"' <<< "$OUT_B"; then
   PASS=$((PASS+1))
 else
   ERRORS+="  FAIL: did not refuse on missing snapshot. got: $OUT_B\n"; FAIL=$((FAIL+1))
@@ -55,14 +57,14 @@ HOME="$TMP/home" node "$CROSS_SCRIPT" --out "$SVC_STATE_SNAPSHOT" --projects-fil
 
 # Case C: happy path → produces exactly 3 recommendations, all validated
 OUT_JSON=$(node "$SCRIPT" --out "$TMP/out.md")
-if echo "$OUT_JSON" | grep -q '"verdict": "recommendations-written"'; then
+if grep -q '"verdict": "recommendations-written"' <<< "$OUT_JSON"; then
   PASS=$((PASS+1))
 else
   ERRORS+="  FAIL: happy path did not succeed\n  got: $OUT_JSON\n"; FAIL=$((FAIL+1))
 fi
 
 # Verify 3 lenses in output
-LENS_COUNT=$(echo "$OUT_JSON" | grep -cE '"lens":')
+LENS_COUNT=$(grep -cE '"lens":' <<< "$OUT_JSON" || true)
 if [[ $LENS_COUNT -eq 3 ]]; then
   PASS=$((PASS+1))
 else
@@ -70,7 +72,9 @@ else
 fi
 
 # Verify report file contains the 3 sections
-if [[ -f "$TMP/out.md" ]] && grep -cE '^## Lens:' "$TMP/out.md" | grep -q 3; then
+LENS_SECTIONS=0
+[[ -f "$TMP/out.md" ]] && LENS_SECTIONS=$(grep -cE '^## Lens:' "$TMP/out.md" || true)
+if [[ -f "$TMP/out.md" && "$LENS_SECTIONS" -eq 3 ]]; then
   PASS=$((PASS+1))
 else
   ERRORS+="  FAIL: report file missing or does not contain 3 '## Lens:' sections\n"; FAIL=$((FAIL+1))

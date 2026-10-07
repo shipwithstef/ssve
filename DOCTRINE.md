@@ -1,5 +1,7 @@
 # The Serious Vibe Coding Doctrine
 
+**Start here.** If this checkout is not installed, run `./setup` or `./setup --host <host>`. `./setup --all-hosts` refreshes every host; it is not the product step. The next command is `route-workflow`. It applies the mode check in `REPO_MODES.md`, then starts `write-vision` or `onboard-repo`.
+
 ## Advisory operation
 
 The default SVC hook mode is advisory: surface findings and continue work. Operators can explicitly select enforcement through `SVC_HOOK_MODE=enforce` or `~/.svc/hook-policy.json`. This separates methodological guidance from the reliability of its runtime hooks. Blocking-hook descriptions in this doctrine apply to enforce mode. Standalone validators, native permissions, third-party hooks, and GitHub release checks keep their own behavior. See [hook modes](docs/hook-modes.md).

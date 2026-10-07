@@ -1,5 +1,7 @@
 # Repository Modes and Workflow Lanes
 
+**Start here.** If this checkout is not installed, run `./setup` or `./setup --host <host>`. `./setup --all-hosts` refreshes every host; it is not the product step. The next command is `route-workflow`. It applies the mode check below, then starts `write-vision` or `onboard-repo`.
+
 This skill pack supports two repository modes and six workflow lanes.
 
 ## Modes

@@ -231,6 +231,10 @@ When answering "what should I do next?", give:
 
 Example:
 
+- Chosen skill: write-vision
+- Why: this repo has no product spec yet, so the greenfield lane starts there.
+- What happens next: I am starting write-vision in this turn.
+- Your answer: none
 
 ## Visual-Asset Auto-Invoke (design-logo evaluation mode)
 

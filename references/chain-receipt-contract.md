@@ -201,6 +201,15 @@ Override Protocol). Logged via `scripts/log-waiver.mjs`. Capped at 4 per
 not a receipt-policy waiver and cannot turn a failed standalone validator or
 GitHub check green.
 
+### When push or reconcile says receipts are incomplete
+
+The check still fails. Read the missing list, then rerun
+`node scripts/check-chain-receipts.mjs --sha <full-sha> --consumer push`
+or `--consumer reconcile`. A discovery failure whose sha is `git-log` is not
+receipt debt; rerun `node scripts/svc-reconcile.mjs`. `EMERGENCY_OVERRIDE`
+via `node scripts/log-waiver.mjs EMERGENCY_OVERRIDE <issue-url> <reason>`
+stays the capped waiver. It does not create the missing receipts.
+
 ## Why This Contract Exists
 
 This contract is part of the mandatory PLAN+EXEC+REVIEW chain. Each

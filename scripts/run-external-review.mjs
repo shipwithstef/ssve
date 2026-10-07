@@ -486,12 +486,37 @@ export function normalizeReviewFindings(report) {
   return { ...report, inspected_paths: report.inspected_paths || [], findings, ...(report.verdict === 'fail' && advisoryOnly ? { verdict: 'pass-with-findings' } : {}) };
 }
 
+function hashUntracked(repository, untracked) {
+  const content = [];
+  const missing = [];
+  for (const file of untracked) {
+    try {
+      content.push(`${file}:${sha256(readFileSync(path.join(repository, file)))}`);
+    } catch (error) {
+      // A path can disappear between git ls-files and the read when a parallel
+      // fixture removes it. It is not part of the tree. Other read errors stay fatal.
+      if (error.code !== 'ENOENT') throw error;
+      missing.push(file);
+    }
+  }
+  return { content, missing };
+}
+
 export function reviewTreeSnapshot(repository) {
   const git = args => execFileSync('git', ['-C', repository, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-  const status = git(['status', '--porcelain=v1', '--untracked-files=all']);
-  const untracked = git(['ls-files', '--others', '--exclude-standard', '-z']).split('\0').filter(Boolean);
+  let status = git(['status', '--porcelain=v1', '--untracked-files=all']);
+  let untracked = git(['ls-files', '--others', '--exclude-standard', '-z']).split('\0').filter(Boolean);
   // Status alone cannot detect a second edit to an already-dirty file.
-  const content = untracked.map(file => `${file}:${sha256(readFileSync(path.join(repository, file)))}`);
+  let { content, missing } = hashUntracked(repository, untracked);
+  if (missing.length) {
+    status = git(['status', '--porcelain=v1', '--untracked-files=all']);
+    untracked = git(['ls-files', '--others', '--exclude-standard', '-z']).split('\0').filter(Boolean);
+    ({ content, missing } = hashUntracked(repository, untracked));
+    if (missing.length) {
+      const gone = new Set(missing);
+      status = status.split('\n').filter((line) => line && !gone.has(line.slice(3))).join('\n');
+    }
+  }
   return JSON.stringify({ status, head: git(['rev-parse', 'HEAD']), diff: git(['diff', '--binary', 'HEAD']), content });
 }
 

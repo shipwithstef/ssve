@@ -45,7 +45,7 @@ while [[ $# -gt 0 ]]; do
     --quiet) QUIET=1; shift ;;
     -h|--help)
       cat <<'EOF'
-check-install-drift.sh — detect skills present in source but not installed
+check-install-drift.sh — detect install drift: missing, stale, broken extra, worktree-bound, and enforcement-source
 
 Usage:
   ./scripts/check-install-drift.sh [options]
@@ -92,8 +92,12 @@ if [ "$ALL_HOSTS" -eq 1 ]; then
       failed=1
     fi
   done
-  if [ "$failed" -eq 0 ] && [ "$QUIET" -eq 0 ]; then
-    echo "OK: all ${#ALL_HOST_NAMES[@]} provisioned hosts have zero install drift"
+  if [ "$QUIET" -eq 0 ]; then
+    if [ "$failed" -eq 0 ]; then
+      echo "OK: all ${#ALL_HOST_NAMES[@]} provisioned hosts have zero install drift"
+    else
+      echo "At least one host has install drift. The per-host Recovery line is the next command."
+    fi
   fi
   exit "$failed"
 fi
@@ -391,11 +395,13 @@ if [ "$TOTAL_DRIFT" -eq 0 ]; then
   exit 0
 fi
 
-echo "DRIFT: ${#MISSING[@]} missing, ${#STALE[@]} stale, ${#BROKEN_EXTRA[@]} broken extra, ${#WORKTREE_BOUND[@]} worktree-bound, ${#ENFORCE_DRIFT[@]} enforcement-source (of ${#SOURCE_SKILLS[@]} source skills)"
+echo "Host: $HOST"
+echo "DRIFT: ${#MISSING[@]} missing, ${#STALE[@]} stale, ${#BROKEN_EXTRA[@]} broken extra, ${#WORKTREE_BOUND[@]} worktree-bound, ${#ENFORCE_DRIFT[@]} enforcement-source"
+echo "Catalog size: ${#SOURCE_SKILLS[@]} source skills. The counts above are failure classes, not a count of drifted skills."
 echo ""
 
 if [ "${#ENFORCE_DRIFT[@]}" -gt 0 ]; then
-  echo "Enforcement-source drift (WI-487 — installed enforcement is not durable):"
+  echo "Enforcement-source drift (installed launcher or governed hook is not the durable copy):"
   for s in "${ENFORCE_DRIFT[@]}"; do echo "  - $s"; done
   echo ""
 fi

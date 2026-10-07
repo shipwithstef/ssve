@@ -677,7 +677,7 @@ with `block_on_discovery`, and leave the parent blocked instead of VERIFIED.
 - Per `route-workflow` Task-Graph Execution Protocol
 
 **If `--progressive` flag is present AND self-verify passed:**
-- This is the end of all lanes. Report completion.
+- This is the end of all lanes. Report one sentence before the detail: `VERIFIED (<tier>): checked <the checks that passed>. Still open: <observation, leftovers, or manual issue close — or none>.` Do not treat outcome observation or a manual issue close as done.
 
 **If `--progressive` flag is absent:**
 - Report results to user

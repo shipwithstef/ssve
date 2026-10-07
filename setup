@@ -815,7 +815,11 @@ PY_REGISTRY
   [ "$orphans_removed" -gt 0 ] && echo "Rules:  pruned $orphans_removed orphan symlink(s)"
 fi
 
-echo "Rules:  $rules_count global${RULES_TARGET:+ → $RULES_TARGET}, $steering_count steering → \$SKILLS_TARGET/rules/<stack>/"
+if [ "$rules_count" -eq 0 ] && [ "$steering_count" -eq 0 ]; then
+  echo "Rules:  0 newly linked (already current, or no rule symlink was written this run). Global${RULES_TARGET:+ → $RULES_TARGET}. Steering directory: $SKILLS_TARGET/rules/<stack>/"
+else
+  echo "Rules:  $rules_count newly linked global${RULES_TARGET:+ → $RULES_TARGET}, $steering_count newly linked steering → $SKILLS_TARGET/rules/<stack>/"
+fi
 
 # --- Inject universal rules into KIMI.md for Kimi host ---
 # Kimi CLI does not natively read ~/.kimi/rules/ like Claude reads ~/.claude/rules/.
@@ -1055,7 +1059,7 @@ PY_SETUP_WRITE
   fi
 
   echo ""
-  echo "Done. ${#SKILL_DIRS[@]} skills + framework infrastructure installed for $HOST_NAME."
+  echo "Done. Skills: $installed newly linked, $skipped already current (catalog ${#SKILL_DIRS[@]}). Framework infrastructure checked for $HOST_NAME."
   echo ""
   case "$HOST" in
     claude)

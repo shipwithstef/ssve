@@ -315,8 +315,8 @@
     {
       "skill": "capability-concierge",
       "path": "skills/capability-concierge/SKILL.md",
-      "content_hash": "f13867e4486fe63998d08585bec41b6d96357677d20942269039e3246e09a531",
-      "description": "Standing meta-orchestrator that reads the builder's capability registry (WI-104) and cross-project state snapshot (WI-105) and produces a ranked list of recommendations through three lenses: (1) ship-the-current-project, (2) idle-resource, (3) side-earning. Every recommendation cites the registry entry and snapshot row it came from — no hallucinated capabilities. Use when: \"what should I do next\", \"what's my best move\", \"route my resources\", \"what am I under-using\", \"how do I ship Example Marketplace\", or when any session wants a cross-resource + cross-project view of what to deploy where.",
+      "content_hash": "f9811aedd4ecca79c48a2048a04eec1bba1cefdb5148721644f700ac9ff1c33f",
+      "description": "Standing meta-orchestrator that reads the builder's capability registry (WI-104) and cross-project state snapshot (WI-105) and produces a ranked list of recommendations through three lenses: (1) ship-the-current-project, (2) idle-resource, (3) side-earning. Every recommendation cites the registry entry and snapshot row it came from — no hallucinated capabilities. Use when: \"what should I do next\", \"what's my best move\", \"route my resources\", \"what am I under-using\", \"how do I ship Example Marketplace\", or when any session wants a cross-resource + cross-project view of what to deploy where. Here \"what should I do next\" means only the cited three-lens ranking, not which skill and lane to run.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
@@ -495,7 +495,7 @@
     {
       "skill": "decide",
       "path": "skills/decide/SKILL.md",
-      "content_hash": "b78e5f8b50f4e6ac909d743c3359e508581b133ac5650646ea5d859f696ed2b5",
+      "content_hash": "495aad423b6d354ad26bd9db3b009dc75630e0f531b775e2bf8a675a5848498d",
       "description": "Present a decision to the founder so it can actually be decided — story first, real options as outcomes, world practice, grounded confidence per option, and one recommendation. Use when the founder says \"give me the decision\", \"какво решаваме\", \"дай ми опциите\", \"trqbva li da\", \"what should we do about X\", \"decision matrix\", \"подреди ги по важност\", or whenever an audit, plan or review has produced something a human must choose. Also use before handing any scope to an executor — an unsigned decision is not an instruction. NEVER present a decision menu any other way.",
       "aliases": [],
       "positive_triggers": [],
@@ -1089,8 +1089,8 @@
     {
       "skill": "list-work-items",
       "path": "skills/list-work-items/SKILL.md",
-      "content_hash": "f723849fa9f27b408f328ee2bf7fd83fd293f1af71c17fc0048147dd87fb291a",
-      "description": "List local svc work items ordered by dependency and priority. Use when you need to see the backlog, understand what to build next, and see why each item is needed without syncing to GitHub.",
+      "content_hash": "37e8a2c66f59e2e3f99468a60900843900101660481a3a7fb6477fdb1222d983",
+      "description": "List local svc work items ordered by dependency and priority. Use when you need to see the backlog, understand what to build next, and see why each item is needed without syncing to GitHub. Here \"what to build next\" means that ordered local backlog only, not a milestone roadmap.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
@@ -1140,7 +1140,7 @@
     {
       "skill": "manage-learnings",
       "path": "skills/manage-learnings/SKILL.md",
-      "content_hash": "79f23716ae80a8b90a0a5855c8547015b7dfcf67407a89470371ce5da865f763",
+      "content_hash": "510ea6f0d7647b715f0632e73741dbcc16e42986c20758a549a2434b533e3bff",
       "description": "Manage project learnings that compound across sessions. Review, search, prune, and export what was discovered during pipeline runs. Use when \"what did we learn\", \"show learnings\", \"prune stale learnings\", \"search learnings for <topic>\", or when starting a new session to load context.",
       "aliases": [],
       "positive_triggers": [],
@@ -1392,7 +1392,7 @@
     {
       "skill": "quick-fix",
       "path": "skills/quick-fix/SKILL.md",
-      "content_hash": "549a7da04ba5e1626815c6dcebd3245c6400817b9c373892f5fc718045558a4d",
+      "content_hash": "90f4e2902d28a80714a33f69561550cc5a67367e2e962f41ccefcfb0b55ca60f",
       "description": "DEPRECATED (retired as a lane) — quick-fix is retired; do not route new requests here. Speed for small/trivial changes now comes from conditional stage activation (`scripts/stage-activation.mjs`) inside the normal chain via route-workflow, not a separate fast lane. See the skill body for the retirement notice and pointer.",
       "aliases": [],
       "positive_triggers": [],
@@ -1515,7 +1515,7 @@
     {
       "skill": "review-exec",
       "path": "skills/review-exec/SKILL.md",
-      "content_hash": "dfe32dec93996ce989a805e0d89b6901f6bbcaec6746b062a8d0c9959c3f6ffb",
+      "content_hash": "7706f1f2da1d6b7fc83bb4a078a62cddd3391d460a8de86536306b540c0a3c42",
       "description": "Mandatory G5-enforcing gate. Self-review + adversarial review of the executed diff before land. Delegates to `review-cross-model` for the second-model invocation through `scripts/run-external-review.mjs`, with the requested owner-configured topology and tuple provenance exposed by `scripts/review-topology-v2.mjs`. Same-family Sol remains advisory; the configured different-family external station owns independent release authority. Emits SHA-keyed receipt at `.svc/receipts/<sha>/review-exec.json` and updates the consolidated git note on `refs/notes/svc-receipts`. Use after `execute-changeset` produces an exec-record receipt, before `land-changeset` opens the PR.",
       "aliases": [],
       "positive_triggers": [],
@@ -1533,7 +1533,7 @@
     {
       "skill": "review-gate",
       "path": "skills/review-gate/SKILL.md",
-      "content_hash": "4b6262be2587f46bc2570745253cea479fd18dd8e04d83113f67d4c00aeab2c7",
+      "content_hash": "25ae285bd05112a0be3b35211635188371bc199f8aee5859bf4d0a707718cf04",
       "description": "Use at every review gate (G1-G7) to run the universal 5-step review protocol — self-review, self-judgment, cross-review, convergence check, and gate decision — producing structured, parseable findings that block or pass artifact state transitions",
       "aliases": [],
       "positive_triggers": [],
@@ -1618,8 +1618,8 @@
     {
       "skill": "roadmap-evaluation",
       "path": "skills/roadmap-evaluation/SKILL.md",
-      "content_hash": "49ad0353fc75f30dde8db5f959ae8d2edfee6e3b6ad350a3cc39fe2e172db74d",
-      "description": "Synthesize project-state, work items, vision, and builder profile into a prioritized milestone roadmap with cost estimates and timeline-to-first-paying-customer. Use when: \"what should I build next\", \"show me the roadmap\", \"prioritize my backlog\", \"how long until revenue\". Also: \"what's next\", \"where am I\", \"can I afford this\", \"timeline to first customer\", \"evaluate my roadmap\". Also: \"what's the plan\", \"budget check\".",
+      "content_hash": "09322ccc8ac4451d1a53ea68d40e4909a5702ddd7204ebff5e1ad190b5170bdf",
+      "description": "Synthesize project-state, work items, vision, and builder profile into a prioritized milestone roadmap with cost estimates and timeline-to-first-paying-customer. Use when: \"what should I build next\", \"show me the roadmap\", \"prioritize my backlog\", \"how long until revenue\". Also: \"what's next\", \"where am I\", \"can I afford this\", \"timeline to first customer\", \"evaluate my roadmap\". Also: \"what's the plan\", \"budget check\". Here \"what should I build next\" and \"what's next\" mean that costed milestone sequence only, not the open backlog list.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
@@ -1636,8 +1636,8 @@
     {
       "skill": "route-workflow",
       "path": "skills/route-workflow/SKILL.md",
-      "content_hash": "08da8a195617bc868297da4be315690a14c28929569fa4800dd88c230948189b",
-      "description": "Universal entry point for any work. Routes freeform intent to the right svc skill based on repo state, change type, and current project artifacts. Handles: \"do this\", \"build this\", \"I want to\", \"help me with\", \"make me a\", \"ship this\", \"fix this\", or ANY freeform description of work; also handles explicit routing questions like \"what should I do next\", \"which skill do I run\", \"what's the right order\", and \"what lane is this\".",
+      "content_hash": "534ced35480f537f00832018d39c6698dcdaab24b303ba4e47d23df491f0fe86",
+      "description": "Universal entry point for any work. Routes freeform intent to the right svc skill based on repo state, change type, and current project artifacts. Handles: \"do this\", \"build this\", \"I want to\", \"help me with\", \"make me a\", \"ship this\", \"fix this\", or ANY freeform description of work; also handles explicit routing questions like \"what should I do next\", \"which skill do I run\", \"what's the right order\", and \"what lane is this\". Here \"what should I do next\" means only which skill and lane to run in this repo.",
       "aliases": [
         "what should I do next",
         "which skill",
@@ -1936,7 +1936,7 @@
     {
       "skill": "verify-promotion",
       "path": "skills/verify-promotion/SKILL.md",
-      "content_hash": "1e08dd0a66f27ef74e834601a6f6c8373012ff7ad5b27fd69d3119e7ea8fb45b",
+      "content_hash": "79dcd9d93293c501e60e6202d12d951d3aaa904de45c0581cc632c1d2e6fc756",
       "description": "Use after a reviewed branch has been promoted to verify that the promoted implementation matches specs, passes tests, satisfies acceptance criteria, and closes the loop back into spec/journey state — triggers G7 review",
       "aliases": [],
       "positive_triggers": [],

@@ -11,7 +11,7 @@ const testsDir = path.dirname(fileURLToPath(import.meta.url));
 const cli = path.resolve(testsDir, "../../scripts/project-preferences.mjs");
 
 function fixture(fn) {
-  const root = fs.mkdtempSync(path.join(testsDir, ".project-preferences-test-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "project-preferences-test-"));
   try { return fn(root); }
   finally { fs.rmSync(root, { recursive: true, force: true }); }
 }

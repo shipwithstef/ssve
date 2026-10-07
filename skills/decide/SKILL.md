@@ -55,6 +55,8 @@ decision left hanging silently blocks the whole build.
 **Announce at start:** "Presenting <N> decisions for <scope>, one at a time, most consequential
 first." Then present **one**.
 
+**Founder lead, before the triage speech:** the first sentence names the recommended label, the outcome for the person, and whether it is reversible. Then each option, including the ones not recommended and "do nothing" when it is survivable, is one outcome line with its tradeoff and reversibility. Then the reply line `A1 / A2 / A3 — recommended A2`. Defect count, world-practice row, confidence, Grounded-at, Would-lower-this, and unchecked gaps stay on the card below that ask. Do not drop them. In an end-to-end flow, each step starts with who gets or loses what, and how long; the cited mechanism follows that outcome.
+
 The format is `docs/specs/process/DECISION-CARD-FORMAT.md` (project-supplied artifact — path
 varies per repo) — its seven rules are binding and
 are not repeated here. This skill adds what that format assumes and does not enforce, each
@@ -207,8 +209,8 @@ Maria experiences, you do not understand the decision well enough to ask it.
 
 ## 7 · Answer format — make it answerable in one word
 
-End with the choices as bare labels the founder can reply with: **`A1 / A2 / A3`**. No "let me
-know what you think", no "happy to discuss". One question, one screen, one word back.
+End with the choices as bare labels the founder can reply with: **`A1 / A2 / A3 — recommended A2`**. No "let me
+know what you think", no "happy to discuss". One question, one screen, one word back. The recommended label is the one named in the founder lead.
 
 If the founder answers with an imperative ("go", "do it", "приемам") — **act, do not ask a
 follow-up.** Remaining decisions sign as recommended and are recorded as such
@@ -325,6 +327,7 @@ of the product.
 | 3 | Defects are filtered out of the options, not offered as choices | re-read the card for any option that is itself a known defect | |
 | 4 | Card follows `docs/specs/process/DECISION-CARD-FORMAT.md`'s seven rules | diff the card's sections against the format's rule list | |
 | 5 | Receipt emitted before the card is written | `.svc/pipeline-decisions.jsonl` has a matching entry inside the 90-minute window | |
+| 6 | First paragraph names the recommended option | The founder reply's first sentence includes the recommended label and whether it is reversible | |
 
 ### Chaining
 

@@ -52,6 +52,64 @@ function activeFieldValue(raw) {
   return String(raw ?? '').replace(/~~[\s\S]*?~~/g, ' ').trim();
 }
 
+// Whitespace, em dash, en dash, comma, and parenthesis end a status token.
+// ASCII hyphen stays inside the token (`in-progress`, `change-set-approved`).
+const STATUS_CLAUSE_SPLIT = /[\s—–(,]/;
+
+function statusToken(raw) {
+  const clause = activeFieldValue(raw).split(STATUS_CLAUSE_SPLIT)[0] ?? '';
+  return clause.replace(/;+$/g, '').toLowerCase();
+}
+
+function isDoneStatus(token) {
+  // VERIFIED-L3, closed-duplicate, and implemented-as-skill stay closed.
+  // DEPLOYED-UNVERIFIED stays open: its head is `deployed`, not a done word.
+  return DONE_STATUSES.has(String(token).split('-')[0]);
+}
+
+function dropOrphanClosers(text) {
+  let depth = 0;
+  let out = '';
+  for (const ch of text) {
+    if (ch === '(') {
+      depth++;
+      out += ch;
+    } else if (ch === ')') {
+      if (depth === 0) continue;
+      depth--;
+      out += ch;
+    } else {
+      out += ch;
+    }
+  }
+  return out.replace(/[ \t]{2,}/g, ' ').trim();
+}
+
+function dropMatchedCloser(rest) {
+  let depth = 1;
+  for (let i = 0; i < rest.length; i++) {
+    const ch = rest[i];
+    if (ch === '(') depth++;
+    else if (ch === ')') {
+      depth--;
+      if (depth === 0) {
+        const head = rest.slice(0, i).trim();
+        const tail = dropOrphanClosers(rest.slice(i + 1));
+        return tail ? `${head} ${tail}`.trim() : head;
+      }
+    }
+  }
+  return rest;
+}
+
+function statusRemainder(raw) {
+  const match = String(raw ?? '').match(/^([^\s—–\-(,]+)([\s—–\-(,]*)([\s\S]*)$/);
+  if (!match) return '';
+  let rest = match[3].trim();
+  if (match[2].includes('(')) rest = dropMatchedCloser(rest);
+  return rest;
+}
+
 function parseArgs(argv) {
   const args = { all: false, detail: null, json: false };
   for (let i = 2; i < argv.length; i++) {
@@ -82,9 +140,8 @@ function readWorkItem(file) {
 
   // Status: read the literal field. Default to 'backlog' if absent.
   const statusRaw = fieldValue(content, frontmatter, ['Status'], ['status']) ?? 'backlog';
-  // First word, stripped of surrounding markdown/punctuation, is the bucket key.
-  const statusKey = activeFieldValue(statusRaw).split(/[\s—–\-(,]/)[0].toLowerCase();
-  const isDone = DONE_STATUSES.has(statusKey);
+  const statusKey = statusToken(statusRaw);
+  const isDone = isDoneStatus(statusKey);
 
   // Priority: accept either **Priority:** or **Severity:** (newer WIs use Severity).
   const priorityRaw = fieldValue(content, frontmatter, ['Priority', 'Severity'], ['priority', 'severity']) ?? 'low';
@@ -100,6 +157,7 @@ function readWorkItem(file) {
     ['dependencies', 'depends_on', 'blocked_by']
   );
   const dependencies = dependencyRaw ? (dependencyRaw.match(/WI-[\w-]+/g) ?? []) : [];
+  const holdRaw = fieldValue(content, frontmatter, ['Hold'], ['hold']);
 
   // Filed / Closed dates — useful for ordering done items.
   const filedRaw = fieldValue(content, frontmatter, ['Filed'], ['filed']);
@@ -115,6 +173,7 @@ function readWorkItem(file) {
     priority: priorityKey,
     priorityWeight,
     dependencies,
+    holdRaw: holdRaw ?? null,
     filed: filedRaw?.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? null,
     closed: closedRaw?.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? null,
     raw: content
@@ -139,36 +198,34 @@ function sortDone(items) {
   });
 }
 
-function pad(s, n) {
-  // Pad to width n without ever truncating — short strings get spaces,
-  // long strings are returned as-is so metadata is never lost.
-  s = String(s ?? '');
-  return s.length >= n ? s : s + ' '.repeat(n - s.length);
-}
-
 function truncate(s, n) {
   s = String(s ?? '');
   return s.length <= n ? s : s.slice(0, n - 1) + '…';
 }
 
-const STATUS_DISPLAY_MAX = 28;
 const SUBJECT_DISPLAY_MAX = 80;
+const NEXT_DISPLAY_MAX = 80;
+const WAITING_STATUS = new Set(['blocked', 'deferred', 'pending']);
+
+function nextCell(it) {
+  if (it.dependencies.length) return `after ${it.dependencies.join(', ')}`;
+  // Hold is part of Next for every open row. Done and closed rows stay clean.
+  if (!it.isDone && it.holdRaw) return it.holdRaw;
+  if (WAITING_STATUS.has(it.statusKey)) {
+    const rest = statusRemainder(it.statusRaw);
+    if (rest) return rest;
+  }
+  return '—';
+}
 
 function renderTable(items) {
-  // Compute column widths from actual content so nothing gets clipped — except
-  // status, which is capped to keep the table readable. Full status is always
-  // available via --detail and in DONE.md.
-  const idW = Math.max(2, ...items.map(i => i.id.length));
-  const statusW = Math.min(
-    STATUS_DISPLAY_MAX,
-    Math.max(6, ...items.map(i => i.statusRaw.length))
-  );
-  const priW = Math.max(3, ...items.map(i => i.priority.length));
+  // Status is the bucket token. The hold or dependency reason is the Next cell.
+  // Full status text stays on --detail and in DONE.md. Order is unchanged.
   const lines = [];
-  lines.push(`| ${pad('ID', idW)} | ${pad('Status', statusW)} | ${pad('Pri', priW)} | Subject`);
-  lines.push(`|${'-'.repeat(idW + 2)}|${'-'.repeat(statusW + 2)}|${'-'.repeat(priW + 2)}|${'-'.repeat(SUBJECT_DISPLAY_MAX + 2)}`);
+  lines.push('| ID | Status | Pri | Next | Subject |');
+  lines.push('|----|--------|-----|------|---------|');
   for (const it of items) {
-    lines.push(`| ${pad(it.id, idW)} | ${pad(truncate(it.statusRaw, statusW), statusW)} | ${pad(it.priority, priW)} | ${truncate(it.subject, SUBJECT_DISPLAY_MAX)}`);
+    lines.push(`| ${it.id} | ${it.statusKey} | ${it.priority} | ${truncate(nextCell(it), NEXT_DISPLAY_MAX)} | ${truncate(it.subject, SUBJECT_DISPLAY_MAX)} |`);
   }
   return lines.join('\n');
 }
@@ -195,6 +252,7 @@ function renderDetail(item) {
     `**Status:** ${item.statusRaw}\n` +
     `**Priority:** ${item.priority}\n` +
     (item.dependencies.length ? `**Dependencies:** ${item.dependencies.join(', ')}\n` : '') +
+    (item.holdRaw ? `**Hold:** ${item.holdRaw}\n` : '') +
     (item.filed ? `**Filed:** ${item.filed}\n` : '') +
     (item.closed ? `**Closed:** ${item.closed}\n` : '') +
     `\n---\n\n${item.raw}`;

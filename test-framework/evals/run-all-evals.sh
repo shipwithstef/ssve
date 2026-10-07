@@ -309,6 +309,7 @@ if [[ ${#TIER1_PARALLEL[@]} -gt 0 ]]; then
 fi
 
 # Aggregate AFTER the join — same order, counters, messages, and output as before.
+TIER1_FAIL_RECAP=""
 for script in "${TIER1_ALL[@]}"; do
   script_name="$(basename "$script")"
   echo "  Running $script_name..."
@@ -320,16 +321,25 @@ for script in "${TIER1_ALL[@]}"; do
     TIER1_TIMEOUT=$((TIER1_TIMEOUT + 1))
     TIER1_FAIL=$((TIER1_FAIL + 1))
     echo "  FAIL: $script_name — timed out at $(_tier1_timeout_for "$script_name")s (WI-110 guard)"
+    TIER1_FAIL_RECAP+="FAIL: $script_name (rc=124)"$'\n'"script: $script"$'\n'"log: $TIER1_RESULTS_DIR/$script_name.out"$'\n'
   else
     TIER1_FAIL=$((TIER1_FAIL + 1))
     echo "  FAIL: $script_name (rc=$rc)"
+    TIER1_FAIL_RECAP+="FAIL: $script_name (rc=$rc)"$'\n'"script: $script"$'\n'"log: $TIER1_RESULTS_DIR/$script_name.out"$'\n'
   fi
   echo ""
 done
 if [[ -n "${SVC_TIER1_SUMMARY:-}" ]]; then _tier1_evidence after; fi
-[[ ${KEEP_TIER1_RESULTS:-0} == 1 ]] || rm -rf "$TIER1_RESULTS_DIR"
+if [[ $TIER1_FAIL -gt 0 ]]; then
+  echo "Tier 1 logs kept: $TIER1_RESULTS_DIR"
+elif [[ ${KEEP_TIER1_RESULTS:-0} != 1 ]]; then
+  rm -rf "$TIER1_RESULTS_DIR"
+fi
 
 echo ">>> Tier 1 Result: $TIER1_PASS scripts passed, $TIER1_FAIL failed ($TIER1_TIMEOUT timed out)"
+if [[ -n "$TIER1_FAIL_RECAP" ]]; then
+  printf '%s' "$TIER1_FAIL_RECAP"
+fi
 echo ""
 
 # --- Tier 1.5, 2, 3: Only with EVALS=1 ---
@@ -347,7 +357,10 @@ if [[ "${EVALS:-0}" != "1" ]]; then
 fi
 
 TIER15_EXIT=0
+TIER15_RAN=0
 TIER2_EXIT=0
+TIER2_INTEGRATION_LABEL="SKIPPED (tier-2/run-tier2.sh not found)"
+TIER2_BEHAVIORAL_LABEL="SKIPPED (tier-2/run-behavioral.mjs not found)"
 TIER3_EXIT=0
 
 # --- Tier 1.5: Skill comprehension + triggering (~30-60s per test, ~5K tokens) ---
@@ -356,6 +369,7 @@ echo ""
 
 for script in "$SCRIPT_DIR/tier-1.5"/test-*.sh; do
   [[ ! -f "$script" ]] && continue
+  TIER15_RAN=1
   script_name="$(basename "$script")"
   echo "  Running $script_name..."
   set +e
@@ -387,14 +401,17 @@ if [[ -f "$SCRIPT_DIR/tier-2/run-tier2.sh" ]]; then
   rc=$?
   set -e
   if [[ $rc -eq 0 ]]; then
+    TIER2_INTEGRATION_LABEL="PASS"
     echo "  Tier 2 [integration]: PASS"
     echo "[integration] PASS" >> "${SVC_TIER2_SUMMARY:-/tmp/svc-tier2-summary.txt}"
   elif [[ $rc -eq 124 ]]; then
     TIER2_EXIT=1
+    TIER2_INTEGRATION_LABEL="FAIL"
     echo "  FAIL: Tier 2 [integration] — timed out at ${TIER2_TIMEOUT_SEC}s (WI-165 guard)"
     echo "[integration] TIMEOUT" >> "${SVC_TIER2_SUMMARY:-/tmp/svc-tier2-summary.txt}"
   else
     TIER2_EXIT=1
+    TIER2_INTEGRATION_LABEL="FAIL"
     echo "  Tier 2 [integration]: FAIL"
     echo "[integration] FAIL" >> "${SVC_TIER2_SUMMARY:-/tmp/svc-tier2-summary.txt}"
   fi
@@ -411,12 +428,15 @@ if [[ -f "$SCRIPT_DIR/tier-2/run-behavioral.mjs" ]]; then
   rc=$?
   set -e
   if [[ $rc -eq 0 ]]; then
+    TIER2_BEHAVIORAL_LABEL="PASS"
     echo "  Tier 2 [behavioral]: PASS"
   elif [[ $rc -eq 124 ]]; then
     TIER2_EXIT=1
+    TIER2_BEHAVIORAL_LABEL="FAIL"
     echo "  FAIL: Tier 2 [behavioral] — timed out at ${TIER2_TIMEOUT_SEC}s (WI-165 guard)"
   else
     TIER2_EXIT=1
+    TIER2_BEHAVIORAL_LABEL="FAIL"
     echo "  Tier 2 [behavioral]: FAIL"
   fi
   echo ""
@@ -459,6 +479,7 @@ if [[ -n "$LATEST_TIER2" && -d "$LATEST_TIER2" ]]; then
         echo "  FAIL: $scenario_name [$dim] — timed out at ${TIER3_TIMEOUT_SEC}s (WI-165 guard)"
       elif [[ $rc -ne 0 ]]; then
         TIER3_EXIT=1
+        echo "  FAIL: $scenario_name [$dim] (rc=$rc) script: $SCRIPT_DIR/tier-3/run-tier3.sh"
       fi
     done
   done
@@ -471,15 +492,33 @@ echo ""
 echo "============================================"
 echo "  Summary"
 echo "============================================"
+if [[ $TIER15_EXIT -ne 0 ]]; then
+  TIER15_LABEL="FAIL"
+elif [[ $TIER15_RAN -eq 0 ]]; then
+  TIER15_LABEL="SKIPPED (no tier-1.5/test-*.sh)"
+else
+  TIER15_LABEL="PASS"
+fi
+if [[ $TIER3_EXIT -ne 0 ]]; then
+  TIER3_LABEL="FAIL"
+elif [[ -n "${LATEST_TIER2:-}" && -d "$LATEST_TIER2" ]]; then
+  TIER3_LABEL="PASS"
+else
+  TIER3_LABEL="SKIPPED (no tier-2 outputs)"
+fi
 echo "  Tier 1:   $TIER1_PASS passed, $TIER1_FAIL failed"
-echo "  Tier 1.5: $([ $TIER15_EXIT -eq 0 ] && echo 'PASS' || echo 'FAIL')"
-echo "  Tier 2:   $([ $TIER2_EXIT -eq 0 ] && echo 'PASS' || echo 'FAIL')"
-echo "  Tier 3:   $([ $TIER3_EXIT -eq 0 ] && echo 'PASS' || echo 'FAIL')"
+echo "  Tier 1.5: $TIER15_LABEL"
+echo "  Tier 2 [integration]: $TIER2_INTEGRATION_LABEL"
+echo "  Tier 2 [behavioral]: $TIER2_BEHAVIORAL_LABEL"
+echo "  Tier 3:   $TIER3_LABEL"
 echo ""
 
 if [[ $TIER1_FAIL -gt 0 || $TIER15_EXIT -ne 0 || $TIER2_EXIT -ne 0 || $TIER3_EXIT -ne 0 ]]; then
   echo "RESULT: FAIL"
   exit 1
+elif [[ "$TIER15_LABEL" == SKIPPED* || "$TIER2_INTEGRATION_LABEL" == SKIPPED* || "$TIER2_BEHAVIORAL_LABEL" == SKIPPED* || "$TIER3_LABEL" == SKIPPED* ]]; then
+  echo "RESULT: INCOMPLETE (a requested tier did not run; no validator failed)"
+  exit 0
 else
   echo "RESULT: PASS"
   exit 0

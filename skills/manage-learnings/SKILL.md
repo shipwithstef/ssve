@@ -188,7 +188,7 @@ When a learning fires, consider bumping its confidence by +1 (cap at 10).
 
 ### `review` (default)
 
-Show the last 20 learnings, newest first:
+Show the last 20 learnings, newest first. Before the rows, print: "Last 20 learnings, newest first. This list does not promote, prune, or apply anything." After the rows, print: "Next: name the insight to apply, or ask to search or prune."
 
 ```bash
 tail -20 docs/learnings/learnings.jsonl | jq -r '.date + " [" + .skill + "] " + .insight'

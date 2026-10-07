@@ -78,7 +78,11 @@ lane name.
 (`scripts/stage-activation.mjs`). Every stage declares a machine-checkable
 activation condition evaluated against the diff. A stage whose condition
 evaluates false is recorded `na` with the condition and its evaluation — not
-a human "n/a" sentence. The essential stages (`plan`, `review-plan`,
+a human "n/a" sentence. When that record is shown to a human, add: skipped
+\<stage\> because its condition was not met ("\<condition\>", result na).
+Essential stages still ran (result active, condition "essential — always
+active, never na") through `route-workflow`. That skip is safe: it is not a
+quick-fix bypass, and quick-fix stays retired. The essential stages (`plan`, `review-plan`,
 `implement`, `review-exec`, `spec-sync`, index re-stamp) always run;
 everything else activates only when its condition is true. A one-line fix
 now simply activates fewer stages instead of needing a separate lane to get
