@@ -66,6 +66,19 @@ fi
 # real hangs without false-failing legitimate work.
 VALIDATOR_TIMEOUT_SEC="${VALIDATOR_TIMEOUT_SEC:-180}"
 
+# Two-Box runs several offline integration suites, including full replay and
+# restart recovery. Keep its measured multi-minute corpus bounded separately.
+TWO_BOX_VALIDATOR_TIMEOUT_SEC="${TWO_BOX_VALIDATOR_TIMEOUT_SEC:-360}"
+_tier1_timeout_for() {
+  if [[ "$1" == "validate-two-box-transmutation.sh" ]]; then
+    printf '%s' "$TWO_BOX_VALIDATOR_TIMEOUT_SEC"
+  else
+    printf '%s' "$VALIDATOR_TIMEOUT_SEC"
+  fi
+}
+export -f _tier1_timeout_for
+export TWO_BOX_VALIDATOR_TIMEOUT_SEC
+
 # WI-165: per-tier outer timeouts for LLM-invoking tiers.
 # Tier 1.5: ~5K tokens/test, ~30-60s each → 300s catches hangs on 5+ tests
 # Tier 2: ~50K tokens/scenario, ~2-4min each → 600s catches hangs on 2+ scenarios
@@ -112,11 +125,12 @@ validate-rule-injection.sh
 # Run one validator -> per-script .out + .rc files. The `&& rc=0 || rc=$?` idiom
 # keeps a non-zero validator from aborting the caller under `set -e`.
 _tier1_run_one() {
-  local script="$1" name runner rc started finished
+  local script="$1" name runner rc started finished timeout_sec
   name="$(basename "$script")"
   runner="bash"; [[ "$script" == *.mjs ]] && runner="node"
   started="$(node -p 'Date.now()')"
-  timeout "$VALIDATOR_TIMEOUT_SEC" bash -c 'source "$1"; shift; svc_run_fixture "$@"' _ \
+  timeout_sec="$(_tier1_timeout_for "$name")"
+  timeout "$timeout_sec" bash -c 'source "$1"; shift; svc_run_fixture "$@"' _ \
     "$SCRIPT_DIR/tier-1/lib/fixture-home.sh" "$runner" "$script" \
     > "$TIER1_RESULTS_DIR/$name.out" 2>&1 && rc=0 || rc=$?
   finished="$(node -p 'Date.now()')"
@@ -236,7 +250,7 @@ const selected = fs.readFileSync(path.join(results, 'executed-validators.json'),
 const runtime = { node: process.version, platform: process.platform, arch: process.arch,
   bash: execFileSync('bash', ['--version']).toString().split('\n')[0], git: git(['--version']).toString().trim() };
 // Hash configuration rather than publishing ambient paths or credentials.
-const config = Object.fromEntries(['PATH', 'HOME', 'TMPDIR', 'SVC_TIER1_MODE', 'SVC_TIER1_CHANGED_FILES', 'VALIDATOR_TIMEOUT_SEC', 'TIER1_JOBS', 'EVALS'].map(key => [key, process.env[key] ?? null]));
+const config = Object.fromEntries(['PATH', 'HOME', 'TMPDIR', 'SVC_TIER1_MODE', 'SVC_TIER1_CHANGED_FILES', 'VALIDATOR_TIMEOUT_SEC', 'TWO_BOX_VALIDATOR_TIMEOUT_SEC', 'TIER1_JOBS', 'EVALS'].map(key => [key, process.env[key] ?? null]));
 const changedList = process.env.SVC_TIER1_CHANGED_FILES;
 if (changedList) config.changed_list_sha256 = hash(fs.readFileSync(changedList));
 const snapshot = { captured_at: new Date().toISOString(), source_root: root,
@@ -306,7 +320,7 @@ for script in "${TIER1_ALL[@]}"; do
   elif [[ "$rc" -eq 124 ]]; then
     TIER1_TIMEOUT=$((TIER1_TIMEOUT + 1))
     TIER1_FAIL=$((TIER1_FAIL + 1))
-    echo "  FAIL: $script_name — timed out at ${VALIDATOR_TIMEOUT_SEC}s (WI-110 guard)"
+    echo "  FAIL: $script_name — timed out at $(_tier1_timeout_for "$script_name")s (WI-110 guard)"
     TIER1_FAIL_RECAP+="FAIL: $script_name (rc=124)"$'\n'"script: $script"$'\n'"log: $TIER1_RESULTS_DIR/$script_name.out"$'\n'
   else
     TIER1_FAIL=$((TIER1_FAIL + 1))

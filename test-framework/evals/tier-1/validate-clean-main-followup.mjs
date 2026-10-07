@@ -11,7 +11,7 @@ import { createExternalReviewFixture } from './fixtures/external-review-fixture.
 const frameworkRoot = path.resolve(import.meta.dirname, '../../..');
 const tuple = { orchestrator: 'codex', host: 'cursor', family: 'xai', model: 'cursor-grok-4.6-high', effort: 'high' };
 
-test('cycle capacity blocks before launch, preserves independent cycle scope, and leaves advisory review separate', () => {
+test('feature capacity blocks before launch across candidates and reviewer changes', () => {
   const previous = { ...process.env };
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-review-cap-'));
   try {
@@ -21,15 +21,15 @@ test('cycle capacity blocks before launch, preserves independent cycle scope, an
     execFileSync('git', ['init', '-q', repo]);
     const receipt = { review_kind: 'plan', candidate_digest: 'a'.repeat(64), effective_tuple: tuple, phase_guard: { wi: 'WI-FIXTURE-CAP', pre_execution_base: 'b'.repeat(40) } };
     assert.equal(typeof provenance.externalReviewCycleCapacity, 'function');
-    assert.equal(provenance.externalReviewCycleCapacity(receipt).remaining, 3);
-    for (let i = 0; i < 3; i++) createExternalReviewFixture({ frameworkRoot, repo, reviewKind: 'plan', wi: 'WI-FIXTURE-CAP', tupleOverride: tuple, candidateDigestOverride: String(i + 1).repeat(64), preExecutionBaseOverride: 'b'.repeat(40), roundLabel: `round-${i}` });
+    assert.equal(provenance.externalReviewCycleCapacity(receipt).remaining, 2);
+    for (let i = 0; i < 2; i++) createExternalReviewFixture({ frameworkRoot, repo, reviewKind: 'plan', wi: 'WI-FIXTURE-CAP', tupleOverride: tuple, candidateDigestOverride: String(i + 1).repeat(64), preExecutionBaseOverride: 'b'.repeat(40), roundLabel: `round-${i}` });
     const full = provenance.externalReviewCycleCapacity(receipt);
     assert.equal(full.allowed, false);
     assert.equal(full.remaining, 0);
-    assert.equal(full.issued, 3);
+    assert.equal(full.issued, 2);
     assert.equal(provenance.externalReviewCycleCapacity({ ...receipt, candidate_digest: 'c'.repeat(64) }).allowed, false, 'changing plan bytes cannot reset cycle');
-    assert.equal(provenance.externalReviewCycleCapacity({ ...receipt, phase_guard: { ...receipt.phase_guard, wi: 'WI-DISTINCT-TASK' } }).remaining, 3);
-    assert.equal(provenance.externalReviewCycleCapacity({ ...receipt, effective_tuple: { ...tuple, family: 'openai', host: 'codex' } }), null, 'same-family advisory does not consume independent cap');
+    assert.equal(provenance.externalReviewCycleCapacity({ ...receipt, phase_guard: { ...receipt.phase_guard, wi: 'WI-DISTINCT-TASK' } }).remaining, 2);
+    assert.equal(provenance.externalReviewCycleCapacity({ ...receipt, effective_tuple: { ...tuple, family: 'openai', host: 'codex' } }).allowed, false, 'reviewer changes cannot reset the feature cap');
     assert.equal(path.dirname(full.lock_path), process.env.SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT);
   } finally { process.env = previous; fs.rmSync(repo, { recursive: true, force: true }); }
 });
@@ -113,7 +113,7 @@ else {
 
 test('actual governed launcher refuses capped review without executing the provider stub', async t => {
   const { spawnSync } = await import('node:child_process');
-  const f = await launcherFixture(t, 3);
+  const f = await launcherFixture(t, 2);
   const run = f.options('one');
   const result = spawnSync(process.execPath, run.args, run.options);
   assert.equal(result.status, 1, result.stderr);
@@ -151,7 +151,7 @@ test('actual governed launcher retains provider evidence when provenance fails a
 
 test('two simultaneous candidates share the remaining cycle slot', async t => {
   const { spawn } = await import('node:child_process');
-  const f = await launcherFixture(t, 2);
+  const f = await launcherFixture(t, 1);
   const run = label => new Promise((resolve, reject) => {
     const invocation = f.options(label);
     const child = spawn(process.execPath, invocation.args, { ...invocation.options, stdio: ['pipe', 'pipe', 'pipe'] });
@@ -270,7 +270,7 @@ test('issuance lock cleanup failure cannot unwind the committed marker', async t
 test('a cache replay cannot steal the slot held by an in-flight paid review', { timeout: 10000 }, async t => {
   const { spawn } = await import('node:child_process');
   const { setTimeout: delay } = await import('node:timers/promises');
-  const f = await launcherFixture(t, 1);
+  const f = await launcherFixture(t, 0);
   const seed = f.options('one');
   const seeded = spawnSync(process.execPath, seed.args, seed.options);
   assert.equal(seeded.status, 0, seeded.stderr);
@@ -507,9 +507,11 @@ test('aggregate runner records isolated failures and duration without GNU date n
   const source = fs.readFileSync(path.join(frameworkRoot, 'test-framework/evals/run-all-evals.sh'), 'utf8');
   const definition = source.match(/^_tier1_run_one\(\) \{[\s\S]*?^\}/m)?.[0];
   assert.ok(definition);
+  const timeoutDefinition = source.match(/^_tier1_timeout_for\(\) \{[\s\S]*?^\}/m)?.[0];
+  assert.ok(timeoutDefinition);
   const result = spawnSync('bash', ['-s', '--', script], {
-    input: `set -euo pipefail\n${definition}\n_tier1_run_one "$1"\n`,
-    env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, TIER1_RESULTS_DIR: results, VALIDATOR_TIMEOUT_SEC: '10', SCRIPT_DIR: path.join(frameworkRoot, 'test-framework/evals') }, encoding: 'utf8',
+    input: `set -euo pipefail\n${timeoutDefinition}\n${definition}\n_tier1_run_one "$1"\n`,
+    env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, TIER1_RESULTS_DIR: results, VALIDATOR_TIMEOUT_SEC: '10', TWO_BOX_VALIDATOR_TIMEOUT_SEC: '20', SCRIPT_DIR: path.join(frameworkRoot, 'test-framework/evals') }, encoding: 'utf8',
   });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(fs.readFileSync(path.join(results, 'validator.sh.rc'), 'utf8'), '23');
@@ -600,7 +602,7 @@ test('parallel stamp, refresh and router validators leave shared source bytes an
 });
 
 test('a repaired report survives invocation cleanup and replays at capacity with zero calls', async t => {
- const f=await launcherFixture(t,2);
+ const f=await launcherFixture(t,1);
  const repair=f.options('one',{SVC_TEST_REPORT_SCOPE:'1'});
  const result=spawnSync(process.execPath,repair.args,repair.options);
  assert.equal(result.status,0,result.stderr);
@@ -653,4 +655,29 @@ test('a placeholder with unread proof cannot be published when automatic complet
  assert.notEqual(result.status,0);
  const receipt=JSON.parse(fs.readFileSync(path.join(invocation.out,'receipt.json')));
  assert.equal(receipt.classification,'schema_invalid');assert.equal(receipt.protocol.process_invocations,1);
+});
+
+
+test('skill portability ignores runtime fixtures and still catches an uncommitted skill violation', t => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-portability-source-'));
+  t.after(() => fs.rmSync(repo, { recursive: true, force: true }));
+  execFileSync('git', ['init', '-q', repo]);
+  const validator = path.join(repo, 'test-framework/evals/tier-1/validate-skill-host-portability-paths.sh');
+  fs.mkdirSync(path.dirname(validator), { recursive: true });
+  fs.copyFileSync(path.join(frameworkRoot, 'test-framework/evals/tier-1/validate-skill-host-portability-paths.sh'), validator);
+  fs.writeFileSync(path.join(repo, '.gitignore'), 'test-framework/results/\n');
+  const transient = path.join(repo, 'test-framework/results/temporary-home/skills/noise');
+  fs.mkdirSync(transient, { recursive: true });
+  fs.writeFileSync(path.join(transient, 'SKILL.md'), 'node ~/.claude/skills/fake.mjs\n');
+  const clean = spawnSync('bash', [validator], { encoding: 'utf8' });
+  assert.equal(clean.status, 0, clean.stderr + clean.stdout);
+  const skill = path.join(repo, 'skills/new-skill');
+  fs.mkdirSync(skill, { recursive: true });
+  fs.writeFileSync(path.join(skill, 'SKILL.md'), 'node ~/.claude/skills/fake.mjs\n');
+  const violation = spawnSync('bash', [validator], { encoding: 'utf8' });
+  assert.equal(violation.status, 1, violation.stderr + violation.stdout);
+  assert.match(violation.stdout, /skills\/new-skill\/SKILL.md:1/);
+  fs.writeFileSync(path.join(skill, 'SKILL.md'), 'node <SKILLS_PATH>/scripts/fake.mjs\n');
+  const repaired = spawnSync('bash', [validator], { encoding: 'utf8' });
+  assert.equal(repaired.status, 0, repaired.stderr + repaired.stdout);
 });

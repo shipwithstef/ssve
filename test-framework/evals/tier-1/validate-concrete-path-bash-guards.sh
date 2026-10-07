@@ -33,8 +33,9 @@ for (const [command, expected] of cases) assert.deepEqual(classifyBashMutationTa
 NODE
 
 # Every concrete target is evaluated. A lexically earlier ungoverned target
-# must not launder a later write into a governed repo with a missing contract.
+# must not launder a later write into a governed repo with an active stale contract.
 mkdir -p "$TMP/a-open" "$TMP/z-governed/.git" "$TMP/z-governed/.svc"
+printf '%s\n' '{"ts":"2000-01-01T00:00:00Z","wi":"WI-FIXTURE"}' > "$TMP/z-governed/.svc/session-contract.jsonl"
 PAYLOAD=$(printf '{"tool_name":"Bash","tool_input":{"command":"touch %s %s"},"cwd":"%s"}' "$TMP/a-open/x" "$TMP/z-governed/protected" "$TMP")
 if printf '%s' "$PAYLOAD" | node hooks/svc-session-contract-freshness.mjs >/dev/null 2>&1; then
   echo "FAIL: later governed mutation target bypassed freshness guard" >&2
@@ -42,6 +43,7 @@ if printf '%s' "$PAYLOAD" | node hooks/svc-session-contract-freshness.mjs >/dev/
 fi
 
 mkdir -p "$TMP/guarded/docs/specs/features" "$TMP/guarded/hooks" "$TMP/guarded/.git" "$TMP/guarded/.svc"
+printf '%s\n' '{"ts":"2000-01-01T00:00:00Z","wi":"WI-FIXTURE"}' > "$TMP/guarded/.svc/session-contract.jsonl"
 printf '%s\n' '# demo' > "$TMP/guarded/docs/specs/features/demo.md"
 printf '%s\n' '{}' > "$TMP/guarded/hooks/hooks.json"
 for tuple in \

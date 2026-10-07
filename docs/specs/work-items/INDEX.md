@@ -1,5 +1,7 @@
 # Work Items Index
 
+- [WI-FW-PAGE-UX-REGISTRATION-01](WI-FW-PAGE-UX-REGISTRATION-01.md) — Register and validate the preserved page-scoped competitive UX draft — status:backlog
+
 - [WI-570](WI-570.md) — Local/GitHub/hybrid tracking and owner-requested harness, skill discovery, design and communication corrections — status:in_progress; integrated validation and review pending
 
 - [WI-FW-CROSS-REPO-ORCH-02](WI-FW-CROSS-REPO-ORCH-02.md) — Origin auto-bind for any onboarded svc project: name a WI or project from any folder, session binds and schedules PLAN xhigh → Fable → EXEC high; user never runs a CLI — status:planned
@@ -451,3 +453,5 @@
 - [WI-FW-PROMPT-INSPECTION-01](WI-FW-PROMPT-INSPECTION-01.md) — Complete large-input planning transport through 1 MiB with inspect/execute on the same frozen bytes (severity:high) — status:CLOSED; delivered by the same PR62 Two-Box implementation; foreign PI worktree not mutated
 
 - [WI-FW-OSS-READINESS-01](WI-FW-OSS-READINESS-01.md) — Open-source early-release preparation: privacy, history inventory, and known issues; broader framework repairs remain follow-ups — status:in-progress
+
+- [WI-571](WI-571.md) — Evaluate and register the preserved page-UX improvement draft — status:backlog

@@ -1497,8 +1497,8 @@
     {
       "skill": "review-cross-model",
       "path": "skills/review-cross-model/SKILL.md",
-      "content_hash": "4a98912c8cb4fb364ddba5f975c2b9fdda58460e875ec43488aca9f32cee11c8",
-      "description": "Adversarial code review using the canonical deterministic external-review launcher. Sends diff + goals + spec to the second model, gets findings back, then Claude evaluates each finding: accept with justification or reject with justification. Back and forth until all remaining findings are medium severity max. Use when \"cross-model review\", \"second opinion\", \"codex review\", \"adversarial review\", or when `review-gate` leaves residual risk on changes involving new data models or integrations.",
+      "content_hash": "a99a6ac7e4870f6e34e58def0031cbcb7f116e70bc022d1ca4a9911f364c4fd7",
+      "description": "Adversarial code review using the canonical deterministic external-review launcher. Uses task card + decided solution + acceptance + diff as an entry point. The reviewer explores connected repository code read-only and returns all proof-bearing findings in one pass; at most two rounds per feature WI. Use when \"cross-model review\", \"second opinion\", \"codex review\", \"adversarial review\", or when `review-gate` leaves residual risk on changes involving new data models or integrations.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],

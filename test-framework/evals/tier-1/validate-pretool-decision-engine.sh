@@ -38,7 +38,7 @@ console.log(JSON.stringify(evaluatePreToolObservation({tool_name:"Bash",tool_inp
 done
 
 # 2. mutation mutants are NOT engine decisions (governed path owns them)
-for c in "git status && touch x" "git commit -m x" "sed -i 's/a/b/' sample.txt" "cat a > b" "echo \$(id)"; do
+for c in "git status && touch x" "git commit -m x" "sed -i 's/a/b/' sample.txt" "cat a > /var/svc-protected-output" "echo \$(id)"; do
   OUT="$(CMD="$c" node --input-type=module -e '
 import { evaluatePreToolObservation } from "'"$ENGINE"'";
 const r = evaluatePreToolObservation({tool_name:"Bash",tool_input:{command:process.env.CMD},cwd:"'"$TMP"'"});

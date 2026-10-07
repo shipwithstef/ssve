@@ -8,6 +8,9 @@ Managed SVC hooks are **advisory by default**. Statements below that describe ho
 
 Bootstrap rule for onboarded projects: respect the project's local AGENTS.md/CLAUDE.md and svc route-workflow contract from its actual worktree; post-deploy/production validation asks require live post-deploy evidence, never local substitutes.
 
+
+When an owner explicitly authorizes a direct repair in advisory mode, missing historical workflow receipts are not a prerequisite for editing and testing that repair. Use an isolated worktree, preserve actual historical evidence, run the relevant regression checks and required CI, and report which approvals or receipts remain absent. Do not invent past approvals or make advisory findings pass. Scope the repair to the observed defect; do not turn restoring old workflow records into a mandatory framework redesign.
+
 ---
 
 ## 1. Project Overview

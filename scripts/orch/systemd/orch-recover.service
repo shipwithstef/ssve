@@ -1,0 +1,17 @@
+[Unit]
+Description=Recover interrupted Orchestrator OS workers once per boot
+Wants=network-online.target
+After=network-online.target
+Before=orch-collect.service orch-serve.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=@ORCH_ROOT@
+Environment=PATH=@ORCH_PATH@
+UMask=0077
+ExecStart=@ORCH_NODE@ @ORCH_ROOT@/scripts/orch/recover.mjs
+TimeoutStartSec=300
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target

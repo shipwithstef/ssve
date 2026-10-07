@@ -1,0 +1,16 @@
+[Unit]
+Description=Orchestrator OS deterministic status collector
+After=orch-recover.service
+
+[Service]
+Type=simple
+WorkingDirectory=@ORCH_ROOT@
+Environment=PATH=@ORCH_PATH@
+UMask=0077
+ExecStart=@ORCH_NODE@ @ORCH_ROOT@/scripts/orch/collect.mjs --watch 60 --stalled-minutes 10
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

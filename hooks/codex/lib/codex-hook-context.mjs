@@ -1,3 +1,4 @@
+import { stripObservationRedirections } from "../../lib/observation-redirections.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -368,7 +369,7 @@ export function continuationIntent(text, { distinguishNegative = false } = {}) {
 
 const READ_ONLY_TOOLS = new Set(["Read", "Glob", "Grep", "Search", "View", "view_image", "readToolCall", "grepToolCall", "fileSearchToolCall", "findToolCall"]);
 const SAFE_BASH = [
-  /^(ls|pwd|cat|head|tail|wc|sha256sum|stat|realpath|readlink|dirname|basename|cut|tr)(?:\s+[^;&|`$<>]*)?$/,
+  /^(ls|pwd|cat|head|tail|wc|sha256sum|stat|realpath|readlink|dirname|basename|cut|tr|grep)(?:\s+[^;&|`$<>]*)?$/,
   /^test(?:\s+[^;&|`$<>]*)+$/,
 ];
 
@@ -397,7 +398,7 @@ function isSafeGit(argv) {
   const subcommand = tokens[index];
   const args = tokens.slice(index + 1);
   if (subcommand === "ls-remote" && args.some(token => token.startsWith("-u") || token.startsWith("--upload-pack") || token.startsWith("--exec") || token.includes("::"))) return false;
-  const alwaysRead = new Set(["status", "log", "diff", "show", "rev-parse", "ls-files", "ls-tree", "ls-remote"]);
+  const alwaysRead = new Set(["status", "log", "diff", "show", "rev-parse", "ls-files", "ls-tree", "ls-remote", "check-ignore"]);
   const branchRead = subcommand === "branch" && (args.length === 0 || args.some(token =>
     ["--show-current", "--list", "-a", "-r", "--all", "--remotes", "--contains", "--merged", "--no-contains", "--no-merged", "--points-at"].includes(token) || /^--(?:list|contains|merged|no-contains|no-merged|points-at)=/.test(token))) &&
     observationOptions(["branch", ...args], new Set(["--show-current", "--list", "-a", "-r", "--all", "--remotes", "-v", "-vv", "--verbose", "--no-color", "--ignore-case", "--omit-empty", "--column", "--no-column"]), new Set(["--format", "--sort", "--contains", "--merged", "--no-contains", "--no-merged", "--points-at", "--color"]), () => true);
@@ -575,6 +576,10 @@ export function splitUnquoted(command) {
   let quote = null; // "'" | '"' | null
   for (let i = 0; i < command.length; i++) {
     const ch = command[i];
+    if (ch === "\\" && quote !== "'" && i + 1 < command.length) {
+      current += ch + command[++i];
+      continue;
+    }
     if (quote) {
       current += ch;
       if (ch === quote) quote = null;
@@ -611,7 +616,24 @@ export function stripDevNullRedirections(segment) {
   return value;
 }
 
-export function isReadOnlyTool(ctx) {
+// Shared side-effect model: advisory effects proof and strict argv proof use
+// identical option checks. Stdout-only utilities cannot acquire write/exec
+// effects from filename expansion or xargs-appended arguments.
+export const STDOUT_READ_COMMANDS = new Set(["ls", "pwd", "cat", "head", "tail", "wc", "sha256sum", "stat", "realpath", "readlink", "dirname", "basename", "cut", "tr", "grep", "echo"]);
+export function isObservationArgv(readArgv, env = process.env, effects = false) {
+  if (!readArgv.length) return false;
+  const decoded = readArgv.join(" ");
+  if (TRIVIAL_SAFE_SEGMENTS.has(decoded)) return true;
+  if (readArgv[0] === "echo" || effects && STDOUT_READ_COMMANDS.has(readArgv[0])) return true;
+  if (readArgv[0] === "cd") return readArgv.length === 2 && !readArgv[1].startsWith("-");
+  return isSafeGit(readArgv) || isSafeRg(decoded, env) || isSafeFind(decoded)
+    || isSafeSort(readArgv) || isSafeUniq(readArgv) || isSafeFile(readArgv)
+    || isSafeSed(readArgv) || isSafeJq(readArgv) || isSafeVersionProbe(readArgv)
+    || isSafeAz(readArgv) || isSafeSystemObservation(readArgv)
+    || SAFE_BASH.some(pattern => pattern.test(decoded));
+}
+
+export function isReadOnlyTool(ctx, env = process.env) {
   const name = toolName(ctx);
   if (READ_ONLY_TOOLS.has(name)) return true;
   if (!isShellTool(name)) return false;
@@ -637,7 +659,7 @@ export function isReadOnlyTool(ctx) {
     // (expansion, substitution, redirect, glob, brace, tilde, history, comment,
     // escape, control char) and otherwise returns decoded argv, so an accepted
     // segment's runtime argv is provably identical to what we classify here.
-    const classifiedSegment = stripDevNullRedirections(segment);
+    const classifiedSegment = stripObservationRedirections(segment, ctx.tool_input?.workdir || ctx.toolInput?.workdir || ctx.cwd || process.cwd(), env);
     if (!classifiedSegment) return false;
     const lexed = lexSimpleCommand(classifiedSegment);
     if (!lexed || lexed.ok !== true || !Array.isArray(lexed.argv) || !lexed.argv.length) return false;
@@ -646,13 +668,7 @@ export function isReadOnlyTool(ctx) {
     // Safe direction: over-rejection costs a receipt, under-rejection is a bypass.
     const readArgv = lexed.argv[0] === "SVC_SUBAGENT=1" ? lexed.argv.slice(1) : lexed.argv;
     if (!readArgv.length) return false;
-    const decoded = readArgv.join(" ");
-    if (TRIVIAL_SAFE_SEGMENTS.has(decoded)) return true;
-    return isSafeGit(readArgv) || isSafeRg(decoded) || isSafeFind(decoded)
-      || isSafeSort(readArgv) || isSafeUniq(readArgv) || isSafeFile(readArgv)
-      || isSafeSed(readArgv) || isSafeJq(readArgv) || isSafeVersionProbe(readArgv)
-      || isSafeAz(readArgv) || isSafeSystemObservation(readArgv)
-      || SAFE_BASH.some((pattern) => pattern.test(decoded));
+    return isObservationArgv(readArgv, env);
   });
 }
 

@@ -1,0 +1,282 @@
+[
+  {
+    "host": "codex",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T164818Z/evidence/governed-fixture",
+      "tool_name": "functions.exec",
+      "tool_input": "text(await tools.exec_command({\"cmd\": \"cat input.txt\", \"workdir\": \"/home/dianast/.local/state/orch/backups/side01-20261003T164818Z/evidence/governed-fixture\"}));",
+      "hook_event_name": "PreToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "codex",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "functions.exec",
+      "tool_input": "text(await tools.exec_command({\"cmd\": \"cat input.txt\", \"workdir\": \"/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture\"}));",
+      "hook_event_name": "PreToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "codex",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "functions.exec",
+      "tool_input": "text(await tools.exec_command({\"cmd\": \"cat input.txt\", \"workdir\": \"/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture\"}));",
+      "hook_event_name": "PostToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "claude",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "grep read input.txt"
+      },
+      "hook_event_name": "PreToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "claude",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "grep read input.txt"
+      },
+      "hook_event_name": "PostToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "cursor",
+    "payload": {
+      "conversation_id": "side01-read",
+      "workspace_roots": [
+        "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture"
+      ],
+      "command": "ls -la",
+      "hook_event_name": "beforeShellExecution"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "cursor",
+    "payload": {
+      "conversation_id": "side01-read",
+      "workspace_roots": [
+        "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture"
+      ],
+      "command": "ls -la",
+      "hook_event_name": "preToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "codex",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "exec_command",
+      "tool_input": {
+        "cmd": "git log -1",
+        "workdir": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture"
+      },
+      "hook_event_name": "PreToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "codex",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "exec_command",
+      "tool_input": {
+        "cmd": "git log -1",
+        "workdir": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture"
+      },
+      "hook_event_name": "PostToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "claude",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git status --short"
+      },
+      "hook_event_name": "PreToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "claude",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "git status --short"
+      },
+      "hook_event_name": "PostToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "cursor",
+    "payload": {
+      "conversation_id": "side01-read",
+      "workspace_roots": [
+        "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture"
+      ],
+      "command": "pwd && ls; cat input.txt",
+      "hook_event_name": "beforeShellExecution"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "cursor",
+    "payload": {
+      "conversation_id": "side01-read",
+      "workspace_roots": [
+        "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture"
+      ],
+      "command": "pwd && ls; cat input.txt",
+      "hook_event_name": "preToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "codex",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "exec_command",
+      "tool_input": {
+        "cmd": "rg --no-config -n \"alpha|beta\" input.txt || true",
+        "workdir": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture"
+      },
+      "hook_event_name": "PreToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "codex",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "exec_command",
+      "tool_input": {
+        "cmd": "rg --no-config -n \"alpha|beta\" input.txt || true",
+        "workdir": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture"
+      },
+      "hook_event_name": "PostToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "claude",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "sed -n '1,3p' input.txt"
+      },
+      "hook_event_name": "PreToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "claude",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "sed -n '1,3p' input.txt"
+      },
+      "hook_event_name": "PostToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "cursor",
+    "payload": {
+      "conversation_id": "side01-read",
+      "workspace_roots": [
+        "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture"
+      ],
+      "command": "cat input.txt > /tmp/side01-read-output",
+      "hook_event_name": "beforeShellExecution"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "cursor",
+    "payload": {
+      "conversation_id": "side01-read",
+      "workspace_roots": [
+        "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture"
+      ],
+      "command": "cat input.txt > /tmp/side01-read-output",
+      "hook_event_name": "preToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "codex",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "exec_command",
+      "tool_input": {
+        "cmd": "cat input.txt >> /tmp/side01-read-output",
+        "workdir": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture"
+      },
+      "hook_event_name": "PreToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "codex",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "exec_command",
+      "tool_input": {
+        "cmd": "cat input.txt >> /tmp/side01-read-output",
+        "workdir": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture"
+      },
+      "hook_event_name": "PostToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  },
+  {
+    "host": "claude",
+    "payload": {
+      "session_id": "side01-read",
+      "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/governed-fixture",
+      "tool_name": "Bash",
+      "tool_input": {
+        "command": "cat input.txt > /home/dianast/.local/state/orch/output"
+      },
+      "hook_event_name": "PreToolUse"
+    },
+    "scratchpad": "/home/dianast/.local/state/orch/backups/side01-20261003T173158Z/evidence/scratch"
+  }
+]

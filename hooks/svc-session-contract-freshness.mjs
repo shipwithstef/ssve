@@ -30,12 +30,14 @@
  *   before that append is a chicken-and-egg trap (live-hit 2026-06-10).
  *
  * Hard block on: stale contract for an in-repo target (outside the bootstrap
- *   window), missing contract file in the target repo, skill mismatch.
+ *   window), skill mismatch in the active session contract. Missing/foreign contracts are N/A.
  *
  * Disable: SVC_DISABLED_HOOKS=svc-session-contract-freshness
  * Bypass stale check only: SVC_CONTRACT_MAX_AGE_HOURS=0
  */
 
+import { evaluatePreToolObservation } from "./lib/pretool-decision-engine.mjs";
+import { findingSession } from "./lib/session-findings.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -118,14 +120,18 @@ function findRepoRoot(startDir) {
   }
 }
 
-function readLastContract(repoRoot) {
+function readLastContract(repoRoot, session) {
   const file = path.join(repoRoot, ".svc", "session-contract.jsonl");
   try {
     const content = fs.readFileSync(file, "utf8").trim();
     if (!content) return null;
     const lines = content.split("\n").filter(Boolean);
     if (lines.length === 0) return null;
-    return { contract: JSON.parse(lines[lines.length - 1]), file };
+    const rows = lines.map(line => JSON.parse(line));
+    const contract = session
+      ? rows.filter(row => String(row.session_token || row.session_id || row.recovery_session || "") === session).at(-1)
+      : rows.at(-1); // Legacy standalone probes without a host session.
+    return contract ? { contract, file } : null;
   } catch {
     return null;
   }
@@ -231,7 +237,7 @@ async function main() {
   }
 
   const call = readHookPayload();
-  if (!call) process.exit(0);
+  if (!call || evaluatePreToolObservation(call.raw)) process.exit(0);
 
   const { toolName, toolInput } = call;
   if (!/^(Edit|Write|WriteFile|StrReplaceFile)$/.test(toolName) && !isShellTool(toolName)) {
@@ -272,18 +278,10 @@ async function main() {
       continue;
     }
 
-    const found = readLastContract(repo.root);
-    if (!found) {
-      denyContract("SVC-SESSION-CONTRACT-MISSING",
-      `[svc-session-contract-freshness] BLOCKED: Session contract is MISSING in ${repo.root}.\n` +
-      `Before any Edit, Write, or Bash tool call, write a session contract entry to .svc/session-contract.jsonl:\n` +
-      `  {\"ts\":\"ISO-8601\",\"bound_to\":\"user-request|wi-backlog|framework-evolution\",\"request\":\"<summary>\",\"wi\":null_or_id,\"skill\":null_or_name,\"guard_override_count\":0}\n` +
-      `Route-workflow does this automatically when invoked. Direct edits without a contract destroy the audit trail.\n` +
-      `See route-workflow/SKILL.md §Session Contract and audit-session-execution F1/F2/F3.\n` +
-      `Bypass: SVC_DISABLED_HOOKS=svc-session-contract-freshness (emergency only).`,
-      { target: absTarget, recovery: "Write a session-contract entry to .svc/session-contract.jsonl (route-workflow does this automatically) before editing." }
-      );
-    }
+    const found = readLastContract(repo.root, findingSession(call.raw));
+    // No matching contract means this session never opted into freshness.
+    // Independent mutation authority is still checked by the dispatcher.
+    if (!found) continue;
 
     const blockReason = checkFreshness(found.contract);
     if (blockReason) {

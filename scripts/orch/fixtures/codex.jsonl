@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"00000000-0000-4000-8000-000000000001"}
+{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"node --test example.test.mjs","aggregated_output":"[redacted test output]","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_42","type":"agent_message","text":"Reported: wrote docs/example-report.md; local checks passed."}}
+{"type":"turn.completed","usage":{"input_tokens":3107440,"cached_input_tokens":2936704,"cache_write_input_tokens":0,"output_tokens":33450,"reasoning_output_tokens":2617}}

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { classifyProviderFailure, validateExternalReviewReceiptSemantics } from '../../scripts/run-external-review.mjs';
+import { classifyProviderFailure, validateExternalReviewReceiptSemantics, agenticReviewInstructions, normalizeReviewFindings, invoke, reviewTreeSnapshot } from '../../scripts/run-external-review.mjs';
 import { createReviewerPolicy } from '../../scripts/review-topology-v2.mjs';
 import { cursorIndependentEligible } from '../../scripts/resolve-dispatch.mjs';
 import { cursorCatalogDecision, cursorIndependentModelShape, cursorExactRouteEvidenceValid, resolveReviewTimeout } from '../../scripts/lib/review-launch-preflight.mjs';
@@ -211,4 +211,78 @@ test('Cursor exact model launches ask mode with catalog-bound receipt', t => {
   assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'invalid-timeout', 'receipt.json'))).classification, 'config_invalid');
   assert.match(invalidTimeout.stderr, /transport_options.cursor.timeout_seconds/);
   assert.equal(fs.readFileSync(calls, 'utf8').trim().split('\n').map(JSON.parse).filter(a => a.includes('--print')).length, before);
+});
+
+
+test('agentic packet requires the unchanged caller and cost path, then bounded fix verification', () => {
+  // Seed: the changed helper accepts zero, but an unchanged caller divides by its return.
+  // This deterministic test proves packet scope, not actual paid-model discovery.
+  const packet = agenticReviewInstructions('/candidate');
+  for (const required of ['ENTRY POINT', 'whole touched files', 'callers/callees', 'callers outside the diff', 'config/routes', 'related tests', 'cost path', 'unchanged model defaults', 'Read-only contract']) assert.ok(packet.includes(required), required);
+  const followup = agenticReviewInstructions('/candidate', 2);
+  assert.match(followup, /original finding IDs/);
+  assert.match(followup, /adjacent breakage caused by these fixes/);
+  assert.match(followup, /No whole-feature discovery/);
+});
+
+test('unproved blocker is advisory with the raw claim retained; concrete proof remains blocking', () => {
+  const raw = {id:'H1', severity:'high', confidence:'high', location:'caller.mjs:4', claim:'Might divide by zero', analysis:'Concern', evidence:[], proposed_fix:'Guard'};
+  const report = {verdict:'fail', findings:[raw], certifications:[], rubric_failures:[], dependencies_needing_read:[]};
+  const normalized = normalizeReviewFindings(report);
+  assert.equal(normalized.findings[0].blocking, false);
+  assert.equal(normalized.findings[0].disposition, 'advisory');
+  assert.equal(normalized.findings[0].severity, 'info');
+  assert.deepEqual(JSON.parse(normalized.findings[0].raw_finding), raw);
+  assert.equal(normalized.verdict, 'pass-with-findings');
+  const proof = {kind:'input-output', input:'0', actual:'Infinity', expected:'0'};
+  assert.equal(normalizeReviewFindings({...report, findings:[{...raw, proof}]}).findings[0].blocking, true);
+  assert.equal(normalizeReviewFindings({...report, findings:[{...raw, proof:{kind:'call-path', path:'caller → helper'}}]}).findings[0].blocking, false);
+});
+
+test('Codex shell reads succeed with VM bypass; edits invalidate review and preserve dirty work', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rv1-codex-readonly-'));
+  t.after(() => fs.rmSync(dir, {recursive:true, force:true}));
+  const repo = path.join(dir, 'repo'), artifacts = path.join(dir, 'artifacts');
+  fs.mkdirSync(repo); fs.mkdirSync(artifacts);
+  const git = (...args) => {const r=spawnSync('git', args, {cwd:repo, encoding:'utf8'}); assert.equal(r.status,0,r.stderr);};
+  git('init', '-q'); git('config', 'user.email', 'fixture@example.test'); git('config', 'user.name', 'Fixture');
+  fs.writeFileSync(path.join(repo,'helper.mjs'), 'export const denominator = 0;\n');
+  fs.writeFileSync(path.join(repo,'caller.mjs'), 'import {denominator} from "./helper.mjs"; console.log(1 / denominator);\n');
+  git('add','.'); git('commit','-qm','Seed caller outside diff');
+  fs.appendFileSync(path.join(repo,'helper.mjs'), '// pre-existing dirty work\n');
+  const before = reviewTreeSnapshot(repo);
+  const cli = path.join(dir,'codex');
+  fs.writeFileSync(cli, `#!/usr/bin/env node
+const fs=require('fs'),path=require('path');
+const args=process.argv.slice(2),prompt=fs.readFileSync(0,'utf8');
+if(!args.includes('--dangerously-bypass-approvals-and-sandbox') || args.includes('--sandbox') || !prompt.includes('Read-only contract'))process.exit(9);
+const caller=fs.readFileSync('caller.mjs','utf8');
+if(!caller.includes('1 / denominator'))process.exit(10);
+if(prompt.includes('MUTATE'))fs.appendFileSync('helper.mjs','// reviewer edit\\n');
+fs.writeFileSync(args[args.indexOf('--output-last-message')+1],JSON.stringify({schema_version:1,review_kind:'exec',rubric_score:null,rubric_failures:[],dependencies_needing_read:[],reviewer:{host:'codex',family:'openai',model:'gpt-6.1-sol',effort:'high'},verdict:'pass',summary:'Read caller',findings:[],certifications:[],inspected_paths:['helper.mjs','caller.mjs']}));
+console.log(JSON.stringify({type:'turn.completed',model:'gpt-6.1-sol'}));
+`, {mode:0o700});
+  const tuple={host:'codex',family:'openai',model:'gpt-6.1-sol',effort:'high'};
+  const schema=fs.readFileSync(path.join(root,'schemas/external-review-findings.schema.json'));
+  const read=await invoke(tuple,cli,Buffer.from('Task card + helper diff'), 'exec',schema,artifacts,1,5000,1,null,repo);
+  assert.equal(read.attempt.classification,'success');
+  assert.deepEqual(read.findings.inspected_paths,['helper.mjs','caller.mjs']);
+  assert.equal(reviewTreeSnapshot(repo),before);
+  assert.ok(!read.attempt.artifacts.findings.startsWith(repo));
+  const edited=await invoke(tuple,cli,Buffer.from('MUTATE'), 'exec',schema,artifacts,2,5000,1,null,repo);
+  assert.equal(edited.attempt.classification,'schema_invalid');
+  assert.equal(edited.protocol.terminal_reason,'read_only_tree_changed');
+  assert.equal(edited.findings,null);
+  assert.match(fs.readFileSync(path.join(repo,'helper.mjs'),'utf8'),/pre-existing dirty work/);
+  assert.match(fs.readFileSync(path.join(repo,'helper.mjs'),'utf8'),/reviewer edit/);
+});
+
+
+test('review routing table follows the code author and keeps milestone Opus on agy', () => {
+ const skill=fs.readFileSync(path.join(root,'skills/review-cross-model/SKILL.md'),'utf8');
+ assert.match(skill,/Grok-authored \| Sol 6\.1 \| Codex \/ high/);
+ assert.match(skill,/Sol-authored \| Grok 4\.7 \| Cursor \/ high/);
+ assert.match(skill,/Claude-authored \| Sol 6\.1 \| Codex \/ high/);
+ assert.match(skill,/claude-opus-5-5-high.*agy \/ high; never Claude Pro/);
+ assert.match(skill,/Never assign Astra or max effort/);
 });

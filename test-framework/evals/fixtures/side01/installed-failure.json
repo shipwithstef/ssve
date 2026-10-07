@@ -1,0 +1,16 @@
+{
+  "host": "codex",
+  "event": "PreToolUse",
+  "installed_command": "'/usr/bin/node' '/home/dianast/.svc/enforcement/1/hooks/svc-hook-boundary.mjs' svc-enforce svc-codex-pretool-dispatcher --spec eyJjb21tYW5kIjoiU1ZDX0hPU1Q9Y29kZXggJy91c3IvYmluL25vZGUnICcvaG9tZS9kaWFuYXN0Ly5zdmMvZW5mb3JjZW1lbnQvMS9iaW4vc3ZjLWVuZm9yY2UnIHN2Yy1jb2RleC1wcmV0b29sLWRpc3BhdGNoZXIiLCJob3N0IjoiY29kZXgiLCJldmVudCI6IlByZVRvb2xVc2UiLCJ0aW1lb3V0TXMiOjIwMDAwfQ",
+  "payload": {
+    "session_id": "side01-read",
+    "cwd": "/home/dianast/.local/state/orch/backups/side01-20261003T164818Z/evidence/governed-fixture",
+    "tool_name": "functions.exec",
+    "tool_input": "text(await tools.exec_command({\"cmd\": \"cat input.txt\", \"workdir\": \"/home/dianast/.local/state/orch/backups/side01-20261003T164818Z/evidence/governed-fixture\"}));",
+    "hook_event_name": "PreToolUse"
+  },
+  "mode": "configured-default",
+  "exit": 0,
+  "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"[svc advisory svc-enforce svc-codex-pretool-dispatcher] would have blocked this call; the original tool input continues unchanged. Finding: mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: PROMPT_AUTHORITY_ABSENT; EXACT_WORKTREE_RECOVERY: NOT_ATTEMPTED; SELF_PROVISION_ATTEMPTED: origin/main is missing; fetch origin before ensuring a worktree)\"}}\n",
+  "stderr": "[svc advisory svc-enforce svc-codex-pretool-dispatcher] would have blocked this call; the original tool input continues unchanged. Finding: mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: PROMPT_AUTHORITY_ABSENT; EXACT_WORKTREE_RECOVERY: NOT_ATTEMPTED; SELF_PROVISION_ATTEMPTED: origin/main is missing; fetch origin before ensuring a worktree)\n"
+}

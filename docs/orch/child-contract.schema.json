@@ -1,0 +1,102 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "goal_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,95}$"
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "parent_session_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "session_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "principal": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "depth": {
+      "const": 1
+    },
+    "max_orchestrator_depth": {
+      "const": 1
+    },
+    "effort": {
+      "const": "low"
+    },
+    "objective": {
+      "type": "string"
+    },
+    "planning_worktree": {
+      "type": "string"
+    },
+    "plan": {
+      "type": "string"
+    },
+    "board": {
+      "type": "string"
+    },
+    "allowed_writes": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "string"
+      }
+    },
+    "grants_ref": {
+      "type": "string"
+    },
+    "budget_ref": {
+      "type": "string"
+    },
+    "report_max_lines": {
+      "const": 10
+    },
+    "on_budget_or_conflict": {
+      "const": "checkpoint, stop admission, escalate"
+    },
+    "spawn_orchestrators": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "goal_id",
+    "generation",
+    "parent_session_id",
+    "session_id",
+    "principal",
+    "depth",
+    "max_orchestrator_depth",
+    "effort",
+    "objective",
+    "planning_worktree",
+    "plan",
+    "board",
+    "allowed_writes",
+    "grants_ref",
+    "budget_ref",
+    "report_max_lines",
+    "on_budget_or_conflict",
+    "spawn_orchestrators"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HO1-A immutable depth-one child contract",
+  "description": "validateChild also checks exact registry bindings and the reused planning paths."
+}
