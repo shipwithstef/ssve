@@ -30,8 +30,10 @@ assert.deepEqual(batched, perSha);
 // WI-557-v2: pre-push receipts check is HEAD-only — exactly one
 // check-chain-receipts invocation per pushed ref, bound to --sha (the squash
 // tip is what ships; intermediate commits are implementation detail).
+// Quoted Next: lines may repeat that command; they are not a second invocation.
 const prePush = fs.readFileSync("hooks/git/pre-push.d/10-receipts-complete", "utf8");
-assert.equal((prePush.match(/check-chain-receipts\.mjs --sha/g) || []).length, 1);
+const invocations = prePush.split("\n").filter((line) => /\$\(node\s+scripts\/check-chain-receipts\.mjs\s+--sha\b/.test(line) || /^\s*node\s+scripts\/check-chain-receipts\.mjs\s+--sha\b/.test(line));
+assert.equal(invocations.length, 1);
 assert.equal(prePush.includes("--range"), false);
 const driveRoot = fs.mkdtempSync(path.join(os.tmpdir(), "wi472-drive-"));
 const noop = path.join(driveRoot, "noop.mjs");
