@@ -87,6 +87,37 @@ cat > "$WI_DIR/WI-010.md" <<'EOF'
 **Severity:** low
 EOF
 
+cat > "$WI_DIR/WI-011.md" <<'EOF'
+# WI-011: nested paren remainder
+
+**Status:** pending (outer (inner) note) still blocked)
+**Severity:** low
+EOF
+
+cat > "$WI_DIR/WI-012.md" <<'EOF'
+# WI-012: in-progress hold
+
+**Status:** in-progress
+**Hold:** owner review
+**Severity:** medium
+EOF
+
+cat > "$WI_DIR/WI-013.md" <<'EOF'
+# WI-013: closed hold
+
+**Status:** done
+**Hold:** should-not-show-in-next
+**Severity:** low
+**Closed:** 2026-05-11
+EOF
+
+cat > "$WI_DIR/WI-014.md" <<'EOF'
+# WI-014: progress aside
+
+**Status:** in-progress (worktree note)
+**Severity:** low
+EOF
+
 JSON_OUT="$(SVC_WORK_ITEMS_DIR="$WI_DIR" node "$REPO_ROOT/skills/list-work-items/scripts/list_work_items.mjs" --json)"
 
 field() {
@@ -198,9 +229,48 @@ if grep -q 'WI-007' /tmp/list-work-items-frontmatter.out; then
   echo "FAIL: VERIFIED-L3 appeared in the open backlog" >&2
   exit 1
 fi
-NEXT="$(awk -F'|' '/\| WI-006 \|/ { gsub(/^[ \t]+|[ \t]+$/, "", $5); print $5 }' /tmp/list-work-items-frontmatter.out)"
+next_of() {
+  local file="$1" id="$2"
+  awk -F'|' -v id="$id" '$0 ~ "\\| " id " \\|" { gsub(/^[ \t]+|[ \t]+$/, "", $5); print $5; exit }' "$file"
+}
+
+NEXT="$(next_of /tmp/list-work-items-frontmatter.out WI-006)"
 if [[ "$NEXT" != "BY USER DIRECTIVE — do not auto-dispatch" ]]; then
   echo "FAIL: pending remainder kept stray punctuation (next=$(printf '%s' "$NEXT" | cat -A))" >&2
+  exit 1
+fi
+
+NESTED="$(next_of /tmp/list-work-items-frontmatter.out WI-011)"
+if [[ "$NESTED" != "outer (inner) note still blocked" ]]; then
+  echo "FAIL: nested paren remainder kept an orphan closer (next=$(printf '%s' "$NESTED" | cat -A))" >&2
+  exit 1
+fi
+
+HOLD_NEXT="$(next_of /tmp/list-work-items-frontmatter.out WI-012)"
+if [[ "$HOLD_NEXT" != "owner review" ]]; then
+  echo "FAIL: Hold on in-progress was not shown in Next (next=$(printf '%s' "$HOLD_NEXT" | cat -A))" >&2
+  exit 1
+fi
+
+ASIDE="$(next_of /tmp/list-work-items-frontmatter.out WI-014)"
+if [[ "$ASIDE" != "—" ]]; then
+  echo "FAIL: in-progress status remainder was promoted into Next (next=$(printf '%s' "$ASIDE" | cat -A))" >&2
+  exit 1
+fi
+
+if grep -q 'WI-013' /tmp/list-work-items-frontmatter.out; then
+  echo "FAIL: done row with Hold appeared in the open backlog" >&2
+  exit 1
+fi
+
+SVC_WORK_ITEMS_DIR="$WI_DIR" node "$REPO_ROOT/skills/list-work-items/scripts/list_work_items.mjs" --all >/tmp/list-work-items-frontmatter-all.out
+CLOSED_NEXT="$(next_of /tmp/list-work-items-frontmatter-all.out WI-013)"
+if [[ "$CLOSED_NEXT" != "—" ]]; then
+  echo "FAIL: Hold on a done row was copied into Next (next=$(printf '%s' "$CLOSED_NEXT" | cat -A))" >&2
+  exit 1
+fi
+if grep -q 'should-not-show-in-next' /tmp/list-work-items-frontmatter-all.out; then
+  echo "FAIL: done-row Hold text leaked into the table" >&2
   exit 1
 fi
 

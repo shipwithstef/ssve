@@ -67,6 +67,24 @@ function isDoneStatus(token) {
   return DONE_STATUSES.has(String(token).split('-')[0]);
 }
 
+function dropOrphanClosers(text) {
+  let depth = 0;
+  let out = '';
+  for (const ch of text) {
+    if (ch === '(') {
+      depth++;
+      out += ch;
+    } else if (ch === ')') {
+      if (depth === 0) continue;
+      depth--;
+      out += ch;
+    } else {
+      out += ch;
+    }
+  }
+  return out.replace(/[ \t]{2,}/g, ' ').trim();
+}
+
 function dropMatchedCloser(rest) {
   let depth = 1;
   for (let i = 0; i < rest.length; i++) {
@@ -75,8 +93,9 @@ function dropMatchedCloser(rest) {
     else if (ch === ')') {
       depth--;
       if (depth === 0) {
-        if (rest.slice(i + 1).trim() === '') return rest.slice(0, i).trim();
-        return rest;
+        const head = rest.slice(0, i).trim();
+        const tail = dropOrphanClosers(rest.slice(i + 1));
+        return tail ? `${head} ${tail}`.trim() : head;
       }
     }
   }
@@ -190,8 +209,9 @@ const WAITING_STATUS = new Set(['blocked', 'deferred', 'pending']);
 
 function nextCell(it) {
   if (it.dependencies.length) return `after ${it.dependencies.join(', ')}`;
+  // Hold is part of Next for every open row. Done and closed rows stay clean.
+  if (!it.isDone && it.holdRaw) return it.holdRaw;
   if (WAITING_STATUS.has(it.statusKey)) {
-    if (it.holdRaw) return it.holdRaw;
     const rest = statusRemainder(it.statusRaw);
     if (rest) return rest;
   }
