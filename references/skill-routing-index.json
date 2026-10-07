@@ -1089,7 +1089,7 @@
     {
       "skill": "list-work-items",
       "path": "skills/list-work-items/SKILL.md",
-      "content_hash": "c108e72dff8efc2315368df73aac657c6f2d4a8ff8a60726a564a718165424f9",
+      "content_hash": "3524a01b05cb5cf925d32e3726b36d3f3ea2eb396bea5bfd8af59b5a89cb7a7d",
       "description": "List local svc work items ordered by dependency and priority. Use when you need to see the backlog, understand what to build next, and see why each item is needed without syncing to GitHub. Here \"what to build next\" means that ordered local backlog only, not a milestone roadmap.",
       "aliases": [],
       "positive_triggers": [],
