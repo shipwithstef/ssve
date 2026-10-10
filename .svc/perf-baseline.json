@@ -66,5 +66,9 @@
       "observed_max_ms": 128.03,
       "scope": "Informational startup cost only; no binding/dispatch, no end-to-end latency or equivalence claim."
     }
+  },
+  "rule_injection": {
+    "note": "2026-10 framework-5.5 audit: scripts/measure-always-loaded.mjs replays test-framework/fixtures/always-loaded/events.json through the real rule injector. Irrelevant deliveries 11 -> 3 after repo_markers + signal tightening (remaining 3 come from concerns/REGISTRY.json globs: build-ship-alignment on CI workflows, helper-app-query-parity on scripts/seed, post-fix-evidence on a React provider). Ceiling = current; tightening the concern globs is an owner decision.",
+    "corpus_irrelevant_max": 3
   }
 }
