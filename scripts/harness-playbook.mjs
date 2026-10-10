@@ -34,8 +34,10 @@ export function renderPrompt(playbook, values) {
   return subst(playbook.reference_prompt.template, values);
 }
 
+const escapeRe = (s) => s.replace(/[\\^$.*+?()[\]{}|/-]/g, "\\$&");
+
 export function missingFlags(helpText, flags) {
-  return flags.filter((f) => !new RegExp(`(^|[\\s,\\[])${f.replace(/[-]/g, "\\-")}(?=[\\s,=\\]<]|$)`, "m").test(helpText));
+  return flags.filter((f) => !new RegExp(`(^|[\\s,\\[])${escapeRe(f)}(?=[\\s,=\\]<]|$)`, "m").test(helpText));
 }
 
 export function probe(host, spec, run = spawnSync) {

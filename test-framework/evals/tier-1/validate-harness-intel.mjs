@@ -37,6 +37,7 @@ test("fill leaves unknown placeholders visible; the reference prompt renders", (
 test("flag probes detect a renamed flag and skip missing CLIs", () => {
   assert.deepEqual(missingFlags("Usage:\n  --model <m>\n  --print, -p\n", ["--model", "--print", "--effort"]), ["--effort"]);
   assert.deepEqual(missingFlags("  --effort-level <x>\n", ["--effort"]), ["--effort"], "a longer flag does not satisfy a shorter one");
+  assert.deepEqual(missingFlags("  --a.b\n", ["--a.b", "--axb", "--x\\y"]), ["--axb", "--x\\y"], "regex metacharacters in flag names are literal");
   const fake = (bin, args) => ({ stdout: "  --a\n  --b\n", stderr: "", status: 0 });
   assert.deepEqual(probe("x", { binary: "x", probe: { help: ["--help"], flags: ["--a", "--c"] } }, fake).missing, ["--c"]);
   const absent = () => ({ error: Object.assign(new Error("nope"), { code: "ENOENT" }) });
