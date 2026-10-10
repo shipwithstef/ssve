@@ -6,19 +6,43 @@
       "id": "write-spec-csv-export",
       "skill": "write-spec",
       "prompt": "Write a feature spec for: users can export their invoices as CSV from the invoices page. Output only the spec markdown.",
-      "grader": { "type": "regex", "pattern": ["Status:\\s*DRAFT", "Acceptance Criteria", "\\b(Given|When|Then)\\b"] }
+      "grader": {
+        "type": "regex",
+        "pattern": [
+          "Status:\\s*DRAFT",
+          "Acceptance Criteria",
+          "\\b(Given|When|Then)\\b"
+        ]
+      }
     },
     {
       "id": "diagnose-off-by-one",
       "skill": "diagnose-bug",
       "prompt": "Users report the last page of results is always missing. Code:\n\nfunction pages(total, size) {\n  const out = [];\n  for (let i = 0; i < Math.floor(total / size); i++) out.push(i);\n  return out;\n}\n\nDiagnose it. Do not write the fix yet; produce the diagnosis brief only.",
-      "grader": { "type": "regex", "pattern": ["^#+\\s*Symptom", "^#+\\s*Reproduction", "^#+\\s*Evidence", "(Math\\.ceil|floor|remainder|partial page)"] }
+      "grader": {
+        "type": "regex",
+        "pattern": [
+          "^#+.*Reproduction",
+          "^#+.*Root Cause",
+          "^#+.*Pattern Scan",
+          "^#+.*Pillar",
+          "(Math\\.ceil|ceil(ing)?\\b)"
+        ],
+        "_note": "diagnose-bug's own brief contract (P2 Reproduction, P3 Root Cause, pattern scan, Pillar Revisit Audit / Coverage Matrix) plus the correct fix direction. Corrected 2026-10-10: the first grader used headings from an unrelated table in the skill."
+      }
     },
     {
       "id": "decide-db-choice",
       "skill": "decide",
       "prompt": "Single-user desktop app, cloud sync maybe next year. Postgres or SQLite? Give me the decision.",
-      "grader": { "type": "regex", "pattern": ["recommend", "confidence", "SQLite"] }
+      "grader": {
+        "type": "regex",
+        "pattern": [
+          "recommend",
+          "confidence",
+          "SQLite"
+        ]
+      }
     }
   ]
 }
