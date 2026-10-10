@@ -5,7 +5,6 @@ description: >
   Extract production-proven patterns from a real repo into a reusable bootstrap template.
   Use for "extract patterns from", "make a template from", "create bootstrap from" this
   repo.
-disable-model-invocation: true
 phases:
   - id: P1-SourceAccessScope
     trigger: always

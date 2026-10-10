@@ -4,7 +4,6 @@ version: "1.0"
 description: >
   DEPRECATED (retired as a lane). Do not route here; small changes go through
   route-workflow, which skips inactive stages automatically.
-disable-model-invocation: true
 phases:
   - id: P1-QuickFixEligibilityGate
     trigger: always

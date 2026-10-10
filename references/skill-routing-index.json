@@ -441,7 +441,7 @@
     {
       "skill": "craft-prompt",
       "path": "skills/craft-prompt/SKILL.md",
-      "content_hash": "2c5453f5bb6b47bb39afd6217f849b099e4d8d9c91728de6ea18ce1283c5edba",
+      "content_hash": "23c2b41e64998fdefd7a5fc81a5a41715f2260f3f3524e7dd5f06a69b0f51fdf",
       "description": "Crafts a standalone, output-shaped prompt for a task and checks it beats a bare baseline with a best-of-2 floor. Use for \"craft me a prompt\", \"make this prompt better\", \"beat this viral prompt\". Not for routing svc work. Opt-in, default off.",
       "aliases": [],
       "positive_triggers": [],
@@ -807,7 +807,7 @@
     {
       "skill": "extract-bootstrap",
       "path": "skills/extract-bootstrap/SKILL.md",
-      "content_hash": "6cdca08aec8de18e3f633d0fbbbc474c10010b67152e90681624d65ffeb74a0c",
+      "content_hash": "ae8fc57fab417783300c741d0ae327a5aa47a50a70eb04dda94b24d1c2738648",
       "description": "Extract production-proven patterns from a real repo into a reusable bootstrap template. Use for \"extract patterns from\", \"make a template from\", \"create bootstrap from\" this repo.",
       "aliases": [],
       "positive_triggers": [],
@@ -945,7 +945,7 @@
     {
       "skill": "honest-diagnosis",
       "path": "skills/honest-diagnosis/SKILL.md",
-      "content_hash": "0c3217ed8dec586cc58fc1a75c88edd1d58fefc69a9a4ae4ae9baf456c4d33e1",
+      "content_hash": "56f54ee52e004c3d8e7b94fc88ef53f8737d4074996b3ec0d92ef94ca99f1fdd",
       "description": "Evidence-graded answer to why the builder is not shipping revenue products, naming concrete blockers from the capability registry and decision logs. Use for \"why am I not shipping\", \"honest diagnosis\", \"what's my real blocker\".",
       "aliases": [],
       "positive_triggers": [],
@@ -1392,7 +1392,7 @@
     {
       "skill": "quick-fix",
       "path": "skills/quick-fix/SKILL.md",
-      "content_hash": "8326c9f1e341797eb75d2786bd015fe7c8c376789db84bfc02612768bad0e55e",
+      "content_hash": "d35357679addd78937456f08889844112d2123f066401930a8ae6044e56b030e",
       "description": "DEPRECATED (retired as a lane). Do not route here; small changes go through route-workflow, which skips inactive stages automatically.",
       "aliases": [],
       "positive_triggers": [],

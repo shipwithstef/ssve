@@ -12,7 +12,6 @@ description: >
   Evidence-graded answer to why the builder is not shipping revenue products, naming
   concrete blockers from the capability registry and decision logs. Use for "why am I not
   shipping", "honest diagnosis", "what's my real blocker".
-disable-model-invocation: true
 inputs:
   required: []
   optional:

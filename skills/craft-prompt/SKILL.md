@@ -8,7 +8,6 @@ description: >
   Crafts a standalone, output-shaped prompt for a task and checks it beats a bare baseline
   with a best-of-2 floor. Use for "craft me a prompt", "make this prompt better", "beat
   this viral prompt". Not for routing svc work. Opt-in, default off.
-disable-model-invocation: true
 inputs:
   required:
     - artifact: task-intent
