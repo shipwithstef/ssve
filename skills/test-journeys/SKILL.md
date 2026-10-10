@@ -63,7 +63,7 @@ When a journey surfaces undefined behavior, compare current ACs with observed be
 
 ## Scope and Inputs
 
-See references/routing-and-guardrails.md for the full "Scope and Inputs" section (moved verbatim).
+**Scope and Inputs** — Required input is `target_url` (any reachable URL: local, preview, staging, prod); optional `env` (reporting label only), `mode=smoke|regression|feature-ac|exploratory`, `journey`, `feature`. Test whichever URL the user gives (never assume live-only) and record `target_url` and `env` in every run summary. For regression, corrective, deploy-validation or "prove the fix" runs, load `references/pre-post-validation-loop.md` BEFORE execution, run the same journey, account, viewport stage and target class before and after the change, and classify the comparison in SUMMARY.md as `fixed-by-change`, `branch-introduced`, `pre-existing` or `blocked`; do not mark ACs verified while an acceptance-critical changed signal is unclassified. Validate machine-readable evidence with `node scripts/validate-pre-post-validation-evidence.mjs --evidence <path>`. Details: `references/routing-and-guardrails.md`.
 
 Kept inline (asserted by validators; also in the reference):
 
@@ -93,7 +93,7 @@ If ambiguous, default to `convert`.
 
 ## Prerequisites
 
-See references/prerequisites.md for the full "Prerequisites" section (moved verbatim).
+**Prerequisites** — Journey docs (`docs/specs/journeys/*.feature.md`), feature specs, and AC tables in the standard `| AC | Description | QA | E2E | Test |` format must exist; if AC tables are missing or malformed, run `audit-ac` first. When this pass writes or repairs automated test source, tag the AC it exercises with `@AC-<ID>` (uppercase, spec ID verbatim, e.g. `@AC-NAV-01`) and check with `node scripts/verify-test-ac-tags.mjs --root .`; manual-only QA emits no tag. For browser-visible features, verify responsive coverage staged desktop-first: Stage 1 desktop `1280x800` is MANDATORY first and must be clean (defects fixed or filed as HIGH/CRITICAL WIs) before Stage 2 mobile `375x812`; Stage 3 tablet `768x1024` only when UX/UI define tablet behavior. Claiming both viewports covered without staging is a contract violation (mark the untested one `⏭️ staging-blocked` and file a WI); skip viewports only for features with no visual surface, say so in SUMMARY.md, and record `viewport_stage=desktop|mobile|tablet` for every run. Details: `references/prerequisites.md`.
 
 Kept inline (asserted by validators; also in the reference):
 
@@ -112,19 +112,19 @@ instead of hand-copying it. Manual-only QA (no test source touched) writes the
 
 ### 1) `smoke`
 
-See references/core-modes-basic.md for the full "1) `smoke`" section (moved verbatim).
+**`smoke`** — Run only the critical paths of the selected journeys (auth/session entry, primary action, success state, critical failure guardrail) for fast confidence after a deploy or risky merge. Details: `references/core-modes-basic.md`.
 
 ### 2) `regression`
 
-See references/core-modes-basic.md for the full "2) `regression`" section (moved verbatim).
+**`regression`** — Run full journey scenarios and all mapped ACs for the selected scope, for release readiness or wide-impact changes. Details: `references/core-modes-basic.md`.
 
 ### 3) `feature-ac`
 
-See references/core-modes-basic.md for the full "3) `feature-ac`" section (moved verbatim).
+**`feature-ac`** — Run AC-focused QA for one feature spec, still executing through journey flow contexts rather than isolated clicks, when asked to verify feature X against its spec. Details: `references/core-modes-basic.md`.
 
 ### 4) `exploratory`
 
-See references/core-modes-basic.md for the full "4) `exploratory`" section (moved verbatim).
+**`exploratory`** — Run unscripted, risk-guided QA around journey transitions and edge states (boundary values, empty states, rapid actions, invalid input, interruption, permission edges, responsive, accessibility, state persistence, concurrency), recording for each issue the exact steps, a screenshot, expected behavior and severity Critical/High/Medium/Low, and route discovered gaps to the right skill. Details: `references/core-modes-basic.md`.
 
 ### Cross-System Journey Validation
 
@@ -204,21 +204,30 @@ status alone.
 
 ### Base44 E2E Account OTPs
 
-See references/core-modes-basic.md for the full "Base44 E2E Account OTPs" section (moved verbatim).
+**Base44 E2E Account OTPs** — For Base44 journeys that create or prepare generated E2E auth accounts, load `rules/base44/e2e-otp-connector.md` BEFORE declaring the account gate blocked or adding mailbox automation; prefer an installed mailbox connector, then `base44.auth.verifyOtp(...)` and an immediate password-login preflight. Do not write one-off Gmail OAuth refresh-token scripts while a connector can read the OTP mailbox, and keep OTP values in process memory, never in evidence artifacts or reports. Details: `references/core-modes-basic.md`.
 
 ## Execution Workflow
 
 ### Step 0.5: Scenario Inventory — MANDATORY BEFORE EXECUTION
 
-See references/execution-steps.md for the full "Step 0.5: Scenario Inventory — MANDATORY BEFORE EXECUTION" section (moved verbatim).
+**Step 0.5: Scenario Inventory** — MANDATORY BEFORE EXECUTION: enumerate every `# Scenario:` block in the in-scope journey docs and write `<evidence-dir>/scenarios.json` (id, title, journey, ac_ids, status, skip_reason, wi_path). Every scenario MUST end as exactly one of `executed` (spec AC column updated plus screenshot path), `skipped-infeasible` (runtime blocker with cited evidence and a WI routed to `write-e2e`, `wi_path` filled) or `skipped-user-approved` (quoted approval and timestamp). Efficiency skips are NOT allowed: propose them to the user or execute. Update statuses as you go. Details: `references/execution-steps.md`.
 
 ### Step 1: Select Journey Scope
 
-See references/routing-and-guardrails.md for the full "Step 1: Select Journey Scope" section (moved verbatim).
+- Load target journey docs.
+- Extract scenarios and expected outcomes.
+- For each scenario, identify mapped AC IDs from related feature specs.
+
+If mapping is missing, create a gap note and continue with explicit assumptions.
 
 ### Step 2: Preflight Target Environment
 
-See references/routing-and-guardrails.md for the full "Step 2: Preflight Target Environment" section (moved verbatim).
+Validate:
+- `target_url` reachable
+- authentication path usable for the scenario
+- required test data/state available
+
+If preflight fails, stop with a concise blocker report.
 
 ### Step 2.1: Reporter/Runner Env Parity Gate
 
@@ -317,27 +326,36 @@ Record the S2 justification in SUMMARY.md by listing each of the three condition
 
 ### Step 3: Execute Scenario Runtime Flow (Real Browser)
 
-See references/execution-steps.md for the full "Step 3: Execute Scenario Runtime Flow (Real Browser)" section (moved verbatim).
+**Step 3: Execute Scenario Runtime Flow (Real Browser)** — A browse-daemon pre-flight is MANDATORY before any browser work; use the `browse` CLI when healthy, Playwright MCP only if it fails (log the warning), and delegate to the user (S2) only as a last resort after S1 is shown impossible. Use a real browser only for S1 ACs that passed the Step 2.5 code pre-check, bootstrap auth once per session from `e2e/helpers/browse-auth.md` (create it if missing), and verify Given/When/Then outcomes, error, loading and empty states, navigation and responsive behavior. Capture one screenshot per AC verification (PASS and FAIL) at `.svc/visuals/<WI>/<JourneyID>-step<N>-<state>-<viewport>.png` (or `.svc/visuals/adhoc-<date>/`), never elsewhere; every visual AC marked ✅ MUST cite its screenshot path; capture console errors (`browse console --errors`) and network failures (`browse network`). Details: `references/execution-steps.md`.
 
 ### Step 4: Update Feature Specs (Source of Truth)
 
-See references/misc-sections.md for the full "Step 4: Update Feature Specs (Source of Truth)" section (moved verbatim).
+**Step 4: Update Feature Specs** — Write QA column statuses in the AC tables (`✅ MM-DD`, `✅ MM-DD (code) path:line`, `❌ MM-DD`, `⚠️ MM-DD`, `⏭️ reason`, `—`) and add bug blockquotes directly under the relevant AC for failures. Details: `references/misc-sections.md`.
 
 ### Step 4.5: Open Work Items for Defects — MANDATORY BEFORE STEP 5
 
-See references/execution-steps.md for the full "Step 4.5: Open Work Items for Defects — MANDATORY BEFORE STEP 5" section (moved verbatim).
+Findings that don't become work items don't get prioritised, assigned, or scheduled. Bug blockquotes in specs are not a substitute for a WI file.
+
+- **CRITICAL / HIGH findings:** MUST create `docs/work-items/WI-<NNN>-<slug>.md` before Step 5. Template fields: title, severity, status=OPEN, reproduction (scenario ID + evidence screenshot path), expected vs actual, linked AC IDs, affected files/specs or `unknown: <reason>`, suggested owner skill.
+- **MEDIUM findings:** Create a WI unless the user explicitly opts out. Default is create.
+- **LOW findings:** Either file a single rolling `WI-auto-<date>-minor-findings.md` or route to `quick-fix`.
+- **Spec drift (contradictions between spec and code):** WI routed to `sync-spec-code` with both sides cited.
+- **Behavioural defects / regressions:** WI routed to `diagnose-bug`.
+- **Skipped-infeasible scenarios** (from Step 0.5): WI routed to `write-e2e` with provisioning requirements noted — E2E fixtures can provision state manual testing cannot.
+
+Each WI file must reference its evidence screenshot under `.svc/visuals/<WI>/`. Cross-link: SUMMARY.md lists all WIs created in this run.
 
 ### Step 5: Save Evidence and Summary
 
-See references/execution-steps.md for the full "Step 5: Save Evidence and Summary" section (moved verbatim).
+**Step 5: Save Evidence and Summary** — Write evidence under `docs/specs/features/test-evidence/{YYYY-MM-DD}-{env}-{journey-or-feature}/`; SUMMARY.md must include target URL and env, mode, viewport coverage, pass/fail counts, blockers and follow-ups, pre/post evidence and classification when corrective, `provider_visible=true|false` (link `PROVIDER_ANALYTICS_EVIDENCE.md` when true), allowed next skills, and the `node scripts/verify-skill-contract.mjs test-journeys-closeout --summary <SUMMARY.md> --scenarios <scenarios.json> --next <next-skill>` result. Before declaring the run complete, run `node scripts/validate-journey-execution-trace.mjs --summary <run-dir>/SUMMARY.md --scenarios <run-dir>/scenarios.json`. Details: `references/execution-steps.md`.
 
 ### Step 6: Commit Results — MANDATORY BEFORE DECLARING DONE
 
-See references/execution-steps.md for the full "Step 6: Commit Results — MANDATORY BEFORE DECLARING DONE" section (moved verbatim).
+**Step 6: Commit Results** — MANDATORY BEFORE DECLARING DONE: a QA run that leaves a dirty tree is not complete. Stage only the affected spec, the run's SUMMARY.md and scenarios.json, and the new WI files (NEVER `git add -A`), commit as `docs(qa): <journey-ids> regression <date> — AC updates + findings`, and do NOT auto-push; surface the unpushed commit in the final report. If the project requires PRs, branch `qa/<journey-ids>-<date>` first. Details: `references/execution-steps.md`.
 
 ## Routing Rules
 
-See references/routing-and-guardrails.md for the full "Routing Rules" section (moved verbatim).
+**Routing Rules** — Route findings automatically, and every route also gets a WI file (Step 4.5): missing or vague ACs -> `audit-ac`; wrong journey transitions -> `write-journeys`; spec-vs-code contradictions -> `sync-spec-code`; behavioural defects or regressions -> `diagnose-bug`; skipped-infeasible scenarios -> `write-e2e` with provisioning needs; stable validated flows -> `write-e2e`; known-limitation ACs (⛔ E2E) -> WI only if the user confirms. Details: `references/routing-and-guardrails.md`.
 
 ## Guardrails
 
@@ -352,23 +370,6 @@ See references/routing-and-guardrails.md for the full "Routing Rules" section (m
 9. **Do NOT claim analytics, telemetry, PostHog, replay, or provider-dashboard visibility from a Playwright/browser pass alone.** Provider-visible claims need the Provider-Visible Analytics And Replay Gate evidence above.
 
 ---
-
-### Step 2: Preflight Target Environment
-
-Validate:
-- `target_url` reachable
-- authentication path usable for the scenario
-- required test data/state available
-
-If preflight fails, stop with a concise blocker report.
-
-### Step 1: Select Journey Scope
-
-- Load target journey docs.
-- Extract scenarios and expected outcomes.
-- For each scenario, identify mapped AC IDs from related feature specs.
-
-If mapping is missing, create a gap note and continue with explicit assumptions.
 
 ## Relationship to E2E
 
@@ -474,15 +475,15 @@ Not part of progressive chains (invoked standalone or by verify-promotion).
 
 ## Post-Compaction Recovery
 
-See references/misc-sections.md for the full "Post-Compaction Recovery" section (moved verbatim).
+**Post-Compaction Recovery** — If context was compacted and you lost framework state, read `.svc/lane-tasks-<WI>.json` (sole source of truth), find the first `in_progress` or else first unblocked `pending` task, re-load the skill with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and resume. NEVER ghost-complete: verify `skill_receipt` exists before marking any task complete. Details: `references/misc-sections.md`.
 
 ## Feature Validation Ledger Handoff
 
-See references/misc-sections.md for the full "Feature Validation Ledger Handoff" section (moved verbatim).
+**Feature Validation Ledger Handoff** — When a user-facing or admin-facing graph requires `feature_validation_closeout`, write runtime results as `AC ID | journey scenario(s) | PASS/FAIL/BLOCKED — summary | evidence paths` rows ready to copy into `FEATURE_VALIDATION_LEDGER.md`, and name a follow-up WI for every blocked or failed result; never leave the ledger to infer coverage from a generic browser smoke summary. Details: `references/misc-sections.md`.
 
 ## Generated Outcome Journey Contract
 
-See references/routing-and-guardrails.md for the full "Generated Outcome Journey Contract" section (moved verbatim).
+**Generated Outcome Journey Contract** — For provider-backed generation flows a journey is incomplete until it proves all six lifecycle states (Start, Generate, Draft visible before save, Save, Return via the normal product path, Persisted display with provider/source evidence) or records a blocked WI. Write provider/source, fallback policy and approval, saved outcome and evidence paths into `PROVIDER_FIDELITY_EVIDENCE.md`; a draft-only preview never satisfies a saved-result journey. Details: `references/routing-and-guardrails.md`.
 
 Kept inline (asserted by validators; also in the reference):
 

@@ -85,7 +85,7 @@ responsive approach), follow the Design Alternatives Protocol
 
 ## Design Shotgun (variant exploration)
 
-See references/design-shotgun.md for the full "Design Shotgun (variant exploration)" section (moved verbatim).
+**Design Shotgun** — Before finalizing component specs, gather context on five dimensions (who, job to be done, what exists, user flow, edge cases) and do not skip it. When the work changes an existing component, screen, shared component or route, the Production-Derived Mock Parity Gate is MANDATORY before any mock: write a parity ledger (`docs/specs/ui/<feature>-mock-parity-ledger.md` or inside the UI doc) showing current state and intended final state of the real component, with production source paths, usages, ACs, states and viewports; generic "inspired by" mocks are a hard fail, and missing baselines mean run `track-visuals` or record a blocking gap. Then read prior approvals (`docs/specs/decisions/approved.json`, `taste-*.md`), propose genuinely different same-job text concepts, and present them to the user BEFORE generating HTML (a gate; in auto mode P0 selects with justification). Generate self-contained HTML/CSS variants with real content, 375px and 1200px, and record the chosen direction in `approved.json`. Details: `references/design-shotgun.md`.
 
 The mock parity gate below stays inline because later gates assert it:
 
@@ -126,7 +126,7 @@ or HTML variants that do not include the affected existing component are not
 
 ## External Canvas Handoff (OPT-IN escape hatch — NOT the default path)
 
-See references/external-canvas-handoff.md for the full "External Canvas Handoff (OPT-IN escape hatch — NOT the default path)" section (moved verbatim).
+**External Canvas Handoff (opt-in only)** — The default is the in-session Design Shotgun; use external handoff ONLY when the user names an external canvas (Claude Design, v0, Lovable), the task graph names `design-ui-external-handoff`, or the WI sets `design_route: external-canvas`. Never route here because quality "might be higher" or the codebase is large. When triggered: a Gemini subagent builds `docs/specs/ui/constraint-matrix.md` (the orchestrator MUST NOT re-read the codebase), compose the Vibe Contract prompt (Claude Design uses `/design-sync`, falling back to Design Shotgun if unavailable), then a second zero-history Gemini subagent audits the returned code against the matrix (strict PASS/FAIL) before integration. Code stays the source of truth. Details: `references/external-canvas-handoff.md`.
 
 ## Adversarial Design Review (after UI is drafted)
 
@@ -153,7 +153,7 @@ UI design defines the visual treatment, component structure, and interaction aes
 
 ## The Design System
 
-See references/design-system.md for the full "The Design System" section (moved verbatim).
+**The Design System** — `docs/specs/design-system.md` is a foundational artifact; if it is missing, create it BEFORE designing any feature UI, from the vision, personas and existing codebase UI patterns (adapted to this brand, not a copy of Material or Tailwind). If it exists, read it: every UI decision must reference its tokens, and a missing pattern means extend the design system first, then use the new tokens. Details: `references/design-system.md`.
 
 ## When To Use
 
@@ -178,7 +178,7 @@ See references/design-system.md for the full "The Design System" section (moved 
 
 ### Step 0a: Ensure DESIGN.md Exists (Brand + Aesthetic Foundation)
 
-See references/process-steps.md for the full "Step 0a: Ensure DESIGN.md Exists (Brand + Aesthetic Foundation)" section (moved verbatim).
+**Step 0a: Ensure DESIGN.md exists** — Check `DESIGN.md` (or `docs/specs/DESIGN.md`); if absent, create it at project root through the Design Consultation process: gather product context (README, manifest, components, vision, personas, `domain-profile.md`, `analyze-competitors.md`), inspect real same-job product screens (not marketing pages), propose one package marked SAFE or RISK per dimension, preview fonts and colors in HTML, then write DESIGN.md. If it exists, make every UI decision align with it. Details: `references/process-steps.md`.
 
 ### Step 0b: Ensure Design System Exists (Tokens)
 
@@ -231,43 +231,43 @@ ls docs/specs/personas/P*.md 2>/dev/null
 
 ### Step 2: Component Specifications
 
-See references/process-steps.md for the full "Step 2: Component Specifications" section (moved verbatim).
+**Step 2: Component Specifications** — For each screen in the UX screen inventory, specify the components that render it, turning each information-hierarchy element into a component with concrete design tokens, layout and content. Details: `references/process-steps.md`.
 
 ### Step 3: Design Token Usage
 
-See references/process-steps.md for the full "Step 3: Design Token Usage" section (moved verbatim).
+**Step 3: Design Token Usage** — Map exactly which design-system tokens each screen uses and list any new tokens required, so the design system is proven sufficient and the feature stays consistent. Details: `references/process-steps.md`.
 
 ### Step 4: Visual Hierarchy
 
-See references/process-steps.md for the full "Step 4: Visual Hierarchy" section (moved verbatim).
+**Step 4: Visual Hierarchy** — For each screen, map the UX information hierarchy to visual weight: Priority 1 elements must be visually dominant and lower priorities visually subordinate. Details: `references/process-steps.md`.
 
 ### Step 5: Supported Themes
 
-See references/process-steps.md for the full "Step 5: Supported Themes" section (moved verbatim).
+**Step 5: Supported Themes** — Specify each theme the product actually supports, including screen-specific dark-mode behavior and contrast when dark mode exists; do not add a theme just to fill a template. Details: `references/process-steps.md`.
 
 ### Step 6: Animation and Motion
 
-See references/process-steps.md for the full "Step 6: Animation and Motion" section (moved verbatim).
+**Step 6: Animation and Motion** — Specify motion only for state transitions or interactions where it improves feedback or comprehension; record "none" for immediate transitions and omit unused rows. Details: `references/process-steps.md`.
 
 ### Step 7: Component States
 
-See references/process-steps.md for the full "Step 7: Component States" section (moved verbatim).
+**Step 7: Component States** — Specify every visual state (default, hover, focus, active, disabled, loading, error, etc.) for every interactive component. For tabs, accordions, dropdowns and similar controls, define the active/selected/expanded states, map them to ARIA attributes (`aria-selected`, `aria-expanded`), and state which panel is visible or unmounted per state (exactly one active panel); missing panel-visibility mapping or ARIA documentation is a G3 FAIL. Details: `references/process-steps.md`.
 
 ## Purposeful visual choices
 
-See references/purposeful-visual-choices.md for the full "Purposeful visual choices" section (moved verbatim).
+**Purposeful visual choices** — Distinctiveness comes from the product's data, language, user job and hierarchy; prefer the smallest change that clarifies the important action. Do not add glass effects, headline imagery, a new font, accent colors or tactile motion just to signal polish; any chosen treatment must record the compared real screen, intended user outcome, and how it will be shown. Details: `references/purposeful-visual-choices.md`.
 
 ### Step 8: Responsive Layout Specifics
 
-See references/process-steps.md for the full "Step 8: Responsive Layout Specifics" section (moved verbatim).
+**Step 8: Responsive Layout Specifics** — Translate the UX responsive strategy into implementation-ready decisions: grid system, per-screen layouts at each breakpoint, and responsive behavior of each component. Details: `references/process-steps.md`.
 
 ### Step 9: Assemble The UI Design Document
 
-See references/process-steps.md for the full "Step 9: Assemble The UI Design Document" section (moved verbatim).
+**Step 9: Assemble The UI Design Document** — Write the complete UI design to `docs/specs/ui/<feature-name>.md` with header links (feature spec, UX, design system), Status DRAFT pending G3, and the component, token, hierarchy, theme, motion, state and responsive sections from Steps 2-8. Details: `references/process-steps.md`.
 
 ### Step 10: AC Traceability Check
 
-See references/process-steps.md for the full "Step 10: AC Traceability Check" section (moved verbatim).
+**Step 10: AC Traceability Check** — Walk every AC in the feature spec and confirm the UI design addresses it visually, in an AC/persona/screen/components/states/responsive table. Every AC must have a visual spec (otherwise loop back to `design-ux`, extend the design system, or confirm it is backend-only), and user/admin-facing ACs must cite concrete persona IDs or paths, not generic labels like `customer` or `all users`. Details: `references/process-steps.md`.
 
 ### Step 11: Trigger G3 Review
 
@@ -293,7 +293,7 @@ The UI design artifact is ready for Gate G3 review. Invoke the Review Protocol:
 
 ### Step 12: Update Feature Spec Status
 
-See references/process-steps.md for the full "Step 12: Update Feature Spec Status" section (moved verbatim).
+**Step 12: Update Feature Spec Status** — On G3 PASS, set the feature spec `**Status:** DESIGNED` and add a UI Design section with the artifact path, design-system path and `G3 Review: PASS — [date]`. Details: `references/process-steps.md`.
 
 ### Step 13: Handoff
 

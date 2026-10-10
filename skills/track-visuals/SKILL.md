@@ -143,7 +143,7 @@ are retained for platform improvement and cross-WI analysis.
 
 ### Baseline Mode
 
-See references/baseline-mode.md for the full "Baseline Mode" section (moved verbatim).
+**Baseline Mode** — Run after `design-ui` produces the first visual design, or when onboarding a brownfield project. Step 0 (WI/feature impact scan) is MANDATORY BEFORE BUILDING INVENTORY: read the WI and linked feature spec, mine `docs/specs/journeys/J*.feature.md` for modal/toast/form/loading/empty transition states, check existing E2E coverage, map affected shared components, read the Production-Derived Mock Parity Ledger when UI work modifies an existing component (if required but missing, stop and route back to `design-ui`), and log a pre-flight checklist. Step 1 builds the inventory from Source A (routes from UX/UI docs) plus Source B (transition states, required whenever journey docs or shared-component ACs exist). Step 2 captures each screen and state at desktop 1280, tablet 768 and mobile 375, and a browse-daemon pre-flight is MANDATORY before any capture (fall back to Playwright MCP only if it fails, with a warning). Step 3 saves `docs/specs/visuals/baseline/manifest.md`. Details: `references/baseline-mode.md`.
 
 Inline requirement (also in the reference):
 
@@ -304,11 +304,11 @@ Compare current app visuals against UI design documents:
 
 ### Review Mode
 
-See references/review-mode.md for the full "Review Mode" section (moved verbatim).
+**Review Mode** — Analyze already-captured screenshots (`screenshots_dir`, `concern`, `exclusions` from the caller) for one visual concern; no re-capture, no baseline comparison. Read the dir's `manifest.md`, turn the concern (dark mode completeness, color contrast, layout regression, general, comprehension) into a checklist, and read EVERY `.png` (no sampling), skipping excluded items. Record file, area, problem, likely cause and severity (critical/high/low), tag generic gradients, stock icons or filler copy as `[AI-SLOP]`, and for `comprehension` score six dimensions 1-4 and file a WI for any high or critical finding even outside ACs. Save `.svc/visuals/<WI>/review-<concern-slug>-<date>.md`, then run `node scripts/verify-skill-contract.mjs artifact-family track-visuals --root .` and `visual-review-closeout`; the review is not complete until both pass. Details: `references/review-mode.md`.
 
 ### External-Anchor Mode
 
-See references/external-anchor-mode.md for the full "External-Anchor Mode" section (moved verbatim).
+**External-Anchor Mode** — Capture a third-party landing page for `landing-page`'s reference bank, when an anchor lacks `hero.png`/`hero.webm` or its captures are over 12 months old. Given `url`, `sector` and `anchor`, use the browse pre-flight, capture a 1920x1080 hero PNG and a short scroll-cast WEBM into `references/landing-bank/<sector>/<anchor>/`, then update the sector `INDEX.md` row and the `pattern.md` Captured field. Return ONLY file paths to the caller (never raw screenshots or DOM dumps), and never touch `docs/specs/visuals/`. Details: `references/external-anchor-mode.md`.
 
 ## Integration Points
 
