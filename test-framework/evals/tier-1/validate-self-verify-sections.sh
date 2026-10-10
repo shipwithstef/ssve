@@ -42,7 +42,7 @@ for skill in $SKILLS; do
 
   # The Self-Verify section must contain a real table with criteria
   # Extract content after Self-Verify heading until next same-or-higher heading
-  SELF_VERIFY_CONTENT=$(awk '/^#{2,3} Self-Verify/{found=1; next} found && /^#{2,3} /{exit} found{print}' "$SKILL_FILE")
+  SELF_VERIFY_CONTENT=$(awk '/^###? Self-Verify/{found=1; next} found && /^###? /{exit} found{print}' "$SKILL_FILE")
 
   if ! grep -qE 'PASS|FAIL' <<< "$SELF_VERIFY_CONTENT"; then
     ERRORS+="  FAIL: $skill — Self-Verify section exists but has no PASS/FAIL column\n"

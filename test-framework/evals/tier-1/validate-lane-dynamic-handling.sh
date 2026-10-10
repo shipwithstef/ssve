@@ -78,7 +78,7 @@ check_skill_skip_verify() {
     return
   fi
 
-  SELF_VERIFY_CONTENT=$(awk '/^#{2,3} Self-Verify/{found=1; next} found && /^#{2,3} /{exit} found{print}' "$skill_file")
+  SELF_VERIFY_CONTENT=$(awk '/^###? Self-Verify/{found=1; next} found && /^###? /{exit} found{print}' "$skill_file")
   if echo "$SELF_VERIFY_CONTENT" | grep -qiE 'skip justified|skip reason|skip documented|not applicable|N/A.*justified'; then
     pass
   else
@@ -93,7 +93,7 @@ check_skill_skip_verify "track-visuals" "track-visuals (no-WI skip)"
 
 # --- 3. New-lane necessity checks ---
 # plan-changeset must have a Self-Verify check for new-lane detection.
-PLAN_CHANGESET_SV=$(awk '/^#{2,3} Self-Verify/{found=1; next} found && /^#{2,3} /{exit} found{print}' "$REPO_ROOT/skills/plan-changeset/SKILL.md")
+PLAN_CHANGESET_SV=$(awk '/^###? Self-Verify/{found=1; next} found && /^###? /{exit} found{print}' "$REPO_ROOT/skills/plan-changeset/SKILL.md")
 if echo "$PLAN_CHANGESET_SV" | grep -qiE 'new.lane needed|new lane needed|lane.*does not fit|does not fit.*lane'; then
   pass
 else
@@ -101,7 +101,7 @@ else
 fi
 
 # route-workflow must have a Self-Verify check for new-lane detection.
-ROUTE_SV=$(awk '/^#{2,3} Self-Verify/{found=1; next} found && /^#{2,3} /{exit} found{print}' "$REPO_ROOT/skills/route-workflow/SKILL.md")
+ROUTE_SV=$(awk '/^###? Self-Verify/{found=1; next} found && /^###? /{exit} found{print}' "$REPO_ROOT/skills/route-workflow/SKILL.md")
 if echo "$ROUTE_SV" | grep -qiE 'new.lane necessity|new lane necessity|lane.*needed'; then
   pass
 else

@@ -80,12 +80,12 @@ export const ARMS = {
   bounded: [
     "Build what spec.md asks for, fast and reliably. Commit early and often (git is set up here).",
     "1. Words first: write BRIEF.md section 0 with 10 terms an expert in this field would use (one line on what each means, one on how it changes what to build) and the one question to settle first, with the answer you will assume. Do not wait for anyone to answer; build on that assumption.",
-    "2. BRIEF.md, one page: done-when checks (each a command that exits 0), boundaries (owned paths, a versioned contract file for interfaces, irreversible zones such as auth and money), open questions each with the check that decides it, and a decision log you append to as you learn.",
+    "2. BRIEF.md, one page: done-when checks (each a command that exits 0), with one row for every deliverable spec.md names, documents and plans included, not only code (for a document, the check confirms it exists and covers each point the spec asks for); boundaries (owned paths, a versioned contract file for interfaces, irreversible zones such as auth and money), open questions each with the check that decides it, and a decision log you append to as you learn.",
     "3. Skeleton: a runnable shell, the contract and the checks. Commit as soon as it runs.",
     `4. Settle each open question by trying variants against its check: write a spec JSON and run \`node ${ROOT}/scripts/probe-loop.mjs run --spec <spec.json> --out <result.json>\` (fields: question, base, prompt, owned, check, variants, model haiku), then \`node ${ROOT}/scripts/probe-loop.mjs apply --result <result.json> --to .\`. Record the winner and what the others taught you in the decision log.`,
     "5. Fill the rest in small steps, committing after each passing check.",
-    `6. Harden: write chaos.json (start, ready, steady check, endpoints) and run \`node ${ROOT}/scripts/chaos-probe.mjs --dir . --spec chaos.json\`; fix what fails. Then run \`node ${ROOT}/scripts/quality-probes.mjs . --mutants 20\` and strengthen the tests of the game rules until mutation.score is at least 0.6 (tests that catch real defects, not more tests). Delete scratch files nothing uses.`,
-    "7. Stop when every done-when check passes. Do not add systems the build does not use.",
+    `6. Harden: write chaos.json (start, ready, steady check, endpoints) and run \`node ${ROOT}/scripts/chaos-probe.mjs --dir . --spec chaos.json\`; fix what fails. Then run \`node ${ROOT}/scripts/quality-probes.mjs . --mutants 20\` and strengthen the tests of the game rules until mutation.score is at least 0.6 (tests that catch real defects, not more tests). Your own tests must pass (\`node --test\` exits 0): a failing test of yours is a failing check, fixed before you stop. Delete scratch files nothing uses.`,
+    "7. Stop when every done-when check passes, including one per named deliverable and your own tests. Do not add systems the build does not use.",
   ].join("\n"),
   blueprint: [
     "Implement the specification in spec.md in this directory, following this plan exactly. Do every step; each one has a check.",

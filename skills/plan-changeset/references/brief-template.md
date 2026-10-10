@@ -8,7 +8,9 @@ The 10 expert terms from analyze-domain. For each term, one line on what it mean
 ## 1. Done when
 The outcome in one or two sentences, then the checks that prove it. Every check is a command that exits 0 on success.
 
-| id | check (command) | what it proves | kind (unit, sim, browser, chaos, judge) |
+Every deliverable the request names gets its own row, documents and plans included, not only code. For a document, the check confirms the file exists and covers each point the request asks for. A deliverable with no check gets dropped under time pressure: the RPG pilot's bounded builds passed every hidden check but lost the founder judge on the hosting choice, art direction, name and delivery estimate that had no row.
+
+| id | check (command) | what it proves | kind (unit, sim, browser, chaos, doc, judge) |
 |---|---|---|---|
 
 The steady state is what must stay true under faults, for example "two players see each other move within 200 ms" or "gold is never duplicated". `scripts/chaos-probe.mjs` holds the build to it.

@@ -79,3 +79,14 @@ test("bounded: e2e and journeys run inside execution before review-gate, and not
   assert.deepEqual(steps.map((p) => [p.skill, p.before]), [["write-e2e", "review-gate"], ["test-journeys", "review-gate"]]);
   assert.ok(order.indexOf("execute-changeset") < order.indexOf("review-gate"));
 });
+
+test("bounded: every named deliverable gets a done-when check and the build's own tests must pass (RPG pilot findings)", async () => {
+  const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
+  assert.match(read("skills/plan-changeset/references/brief-template.md"), /Every deliverable the request names gets its own row/);
+  const exec = read("skills/execute-changeset/SKILL.md");
+  assert.match(exec, /own tests must pass/);
+  assert.match(exec, /one per deliverable the request names/);
+  const { ARMS } = await import("../../../scripts/outcome-eval.mjs");
+  assert.match(ARMS.bounded, /one row for every deliverable spec\.md names/);
+  assert.match(ARMS.bounded, /Your own tests must pass/);
+});

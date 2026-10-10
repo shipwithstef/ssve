@@ -129,7 +129,10 @@ Build from the brief, not a changeset. The loop:
 4. **Harden:**
    - run `scripts/chaos-probe.mjs` against the brief's steady state;
    - run `scripts/quality-probes.mjs` and strengthen the rule tests until the mutation score is at least 0.6 (the RPG pilot's bounded build shipped 0.27 without this floor);
+   - the build's own tests must pass (`node --test` or the project's runner exits 0); a failing own test is a failing check, never shipped (three of six pilot builds shipped one);
    - before handing to review, delete scratch and QA files nothing references.
+
+Done means every done-when row passes, one per deliverable the request names (documents included), plus the build's own tests.
 
 Two failed checks on the same question, or a boundary that must move, sends you back to the brief (an amendment), not round after round of patching. Irreversible zones get full review depth automatically.
 

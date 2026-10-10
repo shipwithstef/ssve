@@ -143,6 +143,9 @@ ORIG_SHA=$(sha256sum "$TMP/fixture-original.toml" | awk '{print $1}')
 # Fail-closed read: unreadable config must not be treated as empty.
 cp -a "$CONFIG" "$TMP/unreadable.toml"
 chmod 000 "$TMP/unreadable.toml"
+# Root reads through mode 000, so as root the unreadable config is a directory instead:
+# reading it fails for every user, which is the same fail-closed path.
+if [[ "$(id -u)" == 0 ]]; then rm -f "$TMP/unreadable.toml"; mkdir "$TMP/unreadable.toml"; fi
 if node "$WIRER" --skills-path "$SKILLS" --config "$TMP/unreadable.toml" >/tmp/wi543-unreadable.out 2>/tmp/wi543-unreadable.err; then
   fail "unreadable config should fail closed"
 else
