@@ -60,9 +60,10 @@ function setup() {
   const repo = path.join(tmp, "repo");
   fs.mkdirSync(path.join(home, ".claude"), { recursive: true });
   fs.mkdirSync(path.join(repo, "src"), { recursive: true });
-  fs.mkdirSync(path.join(repo, ".svc"));
-  fs.writeFileSync(path.join(repo, "src", "a.ts"), "export const a = 1;\n");
+  fs.writeFileSync(path.join(repo, "src", "a.ts"), "export const a = 1;\n"); // fixture source only
   const env = { ...process.env, HOME: home };
+  // The repository counts as svc-governed when it has an (empty) marker directory.
+  fs.mkdirSync(path.join(repo, ".svc"));
   delete env.SVC_HOOK_MODE;
   execFileSync("git", ["init", "-q", repo]);
   execFileSync("git", ["-C", repo, "-c", "user.email=b@b", "-c", "user.name=b", "add", "-A"]);

@@ -21,8 +21,10 @@ export function countGitCalls() {
   const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "svc-git-count-")));
   try {
     const repo = path.join(tmp, "repo"), home = path.join(tmp, "home"), shim = path.join(tmp, "bin"), log = path.join(tmp, "git.log");
-    for (const d of [path.join(repo, ".svc"), path.join(repo, "src"), home, shim]) fs.mkdirSync(d, { recursive: true });
-    fs.writeFileSync(path.join(repo, "src", "a.ts"), "export const a = 1;\n");
+    for (const d of [path.join(repo, "src"), home, shim]) fs.mkdirSync(d, { recursive: true });
+    fs.writeFileSync(path.join(repo, "src", "a.ts"), "export const a = 1;\n"); // fixture source only
+    // The repository counts as svc-governed when it has an (empty) marker directory.
+    fs.mkdirSync(path.join(repo, ".svc"));
     execFileSync("git", ["init", "-q", repo]);
     execFileSync("git", ["-C", repo, "-c", "user.email=c@c", "-c", "user.name=c", "add", "-A"]);
     execFileSync("git", ["-C", repo, "-c", "user.email=c@c", "-c", "user.name=c", "commit", "-q", "-m", "c"]);
