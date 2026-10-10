@@ -74,6 +74,27 @@ No build had a money pump. Lean scored highest at plain cost; the brief arm was 
 
 **Grader correction:** Node reports a test cancelled by its timeout as `cancelled`, not `fail`. Two runs (plain#0, lean#2) were first scored as passing for that reason. `parseTap` now counts cancellations as failures, and those rows are corrected in the results file with a `regraded` note.
 
+### One-sentence product request (yoga-studio, 2026-10-10)
+
+The request was "a paid booking web app for a small yoga studio: customers book and pay for classes online, and the owner manages the schedule", plus environment facts only (no network, no npm, `node server.mjs`). Haiku 5.5 built it. Grading had two parts:
+- The browser smoke check.
+- A blind Opus 5.5 judge with a 16-point production checklist: spec depth, journeys verified end to end, payments, auth and security, data integrity, architecture, sellable UX and ops readiness. It also counts the journeys that are both specified and covered by a passing test.
+
+| Arm | Smoke | Mean judge score | Verified journeys | Mean cost |
+|---|---|---|---|---|
+| plain | 2/3 | 6.0 / 16 | 0, 0, 0 | $0.066 |
+| production (svc method in one instruction) | 0/3 | **14.67 / 16** | 15, 21, 12 | $0.70 |
+
+**This is the first measured case where the framework's method changes the outcome.** The production arm wrote a spec with roles and 12–21 journeys, then verified each journey with tests. It also delivered:
+- signed, de-duplicated payment webhooks with idempotent refunds;
+- hashed passwords with httpOnly sessions;
+- overbooking protection;
+- a README and a health endpoint.
+
+None of the plain builds had a spec. One plain build had a real money pump: five concurrent cancels of a paid booking issued five refunds. The extra cost is about $0.63 per product build.
+
+The production arm still failed the browser smoke check in every run, and the judge noted its UIs were "never run in a real browser". The method is fixed accordingly: verification now drives the main journeys in a real browser with zero console errors. Both arms now get the same environment fact, that a test browser is available. The rerun is recorded below as v2.
+
 ### What this changes
 
 1. **The written ceremony buys no correctness on spec-complete work.** RULES.md and one test per rule cost 3.3× more on matched tasks (2.36–4.19× per task) and solved nothing extra, across 33 blueprint runs. The framework therefore stops asking for it on such work; the gate is in `references/delivery-profiles.json` under `method`.

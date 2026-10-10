@@ -52,7 +52,8 @@ export const ARMS = {
     "1. Write SPEC.md: users and roles; at least 10 user journeys (customer and owner, including failure paths), each with acceptance criteria; non-functional requirements (security, payments, data integrity, accessibility, operations); the architecture and why.",
     "2. Build in layers: domain rules, services, HTTP, UI. Configuration comes from the environment. Anything external (such as payments) sits behind an interface with a local implementation for tests.",
     "3. Tests: unit tests for the domain rules, and end-to-end tests that drive every journey through HTTP.",
-    "4. Verify: run `node --test`, start the server, walk the journeys, and fix until every acceptance criterion holds. Finish with a README covering setup, configuration, running and deploying.",
+    "4. Verify like a customer would: run `node --test`, start the server, and drive the main customer and owner journeys in a real browser when one is available, with zero console errors. Fix until every acceptance criterion holds. Finish with a README covering setup, configuration, running and deploying.",
+    "Keep SPEC.md tight (one line per acceptance criterion) and reuse test helpers: depth comes from coverage, not length.",
   ].join("\n"),
   blueprint: [
     "Implement the specification in spec.md in this directory, following this plan exactly. Do every step; each one has a check.",
@@ -93,12 +94,26 @@ function playwrightEntry() {
   return (pwEntry = fs.existsSync(entry) ? entry : "playwright");
 }
 
+// The failing test names and their first error line, so a failed run says why.
+export function failureReasons(out) {
+  const reasons = [];
+  const lines = out.split("\n");
+  lines.forEach((line, i) => {
+    const m = /^not ok \d+ - (.*)$/.exec(line.trim());
+    if (!m) return;
+    const err = lines.slice(i + 1, i + 40).find((l) => /error:|message:|Error\b/.test(l)) || "";
+    reasons.push(`${m[1]}: ${err.trim()}`.slice(0, 300));
+  });
+  return reasons.slice(0, 5);
+}
+
 export function grade(dir, task) {
   fs.copyFileSync(path.join(TASKS, task, "hidden.test.mjs"), path.join(dir, "__hidden.test.mjs"));
   const r = spawnSync(process.execPath, ["--test", "--test-timeout=30000", "__hidden.test.mjs"], { cwd: dir, encoding: "utf8", timeout: 180000, env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry() } });
-  const t = parseTap(`${r.stdout}\n${r.stderr}`) || { pass: 0, fail: 1 };
+  const out = `${r.stdout}\n${r.stderr}`;
+  const t = parseTap(out) || { pass: 0, fail: 1 };
   const total = t.pass + t.fail;
-  return { hidden_pass: t.pass, hidden_total: total, score: total ? t.pass / total : 0, solved: t.fail === 0 && t.pass > 0 };
+  return { hidden_pass: t.pass, hidden_total: total, score: total ? t.pass / total : 0, solved: t.fail === 0 && t.pass > 0, ...(t.fail ? { hidden_failures: failureReasons(out) } : {}) };
 }
 
 export const promptSha = (arm) => crypto.createHash("sha256").update(ARMS[arm]).digest("hex").slice(0, 12);
@@ -118,7 +133,7 @@ function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,G
   return new Promise((resolve) => {
     const args = ["-p", "--model", model, "--output-format", "json", "--max-turns", String(maxTurns), "--allowedTools", tools];
     // The prompt goes on stdin: --allowedTools is variadic and would swallow it.
-    const child = spawn("claude", args, { cwd: dir, stdio: ["pipe", "pipe", "pipe"] });
+    const child = spawn("claude", args, { cwd: dir, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry() } });
     child.stdin.end(prompt);
     let out = "";
     child.stdout.on("data", (c) => { out += c; });
@@ -215,7 +230,10 @@ async function main(argv) {
     const rows = argv.slice(1).filter((a) => !a.startsWith("--")).flatMap((f) => JSON.parse(fs.readFileSync(f, "utf8")).rows);
     const by = Object.fromEntries(summarize(rows).map((s) => [s.arm, s]));
     const out = { runs: rows.length, errors: rows.filter((r) => r.error).length };
-    for (const [arm, s] of Object.entries(by)) { out[`${arm}_solve_rate`] = s.solve_rate; out[`${arm}_mean_cost_usd`] = s.mean_cost_usd; }
+    for (const [arm, s] of Object.entries(by)) {
+      out[`${arm}_solve_rate`] = s.solve_rate; out[`${arm}_mean_cost_usd`] = s.mean_cost_usd;
+      if (s.mean_judge_total !== undefined) out[`${arm}_mean_judge_total`] = s.mean_judge_total;
+    }
     // Cost ratios compare matched tasks only: an arm run on harder tasks is not cheaper or dearer by that alone.
     const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
     const costOf = (arm, task) => { const xs = rows.filter((r) => r.arm === arm && r.task === task && !r.error).map((r) => r.cost_usd || 0); return xs.length ? mean(xs) : null; };

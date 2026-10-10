@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { judge, pick } from "../../../scripts/verify-claims.mjs";
-import { parseTap, summarize, ARMS, listTasks, parseJudge } from "../../../scripts/outcome-eval.mjs";
+import { parseTap, summarize, ARMS, listTasks, parseJudge, failureReasons } from "../../../scripts/outcome-eval.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -33,6 +33,7 @@ test("judge checks exit codes and JSON bounds, and fails closed on bad output", 
 test("outcome-eval: TAP parsing, error rows excluded from scores, arms differ only in instruction", () => {
   assert.deepEqual(parseTap("ok 1\n# pass 3\n# fail 1\n"), { pass: 3, fail: 1 });
   assert.equal(parseTap("crashed"), null);
+  assert.deepEqual(failureReasons("ok 1 - a\nnot ok 2 - loads the page\n  ---\n  error: 'no page errors'\n"), ["loads the page: error: 'no page errors'"]);
   assert.deepEqual(parseTap("# pass 1\n# fail 0\n# cancelled 1\n"), { pass: 1, fail: 1 }, "a timed-out test counts as failed");
   const s = summarize([
     { arm: "plain", solved: true, score: 1, cost_usd: 0.01, turns: 4 },

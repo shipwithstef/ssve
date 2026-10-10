@@ -45,8 +45,8 @@
       "why": "Run every test and fix until green. Same correctness as the written blueprint at about a third of its cost; 1.18x a plain run on matched tasks (0.93-1.56x per task)."
     },
     "underspecified": {
-      "use": "brief-first",
-      "why": "Unmeasured: write the product brief and acceptance tests before building. Being measured by the next outcome-eval suite; until then it is a hypothesis, not a rule."
+      "use": "production",
+      "why": "One-line product request: spec with roles and 10+ journeys, layered build, external services behind interfaces, journey tests, browser verification, README. Measured on a one-sentence paid booking app (Haiku 5.5, blind Opus judge): 14.67/16 vs 6.0/16 for a plain run, at about $0.70 vs $0.07 per build."
     },
     "never": "Written rules lists and one-test-per-rule ceremony on spec-complete work: 3.3x cost on matched tasks, no measured gain."
   }

@@ -109,6 +109,32 @@
       ],
       "json": "lean_cost_vs_plain",
       "max": 1.5
+    },
+    {
+      "id": "production-quality",
+      "claim": "On a one-sentence product request, the production method scores at least 12/16 with the blind judge (Haiku 5.5 builds)",
+      "source": "test-framework/outcome-evals/README.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production.json"
+      ],
+      "json": "production_mean_judge_total",
+      "min": 12
+    },
+    {
+      "id": "plain-product-gap",
+      "claim": "A plain run of the same request scores at most 8/16",
+      "source": "test-framework/outcome-evals/README.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production.json"
+      ],
+      "json": "plain_mean_judge_total",
+      "max": 8
     }
   ]
 }
