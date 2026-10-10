@@ -207,7 +207,7 @@
     {
       "skill": "base44-environment",
       "path": "skills/base44-environment/SKILL.md",
-      "content_hash": "1864aa18445e48748a5555ebbefe849df5ea7f5e2fec7e71b8d55898d089b9b5",
+      "content_hash": "e3c48553f6fbf7ea60a32c57afd80b2c182dcc1433ab7102e2db7d1766ea2ed7",
       "description": "Base44 backend operations: auth, secrets, entity schema and function deploys, DB queries, and known deploy and API gotchas. Use when calling Base44 APIs, deploying functions or entities, or debugging Base44 integrations.",
       "aliases": [],
       "positive_triggers": [],
