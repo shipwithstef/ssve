@@ -75,13 +75,13 @@ This is the **production profile**. It mixes models across harnesses for optimal
 <!-- svc:generated:begin model-routing-svc-default — edit skills-manifest.json / references/model-registry.json, then run: node scripts/generate-manifest-mirrors.mjs --write -->
 | Label | Harness | Model | Rationale |
 |-------|---------|-------|-----------|
-| 🧠 **[STRAT]** | Claude | Opus 4.8 | Highest reasoning depth for strategy |
-| 📐 **[PLAN]** | Claude | Opus 4.8 | Deterministic blueprinting |
-| ⚙️ **[EXEC]** | Claude | Sonnet 5 | Sonnet 5 execution; effort:high declared (WI-470); MiMo EXEC via keyed profiles |
-| 🛡️ **[REVIEW]** | Claude | Sonnet 5 | WI-470 2026-06-30: REVIEW runs on Sonnet 5 (subagents pinned) against the Opus blueprint; effort:high declared here, consumer-applied via the Agent dispatch effort param |
+| 🧠 **[STRAT]** | Claude | Opus 5.5 | Highest reasoning depth for strategy |
+| 📐 **[PLAN]** | Claude | Opus 5.5 | Deterministic blueprinting |
+| ⚙️ **[EXEC]** | Claude | Sonnet 5.5 | Sonnet 5 execution; effort:high declared (WI-470); MiMo EXEC via keyed profiles |
+| 🛡️ **[REVIEW]** | Claude | Sonnet 5.5 | WI-470 2026-06-30: REVIEW runs on Sonnet 5 (subagents pinned) against the Opus blueprint; effort:high declared here, consumer-applied via the Agent dispatch effort param |
 | 👁️ **[SENSE]** | **MiMo** | **MiMo-V2.5-Pro** | Multimodal sensory QA (requires MIMO_API_KEY) |
 | 🌐 **[DISC]** | Native | web_search | Live docs via native search |
-| 🔁 **[PASS]** | Claude | Haiku 4.5 | Cheapest pass-through extraction |
+| 🔁 **[PASS]** | Claude | Haiku 5.5 | Cheapest pass-through extraction |
 <!-- svc:generated:end model-routing-svc-default -->
 
 **Key insight:** The orchestrator can be Claude, Kimi, Codex, Gemini, or OpenCode. Since WI-357 (2026-06-06), `svc-default` executes with Claude Sonnet (matching the operative key-gated fallback) and delegates only SENSE to MiMo; MiMo-everything remains available via `opencode-mimo`, and `<orchestrator>-native` profiles cover single-harness setups (`kimi-native`, `claude-native`, `codex-native`).
