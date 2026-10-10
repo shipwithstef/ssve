@@ -192,7 +192,7 @@ compatibility.
 
 ## Step 1: Extract Builder Advantages
 
-See references/builder-advantages-and-infrastructure.md for the full "Step 1: Extract Builder Advantages" section (moved verbatim).
+**Step 1: Extract Builder Advantages** — From the builder profile, extract what this person can do better or cheaper than the average builder, as a Builder Advantages block: Can Build (technical edge), Can Reach (distribution edge), Has (infrastructure edge), Time Budget, Unique Angle, Hard Constraints, History Signal. If the profile shows a repeated failure mode (2+ projects died the same way), that failure mode becomes a hard veto. Details: `references/builder-advantages-and-infrastructure.md`.
 
 ## Step 2: Product Category Matrix
 
@@ -234,7 +234,7 @@ NOT social proof. Reddit/HN/X engagement with metrics IS social proof.
 
 ## Step 4: Self-Sustaining Infrastructure
 
-See references/builder-advantages-and-infrastructure.md for the full "Step 4: Self-Sustaining Infrastructure" section (moved verbatim).
+**Step 4: Self-Sustaining Infrastructure** — MANDATORY: every recommendation uses infrastructure that costs $0 until revenue exceeds the cost (free-tier picks per layer: Supabase, Vercel, Resend/Loops, Dodo/LemonSqueezy/Gumroad without an entity, Plausible/Umami, Expo + EAS, user-funded AI APIs). If an opportunity needs paid infra from day 1 and the builder has $0 budget, disqualify it. Details: `references/builder-advantages-and-infrastructure.md`.
 
 ## Step 5: AI Wrapper Special Path
 
@@ -309,7 +309,7 @@ If user says "not that one": respect immediately, present full 3-choice menu.
 
 ## Step 9: User Picks and Pipeline Handoff
 
-See references/step-9-handoff.md for the full "Step 9: User Picks and Pipeline Handoff" section (moved verbatim).
+**Step 9: User Picks and Pipeline Handoff** — The picked (or auto-selected) opportunity card is the vision seed: feed it to `write-vision` (product, builder constraints, infra, distribution, revenue, pricing, platform constraints), run `validate-feature` with the evidence pre-loaded, then the full pipeline (chained per `references/full-delivery-mode.md`; `human_checkpoint` is still honored and blockers go to the user). If the user says "none of these", ask what is wrong and rescan with adjusted criteria. If they say "just pick the best one", P0 picks #1 by score and logs it as a taste decision in the research log. If they say "build my idea anyway", respect it with no gatekeeping and run the pipeline on their idea; if it is a long build with no revenue and no capital, offer the staged plan (a related Stage 1 project earning money and audience, then the big idea). Details: `references/step-9-handoff.md`.
 
 ## First Project Rules
 

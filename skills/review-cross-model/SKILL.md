@@ -138,7 +138,7 @@ rediscovery rounds.
 
 ### Step 2: Send to the Canonical Launcher
 
-See references/process-detail.md for the full "Step 2: Send to the Canonical Launcher" section (moved verbatim).
+**Step 2: Send to the Canonical Launcher** — `node scripts/run-external-review.mjs --orchestrator "${SVC_HOST:-claude}" --review-kind exec --input-file .svc/review-cross-model-package.md --artifacts-dir .svc/external-review-artifacts/cross-model > <summary.json>`, then require `ok`, `findings` and `receipt` in the summary and copy them to `.svc/review-cross-model-findings.json` and `.svc/review-cross-model-receipt.json`. The launcher is the sole paid invocation path: NEVER construct provider commands in this skill. Its prompt tells the second model the package is an entry point (open whole touched files, unchanged callers, config, tests and cost path; read-only; missing access is INCOMPLETE), to return ALL findings in one pass (bugs, AC violations, security, design, missing) with severity, confidence, `file:line`, proof for blockers (otherwise downgrade to advisory), and a proposal. The resolved primary invocation is the availability probe, with no paid smoke call and no generic tri-model fallback; only for the Fable profile may a classified model-unavailable, entitlement or provider-overload failure start a separate Opus xhigh run, and auth, quota, network, timeout, schema, safety and unknown failures halt the gate. Details: `references/process-detail.md`.
 
 ### Step 3: Evaluate Each Finding and Its Receipt
 
@@ -206,11 +206,11 @@ recheck spends zero additional model calls. Owner spending limits take precedenc
 
 ### HARD 2-round cap per feature and bounded exit (RV1)
 
-See references/process-detail.md for the full "HARD 2-round cap per feature and bounded exit (RV1)" section (moved verbatim).
+**HARD 2-round cap per feature and bounded exit (RV1)** — NEVER run more than 2 adversarial rounds per feature; "loop until zero High" is unreachable and MUST NOT be used. Keep one stable feature ID (`--feature-id`) across aliases, sessions and reviewers; the launcher reserves each round and incomplete attempts count. Round 1 is a full discovery batch; round 2 only verifies fixes against the original finding IDs, with no new discovery. Converged means no unresolved Critical and every remaining High/Medium/Low has an `accept-with-justification` or `reject-with-justification` disposition. After round 2 never start a round 3: unresolved Critical escalates to the owner (never auto-accept), otherwise disposition every High now and proceed. Record `rounds_run` and a `bounded_exit` or escalation block in the review log, and the review is not complete until `node scripts/check-review-round-cap.mjs --branch-once --log <review-log>` passes. When the final reviewer object stays raw `fail` after a compliant bounded exit, hand every launcher receipt/findings digest and the finding census back to the calling skill, which emits `pass-with-acks` with `reviewer_evidence.bounded_exit` (zero Critical, at most two rounds, unchanged candidate); never normalize the raw verdict. Details: `references/process-detail.md`.
 
 ## Single-Vendor Windows (§4g)
 
-See references/single-vendor-windows.md for the full "Single-Vendor Windows (§4g)" section (moved verbatim).
+**Single-Vendor Windows (§4g)** — When only one vendor family is reachable, repeating same-family review passes buys almost nothing, so compensate with mechanism instead: every claim that would go to cross-family review must get a mechanical or grep-derived check, a contract re-derivation from source, a negative test, or be recorded as UNVERIFIED with the reason; never silently downgrade it to a same-family pass marked reviewed. Record `review_family: cross | same` per round in the Step 5 Summary block; the accumulated `same` receipts are the queue to drain when an opposite-family vendor returns, and the window ends when that queue is drained. Details: `references/single-vendor-windows.md`.
 
 ### Step 5: Document the Review
 
