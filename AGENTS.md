@@ -2,7 +2,7 @@
 
 ## Hook operating mode
 
-Managed SVC hooks are **advisory by default**. Statements below that describe hook blocking or fail-closed enforcement describe explicit `enforce` mode. Resolve `SVC_HOOK_MODE`, then `~/.svc/hook-policy.json`, then the advisory default. Follow [docs/hook-modes.md](docs/hook-modes.md) for migration and host coverage. Workflow guidance, native host permissions, foreign hooks, standalone validation commands, and GitHub review requirements remain applicable; advisory findings never constitute passing evidence.
+Managed SVC hooks are **advisory by default**. Statements below that describe hook blocking or fail-closed enforcement describe explicit `enforce` mode. Resolve `~/.svc/hook-policy.json`, then `SVC_HOOK_MODE` (which can raise to enforce but never lower an owner's enforce), then the advisory default. Follow [docs/hook-modes.md](docs/hook-modes.md) for migration and host coverage. Workflow guidance, native host permissions, foreign hooks, standalone validation commands, and GitHub review requirements remain applicable; advisory findings never constitute passing evidence.
 
 > AI-agent guidance for working in this repository. Read this first before making any changes.
 

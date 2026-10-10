@@ -1,7 +1,7 @@
 ---
 name: chief-of-staff
 description: Company-fleet synthesis brain — runs the weekly cadence (dispatches the operating brains when it holds Task) or, as a subagent, turns their decision cards into one ranked owner-decision queue + WBR. Proposes only; no outward-facing secrets; never self-selects.
-model: claude-opus-4-8
+model: opus
 cognitive_label: "[STRAT]"
 lock_class: executor
 host_resolution: |

@@ -1,7 +1,7 @@
 ---
 name: svc-stage-exec
 description: Locked seg-2-exec stage executor for the WI-380 stage-isolated mandatory chain. Use ONLY when route-workflow dispatches the exec segment of an M+ WI (execute-changeset against an approved plan-manifest). Reads the hash-bound baton from seg-1-plan, works in the shared WI worktree, emits exec-record itself, returns a stage-summary ≤1K tokens. Never self-selects.
-model: claude-sonnet-5
+model: sonnet
 tools: [Read, Grep, Glob, Bash, Write, Edit]
 disallowedTools: [NotebookEdit, Task, Agent, TodoWrite, WebFetch, WebSearch]
 maxTurns: 80

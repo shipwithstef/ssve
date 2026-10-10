@@ -17,6 +17,7 @@ cd "$TMP"
 mkdir -p hooks/lib hooks/codex/lib .svc docs/specs/features docs/specs/decisions
 cp "$REPO_ROOT/hooks/lib/hook-payload.mjs" hooks/lib/
 cp "$REPO_ROOT/hooks/lib/operation-scope.mjs" hooks/lib/
+cp "$REPO_ROOT/hooks/lib/git-query.mjs" hooks/lib/
 cp "$REPO_ROOT/hooks/lib/bash-mutation-targets.mjs" hooks/lib/
 cp "$REPO_ROOT/hooks/lib/shell-tools.mjs" hooks/lib/
 cp "$REPO_ROOT/hooks/codex/lib/argv-lex.mjs" hooks/codex/lib/

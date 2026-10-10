@@ -8,7 +8,7 @@ description: Research role-agent — wields the research skill with per-domain s
   Dispatched by route-workflow or a calling skill that declared uncertainty; never
   self-selects. HOLDS NO SECRETS — fetches hostile pages constantly, so it never reads
   secret-bearing files in the same context where it ingests untrusted fetched content.
-model: claude-opus-4-8
+model: opus
 cognitive_label: "[DISC]"
 lock_class: executor
 host_resolution: |

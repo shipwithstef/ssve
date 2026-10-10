@@ -173,7 +173,10 @@ function buildHookEntries(skillsPath) {
     entries.PostToolUse.push({
       id: "svc-posttool-heartbeat",
       matcher: "Bash|Edit|Write|MultiEdit|StrReplaceFile|NotebookEdit|apply_patch",
-      hooks: [{ type: "command", command: `SVC_HOST="\${SVC_HOST:-claude}" node ${hooksDir}/codex/svc-codex-posttool-heartbeat.mjs` }],
+      // async: it only renews a lease the pre-tool dispatcher already authorized and
+      // reports in a systemMessage; nothing waits on it, and the dispatcher renews a
+      // due lease itself before the next mutation.
+      hooks: [{ type: "command", command: `SVC_HOST="\${SVC_HOST:-claude}" node ${hooksDir}/codex/svc-codex-posttool-heartbeat.mjs`, async: true }],
     });
   }
 
@@ -271,7 +274,9 @@ function buildHookEntries(skillsPath) {
     entries.PostToolUse.push({
       id: "svc-lane-tasks-validator",
       matcher: "Edit|Write",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-lane-tasks-validator.mjs` }],
+      // `if` skips the spawn for every other file (the script exits 0 for them).
+      // Root-anchored so edits in sibling worktrees outside the cwd still match.
+      hooks: [{ type: "command", command: `node ${hooksDir}/svc-lane-tasks-validator.mjs`, if: "Edit(//**/.svc/lane-tasks-*.json)" }],
     });
   }
 
@@ -279,7 +284,7 @@ function buildHookEntries(skillsPath) {
     entries.PostToolUse.push({
       id: "svc-wi-pillars-check",
       matcher: "Edit|Write",
-      hooks: [{ type: "command", command: `bash ${hooksDir}/svc-wi-pillars-check.sh` }],
+      hooks: [{ type: "command", command: `bash ${hooksDir}/svc-wi-pillars-check.sh`, if: "Edit(//**/docs/specs/work-items/WI-*.md)" }],
     });
   }
 

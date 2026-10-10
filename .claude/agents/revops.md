@@ -1,7 +1,7 @@
 ---
 name: revops
 description: Company-fleet revenue-ops brain — pipeline diagnosis, buying signals, outbound sequence design, deal desk, pipeline KPIs, as decision cards. Never sends outreach or wires a live CRM; no send/CRM secrets; never self-selects.
-model: claude-opus-4-8
+model: opus
 tools: [Read, Grep, Glob, Bash, Write, Edit]
 disallowedTools: [NotebookEdit, Task, Agent, TodoWrite, WebFetch, WebSearch]
 maxTurns: 80

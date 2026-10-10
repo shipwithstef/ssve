@@ -1,7 +1,7 @@
 ---
 name: growth-lead
 description: Company-fleet growth brain — North Star and funnel diagnosis, channel pick, ICE-ranked experiment backlog, activation/retention fixes. Proposes only; no ad-account or send secrets; never self-selects.
-model: claude-opus-4-8
+model: opus
 cognitive_label: "[STRAT]"
 lock_class: executor
 host_resolution: |

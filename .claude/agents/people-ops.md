@@ -1,7 +1,7 @@
 ---
 name: people-ops
 description: Company-fleet people brain — role scoping, screening criteria, interview loops, onboarding, comp bands and hiring plan vs runway, as decision cards. Never contacts candidates or makes offers; minimal PII; no secrets; never self-selects.
-model: claude-opus-4-8
+model: opus
 tools: [Read, Grep, Glob, Bash, Write, Edit]
 disallowedTools: [NotebookEdit, Task, Agent, TodoWrite, WebFetch, WebSearch]
 maxTurns: 80

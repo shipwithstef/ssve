@@ -1,7 +1,7 @@
 ---
 name: customer-success
 description: Company-fleet retention brain — account health, churn-risk triage, support quality and CSAT/NPS loop, as decision cards (reply drafts only). Never contacts customers; holds no secrets; never self-selects.
-model: claude-opus-4-8
+model: opus
 cognitive_label: "[STRAT]"
 lock_class: executor
 host_resolution: |

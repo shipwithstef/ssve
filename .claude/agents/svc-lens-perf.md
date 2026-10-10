@@ -1,7 +1,7 @@
 ---
 name: svc-lens-perf
 description: Locked PERF/MECHANICAL lens for the WI-382 parallel review station. Use ONLY inside a review-exec wave over a FROZEN diff. Mechanical sweep — hot-path cost (spawn counts, per-tool-call work, sync I/O in hooks), budget-file consistency, obvious O(n²)-on-hot-path, stale counts/ids in prose tables. Cheapest lens (PASS tier). Read-only; returns review-lens-finding entries. Never self-selects.
-model: claude-haiku-4-5-20251001
+model: haiku
 tools: [Read, Grep, Glob]
 disallowedTools: [Write, Edit, NotebookEdit, Task, Agent, TodoWrite, WebFetch, WebSearch]
 maxTurns: 12

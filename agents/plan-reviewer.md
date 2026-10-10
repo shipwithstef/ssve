@@ -1,7 +1,7 @@
 ---
 name: plan-reviewer
 description: Locked adversarial reviewer for plan-changeset manifests. Produces structured YAML findings with provable analysis + evidence per claim. No rubber-stamp; every finding must survive an accept/reject justification loop.
-model: claude-sonnet-5
+model: sonnet
 cognitive_label: "[REVIEW]"
 host_resolution: |
   This agent's model should be resolved dynamically via:

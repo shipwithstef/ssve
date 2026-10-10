@@ -80,3 +80,19 @@ test("hook boundary skips svc hooks when the repo is off in advisory mode, but n
   const owner = run("advisory", "enforce");
   assert.equal(owner.ran, true, "an owner enforce policy wins even when repo env says advisory");
 });
+
+test("env can raise the hook mode to enforce but never lower the owner's enforce", async () => {
+  const { resolveHookMode } = await import("../../../hooks/lib/hook-policy.mjs");
+  const home = tmp("svc-mode-");
+  assert.deepEqual(resolveHookMode({}, home), { mode: "advisory", source: "default" });
+  assert.equal(resolveHookMode({ SVC_HOOK_MODE: "enforce" }, home).mode, "enforce", "env raises advisory");
+  fs.mkdirSync(path.join(home, ".svc"));
+  fs.writeFileSync(path.join(home, ".svc", "hook-policy.json"), '{"mode":"enforce"}');
+  const lowered = resolveHookMode({ SVC_HOOK_MODE: "advisory" }, home);
+  assert.equal(lowered.mode, "enforce", "a repo or host env cannot switch off the owner's enforce");
+  assert.match(lowered.warning, /only that file can lower it/);
+  assert.equal(resolveHookMode({ SVC_HOOK_MODE: "bogus" }, home).mode, "enforce", "an invalid env value keeps the owner mode");
+  fs.writeFileSync(path.join(home, ".svc", "hook-policy.json"), '{"mode":"advisory"}');
+  assert.equal(resolveHookMode({ SVC_HOOK_MODE: "enforce" }, home).mode, "enforce");
+  assert.equal(resolveHookMode({ SVC_HOOK_MODE: "advisory" }, home).mode, "advisory");
+});

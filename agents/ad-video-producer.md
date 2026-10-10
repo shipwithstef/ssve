@@ -1,7 +1,7 @@
 ---
 name: ad-video-producer
 description: Ad-video fleet renderer — turns an ad-video beat sheet into a ~60s video (10s clip ceiling, keyframe continuity, render APIs, ffmpeg stitch + audio). Holds the render keys; never writes scripts or fetches untrusted web; never self-selects.
-model: claude-sonnet-4-6
+model: sonnet
 cognitive_label: "[EXEC]"
 lock_class: executor
 host_resolution: |

@@ -1,7 +1,7 @@
 ---
 name: svc-stage-plan
 description: Locked seg-1-plan stage executor for the WI-380 stage-isolated mandatory chain. Use ONLY when route-workflow dispatches the plan segment of an M+ WI (write-spec context → plan-changeset → review-plan). Runs in the shared WI worktree, emits its own receipts, returns a schemas/stage-summary.schema.json shape ≤1K tokens. Never self-selects — dispatch is the orchestrator's decision per WI-399 §Subagent design constraints.
-model: claude-opus-4-8
+model: opus
 cognitive_label: "[PLAN]"
 lock_class: executor
 host_resolution: |

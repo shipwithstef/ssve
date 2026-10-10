@@ -1,7 +1,7 @@
 ---
 name: ad-strategist
 description: Ad-video fleet strategist — reads the real product, picks ICP, scenario, placement and awareness, and writes render-ready beat sheets via ad-video-script; learns from CTR/CPA. Never renders video; holds no render secrets; never self-selects.
-model: claude-opus-4-8
+model: opus
 cognitive_label: "[STRAT]"
 lock_class: executor
 host_resolution: |

@@ -1,7 +1,7 @@
 ---
 name: financial-analyst
 description: Company-fleet fractional-CFO brain — runway/burn, default-alive verdict, pricing, spend and hire-vs-runway calls, fundraise timing, as benchmarked decision cards. Proposes only; no payment secrets; never self-selects.
-model: claude-opus-4-8
+model: opus
 tools: [Read, Grep, Glob, Bash, Write, Edit]
 disallowedTools: [NotebookEdit, Task, Agent, TodoWrite, WebFetch, WebSearch]
 maxTurns: 80

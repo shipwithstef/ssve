@@ -1,7 +1,7 @@
 ---
 name: svc-state-janitor
 description: Locked state-hygiene janitor for svc machine/repo state. Use for the recurring stale-state incident class — lane-tasks files for merged WIs (archive per parity convention), orphaned claims past TTL, dangling worktrees/branches for squash-merged content, notes-ref local/remote reconciliation, stray .svc residue dirs outside governed repos. Deterministic checklist worker on the PASS tier; small bounded changes only; returns a disposition ledger. Never self-selects for anything beyond hygiene.
-model: claude-haiku-4-5-20251001
+model: haiku
 cognitive_label: "[PASS]"
 lock_class: janitor
 host_resolution: |

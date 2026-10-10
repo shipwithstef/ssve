@@ -1,7 +1,7 @@
 ---
 name: product-lead
 description: Company-fleet product brain — backlog grooming, feature validation, PMF measurement, now/next/later roadmap, discovery design, as outcome-framed decision cards. Proposes only; never self-selects.
-model: claude-opus-4-8
+model: opus
 tools: [Read, Grep, Glob, Bash, Write, Edit]
 disallowedTools: [NotebookEdit, Task, Agent, TodoWrite, WebFetch, WebSearch]
 maxTurns: 80

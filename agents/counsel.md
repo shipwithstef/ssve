@@ -1,7 +1,7 @@
 ---
 name: counsel
 description: Company-fleet legal/compliance brain — reviews the company's own ToS/DPA/NDA/privacy policy, maps SOC2/ISO27001/GDPR/EU-AI-Act to real company state, flags deadlines. Not a lawyer; outputs are non-binding cards; no secrets; never self-selects.
-model: claude-opus-4-8
+model: opus
 cognitive_label: "[STRAT]"
 lock_class: executor
 host_resolution: |

@@ -9,6 +9,7 @@ import { normalizeClaimOwner } from "./claim-owner.mjs";
 import { validateTaskGraphShape, selectRecoveryTask } from "./validate-task-graph-shape.mjs";
 // WI-562 IP-H5: liveness primitives unified into one source.
 import { processStartToken, ownerProcessIdentity, processIsAlive, findHarnessProcessIdentity, isSameLiveHarnessSuccessor } from "./process-liveness.mjs";
+import { gitRevParse } from "./git-query.mjs";
 export { processStartToken, ownerProcessIdentity, processIsAlive, findHarnessProcessIdentity, isSameLiveHarnessSuccessor };
 
 function ownerLeaseFields() {
@@ -61,7 +62,7 @@ function reclaimProvablyDeadLock(lock) {
 
 function commonGitDir(worktreeRoot) {
   const root = fs.realpathSync(requireString(worktreeRoot, "worktree root"));
-  const value = execFileSync("git", ["-C", root, "rev-parse", "--git-common-dir"], { encoding: "utf8" }).trim();
+  const value = gitRevParse(root, "--git-common-dir", { encoding: "utf8" }).trim();
   return fs.realpathSync(path.isAbsolute(value) ? value : path.resolve(root, value));
 }
 

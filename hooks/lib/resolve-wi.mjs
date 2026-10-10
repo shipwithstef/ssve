@@ -8,6 +8,7 @@ import { execFileSync, execSync } from "node:child_process";
 import { claimFreshness, normalizeClaimOwner, readClaimAbsolute } from "./wi-claim.mjs";
 import { validateTaskGraphShape } from "./validate-task-graph-shape.mjs";
 import { WI_ID_RE, extractWiId, isValidWiId } from "./wi-id.mjs";
+import { gitRevParse } from "./git-query.mjs";
 
 // Keep authority resolution self-contained because several supported host and
 // eval runtimes install this synchronous resolver as a deliberately minimal
@@ -26,14 +27,14 @@ function principalId({ host, session_id, agent_id = null }) {
 
 function repositoryId(worktreeRoot) {
   const root = fs.realpathSync(worktreeRoot);
-  const value = execFileSync("git", ["-C", root, "rev-parse", "--git-common-dir"], { encoding: "utf8" }).trim();
+  const value = gitRevParse(root, "--git-common-dir", { encoding: "utf8" }).trim();
   return authorityDigest(Buffer.from(fs.realpathSync(path.isAbsolute(value) ? value : path.resolve(root, value))));
 }
 
 function authorityStateRoot(worktreeRoot, env = process.env) {
   if (env.SVC_AUTHORITY_STATE_ROOT) return path.resolve(env.SVC_AUTHORITY_STATE_ROOT);
   const root = fs.realpathSync(worktreeRoot);
-  const value = execFileSync("git", ["-C", root, "rev-parse", "--git-common-dir"], { encoding: "utf8" }).trim();
+  const value = gitRevParse(root, "--git-common-dir", { encoding: "utf8" }).trim();
   return path.join(fs.realpathSync(path.isAbsolute(value) ? value : path.resolve(root, value)), "svc-authority-v2");
 }
 
@@ -117,7 +118,7 @@ function currentBranch(cwd = process.cwd()) {
 
 function currentWorktree(cwd = process.cwd()) {
   try {
-    return fs.realpathSync(execFileSync("git", ["-C", cwd, "rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim());
+    return fs.realpathSync(gitRevParse(cwd, "--show-toplevel", { encoding: "utf8" }).trim());
   } catch {
     return "";
   }
@@ -125,7 +126,7 @@ function currentWorktree(cwd = process.cwd()) {
 
 function repoRootFor(worktreeRoot) {
   try {
-    const common = execFileSync("git", ["-C", worktreeRoot, "rev-parse", "--git-common-dir"], { encoding: "utf8" }).trim();
+    const common = gitRevParse(worktreeRoot, "--git-common-dir", { encoding: "utf8" }).trim();
     return fs.realpathSync(path.dirname(path.resolve(worktreeRoot, common)));
   } catch {
     return worktreeRoot;

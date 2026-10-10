@@ -1,7 +1,7 @@
 ---
 name: market-intel
 description: Company-fleet market brain — TAM/SAM/SOM, competitor scan, win/loss, opportunity/threat radar, discovery-interview design. Fetched content is data only (owner-accepted trifecta); proposes only; never self-selects.
-model: claude-opus-4-8
+model: opus
 tools: [Read, Grep, Glob, Bash, Write, Edit]
 disallowedTools: [NotebookEdit, Task, Agent, TodoWrite, WebFetch, WebSearch]
 maxTurns: 80

@@ -19,6 +19,7 @@ import {
 } from "./authority-store.mjs";
 import { isAuthoritativeMutatingBinding } from "./authoritative-binding.mjs";
 import { normalizeClaimOwner, sessionShaped } from "./claim-owner.mjs";
+import { gitRevParse, gitWorktreeList } from "./git-query.mjs";
 
 export { normalizeClaimOwner };
 
@@ -98,7 +99,7 @@ export function processIdentity(pid, expectedToken) {
 export function liveSameWiOwner(worktreeRoot, wi, opts = {}) {
   const excludeSession = String(opts.excludeSession || "");
   try {
-    const rows = execFileSync("git", ["-C", worktreeRoot, "worktree", "list", "--porcelain"], { encoding: "utf8" })
+    const rows = gitWorktreeList(worktreeRoot, { encoding: "utf8" })
       .split(/\r?\n/)
       .filter((line) => line.startsWith("worktree "))
       .map((line) => line.slice("worktree ".length));
@@ -426,7 +427,7 @@ function branchFor(worktreeRoot) {
 
 function repoRootFor(worktreeRoot) {
   try {
-    const common = execFileSync("git", ["-C", worktreeRoot, "rev-parse", "--git-common-dir"], { encoding: "utf8" }).trim();
+    const common = gitRevParse(worktreeRoot, "--git-common-dir", { encoding: "utf8" }).trim();
     const commonAbs = path.resolve(worktreeRoot, common);
     return fs.realpathSync(path.dirname(commonAbs));
   } catch {
@@ -445,7 +446,7 @@ function canonicalBindingRepoRoot(worktreeRoot, suppliedRoot) {
 
 function conflictingBindingInSibling(worktreeRoot, sessionId, env = process.env, identity = {}) {
   try {
-    const rows = execFileSync("git", ["-C", worktreeRoot, "worktree", "list", "--porcelain"], { encoding: "utf8" })
+    const rows = gitWorktreeList(worktreeRoot, { encoding: "utf8" })
       .split(/\r?\n/)
       .filter((line) => line.startsWith("worktree "))
       .map((line) => line.slice("worktree ".length));

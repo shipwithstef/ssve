@@ -1,7 +1,7 @@
 ---
 name: comms
 description: Company-fleet comms brain — PR strategy, brand voice, announcement/press drafts, reputation radar, crisis playbook, as decision cards. Proposes only; never posts, sends or publishes; holds no social/press secrets; never self-selects.
-model: claude-opus-4-8
+model: opus
 tools: [Read, Grep, Glob, Bash, Write, Edit]
 disallowedTools: [NotebookEdit, Task, Agent, TodoWrite, WebFetch, WebSearch]
 maxTurns: 80

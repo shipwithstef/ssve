@@ -1,7 +1,7 @@
 ---
 name: researcher
 description: Research role-agent — wields the research skill with per-domain source-quality heuristics when a skill or route-workflow declares uncertainty. Never invents facts; holds no secrets and never reads secret files while ingesting fetched pages; never self-selects.
-model: claude-opus-4-8
+model: opus
 tools: [Read, Grep, Glob, Bash, WebSearch, WebFetch, Write, Edit]
 disallowedTools: [NotebookEdit, Task, Agent, TodoWrite]
 maxTurns: 80

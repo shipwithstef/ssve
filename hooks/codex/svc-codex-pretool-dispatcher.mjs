@@ -7,6 +7,11 @@ import { fileURLToPath } from "node:url";
 import { runtimeRoot, atomicWriteJson, sessionId, hookContext } from "./lib/codex-hook-context.mjs";
 import { renewSlidingPromptAuthority, evaluatePreToolObservation, evaluateAdvisoryObservation } from "../lib/pretool-decision-engine.mjs";
 import { autoProvisionMissingBinding, isPreProvisionIsolationDenial, rebindMutationPayload } from "../lib/auto-provision-worktree.mjs";
+import { enableGitQueryMemo, clearGitQueryMemo } from "../lib/git-query.mjs";
+
+// One short-lived decision: identical rev-parse answers are shared across libraries.
+// Worktree creation below clears the memo before anything re-reads repository layout.
+enableGitQueryMemo();
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const KNOWN_HOSTS = ["codex", "claude", "kimi", "gemini", "opencode", "mimo-code", "antigravity", "cursor", "grok"];
@@ -130,7 +135,7 @@ if(disabled.some(d=>name===d||name===d+".mjs"||name.startsWith(d)))return "";con
 try{const j=JSON.parse(t.split(/\r?\n/).filter(Boolean).at(-1));return (j?.hookSpecificOutput?.permissionDecision||j?.permission||j?.decision)==="deny"?(j.hookSpecificOutput?.permissionDecisionReason||j.user_message||j.reason||"Codex preflight denied the operation"):"";}catch{return "child emitted an unparseable decision; failing closed";}}
 async function loadRecoverySkill(worktree,gate,input,ctx,sid,host=""){
 const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");
-const recovery=ensureModule.prepareRecoveredSession({worktree:worktree,wi:gate.wi,sessionId:sid,turnId:ctx.turn_id,authorization:gate,agentId:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||null,host,env:{...process.env,SVC_HOST:host||process.env.SVC_HOST||"",SVC_SESSION_ID:sid}});
+const recovery=ensureModule.prepareRecoveredSession({worktree:worktree,wi:gate.wi,sessionId:sid,turnId:ctx.turn_id,authorization:gate,agentId:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||null,host,env:{...process.env,SVC_HOST:host||process.env.SVC_HOST||"",SVC_SESSION_ID:sid}});clearGitQueryMemo();
 const loader=encodeSimpleCommand([process.execPath,path.resolve(HERE,"..","..","scripts","codex-load-skill.mjs"),"--graph",recovery.graphPath,"--task",String(recovery.taskId),"--skill",recovery.skill,"--turn",String(ctx.turn_id||""),"--session",sid,...(host?["--host",host]:[])]);
 if(input && (Object.hasOwn(input,"command") || Object.hasOwn(input,"cmd"))){
 const field=Object.hasOwn(input,"cmd")?"cmd":"command";
@@ -151,7 +156,7 @@ const observation=evaluatePreToolObservation(payload);if(observation){if(observa
 const resumeGate=evaluateSelfHealAuthority(payload,process.env,{repo_root:repo});
 if(!b?.worktree&&resumeGate.eligible&&resumeGate.wi===boot.wi&&worktreeRows(repo).some(w=>fs.existsSync(path.join(w,".svc",`lane-tasks-${boot.wi}.json`)))){
 const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");
-const adopted=ensureModule.adoptExistingWorktree({wi:boot.wi,cwd:repo,prepareSession:true,sessionId:sid},{...process.env,SVC_SESSION_ID:sid,SVC_AGENT_ID:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||""});
+const adopted=ensureModule.adoptExistingWorktree({wi:boot.wi,cwd:repo,prepareSession:true,sessionId:sid},{...process.env,SVC_SESSION_ID:sid,SVC_AGENT_ID:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||""});clearGitQueryMemo();
 await loadRecoverySkill(adopted.absolute_worktree,resumeGate,input,ctx,sid,hostId);
 }
 const bootstrapScope=scope.explicit_workdir&&scope.explicit_workdir.present?scope.operation_repository:scope.session_repository;if(!repo||!bootstrapScope||!bootstrapScope.default_worktree_root||bootstrapScope.worktree_root!==bootstrapScope.default_worktree_root)deny(`New-worktree bootstrap must use workdir ${bootstrapScope?.default_worktree_root||"the repository default checkout"}. For an existing WI, resume its registered worktree; the agent should perform this routing.`,hostId);const base=boot.from==="origin/main"?(spawnSync("git",["-C",repo,"rev-parse","origin/main"],{encoding:"utf8"}).stdout||"").trim():boot.from;if(!/^[0-9a-f]{40}$/.test(base))deny("bootstrap base did not resolve to an exact commit",hostId);const handoff=createBootstrapHandoff({session_id:sid,host:hostId,repo_root:repo,wi:boot.wi,branch:boot.branch,base});const ensure=path.resolve(HERE,"..","..","scripts","svc-ensure-worktree.mjs");const bootstrapArgv=["node",ensure,"--wi",boot.wi,"--branch",boot.branch,"--from",base,"--authority-v2",...(boot.json?["--json"]:[]),...(boot.print_cd?["--print-cd"]:[]),"--handoff",handoff.nonce];effective={...effective,[key]:{...effective[key],[Object.hasOwn(input||{},"cmd")?"cmd":"command"]:`SVC_HOST=${hostId} ${encodeSimpleCommand(bootstrapArgv)}`,workdir:repo}};}else if(boot?.handoff){if(Object.keys(boot.identity||{}).length!==1||boot.identity.SVC_HOST!==hostId)deny("bootstrap handoff host identity mismatch",hostId);}
@@ -173,12 +178,16 @@ const exact=(!gate.eligible && recoveryRoot)
   :{eligible:false,reason_code:"NOT_ATTEMPTED"};
 const chosen=gate.eligible?gate:exact;
 if(chosen?.eligible){
-let adopted=null;try{const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");adopted=ensureModule.adoptExistingWorktree({wi:chosen.wi,cwd:repo,prepareSession:true,sessionId:sid},{...process.env,SVC_SESSION_ID:sid,SVC_AGENT_ID:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||""});}catch(error){deny(`self-heal could not complete (${error.message})`,hostId);}if(adopted)await loadRecoverySkill(adopted.absolute_worktree,chosen,input,ctx,sid,hostId);
+let adopted=null;try{const ensureModule=await import("../../scripts/svc-ensure-worktree.mjs");adopted=ensureModule.adoptExistingWorktree({wi:chosen.wi,cwd:repo,prepareSession:true,sessionId:sid},{...process.env,SVC_SESSION_ID:sid,SVC_AGENT_ID:payload.agent_id||payload.agentId||process.env.SVC_AGENT_ID||""});clearGitQueryMemo();}catch(error){deny(`self-heal could not complete (${error.message})`,hostId);}if(adopted)await loadRecoverySkill(adopted.absolute_worktree,chosen,input,ctx,sid,hostId);
 deny("self-heal completed but the binding did not resolve; inspect the WI ownership before retrying.",hostId);}
 if(exact.reason_code==="FOREIGN_LIVE_OWNER")deny("FOREIGN_LIVE_OWNER: a provably live owner cannot be displaced",hostId);
 const isDefaultCheckout=!recoveryRoot||(scope.operation_repository?.default_worktree_root&&recoveryRoot===scope.operation_repository.default_worktree_root);
 if(!isDefaultCheckout){deny(`mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: ${gate.reason_code}; EXACT_WORKTREE_RECOVERY: ${exact.reason_code})`,hostId);}
+// Advisory mode discards a rebound input, so provisioning there would only create a
+// worktree and branch the edit never uses (measured 3.9s on the first call). Advise.
+if(resolveHookMode().mode==="advisory")deny(`mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: ${gate.reason_code}; EXACT_WORKTREE_RECOVERY: ${exact.reason_code}; SELF_PROVISION_SKIPPED: advisory mode). Next step: node scripts/svc-ensure-worktree.mjs --wi <WI> to work on a WI, or ignore this advice for an unplanned edit.`,hostId);
 const provisioned=await autoProvisionMissingBinding({payload:effective,env:process.env,repo,sessionId:sid,host:hostId});
+clearGitQueryMemo();
 if(!provisioned.ok)deny(`mutation requires a bound WI worktree (AUTH_BINDING_MISSING_SELF_HEAL_INELIGIBLE: ${gate.reason_code}; EXACT_WORKTREE_RECOVERY: ${exact.reason_code}; SELF_PROVISION_ATTEMPTED: ${provisioned.reason})`,hostId);
 effective=rebindMutationPayload(effective,provisioned.defaultRoot,provisioned.worktree);
 b=baton(provisioned.worktree,sid,payload,hostId,provisioned.worktree);
