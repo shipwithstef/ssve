@@ -319,6 +319,30 @@
       ],
       "json": "bounded_minus_solo",
       "max": 0
+    },
+    {
+      "id": "rpg-pilot-bounded-solves-every-run",
+      "claim": "Across both RPG pilot rounds (three runs per arm), the bounded method passed every hidden check in all three runs, Opus alone in two and the swarm in none",
+      "source": "docs/decisions/2026-10-10-bounded-delivery.md",
+      "command": [
+        "node",
+        "-e",
+        "const rows=[...require('./test-framework/outcome-evals/results/2026-10-10-rpg-pilot.json').rows,...require('./test-framework/outcome-evals/results/2026-10-10-rpg-pilot-r2.json').rows];const s=(a)=>rows.filter(r=>r.arm===a&&r.solved).length;console.log(JSON.stringify({bounded:s('bounded'),bounded_minus_best_other:s('bounded')-Math.max(s('solo'),s('swarm'))}))"
+      ],
+      "json": "bounded_minus_best_other",
+      "min": 1
+    },
+    {
+      "id": "rpg-pilot-bounded-judge-lower",
+      "claim": "Across both RPG pilot rounds, the bounded method scored lower than Opus alone on the blind founder judge (mean 21.3 vs 24.7 of 30), the gap is founder breadth with no check, and it is not established at p < 0.05",
+      "source": "docs/decisions/2026-10-10-bounded-delivery.md",
+      "command": [
+        "node",
+        "-e",
+        "const rows=[...require('./test-framework/outcome-evals/results/2026-10-10-rpg-pilot.json').rows,...require('./test-framework/outcome-evals/results/2026-10-10-rpg-pilot-r2.json').rows];const m=(a)=>{const x=rows.filter(r=>r.arm===a).map(r=>r.judge_total);return x.reduce((s,v)=>s+v,0)/x.length};console.log(JSON.stringify({bounded_minus_solo:+(m('bounded')-m('solo')).toFixed(2)}))"
+      ],
+      "json": "bounded_minus_solo",
+      "max": 0
     }
   ]
 }

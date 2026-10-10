@@ -288,3 +288,58 @@ The method's process goals happened (early runnable commit, probed decisions, ch
 - Run 3+ runs per arm before any claim.
 
 The swarm was cheapest and fastest but the only arm to miss a hidden check (frame-time budget under four players).
+
+## Result: RPG founder pilot, round 2 and both rounds combined, 2026-10-10
+
+Round 2 used the same request, grader and judge, with two runs per arm. The bounded loop now had a mutation-score floor of 0.6. Results: `test-framework/outcome-evals/results/2026-10-10-rpg-pilot-r2.json`.
+
+| Arm | Run | Hidden checks | Failed check | Judge (of 30) | Cost | Wall time | Source lines | Mutation score |
+|---|---|---|---|---|---|---|---|---|
+| Opus alone | 1 | 6/6 | — | 24 | $3.96 | 17 min | 1,182 | 0.27 |
+| Opus alone | 2 | 4/6 | load (p95 33 ms), IP gate | 25 | $5.71 | 24 min | 1,753 | 0.40 |
+| Swarm | 1 | 5/6 | IP gate | 27 | $1.81 | 16 min | 1,639 | own tests fail |
+| Swarm | 2 | 5/6 | load (p95 50 ms) | 25 | $1.80 | 13 min | 2,249 | own tests fail |
+| Bounded | 1 | 6/6 | — | 20 | $2.57 | 15 min | 549 | own tests fail |
+| Bounded | 2 | 6/6 | — | 21 | $2.31 | 9 min | 540 | 0.87 |
+
+The table counts the mutation score as missing when the build's own tests fail as shipped, because the probe cannot score them.
+
+Both rounds combined, three runs per arm:
+
+| Arm | Solved all hidden checks | Mean judge | Mean cost | Mean wall time | Mean source lines |
+|---|---|---|---|---|---|
+| Opus alone | 2/3 | 24.7 | $4.46 | 19.0 min | 1,337 |
+| Swarm | 0/3 | 25.3 | $1.85 | 14.1 min | 2,067 |
+| Bounded | 3/3 | 21.3 | $2.86 | 15.8 min | 602 |
+
+Permutation tests use `compareSamples`, with three runs against three. The smallest two-sided p this design can reach is about 0.1.
+- **Bounded vs Opus alone:**
+  - judge −3.3 points, CI [−4.7, −1.7], p = 0.097;
+  - cost −$1.60, CI [−2.81, −0.48], p = 0.097;
+  - hidden-check score +0.11, CI [0, 0.33], p = 1.
+- **Bounded vs swarm:**
+  - hidden-check score +0.17, p = 0.097;
+  - judge −4, CI [−6, −2], p = 0.097;
+  - cost +$1.02, p = 0.097.
+
+**Verdict: a consistent trade-off, not established at p < 0.05.**
+- **Hidden checks:** bounded is the only arm that passed every one in every run (3/3).
+- **Cost:** it cost about a third less than Opus alone.
+- **Size:** it shipped less than half the code.
+- **Judge:** it scored lowest on every run.
+
+The judge rows show why the judge score is lower. In every bounded run the judge found the founder breadth items missing:
+- hosting choice;
+- art direction;
+- name and voice;
+- cooperation design;
+- the delivery estimate.
+
+The brief keeps the build to what its checks prove. Founder deliverables with no check get dropped. The trade-off is correctness and cost against breadth of founder material.
+
+The mutation floor held in one of two bounded runs (0.87). In the other, the build shipped with one of its own tests failing. Three of the six builds in round 2 shipped failing tests of their own.
+
+**Next:**
+- Give the brief's "done when" a check for each founder deliverable the request names, so that breadth is held to a check and not dropped. Then re-measure the judge gap.
+- Make "own tests pass" a gate before the harden step ends, not just an instruction.
+- Production stays on the full changeset (the promotion rule needs no loss on the judge, and there is a loss).

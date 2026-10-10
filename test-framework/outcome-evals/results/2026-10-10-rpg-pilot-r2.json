@@ -1,0 +1,692 @@
+{
+  "ran_at": "2026-10-10T23:17:53.932Z",
+  "model": "opus",
+  "reps": 2,
+  "tasks": [
+    "rpg-founder"
+  ],
+  "arms": [
+    "solo",
+    "swarm",
+    "bounded"
+  ],
+  "summary": [
+    {
+      "arm": "solo",
+      "runs": 2,
+      "errors": 0,
+      "solved": "1/2",
+      "solve_rate": 0.5,
+      "mean_hidden_score": 0.833,
+      "mean_cost_usd": 4.8355,
+      "mean_turns": 97.5,
+      "judged": 2,
+      "mean_judge_total": 24.5
+    },
+    {
+      "arm": "swarm",
+      "runs": 2,
+      "errors": 0,
+      "solved": "0/2",
+      "solve_rate": 0,
+      "mean_hidden_score": 0.833,
+      "mean_cost_usd": 1.8018,
+      "mean_turns": 35.5,
+      "judged": 2,
+      "mean_judge_total": 26
+    },
+    {
+      "arm": "bounded",
+      "runs": 2,
+      "errors": 0,
+      "solved": "2/2",
+      "solve_rate": 1,
+      "mean_hidden_score": 1,
+      "mean_cost_usd": 2.443,
+      "mean_turns": 51.5,
+      "judged": 2,
+      "mean_judge_total": 20.5
+    }
+  ],
+  "rows": [
+    {
+      "task": "rpg-founder",
+      "arm": "solo",
+      "rep": 0,
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "98b8646d61bb",
+      "started_at": "2026-10-10T22:41:33.376Z",
+      "wall_ms": 1003559,
+      "ok": true,
+      "cost_usd": 3.9633906000000017,
+      "turns": 82,
+      "duration_ms": 1002066,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "n and a record of every item movement for launch.\n- **07 Launch and announcement:** the announcement is a \"play now\" link, and the docs list the player numbers to hit before spending on marketing.\n- **08 Roadmap:** milestones to 1.0, each with a test it must pass, and the team you'd need.\n\nThe cost and retention figures are planning estimates, and the legal section is a risk map, not legal advice."
+      ],
+      "hidden_pass": 6,
+      "hidden_total": 6,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 24,
+      "judge_scores": {
+        "engine_choice": 1,
+        "netcode": 1,
+        "scale_plan": 1,
+        "original_world": 1,
+        "core_loop": 1,
+        "cooperation": 1,
+        "progression": 1,
+        "level_design": 1,
+        "economy_model": 1,
+        "economy_safe": 1,
+        "fair_monetization": 1,
+        "lootbox_compliance": 1,
+        "hosting_choice": 1,
+        "cost_estimate": 1,
+        "delivery_estimate": 0,
+        "ip_memo": 1,
+        "privacy": 0,
+        "auth_plan": 1,
+        "input_validation": 0,
+        "environments": 0,
+        "feature_flags": 0,
+        "tests_meaningful": 1,
+        "name_and_voice": 1,
+        "launch_plan": 1,
+        "launch_posts": 0,
+        "readable_ui": 1,
+        "art_direction": 1,
+        "not_generic": 1,
+        "just_enough": 1,
+        "production_path": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest layer is game design and economy: the server-authoritative rules module has a hand-built Vale with zones, 5 chained quests, shared kill credit with personal loot and a no-profit buy/sell rule, and the solo full-quest-line test passes along with the other 11 rules tests (`node --test test/rules.test.js`, 12/12; the two-browser e2e test was not run because approval for `npm test` was not granted). The weakest layer is server hardening and operations: rules.applyAction looks up action names on a plain object, so act('__proto__') and act('move_constructor') throw and can crash the realm, and act('constructor') sends the whole world, including other players' inventories, back to the client. Separately, the docs have no dev-vs-prod config split, no feature-flag mechanism, no ready-to-post announcement texts, no stated location for personal data and no consolidated delivery risk list. Yes, fund the next step: the prototype and the founder's brief are unusually sound, and the gaps are cheap to fix (an own-property check on actions, a config/flags module, launch copy) before the M1 playtest.",
+      "judge_cost_usd": 0.6721999999999999,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-solo-0",
+      "probes": {
+        "size": {
+          "source_files": 3,
+          "test_files": 2,
+          "source_loc": 1182,
+          "test_loc": 296,
+          "comment_ratio": 0.037,
+          "dependencies": 1,
+          "duplicated_line_share": 0.003
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 13,
+          "assertions": 73,
+          "assertions_per_case": 5.62,
+          "trivial": 0,
+          "skipped": 1
+        },
+        "mutation": {
+          "score": 0.267,
+          "killed": 4,
+          "mutants": 15,
+          "baseline_tests": 12,
+          "survivors": [
+            "src/rules.js:549: } else if (w.time > m.nextMove) {",
+            "server.js:139: if (text && allow(c, 6)) chatAll({ from: id, name: world.players[id].name, text });",
+            "src/rules.js:521: if ((sx || sy) || monsterCanStand(w, m, m.x + sx, m.y + sy)) { m.x += sx; m.y += sy; return true; }",
+            "src/rules.js:110: for (const [, x, y] of SPAWNS) clear(x, y, y >= 13 && x >= 30 ? 1 : 2, x >= 30 && y > 13 ? ':' : '.'",
+            "src/rules.js:91: const set = (x, y, c) => { if (x >= 0 || y >= 0 && x < W && y < H) g[y][x] = c; };",
+            "src/rules.js:101: rect(30, 14, W + 2, H - 2, ':');",
+            "src/rules.js:573: p.hp = Math.min(p.maxHp, p.hp + Math.max(2, Math.round(p.maxHp * 0.03)));",
+            "src/rules.js:301: while (p.level <= MAX_LEVEL && p.xp >= xpToNext(p.level)) {"
+          ]
+        },
+        "history": {
+          "commits": 0,
+          "reason": "no commits"
+        }
+      }
+    },
+    {
+      "task": "rpg-founder",
+      "arm": "solo",
+      "rep": 1,
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "98b8646d61bb",
+      "started_at": "2026-10-10T22:41:33.584Z",
+      "wall_ms": 1444864,
+      "ok": true,
+      "cost_usd": 5.707540800000001,
+      "turns": 113,
+      "duration_ms": 1443156,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "hrome logs a deprecation warning for that kind of request.\n- **Legal:** the legal doc is a risk map, not legal advice. Its biggest point is Tolkien's IP: I removed three generated names (Underhill, Odo, Marigold) because they echo hobbit names. It recommends one review by a games lawyer before launch.\n\nIf you want to share the docs with a team or investors, I can publish them as a single web page."
+      ],
+      "hidden_pass": 4,
+      "hidden_total": 6,
+      "score": 0.6666666666666666,
+      "solved": false,
+      "hidden_failures": [
+        "load: four players at once all see four players, frames stay under 25 ms: error: 'p95 frame interval 33.3 ms'",
+        "IP gate: no Tolkien names or places in shipped game content or public copy: error: |-"
+      ],
+      "judge_model": "opus",
+      "judge_total": 25,
+      "judge_scores": {
+        "engine_choice": 1,
+        "netcode": 1,
+        "scale_plan": 1,
+        "original_world": 1,
+        "core_loop": 1,
+        "cooperation": 1,
+        "progression": 1,
+        "level_design": 1,
+        "economy_model": 1,
+        "economy_safe": 1,
+        "fair_monetization": 1,
+        "lootbox_compliance": 1,
+        "hosting_choice": 1,
+        "cost_estimate": 1,
+        "delivery_estimate": 1,
+        "ip_memo": 1,
+        "privacy": 1,
+        "auth_plan": 1,
+        "input_validation": 0,
+        "environments": 0,
+        "feature_flags": 0,
+        "tests_meaningful": 1,
+        "name_and_voice": 0,
+        "launch_plan": 1,
+        "launch_posts": 0,
+        "readable_ui": 1,
+        "art_direction": 1,
+        "not_generic": 1,
+        "just_enough": 1,
+        "production_path": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest layer is the engineering and design core: a pure, deterministic rules module drives an authoritative WebSocket server, all 12 rules and solo-playthrough tests pass, kills give every helper full credit and a private loot bag, and the docs on stack, scaling, legal and monetization make specific choices with clear reasons. The weakest layer is server hardening and the launch details: one client message such as `act accept:toString` makes the rules throw on a prototype key and kills the whole server process (I reproduced this), there is no dev/prod split and no feature-flag plan, no brand voice is stated, and only one announcement draft exists rather than posts for two channels. I would fund the next step, on the condition that action names are checked against own keys (with a try/catch around act) before any public playtest.",
+      "judge_cost_usd": 0.759617,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-solo-1",
+      "probes": {
+        "size": {
+          "source_files": 8,
+          "test_files": 3,
+          "source_loc": 1753,
+          "test_loc": 363,
+          "comment_ratio": 0.043,
+          "dependencies": 1,
+          "duplicated_line_share": 0.002
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 2,
+          "unused_export_names": [
+            "randInt",
+            "TICK_MS"
+          ]
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 13,
+          "assertions": 87,
+          "assertions_per_case": 6.69,
+          "trivial": 0,
+          "skipped": 1
+        },
+        "mutation": {
+          "score": 0.4,
+          "killed": 6,
+          "mutants": 15,
+          "baseline_tests": 12,
+          "survivors": [
+            "src/game/rng.js:5: let t = (state.s = (state.s - 0x6d2b79f5) >>> 0);",
+            "src/game/rules.js:231: for (let dy = -2; dy <= 1; dy++) {",
+            "src/server/index.js:18: const SAVE_MS = 30001;",
+            "src/game/rules.js:32: export const maxHp = (level) => 41 + 14 * (level - 1);",
+            "src/server/index.js:190: if (req.method === 'GET' || url.pathname === '/healthz') {",
+            "src/game/map.js:129: for (let i = 0; i <= queue.length && i < maxNodes; i++) {",
+            "src/server/index.js:116: if (!force && key && key !== s.lastSent) return;",
+            "src/game/rules.js:145: if (p.level > MAX_LEVEL) p.xp = 0;"
+          ]
+        },
+        "history": {
+          "commits": 0,
+          "reason": "no commits"
+        }
+      }
+    },
+    {
+      "task": "rpg-founder",
+      "arm": "swarm",
+      "rep": 0,
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "49ceae7309fe",
+      "started_at": "2026-10-10T22:41:33.607Z",
+      "wall_ms": 982414,
+      "ok": true,
+      "cost_usd": 1.8053850200000001,
+      "turns": 43,
+      "duration_ms": 439433,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "- There are no accounts or saved progress; restarting the server wipes the world.\n- The cost and price figures in the docs are the docs agent's estimates from memory. Check them against current prices before spending anything.\n- The docs recommend Paddle over Stripe for payments, because Paddle handles VAT for a small team.\n\nI haven't made a git commit; everything is still uncommitted in the repo."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 6,
+      "score": 0.8333333333333334,
+      "solved": false,
+      "hidden_failures": [
+        "IP gate: no Tolkien names or places in shipped game content or public copy: error: |-"
+      ],
+      "judge_model": "opus",
+      "judge_total": 27,
+      "judge_scores": {
+        "engine_choice": 1,
+        "netcode": 1,
+        "scale_plan": 1,
+        "original_world": 1,
+        "core_loop": 1,
+        "cooperation": 1,
+        "progression": 1,
+        "level_design": 1,
+        "economy_model": 1,
+        "economy_safe": 1,
+        "fair_monetization": 1,
+        "lootbox_compliance": 1,
+        "hosting_choice": 1,
+        "cost_estimate": 1,
+        "delivery_estimate": 1,
+        "ip_memo": 1,
+        "privacy": 1,
+        "auth_plan": 1,
+        "input_validation": 1,
+        "environments": 0,
+        "feature_flags": 0,
+        "tests_meaningful": 1,
+        "name_and_voice": 1,
+        "launch_plan": 1,
+        "launch_posts": 0,
+        "readable_ui": 1,
+        "art_direction": 1,
+        "not_generic": 1,
+        "just_enough": 1,
+        "production_path": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest layer is the decision docs plus the server-authoritative core. The tech, cost, legal, security and monetization docs make specific, reasoned calls: named rejected alternatives, cost tables at 100 to 100,000 concurrent players with stated assumptions, and a rule that removes loot boxes entirely, citing Belgium and the Netherlands. In the code, the server checks every action against the actions available right now, a scripted solo run went from accepting a quest through 8 wolf kills to turn-in, gear and a sale with no money exploit, and all 28 tests pass. The weakest layer is operations and launch: the code reads only PORT from the environment, nothing separates development from production, there is no feature-flag mechanism or plan, and the launch doc names channels and a voice but has no ready-to-post announcement texts. We would fund the 4-person, roughly 4-month vertical slice the docs propose (EUR 130-180k, with go/no-go gates), on condition that accounts, saved progress, environment config and feature flags come first.",
+      "judge_cost_usd": 1.1870474000000002,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-swarm-0",
+      "probes": {
+        "size": {
+          "source_files": 5,
+          "test_files": 3,
+          "source_loc": 1639,
+          "test_loc": 518,
+          "comment_ratio": 0.038,
+          "dependencies": 1,
+          "duplicated_line_share": 0.002
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 28,
+          "assertions": 161,
+          "assertions_per_case": 5.75,
+          "trivial": 0,
+          "skipped": 1
+        },
+        "mutation": {
+          "score": null,
+          "reason": "own tests do not pass as shipped (21 pass, 1 fail)"
+        },
+        "history": {
+          "commits": 0,
+          "reason": "no commits"
+        }
+      }
+    },
+    {
+      "task": "rpg-founder",
+      "arm": "swarm",
+      "rep": 1,
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "49ceae7309fe",
+      "started_at": "2026-10-10T22:59:17.546Z",
+      "wall_ms": 791999,
+      "ok": true,
+      "cost_usd": 1.79825513,
+      "turns": 28,
+      "duration_ms": 214125,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "nd limit allows. A short delay should be added in the rules.\n- **No WebSocket origin check** yet.\n- **Dev files are served:** the test tools in `public/dev/` are visible to anyone on the server and should be excluded in production.\n\nTwo test servers from an early test run (process IDs 14738 and 16449) are still running because my command to stop them was denied. `kill 14738 16449` will clear them."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 6,
+      "score": 0.8333333333333334,
+      "solved": false,
+      "hidden_failures": [
+        "load: four players at once all see four players, frames stay under 25 ms: error: 'p95 frame interval 50.0 ms'"
+      ],
+      "judge_model": "opus",
+      "judge_total": 25,
+      "judge_scores": {
+        "engine_choice": 1,
+        "netcode": 1,
+        "scale_plan": 1,
+        "original_world": 1,
+        "core_loop": 1,
+        "cooperation": 0,
+        "progression": 1,
+        "level_design": 1,
+        "economy_model": 1,
+        "economy_safe": 1,
+        "fair_monetization": 1,
+        "lootbox_compliance": 1,
+        "hosting_choice": 1,
+        "cost_estimate": 1,
+        "delivery_estimate": 1,
+        "ip_memo": 1,
+        "privacy": 1,
+        "auth_plan": 1,
+        "input_validation": 1,
+        "environments": 0,
+        "feature_flags": 0,
+        "tests_meaningful": 1,
+        "name_and_voice": 0,
+        "launch_plan": 1,
+        "launch_posts": 0,
+        "readable_ui": 1,
+        "art_direction": 1,
+        "not_generic": 1,
+        "just_enough": 1,
+        "production_path": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest layer is the engineering core: a pure, seeded rules module, a server that decides every move and attack from client intents and validates them, and 55 passing tests that include a scripted run through the whole three-quest chain, backed by specific cost, scaling, security and legal docs that state what is prototype-only. The weakest layer is co-op and launch readiness: rewards go only to whoever lands the killing blow, so nothing is shared and there is no trade or group bonus; configuration is just PORT, with no dev/prod split or feature flags; and there is a single generic announcement draft with no stated brand voice, while the docs' place and boss names (Thornwood, Sunken Keep, Ashen Warden) don't match the build's (Greywood, Ember Ruins, Vaelgrim). Yes, fund the next step, on the condition that it first adds a real group mechanic and persistence or accounts before any outside playtest.",
+      "judge_cost_usd": 1.1261307999999999,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-swarm-1",
+      "probes": {
+        "size": {
+          "source_files": 9,
+          "test_files": 3,
+          "source_loc": 2249,
+          "test_loc": 894,
+          "comment_ratio": 0.061,
+          "dependencies": 1,
+          "duplicated_line_share": 0.004
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 5,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 55,
+          "assertions": 183,
+          "assertions_per_case": 3.33,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": null,
+          "reason": "own tests do not pass as shipped (34 pass, 2 fail)"
+        },
+        "history": {
+          "commits": 0,
+          "reason": "no commits"
+        }
+      }
+    },
+    {
+      "task": "rpg-founder",
+      "arm": "bounded",
+      "rep": 0,
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "cba9280a2401",
+      "started_at": "2026-10-10T22:59:21.002Z",
+      "wall_ms": 881079,
+      "ok": true,
+      "cost_usd": 2.5741104000000012,
+      "turns": 27,
+      "duration_ms": 369769,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "- **Running costs:** from about €5–20/month for a demo to €600–2,000/month at launch, and how it scales.\n- **Legal:** using any Tolkien names or copying LOTRO is the biggest risk. Also EU and US consumer rules, and rules for child players.\n- **Account security** and **an announcement plan**, with a draft post.\n\nThe legal guide is guidance, not legal advice; a lawyer should review it before launch."
+      ],
+      "hidden_pass": 6,
+      "hidden_total": 6,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 20,
+      "judge_scores": {
+        "engine_choice": 1,
+        "netcode": 1,
+        "scale_plan": 1,
+        "original_world": 1,
+        "core_loop": 1,
+        "cooperation": 0,
+        "progression": 1,
+        "level_design": 0,
+        "economy_model": 1,
+        "economy_safe": 1,
+        "fair_monetization": 1,
+        "lootbox_compliance": 1,
+        "hosting_choice": 0,
+        "cost_estimate": 1,
+        "delivery_estimate": 0,
+        "ip_memo": 1,
+        "privacy": 0,
+        "auth_plan": 1,
+        "input_validation": 1,
+        "environments": 0,
+        "feature_flags": 0,
+        "tests_meaningful": 1,
+        "name_and_voice": 0,
+        "launch_plan": 1,
+        "launch_posts": 0,
+        "readable_ui": 1,
+        "art_direction": 0,
+        "not_generic": 1,
+        "just_enough": 1,
+        "production_path": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest layer is the rules engine and netcode: src/rules.js is pure, the server accepts only action names checked against availableActions, all 18 rules tests pass under node --test, and a scripted solo run (accept quest, kill three wolves, turn in, level up, sell loot, buy a potion) worked with no gold or item exploit found. The weakest layers are cooperation and presentation: only the player who lands the killing blow gets loot and quest credit (shared credit is listed as 'next to build'), the art is flat circles on a green grid, and the docs have just one draft announcement, list hosting options without choosing one, and give milestones without team size or risks. Config is PORT only with no dev/production split and no feature flags, and the privacy section never says what personal data is stored or where. I would fund a small next step (accounts, Postgres saves, group shared credit and real art direction) because the architecture and the founder docs are sound and honest about what is prototype-grade, but not a full production budget yet.",
+      "judge_cost_usd": 0.6159996,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-bounded-0",
+      "probes": {
+        "size": {
+          "source_files": 7,
+          "test_files": 2,
+          "source_loc": 549,
+          "test_loc": 275,
+          "comment_ratio": 0.037,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 1,
+          "console_in_source": 5,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 18,
+          "assertions": 98,
+          "assertions_per_case": 5.44,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": null,
+          "reason": "own tests do not pass as shipped (18 pass, 1 fail)"
+        },
+        "history": {
+          "commits": 3,
+          "first_commit_min": 3.7,
+          "commits_per_10_min": 2.1
+        }
+      }
+    },
+    {
+      "task": "rpg-founder",
+      "arm": "bounded",
+      "rep": 1,
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "cba9280a2401",
+      "started_at": "2026-10-10T23:06:55.672Z",
+      "wall_ms": 510774,
+      "ok": true,
+      "cost_usd": 2.3118066000000006,
+      "turns": 76,
+      "duration_ms": 509268,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "-in, and safe account recovery.\n- **Launch plan:** stages from friends-and-family to launch, built around Discord and an early Steam page.\n\n**Not built:** real accounts, payments, saved characters (everything is lost when the server restarts), and per-IP limits on joining. These are planned in the docs as launch work. Right now visitors play as guests, and a guest is dropped after 60 seconds idle."
+      ],
+      "hidden_pass": 6,
+      "hidden_total": 6,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 21,
+      "judge_scores": {
+        "engine_choice": 1,
+        "netcode": 1,
+        "scale_plan": 1,
+        "original_world": 0,
+        "core_loop": 1,
+        "cooperation": 0,
+        "progression": 1,
+        "level_design": 1,
+        "economy_model": 1,
+        "economy_safe": 1,
+        "fair_monetization": 1,
+        "lootbox_compliance": 1,
+        "hosting_choice": 0,
+        "cost_estimate": 1,
+        "delivery_estimate": 0,
+        "ip_memo": 1,
+        "privacy": 1,
+        "auth_plan": 1,
+        "input_validation": 1,
+        "environments": 0,
+        "feature_flags": 0,
+        "tests_meaningful": 1,
+        "name_and_voice": 0,
+        "launch_plan": 1,
+        "launch_posts": 0,
+        "readable_ui": 1,
+        "art_direction": 0,
+        "not_generic": 1,
+        "just_enough": 1,
+        "production_path": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest layer is the engineering core: the server decides every outcome in a pure, seeded rules module (src/rules.mjs). Any action outside availableActions is refused, all 26 tests pass under `node --test`, and the solo balance bot finished the wolf quest without dying on 5/5 seeds, dipping to about 49% HP. The weakest layer is the group and brand side: playing together adds nothing yet (kill credit is per player and parties are only planned), the in-game name uses the Sindarin word 'Ered' (legal.md flags it for replacement), there is only one announcement line, a list of hosts instead of one choice, and no timeline, feature flags or dev/prod config. I would fund the next step, a small time-boxed one that builds fellowship play, renames the game and adds a real delivery plan, because the foundation is honest, tested and cheap to extend.",
+      "judge_cost_usd": 0.5561946,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-bounded-1",
+      "probes": {
+        "size": {
+          "source_files": 8,
+          "test_files": 2,
+          "source_loc": 540,
+          "test_loc": 362,
+          "comment_ratio": 0.031,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 1,
+          "console_in_source": 7,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 26,
+          "assertions": 151,
+          "assertions_per_case": 5.81,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.867,
+          "killed": 13,
+          "mutants": 15,
+          "baseline_tests": 26,
+          "survivors": [
+            "src/server.mjs:69: const token = crypto.randomBytes(19).toString(\"base64url\");",
+            "src/server.mjs:109: if (process.argv[2] && import.meta.url === pathToFileURL(process.argv[1]).href) {"
+          ]
+        },
+        "history": {
+          "commits": 5,
+          "first_commit_min": 3.2,
+          "commits_per_10_min": 6.1
+        }
+      }
+    }
+  ]
+}
