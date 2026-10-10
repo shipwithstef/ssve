@@ -1,0 +1,91 @@
+{
+  "question": "Which carrier design survives a 32 m drop with one household kit?",
+  "check": "node sim.mjs",
+  "owned": [
+    "src"
+  ],
+  "model": "haiku",
+  "lanes": 6,
+  "lanes_why": "Large plan: parallel lanes up to the disjoint-file fence.",
+  "wall_ms": 29345,
+  "cost_usd": 0.0331,
+  "passed": 6,
+  "variants": [
+    {
+      "variant": 1,
+      "changed": [
+        "src/carrier.mjs"
+      ],
+      "cost_usd": 0.007376810000000001,
+      "worker_ms": 29293,
+      "note": "- The sim's crumple term is floored at 0.005 m. The design survives on the parachute's low terminal speed plus the padding, so the pass depends on the sim's model rather than a physical drop test. Before trusting it, check it against a real drop. - The sim does not bound `crumple_zone_cm` by the kit. The design sets it to 20 cm, which the straws and paper formula already caps, so it is still consi",
+      "status": "pass",
+      "score": 1
+    },
+    {
+      "variant": 2,
+      "changed": [
+        "src/carrier.mjs"
+      ],
+      "cost_usd": 0.00470963,
+      "worker_ms": 19226,
+      "note": " **What the lead should know:** The bag parachute is what makes this work. Without it, impact speed at 32 m is about 25 m/s and the crumple zone alone is not enough. The simulator also never checks that `bag_parachute` fits the kit, so the bag is only valid because the kit includes one plastic bag. I did not check whether any part of the design is physically realistic beyond what the simulator mod",
+      "status": "pass",
+      "score": 1
+    },
+    {
+      "variant": 3,
+      "changed": [
+        "src/carrier.mjs"
+      ],
+      "cost_usd": 0.005471589999999999,
+      "worker_ms": 24318,
+      "note": " What the lead should know: the parachute is what makes 32 m survivable. Its canopy caps impact speed near 3 m/s, so estimated deceleration at 32 m is about 10 m/s², well under the 60 g threshold. The simulator also floors crumple distance at 0.5 cm, so a bag-only design with no cushioning would pass too, but I did not rely on that. This is only the simulator's model, not a physical test.",
+      "status": "pass",
+      "score": 1
+    },
+    {
+      "variant": 4,
+      "changed": [
+        "src/carrier.mjs"
+      ],
+      "cost_usd": 0.00506064,
+      "worker_ms": 21016,
+      "note": "- **What I did:** Set the carrier to paper 10, straws 4, tape 1 m, cotton 2, bag parachute on, crumple zone 20 cm. It passed on the first run, so I did not iterate further. - **What the lead should know:** The simulator's failure threshold is 588.6 m/s² of deceleration, and this design peaks at about 10 m/s² at 32 m, so the pass has a large margin. That margin likely comes from the simulator's loo",
+      "status": "pass",
+      "score": 1
+    },
+    {
+      "variant": 5,
+      "changed": [
+        "src/carrier.mjs"
+      ],
+      "cost_usd": 0.00463211,
+      "worker_ms": 19922,
+      "note": "- `crumple_zone_cm` is only a ceiling. The sim uses `min(crumple_zone_cm, straws*3 + paper*0.8)`, so the input value is nominal and the real limit comes from the straws and paper. - The result is a margin, not a tight fit. The deceleration at 32 m is far below the threshold, so this design would likely pass a looser model too. I did not try to find the minimal kit that also works.",
+      "status": "pass",
+      "score": 1
+    },
+    {
+      "variant": 6,
+      "changed": [
+        "src/carrier.mjs"
+      ],
+      "cost_usd": 0.00586549,
+      "worker_ms": 25632,
+      "note": " What the lead should know: the sim reaches 32 m with the bag as a parachute and a 12 cm straw crumple zone, and the 60 g threshold is a modeling assumption, not a tested egg-survival limit.",
+      "status": "pass",
+      "score": 1
+    }
+  ],
+  "ranking": [
+    5,
+    2,
+    4,
+    3,
+    6,
+    1
+  ],
+  "winner": 5,
+  "task": "egg drop: 6 haiku variants design a carrier against a deterministic drop simulator (scratch task, recorded live 2026-10-10)"
+}

@@ -259,6 +259,54 @@
       ],
       "json": "svc_solve_rate",
       "min": 1
+    },
+    {
+      "id": "probe-loop-live-speed",
+      "claim": "probe-loop ran 6 Haiku variants in parallel against a deterministic check in under a minute for under $0.10, and every variant passed",
+      "source": "docs/decisions/2026-10-10-bounded-delivery.md",
+      "command": [
+        "node",
+        "-e",
+        "const r=require('./test-framework/outcome-evals/results/2026-10-10-probe-loop-egg.json');console.log(JSON.stringify({wall_s:r.wall_ms/1000,cost_usd:r.cost_usd,passed:r.passed}))"
+      ],
+      "json": "wall_s",
+      "max": 60
+    },
+    {
+      "id": "chaos-catches-planted-defects",
+      "claim": "chaos-probe holds a sound app through every fault and catches each planted defect (state lost on restart, gold lost under concurrent earns, crash on malformed input, refusal under clock skew)",
+      "source": "docs/decisions/2026-10-10-bounded-delivery.md",
+      "command": [
+        "node",
+        "test-framework/evals/tier-1/validate-chaos-probe.mjs"
+      ],
+      "exit": 0
+    },
+    {
+      "id": "terms-first-blocking-adds-rounds",
+      "claim": "As a blocking question, terms-first adds owner rounds (+0.72 per request, n = 36 per arm)",
+      "source": "docs/decisions/2026-10-10-bounded-delivery.md",
+      "command": [
+        "node",
+        "scripts/ambiguity-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-ambiguity-terms-first.json"
+      ],
+      "json": "rounds_terms_minus_direct.diff",
+      "min": 0.4
+    },
+    {
+      "id": "terms-first-gain-not-established",
+      "claim": "Terms-first's gain in hidden-intent claims met is not established: the 95% interval includes zero",
+      "source": "docs/decisions/2026-10-10-bounded-delivery.md",
+      "command": [
+        "node",
+        "scripts/ambiguity-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-ambiguity-terms-first.json"
+      ],
+      "json": "score_terms_minus_direct.ci95.0",
+      "max": 0
     }
   ]
 }
