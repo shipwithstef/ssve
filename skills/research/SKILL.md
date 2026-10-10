@@ -65,7 +65,7 @@ chain:
 
 ## Product-runtime v2 adapter
 
-See references/product-runtime-v2-adapter.md for the full "Product-runtime v2 adapter" section (moved verbatim).
+**Product-runtime v2 adapter** — When nested inside a `product-improvement-protocol-v2` run, research is strictly side-effect-free: resolve only the named uncertainty, bind claims, contradictions, trust and freshness to its declared consumer, and return typed evidence to the blocked decision. Do NOT mutate product state, dispatch implementation, or ask the owner; the caller resumes only if the evidence changes the unresolved-decision digest, otherwise the anti-loop gate stops the cycle. Cognitive routing is [DISC]: use GitHub code/repo search and package-registry APIs first and native web_search only after Tiers 0-3 give insufficient signal. Details: `references/product-runtime-v2-adapter.md` and `references/owner-decision-runtime-v2.md`.
 
 # Research
 
@@ -268,11 +268,11 @@ content `[FROM-RESEARCH]` (AP-24).
 
 ### Step 4: Source Credibility & Triangulation (during extraction)
 
-See references/process-detail.md for the full "Step 4: Source Credibility & Triangulation (during extraction)" section (moved verbatim).
+**Step 4: Source Credibility & Triangulation** — Assign every source a tier BEFORE using it (T1 primary/official for the exact version, T2 authoritative secondary, T3 reputable expert community, T4 general reputable secondary, T5 weak or unverified, T6 AI-generated or unattributed; a wrong-version official doc drops to T4). Fast path: if one T1/T2 source directly answers a low-stakes, uncontested fact, assert it with a one-line log (claim, source, `[as-of <date>]`) and skip triangulation. For load-bearing claims that are high-stakes, contested, or whose first source is below T2, require at least 2 independent sources (not tracing to the same origin) or a single T1 definitional authority logged as "T1-primary, single-source-justified"; read laterally and cite the origin. A claim supported only by T5-T6 is `[UNVERIFIED]`: confirm at T3 or better, or drop it. When independent sources disagree, never silently pick one: mark `[CONTESTED]`, record each position with source, tier and as-of, and resolve by higher tier, then closeness to primary, else leave it contested. Log claim, source tiers, independence check and origin trace per load-bearing claim. Details: `references/process-detail.md`.
 
 ### Step 5: Log the Finding
 
-See references/process-detail.md for the full "Step 5: Log the Finding" section (moved verbatim).
+**Step 5: Log the Finding** — Append an entry to `docs/specs/research-log.md` (create if absent) headed `## YYYY-MM-DD: [Question]` with Asked by, Context, Finding, Source(s) with tier, Triangulation, Confidence (high/medium/low), Volatility, As-of date (volatile facts), Re-verify after (pricing, latest version, deprecation 7d; active library minor line 30d; major-version conventions next major; language semantics no expiry), Version-specific, and Routed-to if escalated. A cache hit past `Re-verify after` is a lead, not an answer: re-ground first. Details: `references/process-detail.md`.
 
 ### Step 6: Reflect to Source Heuristics (write-after)
 
@@ -310,7 +310,7 @@ fi
 
 ## Analysis Mode (full extraction — sub-agent + gates)
 
-See references/analysis-mode.md for the full "Analysis Mode (full extraction — sub-agent + gates)" section (moved verbatim).
+**Analysis Mode (full extraction)** — Full source extraction runs through a sub-agent: `agy-cli` first, then Claude in the same invocation if it errors, times out or covers < 100% (`SVC_RESEARCH_AGENT=claude` overrides; a partial extraction is never terminal). Gates in order: clone/pull; pre-scope MANDATORY at `docs/specs/research-prescope-<source>.md` (use `node skills/research/scripts/website-prescope.mjs <url> --domain <domain>` for websites); domain gate MANDATORY (`node skills/research/scripts/domain-gate.mjs --source <name> --domain <d> --justification "<why>"`, and nothing is written under `references/knowledge/` if it refuses); dispatch with `dispatch-agy.mjs`; read every checklist file fully in a single pass into `CAPABILITIES.md`, `details/<area>.md` and `.version`, tiering sources per Step 4; commit; coverage check MANDATORY (`coverage-check.mjs --prescope <ps> --domain references/knowledge/<domain>/` must exit 0 at 100% before proceeding); `deep-extraction-check.mjs`; `playwright-extract.mjs` when accordion or SPA content is suspected; activity validation (`blog-crawl.mjs`) MANDATORY for website, competitor and vendor sources; `synthesize-meaning.mjs` MANDATORY for 5+ detail files; write provenance to `.sources.jsonl` MANDATORY (no citable sources means the extraction is REFUSED and CAPABILITIES.md must not be written); reflect source heuristics; update `INDEX.md` and `.version`; commit, tag `research-<source>` and push. The output is always layered knowledge, never a chat response. Details: `references/analysis-mode.md`.
 
 ## ingest-guide Handoff Format
 
