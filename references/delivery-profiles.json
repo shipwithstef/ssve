@@ -46,7 +46,7 @@
     },
     "underspecified": {
       "use": "production",
-      "why": "One-line product request: spec with roles and 10+ journeys, layered build, external services behind interfaces, journey tests, browser verification, README. Measured on a one-sentence paid booking app (Haiku 5.5, blind Opus judge): 14.67/16 vs 6.0/16 for a plain run, at about $0.70 vs $0.07 per build."
+      "why": "One-line product request: spec with roles and 10+ journeys, layered build, external services behind interfaces, journey tests, browser verification, README. Measured on a one-sentence paid booking app (Haiku 5.5, blind Opus judge, 7 builds per arm): 14.71/16 vs 7.14/16 for a plain run, at about $0.79 vs $0.09 per build."
     },
     "never": "Written rules lists and one-test-per-rule ceremony on spec-complete work: 3.3x cost on matched tasks, no measured gain."
   }

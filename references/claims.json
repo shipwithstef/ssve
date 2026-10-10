@@ -112,13 +112,15 @@
     },
     {
       "id": "production-quality",
-      "claim": "On a one-sentence product request, the production method scores at least 12/16 with the blind judge (Haiku 5.5 builds)",
+      "claim": "On a one-sentence product request, the production method scores at least 12/16 with the blind judge (Haiku 5.5 builds, three rounds, 7 builds per arm)",
       "source": "test-framework/outcome-evals/README.md",
       "command": [
         "node",
         "scripts/outcome-eval.mjs",
         "summarize",
-        "test-framework/outcome-evals/results/2026-10-10-haiku-production.json"
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production-v2.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production-v3.json"
       ],
       "json": "production_mean_judge_total",
       "min": 12
@@ -131,7 +133,9 @@
         "node",
         "scripts/outcome-eval.mjs",
         "summarize",
-        "test-framework/outcome-evals/results/2026-10-10-haiku-production.json"
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production-v2.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production-v3.json"
       ],
       "json": "plain_mean_judge_total",
       "max": 8

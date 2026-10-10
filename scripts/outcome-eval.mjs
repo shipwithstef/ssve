@@ -4,7 +4,8 @@
  *
  *   node scripts/outcome-eval.mjs run [--model haiku] [--judge sonnet|none] [--reps 3] [--arms plain,blueprint]
  *                                     [--tasks a,b] [--parallel 4] [--out <results.json>]
- *   node scripts/outcome-eval.mjs check            # graders pass their reference, fail planted bugs
+ *    node scripts/outcome-eval.mjs check            # graders pass their reference, fail planted bugs
+ *   node scripts/outcome-eval.mjs regrade <results.json>  # re-score kept artifacts after a grader fix
  *
  * Each task in test-framework/outcome-evals/tasks/<id>/ has spec.md, visible.test.mjs, a
  * hidden.test.mjs grader the agent never sees, and ref.mjs (a reference solution used
@@ -225,6 +226,22 @@ async function main(argv) {
     process.stdout.write(problems.length ? `outcome-eval check: ${problems.length} problem(s)\n` : `outcome-eval check: ${listTasks().length} graders sound\n`);
     return problems.length ? 1 : 0;
   }
+  if (argv[0] === "regrade") {
+    // Re-score kept artifacts with the current graders; agent and judge results are unchanged.
+    const file = argv[1];
+    const data = JSON.parse(fs.readFileSync(file, "utf8"));
+    for (const row of data.rows) {
+      if (!row.artifact || !fs.existsSync(row.artifact)) continue;
+      const before = `${row.hidden_pass}/${row.hidden_total}`;
+      delete row.hidden_failures;
+      Object.assign(row, grade(row.artifact, row.task), { regraded_at: new Date().toISOString() });
+      fs.rmSync(path.join(row.artifact, "__hidden.test.mjs"), { force: true });
+      process.stderr.write(`${row.task}/${row.arm}#${row.rep}: ${before} -> ${row.hidden_pass}/${row.hidden_total}\n`);
+    }
+    data.summary = summarize(data.rows);
+    fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
+    return 0;
+  }
   if (argv[0] === "summarize") {
     // Recorded evidence, re-derived: per-arm solve rate and cost relative to plain.
     const rows = argv.slice(1).filter((a) => !a.startsWith("--")).flatMap((f) => JSON.parse(fs.readFileSync(f, "utf8")).rows);
@@ -252,6 +269,8 @@ async function main(argv) {
   const judgeModel = opt("--judge", "sonnet") === "none" ? null : opt("--judge", "sonnet");
   const arms = opt("--arms", "plain,blueprint").split(",");
   const tasks = opt("--tasks") ? opt("--tasks").split(",") : listTasks();
+  const keepRoot = opt("--keep", path.join(os.homedir(), ".svc", "outcome-eval-artifacts", new Date().toISOString().replace(/[:.]/g, "-")));
+  fs.mkdirSync(keepRoot, { recursive: true });
   const jobs = [];
   for (const task of tasks) for (const arm of arms) for (let r = 0; r < reps; r++) jobs.push({ task, arm, rep: r });
   process.stderr.write(`running ${jobs.length} jobs on ${model}\n`);
@@ -265,6 +284,10 @@ async function main(argv) {
     // count, not an error to hide. Only a crash or timeout with no result is an error.
     if (!agent.error) Object.assign(row, grade(dir, job.task), await judge(dir, job.task, judgeModel));
     delete row.text;
+    // Keep what was built (minus dependencies) so a grader fix can re-score it for free.
+    const keep = path.join(keepRoot, `${job.task}-${job.arm}-${job.rep}`);
+    fs.cpSync(dir, keep, { recursive: true, filter: (src) => !src.includes(`${path.sep}node_modules`) });
+    row.artifact = keep;
     fs.rmSync(dir, { recursive: true, force: true });
     process.stderr.write(`${job.task}/${job.arm}#${job.rep}: ${row.error ? "ERROR " + row.error : `${row.hidden_pass}/${row.hidden_total}${row.solved ? " solved" : ""} $${row.cost_usd}`}\n`);
     return row;

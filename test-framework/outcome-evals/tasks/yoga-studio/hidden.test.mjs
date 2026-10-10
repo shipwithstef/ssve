@@ -16,7 +16,7 @@ test("serves an HTML page", async () => {
   assert.equal(r.status, 200);
   assert.match(await r.text(), /<(html|body|div|button|main)/i);
 });
-test("loads and survives clicking every button in a real browser", async () => {
+test("loads and survives clicking through its controls in a real browser", async () => {
   const pw = await import(process.env.OE_PLAYWRIGHT || "playwright");
   const browser = await pw.chromium.launch();
   try {
@@ -26,10 +26,11 @@ test("loads and survives clicking every button in a real browser", async () => {
     // Chromium logs every non-2xx response as a console error; a handled 400 is not a defect.
     page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
     await page.goto(base + "/", { waitUntil: "networkidle" });
-    const buttons = page.locator("button:visible");
+    // A product page leads with links and forms as often as buttons: any visible control counts.
+    const buttons = page.locator("button:visible, a[href]:visible, input[type=submit]:visible, [role=button]:visible");
     const n = await buttons.count();
-    assert.ok(n >= 2, `at least two buttons to play with (found ${n})`);
-    for (let round = 0; round < 3; round++) for (let i = 0; i < Math.min(n, 15); i++) { try { await buttons.nth(i).click({ timeout: 2000 }); } catch {} }
+    assert.ok(n >= 2, `at least two interactive controls (found ${n})`);
+    for (let i = 0; i < Math.min(n, 15); i++) { try { await buttons.nth(i).click({ timeout: 2000 }); await page.goto(base + "/", { waitUntil: "networkidle" }); } catch {} }
     await page.waitForTimeout(300);
     assert.deepEqual(errors, [], "no page errors or console errors");
     assert.ok((await page.textContent("body")).trim().length > 40, "the page shows content");

@@ -95,11 +95,45 @@ None of the plain builds had a spec. One plain build had a real money pump: five
 
 The production arm still failed the browser smoke check in every run, and the judge noted its UIs were "never run in a real browser". The method is fixed accordingly: verification now drives the main journeys in a real browser with zero console errors. Both arms now get the same environment fact, that a test browser is available. The rerun is recorded below as v2.
 
+#### v2: browser verification added to the method, same environment fact for both arms
+
+| Arm | Smoke (old grader) | Mean judge score | Verified journeys | Mean cost |
+|---|---|---|---|---|
+| plain | 1/3 | 8.0 / 16 (7, 8, 9) | 0, 0, 0 | $0.108 |
+| production v2 | 1/3 | **14.33 / 16** (15, 14, 14) | 19, 19, 14 | $0.868 |
+
+- **Two v2 runs, one record.** The v2 job was accidentally started twice and both runs wrote the same results file; the table is the run that persisted. The overwritten run scored plain 7, 8, 7 and production 15, 15, 15 at $1.06 per production build. It is left out of every claim because its file no longer exists.
+- **The quality gap is stable across rounds.**
+- **The judge still finds real defects in production builds:**
+  - one refunded a single charge three times after a replayed checkout;
+  - another passed card numbers through the server.
+
+  The method gets the structure right; adversarial payment tests are the remaining gap.
+
+**Grader defect found from recorded failures:** every production smoke failure read "found 0 buttons". The smoke grader was copied from the game task and counted only `<button>` elements, while booking apps lead with links and forms. The yoga grader now counts any visible control, and the runner keeps each build so a grader fix can re-score it with `regrade` at no cost. The v1 and v2 smoke columns are therefore not evidence against either arm; v3 re-measures smoke with the corrected grader.
+
+#### v3: corrected smoke grader, one rep per arm (builds kept for regrading)
+
+| Arm | Smoke | Judge score | Verified journeys | Cost |
+|---|---|---|---|---|
+| plain | 2/2 | 8 / 16 | 0 | $0.13 |
+| production | 2/2 | **16 / 16** | 17 | $0.85 |
+
+With the corrected grader, both builds pass the browser smoke check.
+
+**Across the three recorded rounds (7 builds per arm; `outcome-eval.mjs summarize` over the three files):**
+
+| Arm | Mean judge score | Verified journeys | Mean cost per build |
+|---|---|---|---|
+| production | 14.71 / 16 | 12–19 | $0.79 |
+| plain | 7.14 / 16 | none | $0.09 |
+
 ### What this changes
 
 1. **The written ceremony buys no correctness on spec-complete work.** RULES.md and one test per rule cost 3.3× more on matched tasks (2.36–4.19× per task) and solved nothing extra, across 33 blueprint runs. The framework therefore stops asking for it on such work; the gate is in `references/delivery-profiles.json` under `method`.
 2. **The verifier loop is kept as the default execution method.** Lean costs 1.18× plain on matched tasks (0.93–1.56× per task). Its benefit does not show at this difficulty because plain already solves everything. It is kept because the cited work shows the benefit as tasks get harder relative to the model, and a run that skips its tests has no evidence to show.
-3. **These tasks sit at the model's ceiling, so they cannot separate the arms.** They stay in the suite as a regression floor: a cheaper model or a new prompt must keep solving them.
+3. **The production method is the default for underspecified product requests.** Measured above: 14.71/16 vs 7.14/16 under a blind judge over 7 builds per arm, for under $1 per build on Haiku.
+4. **The spec-complete tasks sit at the model's ceiling, so they cannot separate the arms.** They stay in the suite as a regression floor: a cheaper model or a new prompt must keep solving them.
 
 The open question is where the framework adds value: underspecified product requests, multi-session work and long-horizon changes. That needs tasks that a plain run fails, graded on product quality as well as tests. That is the next suite, in `outcome-evals/tasks-next.md`.
 
