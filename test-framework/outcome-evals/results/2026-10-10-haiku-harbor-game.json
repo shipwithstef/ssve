@@ -1,0 +1,1132 @@
+{
+  "ran_at": "2026-10-10T19:08:44.656Z",
+  "model": "haiku",
+  "reps": 4,
+  "tasks": [
+    "harbor-game"
+  ],
+  "arms": [
+    "plain",
+    "production",
+    "studio"
+  ],
+  "summary": [
+    {
+      "arm": "plain",
+      "runs": 4,
+      "errors": 0,
+      "solved": "2/4",
+      "solve_rate": 0.5,
+      "mean_hidden_score": 0.917,
+      "mean_cost_usd": 0.0851,
+      "mean_turns": 39.5,
+      "judged": 4,
+      "mean_judge_total": 11.75
+    },
+    {
+      "arm": "production",
+      "runs": 4,
+      "errors": 0,
+      "solved": "1/4",
+      "solve_rate": 0.25,
+      "mean_hidden_score": 0.833,
+      "mean_cost_usd": 0.8727,
+      "mean_turns": 95.8,
+      "judged": 4,
+      "mean_judge_total": 11
+    },
+    {
+      "arm": "studio",
+      "runs": 4,
+      "errors": 0,
+      "solved": "2/4",
+      "solve_rate": 0.5,
+      "mean_hidden_score": 0.875,
+      "mean_cost_usd": 0.8479,
+      "mean_turns": 105.5,
+      "judged": 4,
+      "mean_judge_total": 12
+    }
+  ],
+  "rows": [
+    {
+      "task": "harbor-game",
+      "arm": "plain",
+      "rep": 0,
+      "model": "haiku",
+      "pillar": null,
+      "prompt_sha": "7ba14aba5903",
+      "wall_ms": 464021,
+      "ok": true,
+      "cost_usd": 0.05888048,
+      "turns": 39,
+      "duration_ms": 462219,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "The beam starts off the harbor approach. With it pointing straight down, the default aim guided ships without any input, so a passive player scored about as well as the bot.\n- Ships that reach harbor without the beam count as arrivals but earn no oil and no score.\n- The storm is a time-based ramp that shortens beam range and adds gusts.\n\nI didn't commit anything, since this isn't a git repository."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 6,
+      "score": 0.8333333333333334,
+      "solved": false,
+      "hidden_failures": [
+        "seed bots: eight bots play without crashing, NaN or softlock: error: 'Unknown action: not-an-action'"
+      ],
+      "judge_model": "opus",
+      "judge_total": 10,
+      "judge_scores": {
+        "goal_clear": 1,
+        "decisions": 1,
+        "fail_and_replay": 1,
+        "progression": 1,
+        "storms": 1,
+        "feedback": 1,
+        "art_direction": 1,
+        "hud": 1,
+        "not_generic": 1,
+        "layering": 0,
+        "tests_meaningful": 1,
+        "lean": 0,
+        "robust_input": 0
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The best part is how the storm drives the rules: it shortens the beam, burns oil faster, pushes unlit ships off course with gusts and random drift, and speeds up spawns, so keeping ships in the beam and timing flashes are real choices; in scripted play an aiming bot scored 134–242 points against 28–41 for a player who does nothing, and all 17 tests pass. The biggest gaps are in the code: the client hardcodes the flash radius (320) and duration (900 ms) from the rules, main.mjs has an unused LIGHT constant, index.html has stale hint text that main.mjs overwrites, and calling step() with no action throws 'Unknown action: undefined' even though step() has a check meant to handle undefined. Players would likely replay it because it looks good and restarts with one key, but oil runs so tight that even a good bot loses in under about 60 seconds, so most runs end before the storm reaches full strength.",
+      "judge_cost_usd": 0.4828386,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-10-51-279Z/harbor-game-plain-0",
+      "probes": {
+        "size": {
+          "source_files": 3,
+          "test_files": 2,
+          "source_loc": 616,
+          "test_loc": 192,
+          "comment_ratio": 0.021,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 17,
+          "assertions": 37,
+          "assertions_per_case": 2.18,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.1,
+          "killed": 2,
+          "mutants": 20,
+          "baseline_tests": 12,
+          "survivors": [
+            "game/logic.mjs:156: if (Math.hypot(ship.x - r.x, ship.y - r.y) <= r.r + 7) return wreck('rock');",
+            "game/main.mjs:247: ctx.lineTo(-12, 0);",
+            "game/main.mjs:93: tone(785, 0.5, 'sine', 0.07);",
+            "game/main.mjs:194: const lx = x + Math.cos(a) * (radius + 7);",
+            "game/main.mjs:312: ctx.arc(x, y + 10, 5, 0, Math.PI * 2);",
+            "game/main.mjs:26: let started = true;",
+            "game/logic.mjs:18: const FLASH_COST = 4;",
+            "game/logic.mjs:121: const reach = r.r - 70;"
+          ]
+        }
+      }
+    },
+    {
+      "task": "harbor-game",
+      "arm": "plain",
+      "rep": 1,
+      "model": "haiku",
+      "pillar": null,
+      "prompt_sha": "7ba14aba5903",
+      "wall_ms": 393728,
+      "ok": true,
+      "cost_usd": 0.18462970000000004,
+      "turns": 48,
+      "duration_ms": 391638,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "D and ships were enlarged after the first screenshots.\n\n**Not verified**\n\n- I didn't run `node server.mjs` directly on a port. My attempt to start it in the background needed approval. The end-to-end test starts the same server code on an ephemeral port, so the route handling is covered, but the entry point itself is untested.\n- I didn't commit anything, since the directory isn't a git repository."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 6,
+      "score": 0.8333333333333334,
+      "solved": false,
+      "hidden_failures": [
+        "seed bots: eight bots play without crashing, NaN or softlock: error: 'unknown action: not-an-action'"
+      ],
+      "judge_model": "opus",
+      "judge_total": 12,
+      "judge_scores": {
+        "goal_clear": 1,
+        "decisions": 1,
+        "fail_and_replay": 1,
+        "progression": 1,
+        "storms": 1,
+        "feedback": 1,
+        "art_direction": 1,
+        "hud": 1,
+        "not_generic": 1,
+        "layering": 1,
+        "tests_meaningful": 1,
+        "lean": 1,
+        "robust_input": 0
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The best part is how the storm works: it shrinks the beam's range, adds wind drift and pulls unlit ships harder toward the rocks, and on screen there are wakes, a sweeping beam, wreck particles with screen shake, sound and a deep-blue palette with gold that fits a harbor at night. The biggest gap is that one NaN time step leaves the game stuck forever (carry becomes NaN, so time stays at 0 after later steps); the difficulty is also very steep, since an idle game ends in about 14 seconds and the tests' own aiming bot scores 0 on seeds 3 and 4. A player would likely replay it for the seeded nights, best score and one-key restart, but early wrecks that come so fast may put some players off.",
+      "judge_cost_usd": 0.5229078,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-10-51-279Z/harbor-game-plain-1",
+      "probes": {
+        "size": {
+          "source_files": 3,
+          "test_files": 2,
+          "source_loc": 787,
+          "test_loc": 144,
+          "comment_ratio": 0.028,
+          "dependencies": 0,
+          "duplicated_line_share": 0.004
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 10,
+          "assertions": 20,
+          "assertions_per_case": 2,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0,
+          "killed": 0,
+          "mutants": 20,
+          "baseline_tests": 9,
+          "survivors": [
+            "app.mjs:83: for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 + 1) * (1 - i / data.length);",
+            "game/logic.mjs:27: const GUIDED_SPEED = 55;",
+            "game/logic.mjs:93: const ramp = Math.min(2, t / STORM_RAMP);",
+            "game/logic.mjs:153: windY = clamp(windY * (1 - 0.5 * TICK) - (rand() - 0.5) * storm * 500 * TICK, -70, 70);",
+            "game/logic.mjs:182: events.push({ type: 'home', x: round(ship.x, 2), y: round(ship.y, 1) });",
+            "game/logic.mjs:124: if (!best && bestDist > PULL_RANGE) return 0;",
+            "server.mjs:22: if (!route && (req.method !== 'GET' && req.method !== 'HEAD')) {",
+            "app.mjs:395: ctx.fillText(`best ${String(Math.max(readBest(), s.score)).padStart(6, '0')}   home ${s.saved}`, 16,"
+          ]
+        }
+      }
+    },
+    {
+      "task": "harbor-game",
+      "arm": "plain",
+      "rep": 2,
+      "model": "haiku",
+      "pillar": null,
+      "prompt_sha": "7ba14aba5903",
+      "wall_ms": 239116,
+      "ok": true,
+      "cost_usd": 0.04979322999999999,
+      "turns": 33,
+      "duration_ms": 237069,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "ame/logic.mjs` return 200, and traversal attempts and unknown paths return 404.\n- Browser: the page loads with no console errors, the game-over overlay appears when you do nothing, and Enter starts a new night.\n- Screenshots: the desktop, storm, and phone layouts render correctly.\n\nI couldn't start a background server from the shell, so the browser checks ran the server from a Node script instead."
+      ],
+      "hidden_pass": 6,
+      "hidden_total": 6,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 13,
+      "judge_scores": {
+        "goal_clear": 1,
+        "decisions": 1,
+        "fail_and_replay": 1,
+        "progression": 1,
+        "storms": 1,
+        "feedback": 1,
+        "art_direction": 1,
+        "hud": 1,
+        "not_generic": 1,
+        "layering": 1,
+        "tests_meaningful": 1,
+        "lean": 1,
+        "robust_input": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The best part is how the storms change play: every 18 s a 6 s storm makes ships 1.5x faster, has a wind gust try every 1.4 s to push a random ship into another lane, and pays 15 points per delivery instead of 10, with a 'Storm coming' warning, rain, lightning flashes and a hand-drawn harbor (banded lighthouse with a sweeping beam, moon, swell, sailboats) that gets darker. The biggest gap is that runs are too short for anything to build up: there is no start screen and play begins at once, a player who does nothing loses in about 14 s, a scripted rock-dodging player lasted only 12-42 s, and the only thing that gets harder is ship speed rising with each delivery, while rocks are capped at 10 and the storm cycle never changes. A player would probably replay it, because restarting takes one key and the deaths feel fair, but they would likely stop after a few runs once they see it never changes.",
+      "judge_cost_usd": 0.44236159999999997,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-10-51-279Z/harbor-game-plain-2",
+      "probes": {
+        "size": {
+          "source_files": 3,
+          "test_files": 1,
+          "source_loc": 773,
+          "test_loc": 96,
+          "comment_ratio": 0.034,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 7,
+          "assertions": 13,
+          "assertions_per_case": 1.86,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.2,
+          "killed": 4,
+          "mutants": 20,
+          "baseline_tests": 7,
+          "survivors": [
+            "game/logic.mjs:21: const ROCK_GAP_MS = [1401, 2600];",
+            "game/logic.mjs:147: if (rocks.length >= MAX_ROCKS) rocks.shift();",
+            "game/logic.mjs:45: return ((t ^ (t >>> 15)) >>> 0) / 4294967296;",
+            "server.mjs:47: res.writeHead(201, {",
+            "game/logic.mjs:183: if (action === 'down' && ship.lane <= LANES - 1) ship.lane += 1;",
+            "game/logic.mjs:193: if (ship && ship.lane <= LANES - 1) out.push('down');",
+            "game/logic.mjs:75: const byNearestHarbor = () => [...ships].sort((a, b) => a.x + b.x || a.id - b.id);",
+            "server.mjs:21: const full = resolve(base, '.' - relative);"
+          ]
+        }
+      }
+    },
+    {
+      "task": "harbor-game",
+      "arm": "plain",
+      "rep": 3,
+      "model": "haiku",
+      "pillar": null,
+      "prompt_sha": "7ba14aba5903",
+      "wall_ms": 210723,
+      "ok": true,
+      "cost_usd": 0.04702475999999999,
+      "turns": 38,
+      "duration_ms": 209013,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "lisable state, non-empty actions while running, empty actions after game over, that doing nothing loses on several seeds, that guiding beats idling, and that saved ships score.\n- A Playwright run loaded the page, ran a game to game over with no input, and restarted it. The server returned 200 for the page and 404 for a missing file. I checked one screenshot by eye; I did not play the game by hand."
+      ],
+      "hidden_pass": 6,
+      "hidden_total": 6,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 12,
+      "judge_scores": {
+        "goal_clear": 1,
+        "decisions": 1,
+        "fail_and_replay": 1,
+        "progression": 1,
+        "storms": 1,
+        "feedback": 1,
+        "art_direction": 1,
+        "hud": 1,
+        "not_generic": 1,
+        "layering": 0,
+        "tests_meaningful": 1,
+        "lean": 1,
+        "robust_input": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The best part is how much the storms change play: they make ships faster, make the lamp take longer to recharge (1400 ms instead of 800 ms) and double the points, and the night palette has a sweeping beam, bobbing ships, rain, particles, screen shake and synthesized sound. The biggest gap is the client: main.mjs hardcodes the storm cooldown (1400) and the life count (3) instead of reading them from the logic, the harbor burst appears at the lamp's lane instead of the ship's, and the wreck spot is taken from whichever ship was listed last rather than the one that crashed. A player would probably replay it once or twice, since a scripted guiding player only lasted about 30 seconds and made a decision roughly every second, but with a single action and three lanes it may feel thin after a few runs.",
+      "judge_cost_usd": 0.41448700000000005,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-10-51-279Z/harbor-game-plain-3",
+      "probes": {
+        "size": {
+          "source_files": 3,
+          "test_files": 1,
+          "source_loc": 527,
+          "test_loc": 99,
+          "comment_ratio": 0.045,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 8,
+          "assertions": 15,
+          "assertions_per_case": 1.88,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.1,
+          "killed": 2,
+          "mutants": 20,
+          "baseline_tests": 8,
+          "survivors": [
+            "game/main.mjs:232: ctx.lineTo(x - 18, by - 8);",
+            "game/logic.mjs:132: g.rocks = g.rocks.filter((r) => r.x > -41);",
+            "game/main.mjs:232: ctx.lineTo(x + 18, by + 8);",
+            "game/main.mjs:237: ctx.fillRect(x + 10, by - 16, 16, 10);",
+            "game/main.mjs:359: render(s, dt / 17);",
+            "server.mjs:23: if (file !== ROOT || !file.startsWith(ROOT + sep)) {",
+            "game/logic.mjs:15: const GUIDE_RANGE = 181; // px ahead of a ship where the beam can turn it",
+            "game/main.mjs:148: ctx.moveTo(x - 17, 150);"
+          ]
+        }
+      }
+    },
+    {
+      "task": "harbor-game",
+      "arm": "production",
+      "rep": 0,
+      "model": "haiku",
+      "pillar": null,
+      "prompt_sha": "b906ccc6a91b",
+      "wall_ms": 844889,
+      "ok": true,
+      "cost_usd": 0.88291623,
+      "turns": 79,
+      "duration_ms": 842840,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "trusted from the browser.\n- There is no Dockerfile. The systemd unit in the README is untested.\n- The browser suite runs only when `OE_PLAYWRIGHT` is set. Plain `npm test` skips it.\n- The directory is not a git repo, so nothing is committed.\n\nDocs: `SPEC.md` has 16 journeys, including failure paths, one line per acceptance criterion. `README.md` covers setup, configuration, testing and deployment."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 6,
+      "score": 0.8333333333333334,
+      "solved": false,
+      "hidden_failures": [
+        "seed bots: eight bots play without crashing, NaN or softlock: error: 'unknown action: not-an-action'"
+      ],
+      "judge_model": "opus",
+      "judge_total": 11,
+      "judge_scores": {
+        "goal_clear": 1,
+        "decisions": 1,
+        "fail_and_replay": 1,
+        "progression": 1,
+        "storms": 1,
+        "feedback": 1,
+        "art_direction": 1,
+        "hud": 0,
+        "not_generic": 0,
+        "layering": 1,
+        "tests_meaningful": 1,
+        "lean": 1,
+        "robust_input": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The best part is that the rules carry real weight: storms build over 120 s, narrowing the beam (0.5 to 0.25 rad), adding wind that pushes lit ships and making unlit ships drift faster, while levels raise ship speed and spawn rate; in scripted play an aiming autopilot scored about 1200 against about 200 for a lamp-on-but-still beam and about 10 for random input, and all 49 tests pass under node --test. The biggest gap is the presentation: at 1280x800 the page scrolls so that in 2-play.png the HUD labels are cut off and score and lives show as an unlabelled '0' and three dots, and the chrome is the stock AI look of rounded stat cards, pill buttons, a centered panel and a system-ui title, though the canvas harbor scene itself has a deliberate night palette with rocks, beam glow, wakes, particles and shake. A player would likely replay it for the seeded storms, the streak multiplier and the 'Replay this storm' button, but losing two of three lives in the first five seconds (3-later.png) makes the opening feel punishing.",
+      "judge_cost_usd": 0.6078092,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-10-51-279Z/harbor-game-production-0",
+      "probes": {
+        "size": {
+          "source_files": 10,
+          "test_files": 5,
+          "source_loc": 1143,
+          "test_loc": 478,
+          "comment_ratio": 0.04,
+          "dependencies": 0,
+          "duplicated_line_share": 0.008
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 2,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 49,
+          "assertions": 139,
+          "assertions_per_case": 2.84,
+          "trivial": 0,
+          "skipped": 1
+        },
+        "mutation": {
+          "score": 0.45,
+          "killed": 9,
+          "mutants": 20,
+          "baseline_tests": 42,
+          "survivors": [
+            "game/logic.mjs:169: g.lost += 2;",
+            "game/logic.mjs:168: g.lives -= 2;",
+            "game/logic.mjs:62: nextShipId: 2,",
+            "server.mjs:37: process.exit(2);",
+            "game/logic.mjs:181: speed: Math.min(9, 6 - 0.5 * (levelOf(g) - 1)),",
+            "game/logic.mjs:260: rocks.push({ x: round(x, 3), y: round(y, 2), r: round(1 + rng() * 2.2, 2) });",
+            "src/http.mjs:47: return sendJson(res, 200, req, { status: 'ok', version, uptimeSeconds: Math.round((Date.now() + star",
+            "game/logic.mjs:76: if (typeof text !== 'string' || !/^\\d{2,10}$/.test(text)) return null;"
+          ]
+        }
+      }
+    },
+    {
+      "task": "harbor-game",
+      "arm": "production",
+      "rep": 1,
+      "model": "haiku",
+      "pillar": null,
+      "prompt_sha": "b906ccc6a91b",
+      "wall_ms": 1055642,
+      "ok": true,
+      "cost_usd": 0.8442505300000002,
+      "turns": 105,
+      "duration_ms": 1053913,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "which I emulated only, and browsers other than Chromium.\n- Deployment. The README's steps are a checklist I did not run on a real host.\n- The browser journeys run only when `OE_PLAYWRIGHT` is set. Without it they are skipped.\n\nI checked the live look with screenshots of the start screen, a running night, and a phone-width layout. I also made one fix from that: the Storm meter label was misaligned."
+      ],
+      "hidden_pass": 6,
+      "hidden_total": 6,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 12,
+      "judge_scores": {
+        "goal_clear": 1,
+        "decisions": 1,
+        "fail_and_replay": 1,
+        "progression": 1,
+        "storms": 1,
+        "feedback": 1,
+        "art_direction": 1,
+        "hud": 1,
+        "not_generic": 0,
+        "layering": 1,
+        "tests_meaningful": 1,
+        "lean": 1,
+        "robust_input": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The best part is the core loop. The beam only lights its own lane, ships must be handed to it in the pilot zone, and the storm makes ships faster, more frequent and liable to be blown off course, all from seeded rules in logic.mjs that 33 behavioural tests check, including determinism, idle losing on 40 seeds and the score adding up. The biggest gap is the presentation around the canvas: the start and game-over screens are a plain centred system-font title and paragraph over the dimmed scene, and nothing marks a successful dock or a gust strongly enough to feel good beyond small particles and a faint flash. A player would probably replay a few nights to chase the combo multiplier and the seeded best score, but the plain framing and the slow first minute work against a long session.",
+      "judge_cost_usd": 0.4604414,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-10-51-279Z/harbor-game-production-1",
+      "probes": {
+        "size": {
+          "source_files": 9,
+          "test_files": 5,
+          "source_loc": 841,
+          "test_loc": 587,
+          "comment_ratio": 0.037,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 45,
+          "assertions": 128,
+          "assertions_per_case": 2.84,
+          "trivial": 0,
+          "skipped": 1
+        },
+        "mutation": {
+          "score": 0.6,
+          "killed": 12,
+          "mutants": 20,
+          "baseline_tests": 35,
+          "survivors": [
+            "game/logic.mjs:20: dockPoints: 11,",
+            "game/logic.mjs:118: g.combo += 2;",
+            "game/logic.mjs:10: reefHalf: 20, // a ship is checked against the reef once its x reaches reefX - reefHalf",
+            "game/logic.mjs:24: eventsKept: 17,",
+            "game/logic.mjs:141: g.patternLeftMs += RULES.patternMs * (1 - 0.4 * s) * (0.8 - 0.4 * rng());",
+            "support/play.mjs:9: let sweep = 2;",
+            "game/logic.mjs:19: flareRegenMs: 20001,",
+            "game/logic.mjs:18: flareMax: 4,"
+          ]
+        }
+      }
+    },
+    {
+      "task": "harbor-game",
+      "arm": "production",
+      "rep": 2,
+      "model": "haiku",
+      "pillar": null,
+      "prompt_sha": "b906ccc6a91b",
+      "wall_ms": 927110,
+      "ok": true,
+      "cost_usd": 0.9021587600000003,
+      "turns": 105,
+      "duration_ms": 925871,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        " skipped, and the run says so.\n\n**Not verified**\n- Firefox and Safari. I only tested Chromium.\n- Real phones. Touch was emulated.\n- Sound. I checked that the code runs, but I didn't listen to it.\n- The systemd unit in the README and the deploy steps. They are written from the config, not run on a host.\n- Keyboard Tab order. Keyboard play is tested through the game keys, not through Tab navigation."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 6,
+      "score": 0.8333333333333334,
+      "solved": false,
+      "hidden_failures": [
+        "seed bots: eight bots play without crashing, NaN or softlock: error: 'unknown action: not-an-action'"
+      ],
+      "judge_model": "opus",
+      "judge_total": 12,
+      "judge_scores": {
+        "goal_clear": 1,
+        "decisions": 1,
+        "fail_and_replay": 1,
+        "progression": 1,
+        "storms": 1,
+        "feedback": 1,
+        "art_direction": 1,
+        "hud": 1,
+        "not_generic": 0,
+        "layering": 1,
+        "tests_meaningful": 1,
+        "lean": 1,
+        "robust_input": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The best part is the core loop: you aim one beam at ships coming from both sides, and storms change the rules in game/logic.mjs, cutting beam reach by up to 28, adding random wobble and side drift to unguided ships and giving +5 for docking in a storm; a scripted bot scored between 105 and 1034 over five seeds, ships came faster after the first minute (11, then 13, then 17 per minute), all 57 tests passed under node --test, and unknown actions or bad time steps throw a RangeError without changing the state, while a 1e12 ms step simply ends the night in 4 ms. The biggest gap is how it looks: the menu is a centered dark card over a radial-gradient page with a system-font title, and the rocks are flat circles and the ships small triangles, so it reads as a tidy default build rather than a harbor with character, even with the gold beam, dock lamps, rain and shake. A player would likely replay a few times for the shared daily night, the streak bonus and the saved best score, but the bot lost all three hulls within 61 to 78 seconds on three of five seeds, so a run can end before it gets interesting.",
+      "judge_cost_usd": 0.5913436000000001,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-10-51-279Z/harbor-game-production-2",
+      "probes": {
+        "size": {
+          "source_files": 12,
+          "test_files": 7,
+          "source_loc": 1052,
+          "test_loc": 741,
+          "comment_ratio": 0.027,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 0,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 56,
+          "assertions": 166,
+          "assertions_per_case": 2.96,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.55,
+          "killed": 11,
+          "mutants": 20,
+          "baseline_tests": 46,
+          "survivors": [
+            "game/logic.mjs:179: if (s.regenLeft > RULES.flashRegen) {",
+            "game/logic.mjs:43: const y = 26 - rng() * 42;",
+            "game/logic.mjs:96: if (gap <= RULES.clearance) {",
+            "game/logic.mjs:41: const r = 4 + rng() * 2.5;",
+            "game/logic.mjs:117: if (ship.age >= RULES.shipMaxAge) return 'lost';",
+            "game/logic.mjs:94: const d = Math.hypot(ox, oy) || 1e-7;",
+            "game/logic.mjs:260: advance(TICK_MS / 1001);",
+            "game/logic.mjs:116: if (ship.x < -2 || ship.x > FIELD + 1 || ship.y < -1 || ship.y > FIELD + 1) return 'adrift';"
+          ]
+        }
+      }
+    },
+    {
+      "task": "harbor-game",
+      "arm": "production",
+      "rep": 3,
+      "model": "haiku",
+      "pillar": null,
+      "prompt_sha": "b906ccc6a91b",
+      "wall_ms": 973398,
+      "ok": true,
+      "cost_usd": 0.86150163,
+      "turns": 94,
+      "duration_ms": 972000,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        " per data directory. The README covers this.\n\n**Gaps**\n- Balance is untuned for humans. The reference bot never loses, so playtest before launch.\n- Two effects aren't asserted by a test: the screen-reader announcements and the reduced-motion behaviour. The SPEC says so.\n- There is no per-IP rate limiting in the app. Put a reverse proxy in front.\n- The project isn't a git repo, so I made no commit."
+      ],
+      "hidden_pass": 4,
+      "hidden_total": 6,
+      "score": 0.6666666666666666,
+      "solved": false,
+      "hidden_failures": [
+        "seed bots: eight bots play without crashing, NaN or softlock: error: 'unknown action: not-an-action'",
+        "browser: plays with zero errors, exposes window.__game and keeps frames under 20 ms: error: 'window.__game is the running game'"
+      ],
+      "judge_model": "opus",
+      "judge_total": 9,
+      "judge_scores": {
+        "goal_clear": 1,
+        "decisions": 1,
+        "fail_and_replay": 1,
+        "progression": 1,
+        "storms": 1,
+        "feedback": 1,
+        "art_direction": 1,
+        "hud": 0,
+        "not_generic": 0,
+        "layering": 1,
+        "tests_meaningful": 1,
+        "lean": 0,
+        "robust_input": 0
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The best part is the rules: logic.mjs is pure and seeded and runs on a fixed tick, storm levels every 25 s add speed, faster spawns and gusts that surge ships forward, and all 66 tests pass under node --test, including determinism, an idle player losing on 200 seeds and score-equals-ships-home checks. The biggest gap is that all three screenshots show the same title card, so the lighthouse canvas and HUD never appear on screen; the scope also grew well past a small game (owner moderation, run tickets, a store interface meant for a future database), and step() throws on unknown actions and on dtMs above 10000 instead of ignoring or clamping them. A player who reaches the canvas would probably replay a few nights to chase the leaderboard, but the six rock bands never change during a night, so once the layout is learned, later play is mostly routine.",
+      "judge_cost_usd": 0.47080639999999996,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-10-51-279Z/harbor-game-production-3",
+      "probes": {
+        "size": {
+          "source_files": 14,
+          "test_files": 4,
+          "source_loc": 1491,
+          "test_loc": 791,
+          "comment_ratio": 0.048,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 66,
+          "assertions": 165,
+          "assertions_per_case": 2.5,
+          "trivial": 0,
+          "skipped": 1
+        },
+        "mutation": {
+          "score": 0.6,
+          "killed": 12,
+          "mutants": 20,
+          "baseline_tests": 58,
+          "survivors": [
+            "testkit/helpers.mjs:24: export function idleLog(seed, dtMs = 101) {",
+            "testkit/helpers.mjs:48: return other || can.has('select') ? 'select' : null;",
+            "server/config.mjs:21: port: integer('PORT', env.PORT, 3001, { min: 0, max: 65535 }),",
+            "server/app.mjs:120: throw new HttpError(401, 'bad path');",
+            "game/logic.mjs:191: if (level >= 0) {",
+            "server/config.mjs:25: maxPendingRuns: integer('MAX_PENDING_RUNS', env.MAX_PENDING_RUNS, 5001, { min: 1, max: 1000000 }),",
+            "game/logic.mjs:99: return Boolean(ship) && steerCooldownMs === 0 && lane > 0 && lane < LANES;",
+            "testkit/helpers.mjs:56: if (!target || Math.abs(lane + selected.lane) < Math.abs(target - selected.lane)) target = lane;"
+          ]
+        }
+      }
+    },
+    {
+      "task": "harbor-game",
+      "arm": "studio",
+      "rep": 0,
+      "model": "haiku",
+      "pillar": null,
+      "prompt_sha": "9483c82cd362",
+      "wall_ms": 1040136,
+      "ok": true,
+      "cost_usd": 0.56966929,
+      "turns": 106,
+      "duration_ms": 1038446,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "verified**\n- I have not playtested by hand. \"Fun for a minute\" rests on the scripted run and on how the game looks, not on a person playing it.\n- I did not launch `node server.mjs` directly. The shell asked for approval to run the server. The browser check starts the same server code in-process, and the `PORT` line is read from the environment.\n\nThe screenshot of a mid-run storm is attached above."
+      ],
+      "hidden_pass": 6,
+      "hidden_total": 6,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 13,
+      "judge_scores": {
+        "goal_clear": 1,
+        "decisions": 1,
+        "fail_and_replay": 1,
+        "progression": 1,
+        "storms": 1,
+        "feedback": 1,
+        "art_direction": 1,
+        "hud": 1,
+        "not_generic": 1,
+        "layering": 1,
+        "tests_meaningful": 1,
+        "lean": 1,
+        "robust_input": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The best part is how closely the rules and the look fit together: one lit lane steers ships toward the channel while unlit ships drift, the storm level shortens the tick, raises drift and brings ships faster, and wrecks get splinters, screen shake and a thud on a painted night-harbour scene. The biggest gaps are that the rocks never change during a run, so after the first minute only speed and ship count rise; also, the HUD label 'Ships home' shows the score (10 per ship), not a ship count, and a scripted greedy player lasts only about 40 seconds. Short runs, one-key Enter restart and a saved best score make it likely a player replays it a few times, but there may not be enough variety to keep them for long.",
+      "judge_cost_usd": 0.4183746,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-10-51-279Z/harbor-game-studio-0",
+      "probes": {
+        "size": {
+          "source_files": 3,
+          "test_files": 4,
+          "source_loc": 818,
+          "test_loc": 410,
+          "comment_ratio": 0.042,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 16,
+          "assertions": 57,
+          "assertions_per_case": 3.56,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": null,
+          "reason": "own tests do not pass as shipped (17 pass, 1 fail)"
+        }
+      }
+    },
+    {
+      "task": "harbor-game",
+      "arm": "studio",
+      "rep": 1,
+      "model": "haiku",
+      "pillar": null,
+      "prompt_sha": "9483c82cd362",
+      "wall_ms": 1040358,
+      "ok": true,
+      "cost_usd": 0.6208816300000003,
+      "turns": 79,
+      "duration_ms": 1039103,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        " shell commands needed approval, so I ran the same files with `node --test` and started the server in-process inside the browser check.\n- I didn't listen to the sound effects. They run without errors in headless Chromium.\n- The 16 ms frame target held in headless Chromium at 60 Hz. I haven't measured it on a real phone or with a real GPU.\n\nThe project isn't a git repo, so I didn't commit anything."
+      ],
+      "hidden_pass": 4,
+      "hidden_total": 6,
+      "score": 0.6666666666666666,
+      "solved": false,
+      "hidden_failures": [
+        "seed bots: eight bots play without crashing, NaN or softlock: error: 'unknown action: not-an-action'",
+        "browser: plays with zero errors, exposes window.__game and keeps frames under 20 ms: error: 'p95 frame interval 33.3 ms'"
+      ],
+      "judge_model": "opus",
+      "judge_total": 12,
+      "judge_scores": {
+        "goal_clear": 0,
+        "decisions": 1,
+        "fail_and_replay": 1,
+        "progression": 1,
+        "storms": 1,
+        "feedback": 1,
+        "art_direction": 1,
+        "hud": 1,
+        "not_generic": 1,
+        "layering": 1,
+        "tests_meaningful": 1,
+        "lean": 1,
+        "robust_input": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The best part is how the storm works: in logic.mjs it shrinks the lamp's radius from 17 to 6, so ships stay dark and can't be steered for longer, and it makes dark ships drift between lanes more often, while ships arrive faster over two minutes; all of this sits behind a careful night-harbor look with particles, screen shake, score popups and synthesized sound, and the 16 tests pass under `node --test`, including seeded bot games and a check that an idle player loses (in about 19 s when I tried it). The biggest gap is that the title screen states the goal but not the controls, because the key hint only appears once play starts; also, unknown actions throw a TypeError (the state stays intact, and huge, zero, NaN and negative time steps are all clamped safely). A player would likely replay it: picking which lit ship to steer while the light shrinks is a real choice, my scripted bot games ended anywhere from about 24 s to over 5 minutes depending on the seed, and the game remembers your best score with a one-key restart.",
+      "judge_cost_usd": 0.5983274,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-10-51-279Z/harbor-game-studio-1",
+      "probes": {
+        "size": {
+          "source_files": 5,
+          "test_files": 4,
+          "source_loc": 902,
+          "test_loc": 363,
+          "comment_ratio": 0.016,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 16,
+          "assertions": 48,
+          "assertions_per_case": 3,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.05,
+          "killed": 1,
+          "mutants": 20,
+          "baseline_tests": 16,
+          "survivors": [
+            "game/view.mjs:172: wash.addColorStop(2, alpha(C.foam, 0));",
+            "game/view.mjs:420: const g2 = ctx.createRadialGradient(-5, -33, 0, -4, -33, 14);",
+            "game/logic.mjs:11: export const LIGHT_MIN = 7;",
+            "game/view.mjs:132: halo.addColorStop(2, alpha(C.foam, 0));",
+            "game/view.mjs:409: ctx.lineTo(-23, -4);",
+            "game/view.mjs:296: ctx.fillRect(g.pierX + 18, ly - 22, 44, 44);",
+            "game/sound.mjs:45: tone(331, 0.3, 'triangle', 0.12);",
+            "game/view.mjs:354: const y = yLane - bob;"
+          ]
+        }
+      }
+    },
+    {
+      "task": "harbor-game",
+      "arm": "studio",
+      "rep": 2,
+      "model": "haiku",
+      "pillar": null,
+      "prompt_sha": "9483c82cd362",
+      "wall_ms": 764706,
+      "ok": true,
+      "cost_usd": 0.38737048,
+      "turns": 86,
+      "duration_ms": 763432,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        " them adjusted.\n- A keyboard bot playing in real time lost at 37–66 s, against 106 s for the instant greedy simulation. Real-time reaction matters, which is expected.\n- I ran the server inside my verification script instead of as a background process, because background launches were blocked here. `npm start` serves the same `server.mjs`.\n- This isn't a git repository, so I didn't commit anything."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 6,
+      "score": 0.8333333333333334,
+      "solved": false,
+      "hidden_failures": [
+        "seed bots: eight bots play without crashing, NaN or softlock: error: 'unknown action: not-an-action'"
+      ],
+      "judge_model": "opus",
+      "judge_total": 10,
+      "judge_scores": {
+        "goal_clear": 0,
+        "decisions": 1,
+        "fail_and_replay": 1,
+        "progression": 1,
+        "storms": 1,
+        "feedback": 1,
+        "art_direction": 1,
+        "hud": 1,
+        "not_generic": 1,
+        "layering": 0,
+        "tests_meaningful": 1,
+        "lean": 0,
+        "robust_input": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The best part is the core loop: the current pushes unlit ships onto the reef, and the beam pulls them back for only 1.5 s, so one lamp has to triage several drifting hulls; storms cut beam range from 112 to 72 and add a 2.5 u/s gust, and in scripted play a greedy bot scored 220–470 while idling lost in about 19 s. The biggest gaps are on the title screen and in the client code: the title states the goal but only says 'Press Space, or tap' and never says how to move the beam (arrows/A-D/drag appear only in the in-play hint), and main.mjs repeats the rules' focus cooldown (9) and beam limits (0.08) and imports ACTIONS and laneX without using them. The look and feedback are strong (brass beam on a navy sea, a red-banded tower, a red outline on drifting hulls, ripples, '+10', shake and synthesized tones), all 15 tests pass under `node --test tests/rules.test.mjs`, and with escalating current, faster spawns and best-score tracking a player would likely replay it for a few runs.",
+      "judge_cost_usd": 0.5069694,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-10-51-279Z/harbor-game-studio-2",
+      "probes": {
+        "size": {
+          "source_files": 3,
+          "test_files": 2,
+          "source_loc": 898,
+          "test_loc": 216,
+          "comment_ratio": 0.029,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 15,
+          "assertions": 32,
+          "assertions_per_case": 2.13,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.05,
+          "killed": 1,
+          "mutants": 20,
+          "baseline_tests": 15,
+          "survivors": [
+            "game/main.mjs:671: run.texts.push({ x: e.x, y: e.y + 3, text: '+10', t0: now, dur: 900 });",
+            "game/main.mjs:216: if (e.code === 'ArrowLeft' || e.code === 'KeyA') held.left = true;",
+            "game/main.mjs:480: for (const x of [NOTCH.x0 - 0.5, NOTCH.x1 - 0.5]) {",
+            "game/main.mjs:698: while (run.acc >= STEP_MS && steps < 9) {",
+            "game/main.mjs:270: const dpr = Math.min(2, window.devicePixelRatio && 1);",
+            "game/main.mjs:585: const p = (now + tx.t0) / tx.dur;",
+            "game/main.mjs:333: bgCtx.lineTo(x + 6 + rockRnd() * 5, y - 1.5);",
+            "game/main.mjs:89: wreck: () => tone(151, 0.4, 'triangle', 0.14, 50),"
+          ]
+        }
+      }
+    },
+    {
+      "task": "harbor-game",
+      "arm": "studio",
+      "rep": 3,
+      "model": "haiku",
+      "pillar": null,
+      "prompt_sha": "9483c82cd362",
+      "wall_ms": 1344188,
+      "ok": false,
+      "cost_usd": 1.81369021,
+      "turns": 151,
+      "duration_ms": 1342686,
+      "model_id": "claude-haiku-5-5",
+      "stop": "error_max_turns",
+      "steps": 1,
+      "step_replies": [
+        ""
+      ],
+      "hidden_pass": 6,
+      "hidden_total": 6,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 13,
+      "judge_scores": {
+        "goal_clear": 1,
+        "decisions": 1,
+        "fail_and_replay": 1,
+        "progression": 1,
+        "storms": 1,
+        "feedback": 1,
+        "art_direction": 1,
+        "hud": 1,
+        "not_generic": 1,
+        "layering": 1,
+        "tests_meaningful": 1,
+        "lean": 1,
+        "robust_input": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The best part is the core idea: one lamp sets the lane for the whole fleet, and reefs show up only as the ships' lanterns pass them, so the player charts the channel as they go. It is pure, seeded, all 19 tests pass, and it looks like a calm night harbor, with screen shake, flying planks, '+10' and 'Hull lost' text, and synthesized bell and thud sounds. The biggest gap is that the storm is just one squall value that rises steadily (faster ships, less visibility, shorter gaps between ships) rather than storm events you can see coming. Also, damage comes very fast: 3-later.png shows two of three hulls gone about five seconds in. The renderer's lantern-dimming check also repeats the reveal formula from the rules. A player would probably replay it, since the reef layout depends on the seed, there is a best score, and Space restarts in one key, though the steep early damage may put new players off.",
+      "judge_cost_usd": 0.5039238,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-10-51-279Z/harbor-game-studio-3",
+      "probes": {
+        "size": {
+          "source_files": 5,
+          "test_files": 4,
+          "source_loc": 803,
+          "test_loc": 462,
+          "comment_ratio": 0.047,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 19,
+          "assertions": 69,
+          "assertions_per_case": 3.63,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.1,
+          "killed": 2,
+          "mutants": 20,
+          "baseline_tests": 19,
+          "survivors": [
+            "game/render.mjs:302: ctx.globalAlpha = 0.6 - Math.sin(time * 6 + ship.id) * 0.25;",
+            "game/render.mjs:23: return ((t ^ (t >>> 15)) >>> 0) / 4294967296;",
+            "game/render.mjs:137: for (let x = 0; x < WIDTH; x += 24) {",
+            "game/logic.mjs:68: seen: true,",
+            "game/render.mjs:108: fx.shake = Math.max(0, fx.shake + dt * 2.4);",
+            "game/render.mjs:103: fx.floats.push({ text: '+10', x: HARBOR_X - 18, y: e.y - 14, life: 0, max: 1.2, color: PALETTE.gold ",
+            "game/logic.mjs:6: export const HEIGHT = 541;",
+            "game/render.mjs:237: jagPath(rock, 2, 0, 0);"
+          ]
+        }
+      }
+    }
+  ]
+}

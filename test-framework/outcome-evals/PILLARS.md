@@ -72,6 +72,46 @@ The gain is established against both baselines at 8% more cost per run than the 
 
 **What this changes:** owner rules now live in `CLAUDE.md` (and `AGENTS.md`), which the harness loads into every session, instead of in files a later session has to find. It is the first svc change that went through the whole loop: a pillar exposed the failure, a candidate was measured, the promotion rule accepted it, and the shipped prompt was re-measured after wiring.
 
+## Game benchmark (harbor-game): many dimensions, not one score
+
+The request was one line: a browser game where a harbor lighthouse guides ships past rocks through storms, "make it feel good". The task also stated a test contract: rules in a headless, seeded module; `window.__game` exposed in the browser.
+
+Graders, each proven against a reference game and a nondeterministic wrong answer:
+- **Hidden checks:** separation, contract, determinism, eight seed bots, an idle player loses, and browser play with zero errors and p95 frame time under 20 ms.
+- **Quality probes:** test strength by mutation, size and slop.
+- **A blind Opus judge** on 13 checkable claims (game design, feel and look, engineering), working from screenshots and play. The judge gave the reference 9/13 twice, with 11 of 13 claims agreeing.
+
+Results: 4 builds per arm on Haiku 5.5.
+
+| Arm | Judge (of 13) | Hidden checks all passed | Mutation score | Source lines | Mean cost |
+|---|---|---|---|---|---|
+| plain | 11.75 | 2/4 | 0.10 | 676 | $0.085 |
+| production | 11.0 | 1/4 | **0.55** | 1,132 | $0.87 |
+| studio (candidate) | 12.0 | 2/4 | 0.07 (3 of 4 scored) | 855 | $0.85 |
+
+- **Judged quality:** no established difference (production minus plain −0.75, CI [−2.25, 0.75]; studio minus plain +0.25, CI [−1.25, 1.75]).
+- **Promotion rule:** rejects both framework arms on judged quality, and rejects the studio candidate outright.
+- **Test strength** is the one established difference. Production's own tests catch 0.45 more of the seeded mutations than plain's (CI [0.36, 0.54], p = 0.028), at 1.7× the code and about 10× the cost. Plain and studio builds pass their own tests but catch almost no planted bug.
+- **Seed bots** broke at least one build in every arm (a crash, a NaN or a stuck state under scripted play). Neither the judge nor the builds' own tests saw this.
+- **What this changes:**
+  - For a small game, the free path gives the same judged result at a tenth of the cost.
+  - Where the product will be changed again and needs tests that protect it, production buys measurably stronger tests.
+  - `references/delivery-profiles.json` records this under `method.small_interactive`.
+
+## Effort sweep (svc stage prompts, Haiku 5.5, six single-stage tasks × 3 runs)
+
+| Effort | Solved | Mean cost | Mean time |
+|---|---|---|---|
+| low | 17/18 | $0.011 | 36 s |
+| medium | **18/18** | $0.015 | 53 s |
+| high | 17/18 | $0.019 | 79 s |
+
+High effort cost 30% more and took 50% longer with no better recall on the planted faults, though it reported more real unplanted defects. The two high-effort review rows were regraded after the grader fix described in the commit history. The misses:
+- **low:** one drift run never wrote its file;
+- **high:** one security review missed the refund IDOR.
+
+At 18 runs per level none of these differences is established. Medium is the recorded default for these stages on Haiku until a larger sweep says otherwise.
+
 ## Next pillars (not yet built)
 
 | Pillar | Scenario | Grader |

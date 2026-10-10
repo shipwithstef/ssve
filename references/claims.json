@@ -207,6 +207,58 @@
       ],
       "json": "bare_solve_rate",
       "min": 1
+    },
+    {
+      "id": "game-no-judged-gain",
+      "claim": "On the one-line game request, the production method's judged score does not beat plain (difference not established)",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-harbor-game.json"
+      ],
+      "json": "production_judge_vs_plain.p",
+      "min": 0.05
+    },
+    {
+      "id": "game-test-strength",
+      "claim": "Production builds' own tests catch at least 40% of seeded mutations on the game task",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-harbor-game.json"
+      ],
+      "json": "production_mutation_score",
+      "min": 0.4
+    },
+    {
+      "id": "game-plain-weak-tests",
+      "claim": "Plain builds' own tests catch at most 20% of seeded mutations on the game task",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-harbor-game.json"
+      ],
+      "json": "plain_mutation_score",
+      "max": 0.2
+    },
+    {
+      "id": "effort-medium-solves",
+      "claim": "At medium effort, the shipped svc stage prompts solve every run of the six single-stage tasks on Haiku",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-effort-medium.json"
+      ],
+      "json": "svc_solve_rate",
+      "min": 1
     }
   ]
 }
