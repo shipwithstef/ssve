@@ -94,7 +94,7 @@ Entry schema:
 
 ## Adoption gate (planned)
 
-Rule adoption — especially from external packs — goes through **`evaluate-rule`** (deferred skill, see `proposals/2026-04-13-rules-as-primitive.md` F1-1). The gate decides whether a candidate rule:
+Rule adoption — especially from external packs — goes through **`evaluate-rule`** (deferred skill, see `proposals/done/2026-04-13-rules-as-primitive.md` F1-1). The gate decides whether a candidate rule:
 
 - Beats Claude's default behaviour (adopt)
 - Restates Claude's default (defer-to-default — reject to avoid rule inflation)

@@ -334,7 +334,7 @@ Every doctrine claim has a concrete test that produces numerical evidence. No cl
 
 **For C3:** Use `total_tokens` from sub-agent task notification results as the measurement proxy. If Claude Code does not surface this field, instrument the test with a wrapper that logs token counts from the Anthropic API response headers.
 
-**For C7:** Use the `worktree-manager` skill to create two worktrees. Dispatch parallel agents (one per worktree) using `superpowers:dispatching-parallel-agents`. This is infrastructure the framework already provides -- use it.
+**For C7:** Create two worktrees with `bash scripts/worktree.sh create <branch>`. Dispatch parallel agents (one per worktree) using `superpowers:dispatching-parallel-agents`. This is infrastructure the framework already provides -- use it.
 
 ## Test Suites
 
@@ -343,7 +343,7 @@ Every doctrine claim has a concrete test that produces numerical evidence. No cl
 Validates all artifacts exist and cross-reference correctly.
 
 ```bash
-bash scripts/validate-pipeline-integrity.sh <project-root>
+bash test-framework/scripts/validate-pipeline-integrity.sh <project-root>
 ```
 
 Checks: all SKILL.md files exist, manifest matches directories, AC IDs are consistent across specs/journeys, RESOLVED annotations point to real files, UX/UI designs reference valid specs.

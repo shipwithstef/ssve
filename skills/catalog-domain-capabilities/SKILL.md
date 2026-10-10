@@ -587,7 +587,7 @@ Zombie capabilities are stored in `zombie_capabilities[]` in the machine artifac
 | # | Check | How | PASS/FAIL |
 |---|-------|-----|-----------|
 | 1 | `docs/specs/capability-catalog.md` exists | `test -f` | |
-| 2 | `docs/specs/capability-catalog.data.json` exists and validates against schema | `node scripts/validate-json.mjs docs/specs/capability-catalog.data.json references/schemas/capability-catalog.schema.json` | |
+| 2 | `docs/specs/capability-catalog.data.json` exists and validates against schema | `node scripts/lib/json-schema-validator.mjs --schema=references/schemas/capability-catalog.schema.json --data=docs/specs/capability-catalog.data.json` | |
 | 3 | ≥80% of capabilities have mechanic extraction | count `mechanics[]` length > 0 | |
 | 4 | All universal capabilities have Kano + convergence classified | grep for null/unknown | |
 | 5 | BPS computed for all capabilities | `build_priority_ranking[]` length == capabilities count | |

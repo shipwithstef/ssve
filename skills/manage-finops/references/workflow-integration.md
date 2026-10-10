@@ -924,7 +924,7 @@ In a "Vibe Coding" environment, the primary cost is often the **agentic workflow
 - **Model Tiering**: Use `scripts/resolve-model.sh` to ensure `PASS` or `EXEC` tasks use cheaper models (Flash/Haiku) while reserving `STRAT` for expensive models (Pro/Opus).
 - **Context Hygiene**: Enforce `references/context-budget.md` to prevent "token bloat" during long sessions.
 - **Subagent Efficiency**: Use `codebase_investigator` for broad searches instead of multiple `read_file` calls to reduce orchestrator overhead.
-- **Verification ROI**: Start with the "minimum-path" verification defined in `references/lane-model.md`. Do not run full E2E suites for local fixes.
+- **Verification ROI**: Start with the "minimum-path" verification defined in `skills/route-workflow/references/lane-model.md`. Do not run full E2E suites for local fixes.
 
 ### 9. Research Request Templates
 

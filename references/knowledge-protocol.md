@@ -22,7 +22,7 @@ docs/specs/               = PROJECT APPLICATION (this project's specific context
 writes PROJECT APPLICATION for downstream pipeline skills.
 
 Example for analyze-domain:
-1. Read `references/knowledge/domains/fintech/CAPABILITIES.md` (library — what we know about fintech generally)
+1. Read the domain library, e.g. `references/knowledge/domains/fintech/CAPABILITIES.md` (library — what we know about fintech generally)
 2. If it exists and is fresh: use it as the base, don't re-research the basics
 3. Apply it to THIS project: what matters for THIS product in fintech
 4. Write `docs/specs/domain-profile.md` (project application)

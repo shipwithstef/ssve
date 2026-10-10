@@ -53,9 +53,9 @@ outputs:
 chain:
   lanes:
     greenfield: { position: 24, prev: audit-implementation, next: verify-promotion }
-    brownfield-feature: { position: 19, prev: audit-implementation, next: verify-promotion }
+    brownfield-feature: { position: 20, prev: audit-implementation, next: verify-promotion }
     bugfix: { position: 6, prev: audit-implementation, next: verify-promotion }
-    refactor: { position: 6, prev: audit-implementation, next: verify-promotion }
+    refactor: { position: 7, prev: audit-implementation, next: verify-promotion }
   progressive: true
   self_verify: true
   human_checkpoint: true

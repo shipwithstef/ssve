@@ -31,8 +31,8 @@ outputs:
     - { path: "docs/specs/ui/<screen>/in-app-verification/", artifact: live-page-screenshots, note: "For browser-visible UI work, capture the implemented screen in supported themes and viewports; verify its real user journey. Route-workflow resolves this artifact path for its visual-output post-skill hook." }
 chain:
   lanes:
-    greenfield: { position: 11, prev: design-ux, next: landing-page }
-    brownfield-feature: { position: 6, prev: design-ux, next: landing-page }
+    greenfield: { position: 11, prev: design-ux, next: design-logo }
+    brownfield-feature: { position: 7, prev: design-ux, next: design-logo }
   progressive: true
   self_verify: true
   human_checkpoint: false

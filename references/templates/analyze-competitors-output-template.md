@@ -11,7 +11,7 @@ Two artifacts MUST be produced together:
 - "Consolidation only"
 - "Reshuffled from prior analysis"
 
-Web research is MANDATORY. WebSearch + WebFetch (or gemini-cli per `rules/research-must-use-gemini-cli.md`) MUST be invoked per direct competitor before output is produced.
+Web research is MANDATORY. WebSearch + WebFetch (or gemini-cli where the host provides it) MUST be invoked per direct competitor before output is produced.
 
 ## Markdown structure
 

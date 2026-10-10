@@ -1,7 +1,7 @@
 # svc (Serious Vibe Coding) — Capabilities
 
 Source: this repo (seriousvibecoding / ssve)
-Version: current framework state (105 skills, 34 APs, 91 references, 7 lanes, 7 gates, 9 provisioned hosts)
+Version: current framework state (108 skills, 34 APs, 91 references, 7 lanes, 7 gates, 9 provisioned hosts)
 Last updated: 2026-09-14
 Self-extracted: full L3 analysis (WI-FW-ADVISOR-KNOWLEDGE-02)
 

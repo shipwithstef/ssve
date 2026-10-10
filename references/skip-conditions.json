@@ -64,6 +64,26 @@
       "justification_format": "pipeline-decisions.jsonl entry: {\"skill\":\"design-ui\",\"decision\":\"skipped\",\"reason\":\"<why no visual surface>\"}",
       "self_verify_row": "design-ui/SKILL.md § Self-Verify — skip row documented inline in the skill's instructions"
     },
+    "design-logo": {
+      "skip_when": "The product already has a mark the owner keeps, or the work has no brand surface (backend, CLI or internal tool with no public identity).",
+      "signals": [
+        "existing logo files the owner said to keep",
+        "no public-facing surface in the spec",
+        "lane is bugfix, drift, refactor or framework"
+      ],
+      "justification_format": "pipeline-decisions.jsonl entry: {\"skill\":\"design-logo\",\"decision\":\"skipped\",\"reason\":\"<existing mark kept|no brand surface>\"}",
+      "self_verify_row": "design-logo/SKILL.md § Phase 0 — brand brief gate"
+    },
+    "landing-page": {
+      "skip_when": "The work adds no public marketing surface (internal tool, API, an existing landing page the change does not affect).",
+      "signals": [
+        "no public route or marketing page in the spec",
+        "change does not alter positioning, pricing or the hero claim",
+        "lane is bugfix, drift, refactor or framework"
+      ],
+      "justification_format": "pipeline-decisions.jsonl entry: {\"skill\":\"landing-page\",\"decision\":\"skipped\",\"reason\":\"<no public marketing surface|landing unaffected>\"}",
+      "self_verify_row": "landing-page/SKILL.md § Self-Verify"
+    },
     "design-ux": {
       "skip_when": "Feature has no UX surface (pure enabler, backend-only, internal tooling with no flow or state machine).",
       "signals": [
@@ -73,16 +93,6 @@
       ],
       "justification_format": "pipeline-decisions.jsonl entry: {\"skill\":\"design-ux\",\"decision\":\"skipped\",\"reason\":\"<why no UX surface>\"}",
       "self_verify_row": "design-ux/SKILL.md § Self-Verify — skip clause for enabler/backend features"
-    },
-    "execute-changeset": {
-      "skip_when": "TDD step is not applicable (e.g., doc-only change, configuration-only, test itself is the deliverable).",
-      "signals": [
-        "no executable code change",
-        "deliverable IS the test",
-        "config or markdown only"
-      ],
-      "justification_format": "pipeline-decisions.jsonl entry: {\"skill\":\"execute-changeset\",\"decision\":\"tdd-skipped\",\"reason\":\"<why TDD N/A>\"}",
-      "self_verify_row": "execute-changeset/SKILL.md § Self-Verify row for TDD applicability"
     },
     "track-visuals": {
       "skip_when": "No UI surface present — track-visuals cannot capture what doesn't render.",
@@ -169,27 +179,6 @@
       "justification_format": "Ship Brief notes the skip reason; escape-hatch criteria documented inline",
       "self_verify_row": "validate-feature/SKILL.md § Step 0 escape hatch for business questions"
     },
-    "review-plan": {
-      "skip_when": "Changeset is trivial (≤2 files, ≤50 lines) OR a post-plan adversarial review has already been performed and logged. NEVER skip on changesets >2 files or >50 lines without a prior review-log.yaml.",
-      "signals": [
-        "≤2 files AND ≤50 lines",
-        "review-log.yaml exists from prior review of this plan",
-        "framework-internal fix with existing review-plan precedent"
-      ],
-      "justification_format": "lane-tasks-<WI>.json skip_reason field must cite either 'trivial changeset (N files, M lines)' or 'post-plan review exists at <path>'. Pipeline-decisions.jsonl entry: {\"skill\":\"review-plan\",\"decision\":\"skipped\",\"reason\":\"<trivial|reviewed>\"}",
-      "self_verify_row": "review-plan/SKILL.md § Self-Verify — skip row with changeset-size gate"
-    },
-    "audit-implementation": {
-      "skip_when": "Feature has no data model, no external integration, no concurrency, and no security-sensitive path (auth, payments, secrets). Pure UI/docs/config changes with no behavioral impact.",
-      "signals": [
-        "no new tables/columns/schema changes",
-        "no API calls to external services",
-        "no async/parallel/threading code",
-        "no auth middleware, no payment flow, no secret handling"
-      ],
-      "justification_format": "lane-tasks-<WI>.json task marked completed with skip_reason field; pipeline-decisions.jsonl entry: {\"skill\":\"audit-implementation\",\"decision\":\"skipped\",\"reason\":\"<why no audit surface>\"}",
-      "self_verify_row": "audit-implementation/SKILL.md § When To Run — skip rules for low-risk changes"
-    },
     "verify-promotion": {
       "skip_when": "Skipping a verification tier to a higher tier requires explicit justification (structural constraint or aesthetic claim).",
       "signals": [
@@ -200,13 +189,63 @@
       "self_verify_row": "verify-promotion/SKILL.md § V3 handoff justification + VERIFIED-USER status rule"
     }
   },
+  "in_stage_relaxations": {
+    "_note": "These skills own essential stages (stage-registry.json) and are in the mandatory delivery chain, so they have no blanket registry skip: validate-delivery-graph accepts no <skill>:registry-skip for them, only the evidence-bound graph-level ids above, and the push-time receipt envelope still requires their receipts. An entry here narrows what the stage does, never whether it runs.",
+    "execute-changeset": {
+      "skip_when": "TDD step is not applicable (e.g., doc-only change, configuration-only, test itself is the deliverable).",
+      "signals": [
+        "no executable code change",
+        "deliverable IS the test",
+        "config or markdown only"
+      ],
+      "justification_format": "pipeline-decisions.jsonl entry: {\"skill\":\"execute-changeset\",\"decision\":\"tdd-skipped\",\"reason\":\"<why TDD N/A>\"}",
+      "self_verify_row": "execute-changeset/SKILL.md § Self-Verify row for TDD applicability",
+      "relaxes": "the red-first TDD step only; the stage runs and emits its exec-record"
+    },
+    "review-plan": {
+      "skip_when": "Changeset is trivial (≤2 files, ≤50 lines) OR a post-plan adversarial review has already been performed and logged. NEVER skip on changesets >2 files or >50 lines without a prior review-log.yaml.",
+      "signals": [
+        "≤2 files AND ≤50 lines",
+        "review-log.yaml exists from prior review of this plan",
+        "framework-internal fix with existing review-plan precedent"
+      ],
+      "justification_format": "lane-tasks-<WI>.json skip_reason field must cite either 'trivial changeset (N files, M lines)' or 'post-plan review exists at <path>'. Pipeline-decisions.jsonl entry: {\"skill\":\"review-plan\",\"decision\":\"skipped\",\"reason\":\"<trivial|reviewed>\"}",
+      "self_verify_row": "review-plan/SKILL.md § Self-Verify — skip row with changeset-size gate",
+      "relaxes": "review depth only (single pass for a trivial or already-reviewed plan); the stage runs and emits its review-plan receipt"
+    },
+    "audit-implementation": {
+      "skip_when": "Feature has no data model, no external integration, no concurrency, and no security-sensitive path (auth, payments, secrets). Pure UI/docs/config changes with no behavioral impact.",
+      "signals": [
+        "no new tables/columns/schema changes",
+        "no API calls to external services",
+        "no async/parallel/threading code",
+        "no auth middleware, no payment flow, no secret handling"
+      ],
+      "justification_format": "lane-tasks-<WI>.json task marked completed with skip_reason field; pipeline-decisions.jsonl entry: {\"skill\":\"audit-implementation\",\"decision\":\"skipped\",\"reason\":\"<why no audit surface>\"}",
+      "self_verify_row": "audit-implementation/SKILL.md § When To Run — skip rules for low-risk changes",
+      "relaxes": "specialist depth only (no data, integration, concurrency or security surface); the stage runs and emits its audit receipt"
+    }
+  },
   "activation_conditions": {
     "_schema": "WI-512 §2 stage-activation registry — quote-derived from proposals/2026-08-02-one-lane-framework.md §2 'Conditions, deliberately mechanical' table. Consumed by scripts/stage-activation.mjs via --conditions. Essential stages (plan, review-plan, implement, review-exec, spec-sync, index-restamp) may never appear as keys here — the script refuses (exit 2) if they do.",
-    "perf": { "condition": "diff touches a query path, a loop over rows, or an index" },
-    "translations": { "condition": "diff adds or changes a user-visible string" },
-    "device-proof": { "condition": "diff touches src/**, android/**, ios/** or a native permission" },
-    "visuals": { "condition": "diff touches a rendered component or a design token" },
-    "pricing": { "condition": "diff touches plans.generated.js, a fee path, or a priced surface" },
-    "marketing": { "condition": "diff touches a capability the marketing context claims", "approximated": true }
+    "perf": {
+      "condition": "diff touches a query path, a loop over rows, or an index"
+    },
+    "translations": {
+      "condition": "diff adds or changes a user-visible string"
+    },
+    "device-proof": {
+      "condition": "diff touches src/**, android/**, ios/** or a native permission"
+    },
+    "visuals": {
+      "condition": "diff touches a rendered component or a design token"
+    },
+    "pricing": {
+      "condition": "diff touches plans.generated.js, a fee path, or a priced surface"
+    },
+    "marketing": {
+      "condition": "diff touches a capability the marketing context claims",
+      "approximated": true
+    }
   }
 }

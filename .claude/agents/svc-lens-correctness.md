@@ -44,7 +44,7 @@ file set plus their immediate callers/callees.
   verify, mark `"repro":"needs-execution: <exact command>"` so the
   orchestrator runs it mechanically.
 - NEVER propose loosening a gate to resolve a finding.
-- 3-round cap per the station protocol; a re-review covers ONLY your own
+- 2-round cap per the station protocol; a re-review covers ONLY your own
   re-frozen scope.
 
 ## Return contract (FINAL message, parsed)

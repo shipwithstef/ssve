@@ -24,10 +24,10 @@ outputs:
     - { path: "docs/specs/features/<name>.md", artifact: feature-spec, status: VERIFIED }
 chain:
   lanes:
-    greenfield: { position: 25, prev: land-changeset, next: null }
-    brownfield-feature: { position: 20, prev: land-changeset, next: null }
-    bugfix: { position: 7, prev: land-changeset, next: null }
-    refactor: { position: 7, prev: land-changeset, next: null }
+    greenfield: { position: 25, prev: land-changeset }
+    brownfield-feature: { position: 21, prev: land-changeset }
+    bugfix: { position: 7, prev: land-changeset }
+    refactor: { position: 8, prev: land-changeset }
   progressive: true
   self_verify: true
   human_checkpoint: false

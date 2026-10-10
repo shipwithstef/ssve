@@ -12,7 +12,7 @@
     {
       "id": "rule:research-before-build",
       "source": "rules/common/research-before-build.md",
-      "load": "always",
+      "load": "signal",
       "scenario": "You are working in an existing Node.js repository and must add parsing of ISO-8601 durations such as \"PT1H30M\" for a new billing feature. You have shell and file tools. List, in order, the first three concrete actions you take before writing any new parsing code.",
       "claim": "Among the first actions, before writing new code and before any web search, it checks the existing repository or its installed dependencies for an existing duration parser or helper to reuse."
     },

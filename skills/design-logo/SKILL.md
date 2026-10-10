@@ -14,15 +14,17 @@ description: >
   the logo", "logo is bad", "favicon", "wordmark".
 inputs:
   required:
-    - { path: "docs/specs/brand-brief.yaml", artifact: brand-brief, note: "name, audience, voice, palette, anti-references, cross-domain inspiration sources, exemplar_inspiration (≥3 ids from exemplar bank)" }
     - { path: "references/exemplar-bank-2026.md", artifact: exemplar-bank, note: "curated mark reference set with transferable principles + anti-copy notes — read at Phase 1 and Phase 5/6" }
   optional:
+    - { path: "docs/specs/brand-brief.yaml", artifact: brand-brief, note: "reused when present; Phase 0 drafts it otherwise" }
+    - { path: "docs/specs/vision.md", artifact: vision, note: "name, audience and promise for the drafted brief" }
     - { path: "references/landing-bank/<sector>/", artifact: reference-sample-bank }
     - { path: "references/exemplar-bank-images/originals/*", artifact: exemplar-bank-images, note: "optional PNG/SVG logo files for visual benchmarking when the image bank has been refreshed" }
     - { path: "docs/specs/marketing-context.md", artifact: marketing-context }
     - { path: "docs/specs/domain-profile.md", artifact: domain-profile }
 outputs:
   produces:
+    - { path: "docs/specs/brand-brief.yaml", artifact: brand-brief, note: "name, audience, voice, palette, anti-references, cross-domain inspiration sources, exemplar_inspiration (≥3 ids from exemplar bank)" }
     - { path: "docs/specs/logo-pack/concepts/", artifact: concept-set, note: "≥20 SVG concepts spanning 7 types + 4 structural primitive classes" }
     - { path: "docs/specs/logo-pack/moodboard/", artifact: cross-domain-moodboard, note: "image-gen outputs from non-sector domains" }
     - { path: "docs/specs/logo-pack/judging/", artifact: judging-records, note: "self-score, cross-model-score, persona-simulation reads, disagreements" }
@@ -37,7 +39,7 @@ outputs:
 chain:
   lanes:
     greenfield: { position: 12, prev: design-ui, next: landing-page }
-    brownfield-feature: { position: 7, prev: design-ui, next: landing-page }
+    brownfield-feature: { position: 8, prev: design-ui, next: landing-page }
   progressive: true
   self_verify: true
   human_checkpoint: true
@@ -79,7 +81,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 ## Process
 
 ### Phase 0 — Brand brief gate
-Read `docs/specs/brand-brief.yaml`. Required: `cross_domain_sources` (3+ non-sector domains). If missing, refuse and ask user to enrich the brief.
+Read `docs/specs/brand-brief.yaml`. If it is missing, draft it from `docs/specs/vision.md`, `docs/specs/marketing-context.md` and the personas (name, audience, voice, palette direction, anti-references) and propose 3+ non-sector `cross_domain_sources`. Ask the owner only about what those sources cannot answer, in one message, and record their answers in the brief. Required before Phase 1: `cross_domain_sources` (3+ non-sector domains).
 
 ### Phase 1 — Exemplar bank consult + cross-domain moodboard (both mandatory)
 

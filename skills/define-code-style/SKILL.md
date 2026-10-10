@@ -56,7 +56,7 @@ outputs:
 chain:
   lanes:
     greenfield: { position: 17, prev: explore-solutions, next: plan-changeset }
-    brownfield-feature: { position: 12, prev: explore-solutions, next: plan-changeset }
+    brownfield-feature: { position: 13, prev: explore-solutions, next: plan-changeset }
   progressive: true
   self_verify: true
   human_checkpoint: false

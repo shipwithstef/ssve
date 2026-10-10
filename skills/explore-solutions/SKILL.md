@@ -63,7 +63,7 @@ outputs:
 chain:
   lanes:
     greenfield: { position: 16, prev: design-tech, next: define-code-style }
-    brownfield-feature: { position: 11, prev: design-tech, next: define-code-style }
+    brownfield-feature: { position: 12, prev: design-tech, next: define-code-style }
   progressive: true
   self_verify: true
   human_checkpoint: true

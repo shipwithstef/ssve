@@ -457,7 +457,7 @@ Step 3: CROSS-REVIEW
 Step 4: CONVERGENCE CHECK
   If only medium/low severity issues remain → PASS (proceed to next phase)
   If critical/high issues remain → fix and re-enter Step 1
-  Maximum 3 iterations → escalate to human with full findings history
+  Maximum 2 iterations (scripts/check-review-round-cap.mjs) → escalate to human with full findings history
 
 Step 5: GATE DECISION
   PASS → artifact transitions to next state

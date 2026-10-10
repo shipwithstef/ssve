@@ -39,7 +39,7 @@ outputs:
     - { path: "docs/specs/vision.md", artifact: vision, status: ACTIVE }
 chain:
   lanes:
-    greenfield: { position: 1, prev: null, next: analyze-domain }
+    greenfield: { position: 1, next: analyze-domain }
   progressive: true
   self_verify: true
   human_checkpoint: false

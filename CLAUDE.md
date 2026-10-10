@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Serious Serious Vibe Engineering (SSVE) — a 106-skill framework for progressive deterministic development (count = `skills-manifest.json includedSkills.length`, verified 2026-09-26; check the manifest, don't trust this prose). This repo IS the framework, not a project built with it. Skills are SKILL.md files that Claude Code loads as prompts. The lowercase `svc` name remains the compatibility namespace for commands, paths, state, and hooks.
+Serious Serious Vibe Engineering (SSVE) — a 108-skill framework for progressive deterministic development (count = `skills-manifest.json includedSkills.length`, verified 2026-10-10; check the manifest, don't trust this prose). This repo IS the framework, not a project built with it. Skills are SKILL.md files that Claude Code loads as prompts. The lowercase `svc` name remains the compatibility namespace for commands, paths, state, and hooks.
 
 Bootstrap rule for onboarded projects: respect the project's local AGENTS.md/CLAUDE.md and svc route-workflow contract from its actual worktree; post-deploy/production validation asks require live post-deploy evidence, never local substitutes.
 
@@ -52,7 +52,7 @@ The linter checks these are in sync. Edit one, update the others:
 
 ### Shared-Content Registry (WI-137)
 
-`references/shared-content-dirs.json` lists every top-level directory whose content is referenced from skills via `<dir>/<file>.md` patterns and that must therefore appear in `infra_dirs` of every host manifest under `provision/hosts/`. Currently: `["_shared"]`. Adding an entry here REQUIRES adding the same dir to all 5 host manifests' `infra_dirs` in the same change — the meta-rule in `scripts/lint-skills-manifest.mjs` enforces this, and the tier-1 validator `validate-shared-symlinks-meta-rule.sh` covers the negative path.
+`references/shared-content-dirs.json` lists every top-level directory whose content is referenced from skills via `<dir>/<file>.md` patterns and that must therefore appear in `infra_dirs` of every host manifest under `provision/hosts/`. Currently: `["_shared"]`. Adding an entry here REQUIRES adding the same dir to every host manifest's `infra_dirs` in the same change — the meta-rule in `scripts/lint-skills-manifest.mjs` enforces this, and the tier-1 validator `validate-shared-symlinks-meta-rule.sh` covers the negative path.
 
 ### Two State Systems
 
@@ -74,7 +74,7 @@ Product: greenfield, brownfield-conversion, brownfield-feature, bugfix, drift, r
 ### Commit Rules
 
 - Author: `s7an-it <angelovsan@gmail.com>` (configured in repo `.git/config`)
-- Co-author trailer: use the ACTIVE orchestrator model — currently `Co-Authored-By: Claude Opus 4.8 (1M context) <contact-cd29c5ac34@example.invalid>`
+- Co-author trailer: name the model actually running the session (the harness supplies the exact trailer); never copy a stale one
 - Branch protection is on — direct push bypasses with warning
 
 ### Profile-Based Model Routing
@@ -101,11 +101,9 @@ bash scripts/resolve-model.sh EXEC --json
 | **[PASS]** | Claude | Haiku 4.5 |
 <!-- svc:generated:end claude-md-svc-default -->
 
-> Subagents in `agents/` name the Claude Code aliases (`opus`, `sonnet`, `haiku`) since 2026-10-10, so they run on the current model of each family without a refresh; the table shows the registry's API-level IDs, which stay pinned for API callers such as the external-review policy.
->
-> ⚠️ Model IDs single-sourced from `references/model-registry.json` — refreshed by **WI-357** (2026-06-06; EXEC→Sonnet 4.6) then **WI-470** (2026-06-30; EXEC+REVIEW→Sonnet 5, effort:high declared, claude-api-verified). Table generation pending WI-364 — until then edit the registry first, then sync mirrors.
+> The table is generated from `references/model-registry.json` (edit the registry, then sync mirrors); it shows pinned API-level IDs for API callers such as the external-review policy. Subagents in `agents/` name the Claude Code aliases (`opus`, `sonnet`, `haiku`), so they follow each family's current model.
 
-MiMo is an **execution harness**, not an orchestrator. Since WI-470, svc-default runs the EXEC + REVIEW subagents on the **`sonnet` alias** — `svc-stage-exec`/`svc-stage-land`, `svc-journey-qa`, and the review agents `svc-lens-correctness`/`-security`/`-spec-fidelity`, `plan-reviewer`, `strategic-reviewer` (the PASS-tier `svc-lens-perf` stays Haiku) — with **high reasoning effort declared in the registry** (`output_config.effort:high`, surfaced via `resolve-model.sh EXEC --effort`). The model pin is what runtime honors today; the effort value is the routing *declaration* — consumers apply it via the Agent dispatch effort param (WI-399). It delegates only video/visual QA (SENSE) to MiMo when `MIMO_API_KEY` is set; MiMo-everything execution remains available via the `opencode-mimo` profile.
+MiMo is an **execution harness**, not an orchestrator: svc-default delegates only video/visual QA (SENSE) to it when `MIMO_API_KEY` is set; `opencode-mimo` runs everything on MiMo. EXEC and REVIEW subagents run on `sonnet` (the PASS-tier `svc-lens-perf` on `haiku`) with high effort declared in the registry (`resolve-model.sh EXEC --effort`), applied through the Agent dispatch effort param (WI-399).
 
 ### Switching Profiles
 
@@ -133,7 +131,6 @@ When running in parallel with Kimi, each orchestrator resolves labels through it
 ### Provisioning
 
 `provision/hosts/<host>.json` defines per-host capabilities. `setup` reads the manifest and symlinks accordingly. Adding a new host = one JSON file.
-
 
 ## Mandatory Plan-Exec-Review Chain (added 2026-05-13)
 
@@ -171,7 +168,7 @@ and the pre-push hook checks the ENTIRE `remote..local` range, not just
 the tip. Its findings block only in enforce mode; an advisory warning is not
 receipt or merge approval.
 
-Rules load on demand since WI-361: 5 always-on behavioral rules live in the
+Rules load on demand since WI-361: 3 always-on behavioral rules live in the
 global rules dir (WI-393 demoted long-output-to-file to signal-injection on
 output-heavy skill paths); the rest inject via `hooks/svc-rule-injector.mjs`
 when their path/command/content signals match (registry:
@@ -184,18 +181,11 @@ Reviewer allowlist: `{codex, claude, gemini}`.
 
 See the full plan in this commit's history and the `mandatory-chain-v1.0` tag.
 
-## Current Assessment (2026-06-06)
+## Current Assessment
 
-A deep 12-dimension evaluation of the framework lives at
-`docs/analysis/framework-evaluation-2026-06-06.md` (companions:
-`docs/analysis/plan-pressure-test-2026-06-06.md`,
-`docs/analysis/skill-catalog-context-research-2026-06-06.md`,
-`docs/specs/reviews/framework-eval-plan-cross-model.md`). Verdict: world-class
-verification/learning layers; top liabilities are context economy and hook
-latency. The fix backlog is **WI-357..WI-371** (see
-`docs/specs/work-items/INDEX.md`) — executed SEQUENTIALLY, one WI per
-pipeline run, through `/route-workflow`; WI-357 (model-registry refresh)
-first. The cluster is COMPLETE (2026-06-09); WI-380..399 extend it.
+The 2026-06-06 framework evaluation (`docs/analysis/framework-evaluation-2026-06-06.md`) drove backlog
+WI-357..WI-371 (complete 2026-06-09) and WI-380..399. Run `node scripts/framework-coherence.mjs` for
+live self-consistency (lane chains, round cap, skips, counts, paths); it is a tier-1 check.
 
 Parallel/multi-agent transport policy (S5, recorded 2026-06-09 — supersedes
 the older "read-only analysis only" line): mutating work MAY use isolated or

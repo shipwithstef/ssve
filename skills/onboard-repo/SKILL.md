@@ -54,7 +54,7 @@ outputs:
     - { path: "docs/specs/work-items/INDEX.md", artifact: work-item-index }
 chain:
   lanes:
-    brownfield-conversion: { position: 1, prev: null, next: audit-coverage }
+    brownfield-conversion: { position: 1, next: plan-capabilities }
   progressive: true
   self_verify: true
   human_checkpoint: false

@@ -26,7 +26,7 @@ outputs:
 chain:
   lanes:
     greenfield: { position: 9, prev: audit-ac, next: design-ux }
-    brownfield-feature: { position: 4, prev: write-spec, next: design-ux }
+    brownfield-feature: { position: 5, prev: audit-ac, next: design-ux }
     drift: { position: 2, prev: sync-spec-code, next: sync-work-items }
   progressive: true
   self_verify: true

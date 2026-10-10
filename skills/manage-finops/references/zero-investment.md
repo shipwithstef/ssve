@@ -3541,17 +3541,17 @@ Product-Led FinOps integrates cloud cost data into product development workflows
 
 ### Free Tier Guides
 - `references/free-tier-guides.md` - Comprehensive free tier guide
-- `references/zero-investment-implementation-guide.md` - Zero-investment implementation guide
-- `references/zero-investment-revenue-models.md` - Zero-investment revenue models
+- `skills/manage-finops/references/zero-investment.md` (formerly zero-investment-implementation-guide.md) - Zero-investment implementation guide
+- `skills/manage-finops/references/zero-investment.md` (formerly zero-investment-revenue-models.md) - Zero-investment revenue models
 
 ### Product Management Integration
-- `references/product-management-platforms-pricing.md` - Product management platform pricing
+- `skills/manage-finops/references/services-guide.md` (formerly product-management-platforms-pricing.md) - Product management platform pricing
 - Product Management skill - For detailed PM workflows and strategies
 
 ### FinOps Integration
-- `references/finops-platforms-comprehensive.md` - FinOps platforms guide
-- `references/advanced-cost-optimization-deep.md` - Advanced cost optimization
-- `references/platform-selection-decision-framework.md` - Platform selection framework
+- `skills/manage-finops/references/finops-advanced.md` (formerly finops-platforms-comprehensive.md) - FinOps platforms guide
+- `skills/manage-finops/references/cost-optimization.md` (formerly advanced-cost-optimization-deep.md) - Advanced cost optimization
+- `skills/manage-finops/references/decision-index.md` (formerly platform-selection-decision-framework.md) - Platform selection framework
 
 ## Efficiency Metrics & Optimization
 

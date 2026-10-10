@@ -40,7 +40,7 @@ duplicate its content here. If the two ever disagree, the prompt file wins.
    `docs/specs/relations/<scope>.relation.md` exists, start from it and re-verify rows.
 2. **Pass A** — Phases 1–6 of the prompt file: 19+1-layer census (all layers incl.
    screen/design, device, marketing, pricing), relation map, mechanical grounding script
-   (pattern: `scripts/audit-quiet-hours-contract.mjs`), all detectors D-CITE…D-BEHIND,
+   (pattern: the consumer repo's own grounding script, e.g. `scripts/audit-quiet-hours-contract.mjs`), all detectors D-CITE…D-BEHIND,
    Phase 3B world best practice, Phase 5 product/UX judgment.
 
 2b. **THE TWO LEVELS OF GROUNDING — both required, and they are not the same job.**
@@ -337,7 +337,7 @@ duplicate its content here. If the two ever disagree, the prompt file wins.
 6. **Fragmentation tripwire** — if the audit finds ≥2 implementations of one concept or a
    spec-vs-spec contradiction: STOP before recommending fixes; the receipts `validate` stage
    pins an **intent card** (`docs/specs/decisions/<scope>/DECISION.md`, founder-signed)
-   as prerequisite — per `proposals/2026-07-29-intent-recovery-branch-for-validate-feature.md`
+   as prerequisite — per the consumer repo's `proposals/2026-07-29-intent-recovery-branch-for-validate-feature.md`
    (project-supplied artifact — path varies per repo).
 7. **Never fix in the audit session.** Findings, ledgers, receipts, WIs only.
 

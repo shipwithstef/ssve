@@ -32,7 +32,7 @@ The reason for the non-goal: refactoring all 47+ existing skills at once would b
 The framework currently has no automated check for skill length. A loose advisory threshold of **300 lines** is recommended; skills above this should be reviewed for extraction opportunities. This may become a tier-1 advisory check in a future WI.
 
 **Reference example:**
-The `route-workflow` skill itself follows this convention — its SKILL.md is workflow-focused and points at `references/lane-model.md`, `references/routing-rules.md`, `references/intent-routing.md`, `references/task-graph-protocol.md`, and others for depth.
+The `route-workflow` skill itself follows this convention — its SKILL.md is workflow-focused and points at `skills/route-workflow/references/lane-model.md`, `skills/route-workflow/references/routing-rules.md`, `skills/route-workflow/references/intent-routing.md`, `skills/route-workflow/references/task-graph-protocol.md`, and others for depth.
 
 ## 2. Before Starting context gate
 

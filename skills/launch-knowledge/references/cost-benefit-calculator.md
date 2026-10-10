@@ -60,7 +60,7 @@ Every recommendation that involves money or time goes through one of these four 
 - Migration cost ≈ `T_migrate * 40 * H_rate` (lost product velocity)
 - Breakeven months = `migration_cost / (net_monthly_savings + amortized_credit_burn)`
 
-**Decision rule from `proposals/2026-04-26-launch-knowledge-skill.md` and `example-marketplace/docs/analysis/platform-migration-evaluation.md`:** **don't migrate without first $100 MRR** OR a Base44-specific blocker that demonstrably loses a paying customer. Migration today saves zero customers and burns 2+ weeks against the build-no-launch trap.
+**Decision rule from `proposals/done/2026-04-26-launch-knowledge-skill.md` and `example-marketplace/docs/analysis/platform-migration-evaluation.md`:** **don't migrate without first $100 MRR** OR a Base44-specific blocker that demonstrably loses a paying customer. Migration today saves zero customers and burns 2+ weeks against the build-no-launch trap.
 
 **Output line in `runway-projection.md`:**
 > "Migrating from Base44 → Supabase saves $0/month at current scale (both platforms are free below 100 MAU). Migration effort: 9–13 working days reusing covibefusion patterns. **Do not migrate until first $100 MRR.**"

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This comprehensive checklist evaluates whether the `finops-expert` skill thoroughly covers all knowledge areas, topics, capabilities, workflows, and specific details it claims to provide. Each section assesses granular aspects of the skill's content.
+This comprehensive checklist evaluates whether the `manage-finops` skill (formerly finops-expert) thoroughly covers all knowledge areas, topics, capabilities, workflows, and specific details it claims to provide. Each section assesses granular aspects of the skill's content.
 
 **Skill Description**: This skill should be used when making cloud infrastructure decisions, optimizing costs, planning solo developer launches, selecting hosting platforms, understanding pricing across cloud providers (Hetzner, AWS, Google Cloud, DeepBlue, etc.), comparing hosting platforms (Railway, Render, Vercel, Netlify, Fly.io), planning mobile app builds (Expo EAS), designing revenue models, implementing cost optimization strategies, optimizing Monthly Recurring Revenue (MMR), collaborating with product management skills to propose revenue improvements, and requesting research-driven opportunity assessment. Provides deep expertise in current pricing, cost calculators, launch phases, financial planning, MMR optimization, cross-skill collaboration workflows, and research-driven decision-making for solo developers and startups.
 
@@ -1514,12 +1514,12 @@ Each referenced file should exist and be comprehensive:
 
 ## 11. Best Practices Coverage (Max: 40 points)
 
-- [ ] **`references/advanced-cost-optimization-deep.md` - Advanced cost optimization deep dive with platform** (2 points)
+- [ ] **`skills/manage-finops/references/cost-optimization.md` (formerly advanced-cost-optimization-deep.md) - Advanced cost optimization deep dive with platform** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **`references/advanced-cost-analysis-optimization.md` - Advanced cost analysis framework, optimization** (2 points)
+- [ ] **`skills/manage-finops/references/cost-optimization.md` (formerly advanced-cost-analysis-optimization.md) - Advanced cost analysis framework, optimization** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
@@ -1534,62 +1534,62 @@ Each referenced file should exist and be comprehensive:
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **`references/request-states-evaluation-checklist.md` - Comprehensive evaluation checklist for API req** (2 points)
+- [ ] **`skills/manage-finops/references/request-states.md` (formerly request-states-evaluation-checklist.md) - Comprehensive evaluation checklist for API req** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **- `references/supabase-pricing-guide.md` - Comprehensive Supabase pricing and optimization** (2 points)
+- [ ] **- `skills/manage-finops/references/platform-pricing.md` (formerly supabase-pricing-guide.md) - Comprehensive Supabase pricing and optimization** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **`references/azure-pricing-guide.md` - Complete Azure pricing and free tier guide** (2 points)
+- [ ] **`skills/manage-finops/references/platform-pricing.md` (formerly azure-pricing-guide.md) - Complete Azure pricing and free tier guide** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **`references/additional-platforms-guide.md` - Oracle Cloud, IBM Cloud, Cloudflare, GitHub, GitLab, an** (2 points)
+- [ ] **`skills/manage-finops/references/platform-pricing.md` (formerly additional-platforms-guide.md) - Oracle Cloud, IBM Cloud, Cloudflare, GitHub, GitLab, an** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **`references/solo-developer-complete-stack.md` - Complete free and low-cost stacks** (2 points)
+- [ ] **`skills/manage-finops/references/solo-developer.md` (formerly solo-developer-complete-stack.md) - Complete free and low-cost stacks** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **`references/referral-programs-guide.md` - Referral programs across platforms** (2 points)
+- [ ] **`skills/manage-finops/references/startup-credits.md` (formerly referral-programs-guide.md) - Referral programs across platforms** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **- `references/database-services-comprehensive.md` - Complete database comparison (SQL, NoSQL, server** (2 points)
+- [ ] **- `skills/manage-finops/references/database-guide.md` (formerly database-services-comprehensive.md) - Complete database comparison (SQL, NoSQL, server** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **`references/authentication-services-guide.md` - Auth services comparison (Clerk, Auth0, Supabase Aut** (2 points)
+- [ ] **`skills/manage-finops/references/services-guide.md` (formerly authentication-services-guide.md) - Auth services comparison (Clerk, Auth0, Supabase Aut** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **`references/development-tools-guide.md` - Development tools (Codespaces, Replit, Bun, Deno, etc.)** (2 points)
+- [ ] **`skills/manage-finops/references/services-guide.md` (formerly development-tools-guide.md) - Development tools (Codespaces, Replit, Bun, Deno, etc.)** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **`references/automation-platforms-guide.md` - Automation platforms (Zapier, Make, n8n, Pipedream, etc** (2 points)
+- [ ] **`skills/manage-finops/references/automation-tools.md` (formerly automation-platforms-guide.md) - Automation platforms (Zapier, Make, n8n, Pipedream, etc** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **`references/media-hosting-guide.md` - Media hosting (images, videos, files)** (2 points)
+- [ ] **`skills/manage-finops/references/services-guide.md` (formerly media-hosting-guide.md) - Media hosting (images, videos, files)** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **`references/marketing-tools-cost-management.md` - Marketing tools cost management (automation, analy** (2 points)
+- [ ] **`skills/manage-finops/references/services-guide.md` (formerly marketing-tools-cost-management.md) - Marketing tools cost management (automation, analy** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
@@ -1599,17 +1599,17 @@ Each referenced file should exist and be comprehensive:
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **- `references/vibe-coding-platforms-comprehensive.md` - Complete guide to AI coding platforms (Lovab** (2 points)
+- [ ] **- `skills/manage-finops/references/vibe-coding.md` (formerly vibe-coding-platforms-comprehensive.md) - Complete guide to AI coding platforms (Lovab** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **`references/vibe-platforms-capabilities-deep.md` - Deep dive into capabilities, features, use cases,** (2 points)
+- [ ] **`skills/manage-finops/references/vibe-coding.md` (formerly vibe-platforms-capabilities-deep.md) - Deep dive into capabilities, features, use cases,** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included
 
-- [ ] **`references/vibe-coding-free-tiers-referrals.md` - Comprehensive guide to free tiers, referral progr** (2 points)
+- [ ] **`skills/manage-finops/references/vibe-coding.md` (formerly vibe-coding-free-tiers-referrals.md) - Comprehensive guide to free tiers, referral progr** (2 points)
   - [ ] Practice explained
   - [ ] Rationale provided
   - [ ] Examples included

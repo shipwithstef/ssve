@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "compiled_from": {
-    "manifest_sha256": "539b128da178550bb9c14c24d7ee11b0f26c2805597085b5987187faec46e54b",
+    "manifest_sha256": "43ab5f95f209c7faa3ee20caa4fc943295c41ac9965609855f40ec4d9ea69853",
     "overrides_sha256": "14fa674603c6a84ddf5b2673fe072778aa69cfd415d3d58e55adf4486a685249",
     "concern_registry_sha256": "6c336c8832c4907ee78413a2b7d377b790bb55bba180783d2164892a130ea507"
   },
@@ -63,7 +63,7 @@
     {
       "skill": "analyze-competitors",
       "path": "skills/analyze-competitors/SKILL.md",
-      "content_hash": "e14f94dea329b1d90329f1b22577ef1c29323f5eb73b2c002c86a1c5bf1b51bc",
+      "content_hash": "c91bfb0b9308f0ba023c8f03cbd23545227f60eff70104b79911a2338c24938e",
       "description": "Researches up to 30 competitors across direct, adjacent, emerging and macro tiers, scoring moats and whitespace into docs/specs/analyze-competitors.md. Use for \"competitors\", \"who are we competing with\", \"differentiation\", \"market analysis\". Product decisions, not marketing copy.",
       "aliases": [],
       "positive_triggers": [],
@@ -135,7 +135,7 @@
     {
       "skill": "audit-ac",
       "path": "skills/audit-ac/SKILL.md",
-      "content_hash": "72796a109d97b039fe5c5aa5e85a3cd14b996f4814b974a8469c0865e5e6977a",
+      "content_hash": "46a444a7c47db7b640756638b380c8380191413b2155acf9de9f3f9b0b4e8a88",
       "description": "Audits feature specs so every User Story has complete, testable acceptance criteria, rewriting vague ones and adding missing ones, for one feature or all. Use for \"audit- ac\", \"check the ACs for <feature>\", \"are the ACs complete\", \"prep <feature> for QA\".",
       "aliases": [],
       "positive_triggers": [],
@@ -153,7 +153,7 @@
     {
       "skill": "audit-coverage",
       "path": "skills/audit-coverage/SKILL.md",
-      "content_hash": "9cd8a4aa3c6cc9e5104e803b31e6ef262ba750d3eca09cd7d39cdfbd7f954da4",
+      "content_hash": "424dbe80d159d8f4f7d66e8b9fcef93cd6884022191756863e05346adbfa27eb",
       "description": "Audits a project against the svc canonical artifact catalog, classifying each artifact CANONICAL, FOREIGN or MISSING into docs/specs/coverage-audit.md with next-skill picks. Use for \"audit coverage\", \"what svc artifacts are missing\", \"check brownfield alignment\". Logs only, no fixes.",
       "aliases": [],
       "positive_triggers": [],
@@ -171,7 +171,7 @@
     {
       "skill": "audit-feature",
       "path": "skills/audit-feature/SKILL.md",
-      "content_hash": "9b28692fe903c60a92bfb9dac337a1c90f5e713fadd7b9c2837cc15bed04fede",
+      "content_hash": "22170336582fab9b0cee39fdb31455e42ff3cfd93a965e38b07109fdfad2fb3d",
       "description": "Runs the full drift audit on one feature or journey (layer census, detectors, independent verifier agents) and writes the relation ledger, receipts chain and WI drafts. Use for \"audit <feature>\", \"drift audit X\", \"is J07 aligned\", \"verify journey\". Findings only, never fixes.",
       "aliases": [],
       "positive_triggers": [],
@@ -189,7 +189,7 @@
     {
       "skill": "audit-implementation",
       "path": "skills/audit-implementation/SKILL.md",
-      "content_hash": "1801c0363d8e7153b29ef3b3649c9785e8ca9896e42fb624eedcee3d2ae0cf1c",
+      "content_hash": "8a1e8802deb493d6a9e8ec7c464ac98e3435501e5daaf49112b3136f99c26d0e",
       "description": "Deep pre-landing correctness audit of worktree code against specs, ACs and journeys, with evidence-graded findings; a required receipt in the chain. Use for \"audit the implementation\", \"check correctness\", \"pre-landing audit\", \"is it ready to ship\".",
       "aliases": [],
       "positive_triggers": [],
@@ -243,7 +243,7 @@
     {
       "skill": "benchmark-landing",
       "path": "skills/benchmark-landing/SKILL.md",
-      "content_hash": "5169cfc14dc9a8eeca836062f06a4bd5ca8f41335787a3a10c074c59ddb47f19",
+      "content_hash": "47b7ae5955ab8462b6256977f84379e1662645a60e6ed8cf1c3d6b107a36e545",
       "description": "Scores a rendered landing page against the curated sector reference bank on 8 dimensions at every shipped viewport; blocks promotion below 7 without written override. Use after a marketing page is implemented, before promotion.",
       "aliases": [],
       "positive_triggers": [],
@@ -387,7 +387,7 @@
     {
       "skill": "catalog-domain-capabilities",
       "path": "skills/catalog-domain-capabilities/SKILL.md",
-      "content_hash": "3a3298b1de916c1eb751ea2e02b572ccc3afbbd35fd70a35ac03bfd8edf87b52",
+      "content_hash": "4390e141bc28254281b783ff64204e55c3a3c3e21781780b86ab741c2b977fc6",
       "description": "Builds a queryable Domain Capability Matrix: what the industry does, how fast features become table stakes, mapped Capability to Journey to Spec for gap analysis. Use for \"capability gap analysis\", \"are we missing industry-standard features\", \"what should our product do\".",
       "aliases": [],
       "positive_triggers": [],
@@ -531,7 +531,7 @@
     {
       "skill": "define-code-style",
       "path": "skills/define-code-style/SKILL.md",
-      "content_hash": "0208726d005cd274d2f9bbebd881ebd209ed5df28a22089733a11f0b2be46901",
+      "content_hash": "77a558a9c486c1e1a2de937632ae67b21d2465b6851fb6a152557b8a0151f356",
       "description": "Create or audit the project style contract (docs/specs/style-contract.md): naming, structure, conventions. Use for \"code style\", \"naming conventions\", \"style contract\", \"style audit\", \"check code consistency\".",
       "aliases": [],
       "positive_triggers": [],
@@ -549,7 +549,7 @@
     {
       "skill": "design-logo",
       "path": "skills/design-logo/SKILL.md",
-      "content_hash": "cc57874304dc4744a34e239b22cf296dcf2bdb365a203eb466960ac170a839cd",
+      "content_hash": "74208171cb4e74491016fdff45bbf9cf2b2ba972dd0d5a1b2cbb37940ea22c97",
       "description": "Design or redesign a logo, wordmark or favicon as a scalable SVG pack with iterative refinement and in-app-context checks. Use for \"design a logo\", \"make a logo\", \"redesign the logo\", \"logo is bad\", \"favicon\", \"wordmark\".",
       "aliases": [],
       "positive_triggers": [],
@@ -585,7 +585,7 @@
     {
       "skill": "design-tech",
       "path": "skills/design-tech/SKILL.md",
-      "content_hash": "acc2d36c2f1df86c0cb995df19cb6f4395b80d24318560c844681e36304afcac",
+      "content_hash": "e25279c1e1d343ac48d3a45e18f85d4f03cf45173f9ca7b1378d4ed871ac6cca",
       "description": "Define architecture, tech choices and component design for a feature spec that has finished UX and UI design, before planning. Use for \"tech design\", \"architecture for this feature\", \"how should we build X\".",
       "aliases": [
         "technical design",
@@ -627,7 +627,7 @@
     {
       "skill": "design-ui",
       "path": "skills/design-ui/SKILL.md",
-      "content_hash": "7e45a8c18a648fdc5bff01ccd677c25ff73f151899a19d3d4a137d7f11d8f01e",
+      "content_hash": "f094a0f55c2e8db6cc22cabd0df28b463291af93c60cb7df1583184d373a0466",
       "description": "Visual design for a UX-reviewed feature spec: component specs, design tokens, responsive layout, before tech design. Use for \"design the UI\", \"visual design\", \"make it look good\", \"component specs\".",
       "aliases": [],
       "positive_triggers": [],
@@ -645,7 +645,7 @@
     {
       "skill": "design-ux",
       "path": "skills/design-ux/SKILL.md",
-      "content_hash": "acb1a57074b11915d8d4501f8cc5feffc4b1b5be43b1905e649fff2791e75a5a",
+      "content_hash": "bf3b9c5047544a73c0326c3e42f69c8c4813ac878c0fba4f8cf18bdebaa5721c",
       "description": "UX design for a draft feature spec: screen flows, state machines, information hierarchy, interaction patterns, before visual design. Use for \"design the UX\", \"user flow\", \"screen flow\", \"how should this work for users\".",
       "aliases": [],
       "positive_triggers": [],
@@ -663,7 +663,7 @@
     {
       "skill": "diagnose-bug",
       "path": "skills/diagnose-bug/SKILL.md",
-      "content_hash": "5a66ccf19ada6d6a1a587aa97302d9d763a4092df63673caea91e880829fc525",
+      "content_hash": "c2b4bea0f9f19916ee18555ea7ad4b59d9272084ea006d3cf991edaf6c945b94",
       "description": "Root-cause-first diagnosis for broken behavior, regressions or production issues; produces a bugfix brief with repro, root cause, smallest fix and proof plan. Use for \"bug\", \"regression\", \"this broke\", \"why is X failing\". Not for new features.",
       "aliases": [
         "root cause",
@@ -789,7 +789,7 @@
     {
       "skill": "execute-changeset",
       "path": "skills/execute-changeset/SKILL.md",
-      "content_hash": "74a55ebd96a4a2d0da61c3668a76fde65b506dc3dc2a8f5dcc2a54a0e0810683",
+      "content_hash": "5041d629a151a90e5c9aeb087076c9a400ee04b85e8a6d9aa73098bdc79eda1a",
       "description": "Use after plan-changeset has produced a manifest and task graph. Triggers on \"execute the plan\", \"implement the changeset\", \"run the tasks\", \"start building\", or when a plan-changeset manifest exists and is ready for execution.",
       "aliases": [],
       "positive_triggers": [],
@@ -807,7 +807,7 @@
     {
       "skill": "explore-solutions",
       "path": "skills/explore-solutions/SKILL.md",
-      "content_hash": "47582db6936c5b6e3087d60fb8bd23fe69b06a7c05f3e3f304457435259c1cee",
+      "content_hash": "3f046f66936f220ab6228b5b9f4bf39203596fdc2df46b8c7e2f2706f7c8c0f5",
       "description": "Challenge a chosen technical approach with alternative paradigms and evidence before building, for high-stakes or hard-to-reverse designs. Use for \"explore alternatives\", \"is this the best approach\", \"compare options\", \"challenge the design\".",
       "aliases": [],
       "positive_triggers": [],
@@ -1071,7 +1071,7 @@
     {
       "skill": "land-changeset",
       "path": "skills/land-changeset/SKILL.md",
-      "content_hash": "a283020863ed2260b9eb1f00703d1fe5e5f277de07b4225c3e34c726f47f208d",
+      "content_hash": "890f603ce359513a7bfb15e872dd84751041df8349b830978dcad90d30183a05",
       "description": "Land a validated change set on main: check manifest coverage and receipts, push the branch, open the PR, squash-merge, clean up the worktree. Use when execution and review have passed and the change is ready to land.",
       "aliases": [],
       "positive_triggers": [],
@@ -1089,7 +1089,7 @@
     {
       "skill": "landing-page",
       "path": "skills/landing-page/SKILL.md",
-      "content_hash": "f9c6ae7f5d6774020e3b0befd35da01d0dd171bab69c4c6303822a66208ec32d",
+      "content_hash": "6d1d1d56a2deb73edde144ff1289f54c64e1a30deda8d7f03961a232fe4c2d68",
       "description": "Build or redesign a marketing page (home, feature, pricing) from marketing context, references and copy into an implementation-ready brief, gated on the rendered result. Use when: build a landing, ship the home page, redesign hero, marketing page, fix the landing.",
       "aliases": [],
       "positive_triggers": [],
@@ -1248,7 +1248,7 @@
     {
       "skill": "onboard-repo",
       "path": "skills/onboard-repo/SKILL.md",
-      "content_hash": "202cb4a65e4044403454a2821c086059164961a7794b5eaa23c94691be734550",
+      "content_hash": "e2be2789c25caa6fe3448ad2230181f6bb41ff73f549510c58993e22fa9a66ae",
       "description": "Convert an existing repo to the svc way of working without overwriting what already ships: map current docs, tests and conventions into project state and work items. Use when onboarding a brownfield repo.",
       "aliases": [],
       "positive_triggers": [],
@@ -1284,7 +1284,7 @@
     {
       "skill": "plan-capabilities",
       "path": "skills/plan-capabilities/SKILL.md",
-      "content_hash": "2773748632851e084cad3d1e33324fdf1bcb08e06c46b9450a7fb6729e949212",
+      "content_hash": "ae5d215fe275c3e3109246766045137e0232886664cecf7838cc7e3d9cc6599c",
       "description": "Classify the project type and plan its capabilities: MCPs, installable skills, research sources, maintenance cadence, framework gaps. Use when: starting a project or new domain, what tools do I need, what MCPs should I add, capability plan.",
       "aliases": [],
       "positive_triggers": [],
@@ -1302,7 +1302,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "bc589ef59275e81f38bda214a61ba42c6561ef9d774c2a4f96bb365ce5494d1f",
+      "content_hash": "2f30c247cdb8b2f2f81d342cf38ba69b10789331339826007ed602d22b5daaab",
       "description": "Turn a baselined feature spec with technical design into an implementation plan for branch-first execution: task graph, file set, validation plan, checkpoints, AC-to-test mapping. Use before execute-changeset.",
       "aliases": [],
       "positive_triggers": [],
@@ -1428,7 +1428,7 @@
     {
       "skill": "quick-fix",
       "path": "skills/quick-fix/SKILL.md",
-      "content_hash": "d35357679addd78937456f08889844112d2123f066401930a8ae6044e56b030e",
+      "content_hash": "a78b57382481466c72d3be7733794bde981afcde39b9c8384db6f8ace0114742",
       "description": "DEPRECATED (retired as a lane). Do not route here; small changes go through route-workflow, which skips inactive stages automatically.",
       "aliases": [],
       "positive_triggers": [],
@@ -1551,7 +1551,7 @@
     {
       "skill": "review-exec",
       "path": "skills/review-exec/SKILL.md",
-      "content_hash": "cdd978dfb05caf59c68c9d3bfbaef9e799c7d4743894a48f2a09a2a7412aa5f4",
+      "content_hash": "cedfe1d0badea44fdfee0bb2dca333c0e74dcad160e180f23d7485e808749991",
       "description": "Required review gate on an executed diff before landing: self-review plus an independent different-family review via review-cross-model, recorded as a receipt. Use after execute-changeset and before land-changeset.",
       "aliases": [],
       "positive_triggers": [],
@@ -1569,7 +1569,7 @@
     {
       "skill": "review-gate",
       "path": "skills/review-gate/SKILL.md",
-      "content_hash": "0a7b86c3d5e390d31b6da2aeea086e22464ac608f9c78e381c1c341456b64e6a",
+      "content_hash": "18300d85b9db92874f6a9ad348b2a20680697fb9d4c16cd5a7cfa30deb4d9814",
       "description": "Run a pipeline review gate (G1-G7) on a spec, design, change set or promotion; produces structured findings that pass or block the artifact state transition. Use when a gate is due or the user says 'review gate'.",
       "aliases": [],
       "positive_triggers": [],
@@ -1587,7 +1587,7 @@
     {
       "skill": "review-plan",
       "path": "skills/review-plan/SKILL.md",
-      "content_hash": "fe8eccae090846b090fe16a633b4f66bb8b2464b524a40e42881ddb4ebb333d2",
+      "content_hash": "dfec6a83fab4ad4a2742d58ec29adeb72c3346e6941d8e7cb07727107e06e788",
       "description": "Adversarial review of a plan-changeset manifest and task graph before execution: mechanical coverage checks plus one independent external review with receipt. Blocks execute-changeset until every finding is resolved. Use when a plan is ready to promote.",
       "aliases": [],
       "positive_triggers": [],
@@ -1810,7 +1810,7 @@
     {
       "skill": "sync-spec-code",
       "path": "skills/sync-spec-code/SKILL.md",
-      "content_hash": "808af82cfe88f9982076b8288c95ba36afaea763c2cf3767e80a5499162d98a9",
+      "content_hash": "e1adf8af55fd199fe6bb85b37a0749cb4803010ae359700cb3cb0a98e9758032",
       "description": "Audit feature specs against the codebase for drift (PLANNED items now built, RESOLVED refs pointing at dead code) and update Implementation Notes. Use for 'does the spec reflect the code', 'check for spec drift', 'sync spec to code'.",
       "aliases": [],
       "positive_triggers": [],
@@ -1828,7 +1828,7 @@
     {
       "skill": "sync-work-items",
       "path": "skills/sync-work-items/SKILL.md",
-      "content_hash": "c71d6e2250d6025714e2f467ef06f0bff4bd2f904b05c45726534e2ed662203d",
+      "content_hash": "d7bcfa5f342fdb2272bb3d496e7b3a36c69de512b5740003a1eb87132ff86b50",
       "description": "Optional GitHub Issue tracking for repo work items: configure, pull, preview, publish, list or close one issue at a time. Use after onboard-repo or when the user asks to sync a work item with GitHub. Local-only by default; no bulk sync.",
       "aliases": [],
       "positive_triggers": [],
@@ -1882,7 +1882,7 @@
     {
       "skill": "test-framework",
       "path": "skills/test-framework/SKILL.md",
-      "content_hash": "438dea8a0573d9abef4568cf5faf2ea58d3502fc1f538318c80d63a4089e8da4",
+      "content_hash": "028dee1bd771216c2470982c969a8cc6cdbea43b59fec58bc99be29eb20b6a9a",
       "description": "Test and benchmark the svc framework itself: tier-1 static evals, scenario runs, doctrine claims, token efficiency. Use for 'test the framework', 'prove it works', 'benchmark svc', 'validate the pipeline', 'check for holes'. Not for product app tests.",
       "aliases": [],
       "positive_triggers": [],
@@ -1936,7 +1936,7 @@
     {
       "skill": "track-visuals",
       "path": "skills/track-visuals/SKILL.md",
-      "content_hash": "44ab01cde5978003e580df1c366f114a8a97866577dbdf0525a2c850865b68b5",
+      "content_hash": "da5b42971cf3f99db0ee751380e76b569371d02e5d87b552b295345147e53663",
       "description": "Capture and diff screenshots of every screen across viewports against a visual baseline. Use for 'visual baseline', 'screenshot all screens', 'visual regression', 'what changed visually', or after design-ui and UI-affecting changes.",
       "aliases": [],
       "positive_triggers": [],
@@ -1972,7 +1972,7 @@
     {
       "skill": "verify-promotion",
       "path": "skills/verify-promotion/SKILL.md",
-      "content_hash": "8c575af95e7d54038fb4932f68aaca0561738df86846c787625aa260bb019567",
+      "content_hash": "8e11f3decf8fa58d725691cea7676d7669adbe2f9384186309cb05d903784b2e",
       "description": "After a reviewed branch is promoted, verify the shipped result against specs, tests and acceptance criteria, then close the loop into spec and journey state (G7). Use for 'verify the promotion', 'did it actually ship', post-merge verification.",
       "aliases": [],
       "positive_triggers": [],
@@ -2008,7 +2008,7 @@
     {
       "skill": "write-journeys",
       "path": "skills/write-journeys/SKILL.md",
-      "content_hash": "ebd20f94da50e3c0b6fafaa5a3ba5aaa22595b363e1aebbfa6a2bfe5bf22b1a5",
+      "content_hash": "3e8fedf9ddcbca5e333658a4cf329ca9dc26e22cd1ae89a53c15932845ffe2a4",
       "description": "Generate or update BDD journey docs (.feature.md) with Gherkin scenarios traced to spec ACs. Use for 'generate journeys', 'define user flows', 'journey coverage', 'journey sync', 'discover journeys', or when specs exist but docs/specs/journeys/ does not.",
       "aliases": [],
       "positive_triggers": [],
@@ -2026,7 +2026,7 @@
     {
       "skill": "write-spec",
       "path": "skills/write-spec/SKILL.md",
-      "content_hash": "a089ef7ab6e8424b60bea3a79325cd9395015b0e99349679e0723e17c95cd947",
+      "content_hash": "0c6a9f106c32105cc995d0198c8d2db90bf6622f98072b7fc748ca1622fd3398",
       "description": "Write a DRAFT feature spec with user stories, acceptance criteria and journeys before any design or code; supports new features and brownfield delta specs. Use for 'write a spec', 'spec this feature', 'define this change'.",
       "aliases": [
         "specify feature",
@@ -2063,7 +2063,7 @@
     {
       "skill": "write-vision",
       "path": "skills/write-vision/SKILL.md",
-      "content_hash": "b88270bece156ed66f010ba6ebfcf8a0f430123e25ac258d7da918bafadd0836",
+      "content_hash": "f7f4599f7f3e73148a1f87b415f32d23bf2157ab0fd509c9b87451477535c181",
       "description": "Create, refine or convert the product vision doc (docs/specs/vision.md) from evidence, proposal first. Use for 'create vision', 'refine vision', 'update north star', 'align vision with code', 'vision drift'.",
       "aliases": [],
       "positive_triggers": [],

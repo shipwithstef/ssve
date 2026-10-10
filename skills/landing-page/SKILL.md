@@ -33,7 +33,7 @@ phases:
 chain:
   lanes:
     greenfield: { position: 13, prev: design-logo, next: track-visuals }
-    brownfield-feature: { position: 8, prev: design-logo, next: track-visuals }
+    brownfield-feature: { position: 9, prev: design-logo, next: track-visuals }
   progressive: true
   self_verify: true
   human_checkpoint: true

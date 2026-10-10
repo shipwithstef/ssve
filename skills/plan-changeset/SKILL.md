@@ -54,10 +54,10 @@ outputs:
     - { path: "docs/plans/<date>-<name>/manifest.md", artifact: implementation-manifest }
 chain:
   lanes:
-    greenfield: { position: 18, prev: define-code-style, next: execute-changeset }
-    brownfield-feature: { position: 13, prev: define-code-style, next: execute-changeset }
-    bugfix: { position: 2, prev: diagnose-bug, next: execute-changeset }
-    refactor: { position: 2, prev: sync-spec-code, next: execute-changeset }
+    greenfield: { position: 18, prev: define-code-style, next: review-plan }
+    brownfield-feature: { position: 14, prev: define-code-style, next: review-plan }
+    bugfix: { position: 2, prev: diagnose-bug, next: review-plan }
+    refactor: { position: 3, prev: design-tech, next: review-plan }
   progressive: true
   self_verify: true
   human_checkpoint: true

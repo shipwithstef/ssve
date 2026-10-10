@@ -32,9 +32,16 @@ check "injector exists + node syntax" node --check "$INJ"
 check "every entry has auto_inject" python3 -c "
 import json;m=json.load(open('skills-manifest.json'))
 assert all(e.get('auto_inject') in ('always','signal','lazy') for e in m['rulesRegistry']['entries'])"
-check "exactly 4 always entries (WI-393: long-output demoted always->signal; 2026-10 audit: tool-selection always->lazy)" python3 -c "
+check "exactly 3 always entries (WI-393: long-output always->signal; 2026-10 audit: tool-selection always->lazy; 2026-10-10 value audit: research-before-build always->signal)" python3 -c "
 import json;m=json.load(open('skills-manifest.json'))
-assert sum(e['auto_inject']=='always' for e in m['rulesRegistry']['entries'])==4"
+assert sum(e['auto_inject']=='always' for e in m['rulesRegistry']['entries'])==3"
+check "research-before-build fires on adding a dependency, not on ordinary commands" python3 -c "
+import json,re;m=json.load(open('skills-manifest.json'))
+e=[x for x in m['rulesRegistry']['entries'] if x['path']=='rules/common/research-before-build.md'][0]
+hit=lambda c:any(re.search(r,c) for r in e['signals']['bash'])
+assert hit('npm install left-pad') and hit('pnpm add zod') and hit('pip install requests')
+assert not hit('npm test') and not hit('git status')
+assert any(re.search(r,'web/package.json') for r in e['signals']['paths'])"
 check "every signal entry has >=1 signal source" python3 -c "
 import json;m=json.load(open('skills-manifest.json'))
 for e in m['rulesRegistry']['entries']:

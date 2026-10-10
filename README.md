@@ -179,7 +179,7 @@ visible in the task graph.
    └──────┬───────┘  proposes 1-2 week builds. Aspirational target only.
           │
           ▼
-   ┌──────────────┐  9 phases. 7 review gates. 106 skills.
+   ┌──────────────┐  9 phases. 7 review gates. 108 skills.
    │ Progressive   │  Vision → Personas → Spec → UX → UI →
    │ Narrowing     │  Tech Design → Code → Promote → Verify.
    └──────┬───────┘  Planning on the canonical checkout; execute in a worktree.
@@ -202,7 +202,7 @@ visible in the task graph.
 |---|---|
 | Builder profile mining | Built — financial, time, skills, team, social/distribution, tools, entity, goals, project history, failure patterns; updates after every project; persists globally |
 | Find what to build | Built — reverse-engineers current market winners, matches to builder skills/distribution, 1-2 week builds on free-tier infra, staging strategy for big ideas, $1K/mo target within month 1 |
-| Progressive narrowing (vision → verified merge) | Built — 9 delivery phases (16 pipeline stages), 7 review gates, 106 skills across 7 lanes |
+| Progressive narrowing (vision → verified merge) | Built — 9 delivery phases (16 pipeline stages), 7 review gates, 108 skills across 7 lanes |
 | One prompt to product (`--autorun`) | Built — P0 decides at human checkpoints; only hard stops are NO-SHIP, test failure, security, merge conflict |
 | Reject/pivot on infeasible intent | Built — 7 kill signals with evidence scoring; NO-SHIP produces structured rejection + alternative directions |
 | Multi-host universal runtime | Built — content-addressed zero-drift convergence across 9 hosts: Claude Code, Kimi CLI, OpenAI Codex CLI, Google Gemini CLI, OpenCode CLI, Google Antigravity (AGY), MiMo-Code, Cursor Agent, and Grok Build CLI |
@@ -256,7 +256,7 @@ SSVE is host-agnostic. A single content-addressed command (`./setup --all-hosts`
 Every phase transition is anchored in cryptographic proof, not agent honesty:
 - **Git Notes Receipts (`refs/notes/svc-receipts`):** Plan, review, execution, and audit steps emit schema-validated JSON receipts attached to commit objects in Git. Receipts survive branch deletions and are verified by the L3 `svc-reconcile` gate (strict-validate-if-present coverage per WI-556). A note is integrity evidence for that envelope, not proof of every nested decision or of production success. Phase/task receipts on the lane-tasks graph are a separate, narrower family.
 - **Multi-Family Adversarial Reviews:** Code is cross-examined by independent model families (Codex, Claude, AGY Gemini, Cursor Grok via `cursor-grok-4.6-high`) with signed identities via `scripts/run-external-review.mjs`.
-- **Dual-Identity Bounded Reviews (WI-566):** Multi-model review orchestration is strictly capped at 3 rounds with HMAC-bound cycle tracking, preventing infinite review churn (distinct from the 5-step review gate convergence loop).
+- **Dual-Identity Bounded Reviews (WI-566):** Multi-model review orchestration is strictly capped at 2 rounds with HMAC-bound cycle tracking, preventing infinite review churn (distinct from the 5-step review gate convergence loop).
 - **The Pipeline Baton (`ac_digests`):** A SHA-256 hash over normalized acceptance criteria signatures binds the plan to the spec as a staleness-bound navigation index. The live spec markdown remains authoritative; any mid-flight spec drift immediately detects mismatch and halts execution.
 
 ### 3. Persona Traceability & Living BDD Journeys
@@ -782,7 +782,7 @@ cd ~/.claude/skills/svc && ./setup
 cd your-project && claude
 ```
 
-The `setup` script symlinks all 106 skills + framework infrastructure
+The `setup` script symlinks all 108 skills + framework infrastructure
 (DOCTRINE.md, REPO_MODES.md, scripts/, etc.) into `~/.claude/skills/`.
 Symlinks mean `git pull && ./setup` updates everything in place.
 

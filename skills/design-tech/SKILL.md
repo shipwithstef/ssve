@@ -58,7 +58,8 @@ outputs:
 chain:
   lanes:
     greenfield: { position: 15, prev: track-visuals, next: explore-solutions }
-    brownfield-feature: { position: 10, prev: track-visuals, next: explore-solutions }
+    brownfield-feature: { position: 11, prev: track-visuals, next: explore-solutions }
+    refactor: { position: 2, prev: sync-spec-code, next: plan-changeset }
   progressive: true
   self_verify: true
   human_checkpoint: false

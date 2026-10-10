@@ -26,7 +26,7 @@ phases:
     required_for_completion: true
   - id: P4-MechanicalMeasurement
     trigger: always
-    reads: ["/tmp/benchmark-<ts>/*.png", "scripts/benchmark-landing-measure.mjs"]
+    reads: ["/tmp/benchmark-<ts>/*.png"]
     writes: ["/tmp/benchmark-<ts>/*.json"]
     evidence_kind: command_output
     required_for_completion: true
@@ -60,7 +60,7 @@ outputs:
 chain:
   lanes:
     greenfield: { position: 21, prev: track-visuals, next: review-gate }
-    brownfield-feature: { position: 16, prev: track-visuals, next: review-gate }
+    brownfield-feature: { position: 17, prev: track-visuals, next: review-gate }
   progressive: false
   self_verify: true
   human_checkpoint: false
@@ -158,7 +158,7 @@ Invoke `scripts/benchmark-landing-capture.sh <url-or-local-path>` which screensh
 
 ### Step 2 — Mechanical measurement (scripted, model-free)
 
-`scripts/benchmark-landing-measure.mjs <screenshot> <viewport>` extracts numeric-measurable dimensions via DOM + image analysis:
+A measurement script (`benchmark-landing-measure.mjs`) is proposed, not built. Until it lands, take these numeric dimensions from the live page with Playwright `page.evaluate` (DOM) and the screenshots:
 - Count distinct interactive/animated surfaces
 - Compute total-elements / viewport-area
 - Measure primary-headline font-size vs. subhead font-size ratio

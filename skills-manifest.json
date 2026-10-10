@@ -567,6 +567,7 @@
     "brownfield-conversion": {
       "skills": [
         "onboard-repo",
+        "plan-capabilities",
         "audit-coverage",
         "sync-work-items"
       ],
@@ -577,6 +578,7 @@
         "sync-spec-code",
         "validate-feature",
         "write-spec",
+        "audit-ac",
         "write-journeys",
         "design-ux",
         "design-ui",
@@ -608,9 +610,7 @@
         "land-changeset",
         "verify-promotion"
       ],
-      "defaultSkips": [
-        "define-code-style"
-      ]
+      "defaultSkips": []
     },
     "drift": {
       "skills": [
@@ -623,6 +623,7 @@
     "refactor": {
       "skills": [
         "sync-spec-code",
+        "design-tech",
         "plan-changeset",
         "execute-changeset",
         "review-gate",
@@ -828,8 +829,24 @@
         "source": "blended:ecc",
         "last_evaluated": "2026-04-13",
         "source_sha": "125d5e619905d97b519a887d5bc7332dcc448a52",
-        "notes": "ECC common/development-workflow.md Step 0 only. Research priority: gh search \u2192 vendor docs \u2192 web search \u2192 package registries. Steps 1-5 (ECC pipeline) stripped \u2014 svc has its own.",
-        "auto_inject": "always"
+        "notes": "ECC common/development-workflow.md Step 0 only. Research priority: gh search \u2192 vendor docs \u2192 web search \u2192 package registries. Steps 1-5 (ECC pipeline) stripped \u2014 svc has its own. Value audit 2026-10-10: caught-up on Haiku and Sonnet (default 1.0, n = 5 each), so it injects when a dependency is about to be added instead of loading always.",
+        "auto_inject": "signal",
+        "signals": {
+          "paths": [
+            "(^|/)package\\.json$",
+            "(^|/)requirements[^/]*\\.txt$",
+            "(^|/)pyproject\\.toml$",
+            "(^|/)Cargo\\.toml$",
+            "(^|/)go\\.mod$"
+          ],
+          "bash": [
+            "\\bnpm (i|install|add)\\b",
+            "\\b(yarn|pnpm|bun) add\\b",
+            "\\bpip3? install\\b",
+            "\\bcargo add\\b",
+            "\\bgo get\\b"
+          ]
+        }
       },
       {
         "path": "rules/common/question-fatigue.md",
@@ -1551,7 +1568,8 @@
     ]
   },
   "mandatoryChainOutOfLane": {
-    "review-exec": "Invoked by route-workflow after execute-changeset for every product/framework lane. Enforced via L2 (hooks/git/pre-push.d/10-receipts-complete) and L3 (scripts/svc-reconcile.mjs). Listed in includedSkills but not in any lane.skills array to keep existing chain.position contracts valid."
+    "review-exec": "Invoked by route-workflow after execute-changeset for every product/framework lane. Enforced via L2 (hooks/git/pre-push.d/10-receipts-complete) and L3 (scripts/svc-reconcile.mjs). Listed in includedSkills but not in any lane.skills array to keep existing chain.position contracts valid.",
+    "review-plan": "Invoked by route-workflow between plan-changeset and execute-changeset in every product and framework lane (scripts/lib/mandatory-delivery-chain.mjs). Enforced by the delivery-graph compiler, the task-graph validator and the receipt chain. Listed in includedSkills but not in any lane.skills array, like review-exec."
   },
   "expertiseRegistry": {
     "_comment": "WI-431: the SME-agent expertise spine. One row per domain-SME agent tying it to its current-knowledge bank (references/knowledge/domains/<domain>/), currency window, episodic memory, and the framework stages it can serve. expertise.mjs check enforces parity with each agent frontmatter domain:/expertise: declaration. Agents are added as they are wired to a knowledge bank (the WI-434 fanout).",

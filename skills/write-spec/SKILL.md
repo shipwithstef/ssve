@@ -29,7 +29,7 @@ outputs:
 chain:
   lanes:
     greenfield: { position: 7, prev: validate-feature, next: audit-ac }
-    brownfield-feature: { position: 3, prev: validate-feature, next: write-journeys }
+    brownfield-feature: { position: 3, prev: validate-feature, next: audit-ac }
   progressive: true
   self_verify: true
   human_checkpoint: true

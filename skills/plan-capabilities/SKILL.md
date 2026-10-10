@@ -73,7 +73,8 @@ outputs:
     - { path: "docs/specs/capability-plan.md", artifact: capability-plan }
     - { path: ".svc/capability-registry.json", artifact: capability-registry }
 chain:
-  lanes: {}
+  lanes:
+    brownfield-conversion: { position: 2, prev: onboard-repo, next: audit-coverage }
   progressive: false
   self_verify: true
   human_checkpoint: true

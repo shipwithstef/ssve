@@ -1,6 +1,6 @@
 # Artifact Sets — Phase and Type (§5)
 
-Quote-derived verbatim from `proposals/2026-08-02-one-lane-framework.md` (the
+Quote-derived verbatim from `proposals/done/2026-08-02-one-lane-framework.md` (the
 tables sit within §4f, ahead of "What this proposal does NOT claim"; the
 "Order of implementation" table labels them "§5 phase/type artifact sets" —
 there is no separate `## 5` header in the source, so this is the exact text

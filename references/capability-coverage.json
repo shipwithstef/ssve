@@ -1123,7 +1123,7 @@
       "id": "rule:rules/common/research-before-build.md",
       "kind": "rule",
       "source": "rules/common/research-before-build.md",
-      "load": "always",
+      "load": "signal",
       "status": "no-gain-measured",
       "evidence": [
         "test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules.json"
@@ -2141,6 +2141,16 @@
         "test-framework/evals/tier-1/validate-expertise-contract.sh",
         "test-framework/evals/tier-1/validate-expertise-dispatch-promote.sh",
         "test-framework/evals/tier-1/validate-expertise-registry.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/framework-coherence.mjs",
+      "kind": "engine",
+      "source": "scripts/framework-coherence.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-chain-position.sh",
+        "test-framework/evals/tier-1/validate-framework-coherence.mjs"
       ]
     },
     {

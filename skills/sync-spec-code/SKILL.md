@@ -51,9 +51,9 @@ outputs:
     - { path: "docs/specs/features/*.md", artifact: annotated-specs }
 chain:
   lanes:
-    brownfield-feature: { position: 1, prev: null, next: validate-feature }
-    drift: { position: 1, prev: null, next: write-journeys }
-    refactor: { position: 1, prev: null, next: plan-changeset }
+    brownfield-feature: { position: 1, next: validate-feature }
+    drift: { position: 1, next: write-journeys }
+    refactor: { position: 1, next: design-tech }
   progressive: true
   self_verify: true
   human_checkpoint: false

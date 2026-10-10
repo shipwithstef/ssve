@@ -33,7 +33,7 @@ outputs:
 chain:
   lanes:
     greenfield: { position: 10, prev: write-journeys, next: design-ui }
-    brownfield-feature: { position: 5, prev: write-journeys, next: design-ui }
+    brownfield-feature: { position: 6, prev: write-journeys, next: design-ui }
   progressive: true
   self_verify: true
   human_checkpoint: false

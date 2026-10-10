@@ -11,6 +11,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { validateResearchGraph } from "./lib/research-decision.mjs";
+import { MANDATORY_DELIVERY_CHAIN } from "./lib/mandatory-delivery-chain.mjs";
 
 const CUTOFF = Date.parse("2026-05-11T00:00:00.000Z");
 const EVIDENCE_KEYS = [
@@ -100,7 +101,10 @@ function isLegacyGraph(graph) {
 function loadSkipIds(registryPath) {
   const registry = readJson(registryPath);
   const ids = new Set();
+  // A mandatory-chain skill is never skippable, whatever the registry says.
+  const chain = new Set(MANDATORY_DELIVERY_CHAIN);
   for (const [skill, entry] of Object.entries(registry.skills || {})) {
+    if (chain.has(skill)) continue;
     ids.add(`${skill}:registry-skip`);
     if (typeof entry.skip_condition_id === "string") ids.add(entry.skip_condition_id);
   }

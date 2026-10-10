@@ -24,7 +24,7 @@ outputs:
     - { path: "docs/specs/bugfix/<name>-brief.md", artifact: diagnose-bug }
 chain:
   lanes:
-    bugfix: { position: 1, prev: null, next: plan-changeset }
+    bugfix: { position: 1, next: plan-changeset }
   progressive: true
   self_verify: true
   human_checkpoint: false

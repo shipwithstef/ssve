@@ -11,7 +11,7 @@
 **Gaps surfaced by this capture session (tracked for follow-up):**
 - OpenTable blocks Playwright entirely (Access Denied). Needs stealth-browser tooling (puppeteer-extra-plugin-stealth, playwright-extra) or manual capture upload path. This is the sample the WI-088 "OpenTable archetype" claim referenced — until it's captured, that claim remains unverifiable.
 - `hero.webm` motion capture is required per `benchmark-landing/SKILL.md` dimension 3b but no `scripts/capture-motion.mjs` exists yet. All current `pattern.md` motion measurements are eyeballed from stills — will need recomputation once WebM capture tooling lands.
-- Cookie modals block first-shot capture on most sites (Resy, Square). Need a `scripts/capture-landing.mjs` helper that handles common consent-dismissal patterns (Reject all / Decline All button detection).
+- Cookie modals block first-shot capture on most sites (Resy, Square). A `scripts/capture-landing.mjs` helper that handles common consent-dismissal patterns (Reject all / Decline All button detection) is proposed, not built.
 - Memory-based medians are unreliable: 2 of 3 captured samples contradict the pre-capture table. **Do not trust the "Pattern density summary" below until recomputation from per-sample `pattern.md` files lands (F-017).**
 
 | Product | Year | Tier | Positioning | Hero pattern (captured or asserted) | Capture bundle | Notes |

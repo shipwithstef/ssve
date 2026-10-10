@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Tier 1: Validate chain positions and next-skill ordering.
 # - position matches at least one occurrence in manifest laneDefinitions
-# - next is either null (terminal) or appears AFTER the skill in the manifest lane
+# - next is either null (terminal) or appears AFTER the skill in the manifest lane, or is
+#   the skill's neighbour in the effective order (the mandatory delivery chain inserts
+#   review-plan and review-exec, per scripts/framework-coherence.mjs effectiveLanes)
 # - framework lane is skipped (non-progressive, documentation-only positions)
 # No LLM, <10s.
 set -euo pipefail
@@ -28,6 +30,11 @@ for lane in $LANES; do
   LANE_SKILLS=$(node -e "
     const m = require('$MANIFEST');
     (m.laneDefinitions['$lane'].skills || []).forEach(s => console.log(s));
+  ")
+
+  EFFECTIVE=$(cd "$REPO_ROOT" && node --input-type=module -e "
+    import { effectiveLanes } from './scripts/framework-coherence.mjs';
+    console.log((effectiveLanes()['$lane'] || []).join(' '));
   ")
 
   declare -a SKILL_ARRAY=()
@@ -88,6 +95,9 @@ for lane in $LANES; do
         fi
       done
 
+      if [ "$next_after" = "false" ] && [[ " $EFFECTIVE " == *" $skill $actual_next "* ]]; then
+        next_after=true
+      fi
       if [ "$next_after" = "false" ]; then
         ERRORS+="  FAIL: $skill — $lane next is '$actual_next', which does not appear after position $start_idx in manifest\n"
         FAIL=$((FAIL + 1))

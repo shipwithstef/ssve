@@ -59,10 +59,10 @@ outputs:
     - { path: "docs/specs/audit/<name>-analysis.md", artifact: audit-implementation-report }
 chain:
   lanes:
-    greenfield: { position: 23, prev: review-gate, next: land-changeset }
-    brownfield-feature: { position: 18, prev: review-gate, next: land-changeset }
-    bugfix: { position: 5, prev: review-gate, next: land-changeset }
-    refactor: { position: 5, prev: review-gate, next: land-changeset }
+    greenfield: { position: 23, prev: review-exec, next: land-changeset }
+    brownfield-feature: { position: 19, prev: review-exec, next: land-changeset }
+    bugfix: { position: 5, prev: review-exec, next: land-changeset }
+    refactor: { position: 6, prev: review-exec, next: land-changeset }
   progressive: true
   self_verify: true
   human_checkpoint: false

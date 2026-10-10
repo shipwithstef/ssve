@@ -25,7 +25,7 @@ const employeeId = await ensureEmployeeRecord(client, ..., defaultScope.id);
 // No UI navigation needed — the app already queries this scope.
 ```
 
-**Path B — Seed at a fixed scope and drive the UI to it.** Reachable only when the seed scope is in the same set the context surfaces (i.e. same filter). The UI control must be exercised through the same selector mechanism a user would use, with disambiguation per `rules/no-positional-role-selectors.md` (proposal).
+**Path B — Seed at a fixed scope and drive the UI to it.** Reachable only when the seed scope is in the same set the context surfaces (i.e. same filter). The UI control must be exercised through the same selector mechanism a user would use, with disambiguation per `proposals/done/2026-04-27-no-positional-role-selectors.md` (proposal).
 
 ```ts
 const seedScopeId = await getOrCreateSeed(client, me.id);   // must pass owner_id filter

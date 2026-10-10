@@ -63,7 +63,7 @@ chain:
 # quick-fix — RETIRED
 
 **Status: DEPRECATED (retired as a lane), 2026-08 — WI-512, one-lane
-framework batch (`proposals/2026-08-02-one-lane-framework.md` §1: "There is
+framework batch (`proposals/done/2026-08-02-one-lane-framework.md` §1: "There is
 no quick fix — there are only cheap mutations").**
 
 There is no such thing as a cheap MUTATION versus an expensive LANE. Cost is

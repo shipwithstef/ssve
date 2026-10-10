@@ -194,7 +194,7 @@ Pass through:
 
 review-cross-model returns its markdown output at `docs/specs/reviews/<name>-exec-cross-model.md` (existing path) PLUS — per the modification to review-cross-model in this plan — a structured JSON receipt that review-exec wraps with the self-review note and the pair record.
 
-**Wave mode (WI-382 — Claude host).** On a host with in-session Agent subagents, P3 does NOT run serially ahead of audit-implementation: review-exec, the G5 auditor, the audit specialists and the visual lens run as ONE read-only fan-out over a single frozen diff per `references/parallel-review-station.md`. The lenses return the `schemas/review-lens-finding.schema.json` shape; `scripts/review-station-merge.mjs` merges them mechanically (dedup-by-file:line, keep-highest-severity, no orchestrator re-adjudication); each lens keeps its own 3-round cap; a fix re-review re-freezes the diff and re-runs ONLY the originating lens (NEVER_GATE security/data-migration locations always keyed); receipts emit sequentially **post-barrier**. The cross-family pair, the P4 kickback ladder, and the P5 receipt below are unchanged — only the dispatch topology. **All hosts use one discovery batch; when the required reviewers can run concurrently, launch them together before edits. Do not serialize repeated full discovery passes.** This is an in-class read-only fan-out (no S5 policy gate).
+**Wave mode (WI-382 — Claude host).** On a host with in-session Agent subagents, P3 does NOT run serially ahead of audit-implementation: review-exec, the G5 auditor, the audit specialists and the visual lens run as ONE read-only fan-out over a single frozen diff per `references/parallel-review-station.md`. The lenses return the `schemas/review-lens-finding.schema.json` shape; `scripts/review-station-merge.mjs` merges them mechanically (dedup-by-file:line, keep-highest-severity, no orchestrator re-adjudication); each lens keeps its own 2-round cap; a fix re-review re-freezes the diff and re-runs ONLY the originating lens (NEVER_GATE security/data-migration locations always keyed); receipts emit sequentially **post-barrier**. The cross-family pair, the P4 kickback ladder, and the P5 receipt below are unchanged — only the dispatch topology. **All hosts use one discovery batch; when the required reviewers can run concurrently, launch them together before edits. Do not serialize repeated full discovery passes.** This is an in-class read-only fan-out (no S5 policy gate).
 
 ### P4 — Iteration Loop (rejection protocol)
 
@@ -235,11 +235,11 @@ resolution path by finding cause / size:
 | > 20 lines OR structural change | **Re-execute.** Archive current exec-record, re-dispatch `execute-changeset` with reviewer findings as additional input. |
 | Finding traces to a plan flaw | **Re-plan.** Archive plan-manifest, kick back to `plan-changeset`. Chain restarts at G5. |
 
-**HARD 3-round cap (WI-491) — this is a cap on ADVERSARIAL ROUNDS per frozen
+**HARD 2-round cap (WI-491; `scripts/check-review-round-cap.mjs` CAP) — this is a cap on ADVERSARIAL ROUNDS per frozen
 diff, not merely on patches.** An adversarial reviewer never runs out of High
 findings on a complex diff, so "re-review until zero High" is unreachable.
-Convergence is by DISPOSITION: run at most **3** adversarial rounds. After round
-3 (never a 4th):
+Convergence is by DISPOSITION: run at most **2** adversarial rounds. After round
+2 (never a 3rd):
 - **Unresolved Critical →** `terminal_state: ESCALATED_TO_USER`; the change
   BLOCKS and goes to the owner (Criticals never promote, never auto-accept).
 - **Only High/Medium/Low remain →** disposition each remaining High
@@ -248,7 +248,7 @@ Convergence is by DISPOSITION: run at most **3** adversarial rounds. After round
 
 Before finalizing the verdict, WRITE the structured round record to the
 review-log (`self_review_passes`, `rounds_run`, `unresolved_critical`, `remaining_high`, and — at
-round 3 with residual Highs — a `bounded_exit` block enumerating them), then run
+round 2 with residual Highs — a `bounded_exit` block enumerating them), then run
 the mechanical gate and capture its output:
 
 ```bash
@@ -359,7 +359,7 @@ Before declaring the skill complete:
 | 2 | Schema valid | Validate against `schemas/receipts/review-exec.schema.json` | PASS if schema check returns 0 |
 | 3 | Cross-family pair | `adversarial_review.primary_reviewer_host` differs from `self_review.orchestrator` cognitive family | PASS if pair is cross-family |
 | 4 | Note attached | `git notes --ref=svc-receipts show <sha>` returns envelope with `review-exec` key | PASS if note resolves and contains key |
-| 5 | Verdict consistent | If verdict=pass, no CRITICAL remains unresolved (Criticals escalate, never disposition) AND every HIGH is either fixed OR carries a documented disposition (accept-with-justification as a logged risk / reject-with-justification). HIGHs do NOT have to vanish to pass — the loop is HARD-capped at 3 rounds (`scripts/check-review-round-cap.mjs`); an adversarial reviewer never runs dry, so terminate by disposition, not by draining findings. | PASS if assertion holds |
+| 5 | Verdict consistent | If verdict=pass, no CRITICAL remains unresolved (Criticals escalate, never disposition) AND every HIGH is either fixed OR carries a documented disposition (accept-with-justification as a logged risk / reject-with-justification). HIGHs do NOT have to vanish to pass — the loop is HARD-capped at 2 rounds (`scripts/check-review-round-cap.mjs`); an adversarial reviewer never runs dry, so terminate by disposition, not by draining findings. | PASS if assertion holds |
 
 ## Failure Modes
 

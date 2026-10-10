@@ -2,7 +2,7 @@
 
 Curated corpus of 2026-relevant landing-page patterns for benchmark-grading svc design-ui output against what actually ships in the wild.
 
-**Purpose:** close framework gap F-001 from `proposals/2026-04-20-evolution-design-benchmark-gate.md`. Before this bank existed, `design-ui` was instructed to "run a web search for 5-10 products" per invocation — ad-hoc, uncached, per-project, never curated. Design decisions happened in reference-vacuum.
+**Purpose:** close framework gap F-001 from `proposals/done/2026-04-20-evolution-design-benchmark-gate.md`. Before this bank existed, `design-ui` was instructed to "run a web search for 5-10 products" per invocation — ad-hoc, uncached, per-project, never curated. Design decisions happened in reference-vacuum.
 
 ## Directory shape
 

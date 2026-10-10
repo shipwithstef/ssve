@@ -1,6 +1,6 @@
 # Gemini CLI Context Budget & /compress Protocol
 
-**Source:** `proposals/2026-04-19-session-audit-gemini-slim-refactor-wi071-and-wi085.md` — framework gap G4
+**Source:** `proposals/done/2026-04-19-session-audit-gemini-slim-refactor-wi071-and-wi085.md` — framework gap G4
 
 Gemini CLI has an effective attention window smaller than its raw context
 window. Without proactive compression, Gemini sessions experience a

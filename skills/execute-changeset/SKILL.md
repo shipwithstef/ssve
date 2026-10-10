@@ -24,10 +24,10 @@ outputs:
     - { path: "(branch checkpoint commits)", artifact: executed-code }
 chain:
   lanes:
-    greenfield: { position: 19, prev: plan-changeset, next: review-gate }
-    brownfield-feature: { position: 14, prev: plan-changeset, next: review-gate }
-    bugfix: { position: 3, prev: plan-changeset, next: review-gate }
-    refactor: { position: 3, prev: plan-changeset, next: review-gate }
+    greenfield: { position: 19, prev: review-plan, next: review-gate }
+    brownfield-feature: { position: 15, prev: review-plan, next: review-gate }
+    bugfix: { position: 3, prev: review-plan, next: review-gate }
+    refactor: { position: 4, prev: review-plan, next: review-gate }
   progressive: true
   self_verify: true
   human_checkpoint: true
@@ -340,7 +340,7 @@ No code serialized into docs for reapplication; no multi-task staging; no skippi
 
 ## Handoff
 
-On all tasks checkpointed + final validation green: feature status → `CHANGE-SET-APPROVED`; if the change has a browser-visible surface, capture `track-visuals --mode diff` before G5 review; hand to `review-exec` (G5-enforcing gate) / `review-gate` G5 surface. A new/upgraded dependency is an amendment (reopen the affected source decision/contract and review proof using already-given owner intent), not an automatic `research` skill run. Invoke `research` only when `researchDecision` from `scripts/lib/research-decision.mjs` returns `external_research_required`. Security-sensitive surface touched → flag for `review-security` at the post-exec review wave. Log insertions as `mechanical` decisions.
+On all tasks checkpointed + final validation green: the feature stays `BASELINED` (G5 sets `CHANGE-SET-APPROVED` when it passes; the executor never approves its own work); if the change has a browser-visible surface, capture `track-visuals --mode diff` before G5 review; hand to `review-exec` (G5-enforcing gate) / `review-gate` G5 surface. A new/upgraded dependency is an amendment (reopen the affected source decision/contract and review proof using already-given owner intent), not an automatic `research` skill run. Invoke `research` only when `researchDecision` from `scripts/lib/research-decision.mjs` returns `external_research_required`. Security-sensitive surface touched → flag for `review-security` at the post-exec review wave. Log insertions as `mechanical` decisions.
 
 ## Retrieval-Augmented Reasoning (cutting-edge technique #9)
 

@@ -333,12 +333,14 @@ function assertRulesRegistry(registry) {
     const AUTO_INJECT = new Set(["always", "signal", "lazy"]);
     // WI-393: long-output-to-file demoted always→signal (injects on output-heavy
     // skill signals instead of riding every session). 2026-10 audit: tool-selection
-    // demoted always→lazy (host harness carries the same guidance). Allowlist now 4.
+    // demoted always→lazy (host harness carries the same guidance). 2026-10-10 value audit:
+    // research-before-build demoted always→signal (Haiku and Sonnet already do it unprompted,
+    // test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules.json); it now
+    // injects when a dependency is about to be added. Allowlist now 3.
     const ALWAYS_ALLOWLIST = new Set([
       "rules/common/question-fatigue.md",
       "rules/verify-state-before-context.md",
       "rules/learning-preload.md",
-      "rules/common/research-before-build.md",
     ]);
     if (!AUTO_INJECT.has(entry.auto_inject)) {
       errors.push(`rulesRegistry entry ${entry.path}: missing/invalid auto_inject (always|signal|lazy)`);
@@ -378,7 +380,6 @@ function assertRulesRegistry(registry) {
       "rules/common/question-fatigue.md",
       "rules/verify-state-before-context.md",
       "rules/learning-preload.md",
-      "rules/common/research-before-build.md",
     ];
     const got = new Set(registry.entries.filter((e) => e.auto_inject === "always").map((e) => e.path));
     for (const w of wantAlways) if (!got.has(w)) errors.push(`rulesRegistry: allowlisted always rule ${w} not marked always`);
@@ -413,7 +414,7 @@ assertRulesRegistry(manifest.rulesRegistry);
 assertIncludes(
   "write-journeys brownfield handoff",
   writeJourneys,
-  "brownfield-feature: { position: 4, prev: write-spec, next: design-ux }"
+  "brownfield-feature: { position: 5, prev: audit-ac, next: design-ux }"
 );
 assertIncludes(
   "design-ui visual sidecar handoff",

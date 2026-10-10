@@ -51,8 +51,8 @@ outputs:
     - { path: "docs/specs/work-items/INDEX.md", artifact: synced-work-items }
 chain:
   lanes:
-    brownfield-conversion: { position: 3, prev: audit-coverage, next: null }
-    drift: { position: 3, prev: write-journeys, next: null }
+    brownfield-conversion: { position: 4, prev: audit-coverage, next: plan-changeset }
+    drift: { position: 3, prev: write-journeys, next: plan-changeset }
   progressive: true
   self_verify: true
   human_checkpoint: false

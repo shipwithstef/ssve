@@ -63,7 +63,7 @@ outputs:
 chain:
   lanes:
     greenfield: { position: 14, prev: landing-page, next: design-tech }
-    brownfield-feature: { position: 9, prev: landing-page, next: design-tech }
+    brownfield-feature: { position: 10, prev: landing-page, next: design-tech }
   progressive: false
   self_verify: true
   human_checkpoint: false

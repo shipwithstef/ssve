@@ -545,10 +545,10 @@ These 5 lanes catch infra-class work — Terraform, Kubernetes, CI/CD, IAM, obse
 1. `recall-stack-knowledge` (phase-0 gate) — fetches relevant `references/knowledge/domains/<stack>/` slices.
 2. `plan-capabilities --mode=infra` — infra-specific inventory: IaC tool, cloud(s), k8s flavor, observability, secret manager, CI/CD platform, policy engine, cost tool.
 3. `capture-idea` / `validate-feature` — frame the infra capability being built.
-4. `write-spec` (with `templates/infra-feature.md` template) — SLO/RTO/RPO/blast-radius/cost-envelope/IAM-scope sections.
-5. `design-ux` (with `templates/infra-topology.md`) — resource graph + trust/network boundaries.
-6. `design-ui` (with `templates/infra-runbook.md`) — operator runbook (alerts, dashboards, manual procedures, rollback).
-7. `design-tech` (with `references/infra-tech-design.md` annex) — provider/module/state-backend/secrets choices.
+4. `write-spec` (with `skills/write-spec/templates/infra-feature.md` template) — SLO/RTO/RPO/blast-radius/cost-envelope/IAM-scope sections.
+5. `design-ux` (with `skills/design-ux/templates/infra-topology.md`) — resource graph + trust/network boundaries.
+6. `design-ui` (with `skills/design-ui/templates/infra-runbook.md`) — operator runbook (alerts, dashboards, manual procedures, rollback).
+7. `design-tech` (with `skills/design-tech/references/infra-tech-design.md` annex) — provider/module/state-backend/secrets choices.
 8. `review-security` (pulled forward to design phase) — IAM least-privilege, policy packs from `domains/<stack>/policy/`.
 9. `plan-changeset` — consumes `terraform plan` JSON / `helm diff` output as manifest input.
 10. `plan-blast-radius` — SEV tier classification; SEV-1/2 forces human checkpoint.
@@ -559,7 +559,7 @@ These 5 lanes catch infra-class work — Terraform, Kubernetes, CI/CD, IAM, obse
 15. `verify-promotion --infra` — `terraform state list` / `kubectl get all -A -o json` matches plan.
 16. `review-gate` — post-apply smoke + SLO probe.
 17. `track-topology-diff` — snapshot resource graph; baseline.
-18. `test-journeys` (with `templates/chaos.feature.md`) — failure-injection scenarios.
+18. `test-journeys` (with `skills/test-journeys/templates/chaos.feature.md`) — failure-injection scenarios.
 19. `audit-implementation` — verify all spec sections satisfied.
 20. `drift` lane scheduled — continuous drift watch.
 

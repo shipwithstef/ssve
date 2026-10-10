@@ -52,6 +52,7 @@ outputs:
 chain:
   lanes:
     greenfield: { position: 8, prev: write-spec, next: write-journeys }
+    brownfield-feature: { position: 4, prev: write-spec, next: write-journeys }
   progressive: true
   self_verify: true
   human_checkpoint: false

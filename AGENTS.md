@@ -389,14 +389,14 @@ SVC checks and not deleted lifecycle protection. Validate effective wiring with
 
 | Hook | Type | Purpose |
 |------|------|---------|
-| `svc-workflow-guard.js` | PreToolUse (Edit/Write) | Blocks config/lockfile edits; warns on out-of-scope file writes |
-| `svc-phase-boundary-detector` | PreToolUse | Catches spec drift during execution |
-| `svc-bash-guard` | PreToolUse (Bash) | Blocks `--no-verify` git bypass; enforces commit trailers |
-| `svc-eval-gate-pre` | PreToolUse (TaskUpdate) | Blocks completed tasks with unfilled pillar entries |
-| `svc-eval-gate-post` | PostToolUse (TaskUpdate) | Injects eval matrix reminder |
+| `svc-pretool-decision-engine` (`hooks/codex/svc-codex-pretool-dispatcher.mjs`) | PreToolUse (Bash/Edit/Write…) | One deny-capable decision per tool call; runs the workflow/bash guard, loop guard, worktree isolation, skill-artifact authenticity, session-contract freshness, inertia check and impact triad as children |
+| `svc-rule-injector.mjs` | PreToolUse (Edit/Write, Bash), PostToolUse (Read/Grep/Glob) | Injects subject-matter rules when their path, command or content signals match |
 | `svc-lane-tasks-validator.mjs` | PostToolUse (Edit/Write) | **Hard block** on malformed `.svc/lane-tasks-*.json` |
+| `svc-phase-receipt-autoemit.mjs` | PostToolUse | Emits phase receipts for recorded task-graph phases |
 | `svc-stop-quality.js` | Stop | Batch format + typecheck all edited files |
 | `svc-task-completion-guard.sh` | Stop | Blocks stop when actionable work remains in task graph |
+
+The full, current wiring is `hooks/hooks.json` plus `scripts/wire-hooks.mjs`; this table names the main ones.
 
 ### Rules (`rules/`)
 48 registered rules across stacks (universal, base44, web, golang, rust, python, react, react-native); the authoritative list is `rulesRegistry.entries` in `skills-manifest.json`. Each rule has:
@@ -404,7 +404,7 @@ SVC checks and not deleted lifecycle protection. Validate effective wiring with
 - `scope`: `universal` or stack-specific
 - `source`: `local` or `blended:ecc`
 
-Rules are injected into `CLAUDE.md` / `AGENTS.md` based on the active stack.
+Always-on rules install to the host's global rules directory (`./setup`); the rest are injected on demand by `hooks/svc-rule-injector.mjs` when their signals match (Claude host; other hosts install the full set).
 
 ### Agents (`agents/`)
 First-class primitives distinct from skills. **28 agent definitions** with YAML frontmatter under `agents/` (full roster and format contract: `agents/README.md`). Notable:

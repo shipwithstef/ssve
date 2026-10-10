@@ -54,7 +54,7 @@ outputs:
     - { path: "docs/specs/analyze-competitors.md", artifact: analyze-competitors }
 chain:
   lanes:
-    greenfield: { position: 3, prev: analyze-domain, next: build-personas }
+    greenfield: { position: 3, prev: analyze-domain, next: catalog-domain-capabilities }
   progressive: true
   self_verify: true
   human_checkpoint: false

@@ -123,6 +123,10 @@ cp "$TMP/docs.json" "$TMP/omitted-step.json"
 mutate omitted-step 'graph.tasks = graph.tasks.filter((task) => task.metadata.skill !== "review-plan"); graph.delivery_graph.skipped_skills = graph.delivery_graph.skipped_skills.filter((entry) => entry.skill !== "review-plan");'
 expect_fail omitted-step "omitted required lane step fails without registry-backed skipped_skills evidence"
 
+cp "$TMP/omitted-step.json" "$TMP/chain-blanket-skip.json"
+mutate chain-blanket-skip 'graph.delivery_graph.skipped_skills.push({ skill: "review-plan", skip_condition_id: "review-plan:registry-skip", reason: "blanket", evidence: "none" });'
+expect_fail chain-blanket-skip "a mandatory-chain skill cannot be skipped with a blanket registry-skip id"
+
 cat > "$TMP/legacy-pre-wi.json" <<'JSON'
 {
   "wi": "WI-LEGACY",

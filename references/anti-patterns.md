@@ -515,8 +515,8 @@ AND include the V2 exhaustion log showing which mechanisms were tried.
 
 **Cross-references:** `verify-promotion` V0/V1/V2/V3 ladder.
 `test-journeys` S0/S1/S2 ladder (line 244: "S2 is LAST RESORT, not the
-default"). `references/ai-verification-mechanisms.md` (catalog of V2
-techniques).
+default"). A separate V2 techniques catalog was planned and never written; the two
+ladders above are the source.
 
 ## Cross-References
 
@@ -601,7 +601,7 @@ Mismatch at any stage = HIGH finding, blocking by default.
 
 **Enforcement:**
 - Reviewers emit `runtime-verification-user-delegation` HIGH-severity findings when an agent response inside verify-promotion / land-changeset / review-gate G7 contains "open <prodURL> on your phone", "sign in as <user> and check", "manually verify", "the final eyeball is yours", or equivalent patterns WITHOUT a paired V2-exhaustion-log citation.
-- Future hook: a Stop hook (`hooks/svc-no-user-eyeball-runtime-verification.sh`, proposed in `proposals/done/2026-05-08-runtime-verification-must-not-delegate-to-user.md`) scans the assistant's last response and refuses to terminate the verify-promotion turn when behavioral-handoff patterns appear without V2-exhaustion citation. Until the hook lands, this anti-pattern is doc-enforced; reviewers cite AP-31 as the gate.
+- Proposed, not built: a Stop hook (`hooks/svc-no-user-eyeball-runtime-verification.sh`, proposed in `proposals/done/2026-05-08-runtime-verification-must-not-delegate-to-user.md`) scans the assistant's last response and refuses to terminate the verify-promotion turn when behavioral-handoff patterns appear without V2-exhaustion citation. Until the hook lands, this anti-pattern is doc-enforced; reviewers cite AP-31 as the gate.
 
 **Cross-references:** `verify-promotion/SKILL.md` § Verification Tier Ladder (V0-V3), memory `feedback_verify_promotion_use_browse.md`, `proposals/done/2026-05-08-runtime-verification-must-not-delegate-to-user.md`.
 

@@ -64,7 +64,7 @@ phases:
     required_for_completion: true
 chain:
   lanes:
-    brownfield-conversion: { position: 2, prev: onboard-repo, next: sync-work-items }
+    brownfield-conversion: { position: 3, prev: plan-capabilities, next: sync-work-items }
   progressive: false
   self_verify: true
   human_checkpoint: false

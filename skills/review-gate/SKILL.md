@@ -58,10 +58,10 @@ outputs:
     - { path: "(gate decision)", artifact: gate-decision }
 chain:
   lanes:
-    greenfield: { position: 22, prev: execute-changeset, next: audit-implementation }
-    brownfield-feature: { position: 17, prev: execute-changeset, next: audit-implementation }
-    bugfix: { position: 4, prev: execute-changeset, next: audit-implementation }
-    refactor: { position: 4, prev: execute-changeset, next: audit-implementation }
+    greenfield: { position: 22, prev: execute-changeset, next: review-exec }
+    brownfield-feature: { position: 18, prev: execute-changeset, next: review-exec }
+    bugfix: { position: 4, prev: execute-changeset, next: review-exec }
+    refactor: { position: 5, prev: execute-changeset, next: review-exec }
   progressive: true
   self_verify: true
   human_checkpoint: false

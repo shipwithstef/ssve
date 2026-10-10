@@ -281,10 +281,10 @@ review_log:
   terminal_state: PROMOTED | PROMOTED_WITH_DISPUTES | REVISED_AND_REVIEWED | ESCALATED_TO_USER
   self_review_passes: 1        # one deterministic coverage + gap pass
   self_review_digest: <sha256>
-  rounds_run: <int>            # adversarial rounds actually run — HARD-capped at 3
+  rounds_run: <int>            # adversarial rounds actually run — HARD-capped at 2
   unresolved_critical: <int>   # machine-readable; any > 0 blocks promotion
   remaining_high: <int>        # machine-readable; each must be enumerated below
-  bounded_exit:                # REQUIRED when rounds_run == 3 and remaining_high > 0
+  bounded_exit:                # REQUIRED when rounds_run == 2 and remaining_high > 0
     disposition: fixed | accept-with-justification | reject-with-justification
     residual_highs:            # one entry PER remaining High (count must equal remaining_high)
       - "<remaining High #1 + why accepted/rejected>"
@@ -292,9 +292,9 @@ review_log:
   commit_sha: <sha of plan at promotion time>
 ```
 
-**HARD 3-round cap (WI-491) — mechanically enforced, fail-closed.** An
+**HARD 2-round cap (WI-491; `scripts/check-review-round-cap.mjs` CAP) — mechanically enforced, fail-closed.** An
 adversarial reviewer never runs out of High findings on a complex plan, so "loop
-until zero High" is unreachable. Run at most **3** rounds. After round 3,
+until zero High" is unreachable. Run at most **2** rounds. After round 2,
 terminate by DISPOSITION: an unresolved Critical is NEVER dispositioned — it gets
 an exact `terminal_state: ESCALATED_TO_USER` and BLOCKS (the plan does not
 promote until the owner rules); every remaining High is enumerated in

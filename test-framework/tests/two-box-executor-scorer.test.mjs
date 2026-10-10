@@ -17,6 +17,9 @@ import {
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const cases = JSON.parse(fs.readFileSync(path.join(ROOT, "test-framework/evals/tier-1/fixtures/two-box/executor-discretion-cases.json"), "utf8")).cases;
 const contractText = fs.readFileSync(path.join(ROOT, "skills/execute-changeset/SKILL.md"), "utf8");
+// The retained LIVE evidence is keyed to the exact contract bytes the canary saw; later edits
+// to the skill (chain wiring, wording) must not invalidate it, so it is pinned here.
+const retainedContract = fs.readFileSync(path.join(ROOT, "test-framework/evals/tier-1/fixtures/two-box/canary03-execute-changeset-contract.md"), "utf8");
 const stdoutPath = path.join(ROOT, "test-framework/evals/tier-1/fixtures/two-box/canary03-executor-stdout.jsonl");
 const stdoutBytes = fs.readFileSync(stdoutPath);
 const tuple = { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" };
@@ -69,7 +72,7 @@ test("retained CANARY03 stdout still fails the old single-excerpt check and pass
     expectedStdoutSha: RETAINED_CANARY03_EXECUTOR.stdout_sha256,
     expectedKey: RETAINED_CANARY03_EXECUTOR.key,
     cases,
-    contractText,
+    contractText: retainedContract,
     tuple,
   });
   assert.equal(corrected.inference_calls, 0);
@@ -78,11 +81,11 @@ test("retained CANARY03 stdout still fails the old single-excerpt check and pass
 });
 
 test("recomputed executor input key matches the retained LIVE key", () => {
-  const input = executorComprehensionInputKey({ cases, contractText, tuple });
+  const input = executorComprehensionInputKey({ cases, contractText: retainedContract, tuple });
   assert.equal(input.key, RETAINED_CANARY03_EXECUTOR.key);
-  const drifted = executorComprehensionInputKey({ cases, contractText: `${contractText}\n`, tuple });
+  const drifted = executorComprehensionInputKey({ cases, contractText: `${retainedContract}\n`, tuple });
   assert.notEqual(drifted.key, RETAINED_CANARY03_EXECUTOR.key);
-  const otherTuple = executorComprehensionInputKey({ cases, contractText, tuple: { ...tuple, effort: "xhigh" } });
+  const otherTuple = executorComprehensionInputKey({ cases, contractText: retainedContract, tuple: { ...tuple, effort: "xhigh" } });
   assert.notEqual(otherTuple.key, RETAINED_CANARY03_EXECUTOR.key);
 });
 
