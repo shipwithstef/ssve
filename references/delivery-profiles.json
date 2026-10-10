@@ -37,5 +37,17 @@
       "max_index": 40,
       "conditional_stages": "all"
     }
+  },
+  "method": {
+    "$comment": "How execution verifies itself, chosen by evidence (test-framework/outcome-evals/README.md, 66 Haiku 5.5 runs on 2026-10-10). Re-measure with scripts/outcome-eval.mjs when models or prompts change.",
+    "spec_complete": {
+      "use": "lean",
+      "why": "Run every test and fix until green. Same correctness as the written blueprint at about a third of its cost; 1.18x a plain run on matched tasks (0.93-1.56x per task)."
+    },
+    "underspecified": {
+      "use": "brief-first",
+      "why": "Unmeasured: write the product brief and acceptance tests before building. Being measured by the next outcome-eval suite; until then it is a hypothesis, not a rule."
+    },
+    "never": "Written rules lists and one-test-per-rule ceremony on spec-complete work: 3.3x cost on matched tasks, no measured gain."
   }
 }

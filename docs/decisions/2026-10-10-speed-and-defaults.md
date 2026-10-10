@@ -69,7 +69,7 @@ Same throwaway governed repository, 5 runs per event. The base is commit 1b69e0d
 
 **Result:**
 - Same Edit decision measured three ways: 428 ms → 245 ms with the rev-parse memo, → about 200 ms with the worktree-list memo.
-- Git spawns per decision: 73 → 23.
+- Git spawns per decision: 73 → 23 under strace in the first bench setup. The reproducible count, from `scripts/count-hook-git.mjs` in a throwaway governed repository, is 68 on 1b69e0d → 8 on this branch. That figure includes D4, and the decision is unchanged (deny). The count is a gated claim in `references/claims.json`.
 - Dispatcher-related test suites show identical pass/fail before and after (7 failures exist on the base commit as well).
 
 **Confidence:** high. **Rollback:** revert the import lines; nothing is persisted.

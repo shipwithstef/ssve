@@ -1,0 +1,114 @@
+{
+  "$comment": "Every quantitative claim the framework makes about itself, with the command that reproduces it and the bound it must meet. scripts/verify-claims.mjs runs them; a claim that cannot be reproduced is removed from the docs, not kept. `json` names a dotted path into the command's JSON output; `max`/`min` bound it; `exit` is the expected exit code. Slow claims carry \"slow\": true and run only with --all.",
+  "claims": [
+    {
+      "id": "lint",
+      "claim": "The five source-of-truth files agree",
+      "source": "CLAUDE.md",
+      "command": [
+        "node",
+        "scripts/lint-skills-manifest.mjs"
+      ],
+      "exit": 0
+    },
+    {
+      "id": "always-loaded",
+      "claim": "Always-loaded context stays under 36.5K chars per turn",
+      "source": "docs/framework-5.5-audit.md",
+      "command": [
+        "node",
+        "scripts/measure-always-loaded.mjs",
+        "--json"
+      ],
+      "json": "per_turn.total_chars",
+      "max": 36500
+    },
+    {
+      "id": "git-calls",
+      "claim": "One pre-edit decision runs at most 10 git subprocesses (68 on 1b69e0d)",
+      "source": "docs/decisions/2026-10-10-speed-and-defaults.md",
+      "command": [
+        "node",
+        "scripts/count-hook-git.mjs",
+        "--json"
+      ],
+      "json": "git_calls",
+      "max": 10
+    },
+    {
+      "id": "graders",
+      "claim": "Outcome-eval graders pass their reference solution and fail a constant stub",
+      "source": "scripts/outcome-eval.mjs",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "check"
+      ],
+      "exit": 0
+    },
+    {
+      "id": "hook-budgets",
+      "claim": "Every hook event stays within its node-start budget",
+      "source": "references/hook-budgets.json",
+      "command": [
+        "node",
+        "scripts/hook-bench.mjs",
+        "--runs",
+        "3"
+      ],
+      "exit": 0,
+      "slow": true
+    },
+    {
+      "id": "plain-solves",
+      "claim": "Haiku 5.5 solved every outcome-eval task in the plain arm (recorded 2026-10-10 runs)",
+      "source": "test-framework/outcome-evals/README.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-brownfield.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-fullstack.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-hard.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-lean.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku.json"
+      ],
+      "json": "plain_solve_rate",
+      "min": 1
+    },
+    {
+      "id": "blueprint-cost",
+      "claim": "The written blueprint cost at least 2.5x a plain run on the same tasks",
+      "source": "test-framework/outcome-evals/README.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-brownfield.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-fullstack.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-hard.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-lean.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku.json"
+      ],
+      "json": "blueprint_cost_vs_plain",
+      "min": 2.5
+    },
+    {
+      "id": "lean-cost",
+      "claim": "The lean verifier loop costs at most 1.5x a plain run",
+      "source": "references/delivery-profiles.json",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-brownfield.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-fullstack.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-hard.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-lean.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku.json"
+      ],
+      "json": "lean_cost_vs_plain",
+      "max": 1.5
+    }
+  ]
+}
