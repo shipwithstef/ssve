@@ -94,6 +94,16 @@ else
   fail "canonical hooks.json does not wire fail-closed preflight hook"
 fi
 
+if node -e '
+const src = require("fs").readFileSync(process.argv[1], "utf8");
+const i = src.indexOf("id: \"svc-preflight-skill\"");
+if (i < 0 || !/matcher: "Skill"/.test(src.slice(i, i + 400))) process.exit(1);
+' "$WIRE"; then
+  pass "Claude hook wirer scopes preflight to the Skill matcher (not every tool call)"
+else
+  fail "Claude hook wirer installs preflight on a non-Skill matcher"
+fi
+
 if grep -q 'preflight.mjs --hook --fail-closed' "$WIRE"; then
   pass "Claude hook wirer installs fail-closed preflight hook"
 else

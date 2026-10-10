@@ -154,7 +154,9 @@ function buildHookEntries(skillsPath) {
   if (!DISABLED.has("svc-preflight-skill")) {
     entries.PreToolUse.push({
       id: "svc-preflight-skill",
-      matcher: "*",
+      // Narrowed * -> Skill (matches hooks.json, WI-399 A1): preflight exits 0
+      // for every non-Skill tool, so "*" was a node spawn on every tool call.
+      matcher: "Skill",
       hooks: [{ type: "command", command: `node ${scriptsDir}/preflight.mjs --hook --fail-closed` }],
     });
   }
