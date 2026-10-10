@@ -46,16 +46,21 @@ else if (alwaysOn.length>0 && rb > base.always_on_rules_bytes_max) {
 // Regex stops at the next frontmatter key OR the closing --- (Gemini G6 #1: a
 // description that is the LAST frontmatter field would otherwise read as 0 chars
 // and let an oversized description false-pass the gate).
+// includedSkills holds bare names; resolve skills/<name>/SKILL.md (a bare
+// "<name>/SKILL.md" read silently counted 0 chars and let the catalog re-bloat).
 let cc=0, n=0;
+const unread=[];
 for (const s of m.includedSkills) {
   try {
-    const t=fs.readFileSync(s+"/SKILL.md","utf8");
+    const t=fs.readFileSync(fs.existsSync("skills/"+s+"/SKILL.md")?"skills/"+s+"/SKILL.md":s+"/SKILL.md","utf8");
     const fm=t.split(/^---$/m)[1]||"";
     const d=(fm.match(/description:([\s\S]*?)(?:\n\w[\w-]*:|\n*$)/)||[])[1]||"";
     cc+=d.length; n++;
-  } catch {}
+  } catch { unread.push(s); }
 }
-if (cc > base.catalog_desc_chars_max) {
+if (unread.length || n!==m.includedSkills.length || n===0) {
+  console.log(`  ✗ catalog derivation broken: read ${n}/${m.includedSkills.length} skills (unreadable: ${unread.slice(0,5).join(", ")||"none"})`); rc=1;
+} else if (cc > base.catalog_desc_chars_max) {
   console.log(`  ✗ catalog desc ${cc} chars (${n} skills) exceed budget ${base.catalog_desc_chars_max} (re-bloat — trim descriptions or bump baseline)`); rc=1;
 } else {
   console.log(`  ✓ catalog desc ${cc} chars (${n} skills) within budget ${base.catalog_desc_chars_max}`);
