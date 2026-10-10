@@ -61,7 +61,9 @@ export function sizeAndSlop(dir) {
   for (const l of srcLines.map((x) => x.trim()).filter((x) => x.length > 30)) counts.set(l, (counts.get(l) || 0) + 1);
   const duplicated = [...counts.values()].filter((n) => n >= 3).reduce((a, n) => a + n, 0);
   const exported = srcText.flatMap((t) => [...t.matchAll(/export\s+(?:async\s+)?(?:function\*?|const|let|class)\s+([A-Za-z_$][\w$]*)/g)].map((m) => m[1]));
-  const unused = exported.filter((name) => (allText.match(new RegExp(`\\b${name.replace(/\$/g, "\\$")}\\b`, "g")) || []).length <= 1);
+  const escape = (x) => x.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+  // \b does not treat $ as a word character, so match on identifier edges instead.
+  const unused = exported.filter((name) => (allText.match(new RegExp(`(?<![\\w$])${escape(name)}(?![\\w$])`, "g")) || []).length <= 1);
   let deps = 0;
   try { const p = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8")); deps = Object.keys({ ...p.dependencies, ...p.devDependencies }).length; } catch {}
   const join = srcText.join("\n");
