@@ -72,6 +72,12 @@ function quantile(d, u, z) {
   }
   throw new Error(`unknown dist ${d.dist}`);
 }
+/** p10 / p50 / p90 of a declared distribution (used for calibration against observations). */
+export function rangeOf(d) {
+  const q = (u, z) => quantile(d, u, z);
+  if (d.dist === "discrete") { const v = [...d.values].sort((a, b) => a - b); return { p10: q(0.1, -Z90), p50: q(0.5, 0), p90: q(0.9, Z90), min: v[0], max: v[v.length - 1] }; }
+  return { p10: q(0.1, -Z90), p50: q(0.5, 0), p90: q(0.9, Z90) };
+}
 function baseValue(d) {
   switch (d.dist) {
     case "const": return d.value;
