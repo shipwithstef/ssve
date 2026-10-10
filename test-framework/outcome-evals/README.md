@@ -72,6 +72,16 @@ Judge reliability: three judgings of the same artifact gave identical scores (2/
 
 No build had a money pump. Lean scored highest at plain cost; the brief arm was the only one to pass every browser check, at twice the cost. With 3 runs per arm these differences are not significant; the next step is more repeats.
 
+**Round 2 (3 more builds per arm, 6 per arm in total), settled:**
+
+| Arm | Smoke | Mean judge score | vs plain (95% CI, p) | Mean cost |
+|---|---|---|---|---|
+| plain | 4/6 | 11.00 / 12 | n/a | $0.076 |
+| lean | 4/6 | 11.33 / 12 | +0.33 [-0.17, 1.00], p = 0.64 | $0.116 |
+| brief | 4/6 | 10.83 / 12 | -0.17 [-0.83, 0.50], p = 1 | $0.247 |
+
+No arm differs. This request sits near Haiku's ceiling (11/12 bare), and none of the 18 builds had a money pump. The method's gain shows up on the larger product request (yoga-studio), not here.
+
 **Grader correction:** Node reports a test cancelled by its timeout as `cancelled`, not `fail`. Two runs (plain#0, lean#2) were first scored as passing for that reason. `parseTap` now counts cancellations as failures, and those rows are corrected in the results file with a `regraded` note.
 
 ### One-sentence product request (yoga-studio, 2026-10-10)

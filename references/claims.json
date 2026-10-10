@@ -139,6 +139,20 @@
       ],
       "json": "plain_mean_judge_total",
       "max": 8
+    },
+    {
+      "id": "vague-no-difference",
+      "claim": "On the vague game request no method beats a plain run (6 builds per arm; difference not established)",
+      "source": "test-framework/outcome-evals/README.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-vague.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-vague-r2.json"
+      ],
+      "json": "brief_judge_vs_plain.p",
+      "min": 0.05
     }
   ]
 }
