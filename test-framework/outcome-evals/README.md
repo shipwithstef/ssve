@@ -159,7 +159,7 @@ Lean minus plain is −0.14 (95% CI −1.43 to 1.14, p = 1): no effect. The whol
 3. **The production method is the default for underspecified product requests.** Measured above: 14.71/16 vs 7.14/16 under a blind judge over 7 builds per arm, for under $1 per build on Haiku.
 4. **The spec-complete tasks sit at the model's ceiling, so they cannot separate the arms.** They stay in the suite as a regression floor: a cheaper model or a new prompt must keep solving them.
 
-The open question is where the framework adds value: underspecified product requests, multi-session work and long-horizon changes. That needs tasks that a plain run fails, graded on product quality as well as tests. That is the next suite, in `outcome-evals/tasks-next.md`.
+The open question is where the framework adds value: underspecified product requests, multi-session work and long-horizon changes. That needs tasks that a plain run fails, graded on product quality as well as tests. Those suites are tracked in [`PILLARS.md`](PILLARS.md) (results and next pillars) and in `references/capability-coverage.json` (every unit's next evaluation).
 
 ## Running
 

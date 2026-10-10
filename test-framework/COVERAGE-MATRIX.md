@@ -1,5 +1,7 @@
 # svc Test Coverage Matrix
 
+> **Superseded (2026-10-10).** This matrix was last updated in April and covers 62 of today's 108 skills. Current coverage is generated from the repository: `references/capability-coverage.json`, built by `node scripts/capability-coverage.mjs build` and checked in tier-1 by `validate-capability-coverage.mjs`. It covers every skill, agent, engine, hook and self-claim, with evidence for each. The April content below is kept as history.
+
 **Last updated:** 2026-04-23
 **Total skills:** 62
 **Framework version:** 62 skills, 17 rules, 23 hooks, 7 lanes
