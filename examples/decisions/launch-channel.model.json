@@ -1,0 +1,40 @@
+{
+  "schema": "svc-decision-model/1",
+  "question": "Which acquisition channel should a solo founder fund for the first 90 days of a $29/mo B2B tool?",
+  "objective": { "metric": "90-day profit", "unit": "USD", "direction": "max" },
+  "samples": 20000,
+  "seed": 7,
+  "variables": {
+    "budget": { "dist": "const", "value": 3000, "source": "builder profile: self-financed $3k" },
+    "price": { "dist": "const", "value": 29 },
+    "months_retained": { "dist": "triangular", "low": 3, "mode": 7, "high": 14, "source": "SaaS SMB churn benchmarks; no own data yet", "question": "How many months does a paying customer stay (median)?" },
+    "ads_cpc": { "dist": "lognormal", "p10": 1.2, "p90": 4.5, "source": "B2B SaaS search CPC ranges", "question": "What is the real cost per click in our keyword set?" },
+    "ads_conv": { "dist": "triangular", "low": 0.004, "mode": 0.012, "high": 0.03, "source": "click→paid benchmark", "question": "What share of ad clicks become paying customers?" },
+    "news_cost": { "dist": "uniform", "low": 600, "high": 1500, "source": "3 newsletter rate cards", "question": "What do the three target newsletters actually charge per placement?" },
+    "news_reach": { "dist": "lognormal", "p10": 4000, "p90": 25000 },
+    "news_conv": { "dist": "triangular", "low": 0.0005, "mode": 0.0015, "high": 0.004, "question": "What share of newsletter readers convert to paid?" },
+    "seo_months_to_rank": { "dist": "discrete", "values": [2, 4, 8], "weights": [0.2, 0.5, 0.3], "question": "How long until our posts rank for the target terms?" },
+    "seo_customers_per_month_ranked": { "dist": "triangular", "low": 2, "mode": 8, "high": 25 }
+  },
+  "correlations": [
+    { "a": "ads_conv", "b": "news_conv", "rho": 0.5, "note": "both depend on how well the landing page converts" },
+    { "a": "ads_conv", "b": "months_retained", "rho": 0.3, "note": "better-fit customers convert and stay" }
+  ],
+  "derived": {
+    "ltv": "price * months_retained"
+  },
+  "options": [
+    { "id": "paid-search", "label": "Paid search", "value": "(budget / ads_cpc) * ads_conv * ltv - budget",
+      "gates": [ { "label": "Spend within budget", "family": "Budget", "expr": "budget <= 3000" } ] },
+    { "id": "newsletters", "label": "Newsletter sponsorships", "params": { "placements": 2 },
+      "value": "placements * news_reach * news_conv * ltv - placements * news_cost",
+      "gates": [ { "label": "Spend within budget", "family": "Budget", "expr": "placements * news_cost <= budget", "tolerance": 0.05 } ] },
+    { "id": "seo-content", "label": "SEO content (founder time)", "params": { "content_cost": 600 },
+      "value": "max(0, 3 - seo_months_to_rank) * seo_customers_per_month_ranked * ltv - content_cost" },
+    { "id": "do-nothing", "label": "Escape hatch: no paid channel, founder-led outreach", "value": "6 * ltv * 0.8 - 0" }
+  ],
+  "profiles": {
+    "bootstrapper": { "variables": { "budget": { "dist": "const", "value": 300 } } },
+    "funded": { "variables": { "budget": { "dist": "const", "value": 15000 } } }
+  }
+}
