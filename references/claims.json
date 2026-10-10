@@ -343,6 +343,30 @@
       ],
       "json": "bounded_minus_solo",
       "max": 0
+    },
+    {
+      "id": "rpg-pilot-revised-bounded-tests-stronger",
+      "claim": "In the RPG pilot, every revised bounded run's own tests scored a higher mutation score (0.80-1.00) than every scored run of Opus alone (0.27-0.47)",
+      "source": "docs/decisions/2026-10-10-bounded-delivery.md",
+      "command": [
+        "node",
+        "-e",
+        "const D='./test-framework/outcome-evals/results/';const rows=f=>require(D+f).rows;const solo=['2026-10-10-rpg-pilot.json','2026-10-10-rpg-pilot-r2.json','2026-10-10-rpg-pilot-r3-solo.json'].flatMap(rows).filter(r=>r.arm==='solo');const nb=rows('2026-10-10-rpg-pilot-r3-bounded.json');const m=R=>R.map(r=>r.probes&&r.probes.mutation&&r.probes.mutation.score).filter(x=>typeof x==='number');console.log(JSON.stringify({min_bounded_minus_max_solo:+(Math.min(...m(nb))-Math.max(...m(solo))).toFixed(3)}))"
+      ],
+      "json": "min_bounded_minus_max_solo",
+      "min": 0.01
+    },
+    {
+      "id": "rpg-pilot-revised-bounded-judge-gap",
+      "claim": "The revised bounded method still trails Opus alone on the blind founder judge (mean 23.3 vs 25.2 of 30, 3 vs 5 runs), narrowed from 3.9 points before the revision",
+      "source": "docs/decisions/2026-10-10-bounded-delivery.md",
+      "command": [
+        "node",
+        "-e",
+        "const D='./test-framework/outcome-evals/results/';const rows=f=>require(D+f).rows;const solo=['2026-10-10-rpg-pilot.json','2026-10-10-rpg-pilot-r2.json','2026-10-10-rpg-pilot-r3-solo.json'].flatMap(rows).filter(r=>r.arm==='solo');const nb=rows('2026-10-10-rpg-pilot-r3-bounded.json');const m=R=>R.reduce((a,r)=>a+r.judge_total,0)/R.length;console.log(JSON.stringify({bounded_minus_solo:+(m(nb)-m(solo)).toFixed(2)}))"
+      ],
+      "json": "bounded_minus_solo",
+      "max": 0
     }
   ]
 }

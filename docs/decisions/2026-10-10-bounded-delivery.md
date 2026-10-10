@@ -343,3 +343,45 @@ The mutation floor held in one of two bounded runs (0.87). In the other, the bui
 - Give the brief's "done when" a check for each founder deliverable the request names, so that breadth is held to a check and not dropped. Then re-measure the judge gap.
 - Make "own tests pass" a gate before the harden step ends, not just an instruction.
 - Production stays on the full changeset (the promotion rule needs no loss on the judge, and there is a loss).
+
+## Result: RPG founder pilot, round 3 (revised bounded method), 2026-10-10
+
+What changed after round 2:
+- The brief gives every deliverable the request names its own done-when check, documents included.
+- The build's own tests must pass before it stops.
+
+Round 3 ran three revised bounded runs and two more runs of Opus alone. Results:
+- `test-framework/outcome-evals/results/2026-10-10-rpg-pilot-r3-bounded.json`
+- `test-framework/outcome-evals/results/2026-10-10-rpg-pilot-r3-solo.json`
+
+| Arm | Runs | Solved all hidden checks | Judge (of 30) | Mean cost | Mean wall time | Mean source lines | Mutation score of own tests |
+|---|---|---|---|---|---|---|---|
+| Opus alone, rounds 1–3 | 5 | 4/5 | 25, 24, 25, 27, 25 (mean 25.2) | $4.30 | 19.0 min | 1,385 | 0.47, 0.27, 0.40; two runs shipped a failing test of their own |
+| Bounded, before the revision | 3 | 3/3 | 23, 20, 21 (mean 21.3) | $2.86 | 15.8 min | 602 | 0.27, one run with failing own tests, 0.87 |
+| Bounded, revised | 3 | 3/3 | 24, 23, 23 (mean 23.3) | $3.74 | 13.7 min | 719 | 0.93, 1.00, 0.80; own tests pass in every run |
+
+Revised bounded against Opus alone (`compareSamples`, 3 runs against 5):
+- judge −1.9 points, CI [−2.9, −0.9], p = 0.088;
+- cost −$0.56, CI [−1.66, 0.55], p = 0.50;
+- hidden-check score +0.07, p = 1.
+
+Revised against earlier bounded runs: judge +2.0, CI [0.3, 3.3], p = 0.31.
+
+**Verdict.**
+- **What the revision fixed:**
+  - The judge gap narrowed from 3.9 to 1.9 points.
+  - The test-strength problem is gone: every revised run's own tests pass. Their mutation scores (0.80–1.00) are above every scored run of Opus alone (0.27–0.47).
+  - The bounded method still solved every hidden check in every run, 6 of 6 across both versions.
+  - It is the fastest arm on wall time.
+- **What it did not fix:** it still trails Opus alone on the blind founder judge, by about 2 points of 30. That gap is not established at p < 0.05.
+- **Cost:** it no longer differs from Opus alone in a way this sample can detect.
+
+**Decision:** prototype and MVP keep the bounded method. Its measured advantages are correctness (hidden checks), test strength and speed.
+
+Production stays on the full changeset, because the promotion rule needs no judge loss and there is still about a 2-point one. The next lever is the judge items every revised run still missed:
+- the delivery estimate;
+- name and voice;
+- art direction;
+- environments, feature flags and launch posts, which Opus alone also misses in nearly every run.
+
+Pilot spend across the three rounds, builds plus judge: $57.49 of the $60 cap.
