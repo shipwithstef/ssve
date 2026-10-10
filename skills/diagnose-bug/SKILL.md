@@ -135,7 +135,7 @@ bash hooks/svc-gemini-context-check.sh
 ```
 Blocks at POOR tier (>4 MB chat JSON). Diagnosis requires holding spec + code + reproduction in attention simultaneously — impossible at POOR tier. On Claude Code this is a no-op. See [references/gemini-context-budget.md](../../references/gemini-context-budget.md). G1 from 2026-04-19 WI-085 audit.
 
-See references/process.md for "0. Task Graph Setup — MANDATORY" (full detail moved verbatim).
+**0. Task Graph Setup — MANDATORY** — MANDATORY before any diagnosis: make sure `.svc/lane-tasks-<WI>.json` holds the task graph for this lane and Task {T} has its `process_tasks`. If the file and process_tasks already exist, skip setup and hydrate; if the file exists without them, add only Task {T}'s process_tasks (never overwrite the file); if there is no file, initialize it with `node scripts/task-graph.mjs init` and populate it. Update the file before the task system on each completion, and do not mark Task {T} completed while process tasks remain open. Details: `references/process.md`.
 
 ### 0.3. Bug-Domain Classification — MANDATORY FIRST HYPOTHESIS GATE
 
@@ -167,9 +167,9 @@ If a SKIP comment explains WHY a test was skipped or is marked un-skipped, that 
 
 **WI-087 archetype (2026-04-19):** the spec at `e2e/specs/journeys/WI081-sop-friendly-toggle.spec.ts:150-170` had a SKIP-comment block explicitly naming the root cause ("test account is TEAM MEMBER, not OWNER"). Every investigation round (Base44 AI × 2, Claude) missed it because we anchored on "the upstream WI-085 fix should have resolved this" instead of reading the test's own prior documentation.
 
-See references/process.md for "0.4. Pre-Lock Rejection — reject WIs with pre-specified fixes" (full detail moved verbatim).
+**0.4. Pre-Lock Rejection — reject WIs with pre-specified fixes** — Before reading the spec or code, scan the WI file for pre-specified fixes (`## Proposed fix/solution`, `## Plan`, `## Resolution`, diff or code fences proposing changes, "Option A (preferred)", PR-body or commit drafts) and HALT if any are present; `## Symptom`, `## Reproduction`, `## Evidence`, `## Impact`, open questions and outcome-style ACs are fine. If the WI came from a `BLOCKING_DISCOVERY`, external report or earlier pattern-match, strip the fix proposal and commit `chore(wi-###): strip pre-locked fix per diagnose-bug 0.4`; if the user authored or anchored the fix, ask once whether to strip it (recommended) or run `--retroactive` validation. Never proceed silently with a pre-locked conclusion; skipped under `--retroactive`. Details: `references/process.md`.
 
-See references/process.md for "0.5. Spec/Journey/AC Anchor — MANDATORY BEFORE ANY CODE EXPLORATION" (full detail moved verbatim).
+**0.5. Spec/Journey/AC Anchor — MANDATORY BEFORE ANY CODE EXPLORATION** — MANDATORY before opening any code (when `docs/specs/` exists): read the relevant journey step(s) and ACs (copy the covering AC verbatim, or record a spec gap), answer who the persona is, what they were trying to do, what the spec says SHOULD happen, and whether this is a code defect or a spec gap. Then write a 2-4 file reading list derived from the spec, read only those files (NEVER launch a broad Explore subagent), classify each finding as match, drift or gap, and file independent surprises as new WIs per Step 5.5. Details: `references/process.md`.
 
 ### 0.6. Persistence Bisect — MANDATORY for empty/zero visibility symptoms
 
@@ -264,7 +264,7 @@ Summarize:
 
 If true root cause is still unknown, say so plainly and log the current best hypothesis.
 
-See references/process.md for "4.4. Pillar Revisit Audit — MANDATORY" (full detail moved verbatim).
+**4.4. Pillar Revisit Audit — MANDATORY** — MANDATORY before proposing a fix: walk all 8 pillars in `references/pillars-coverage-matrix.md` (product fit, journey, AC, UX, UI, tech architecture, cost model, operations) and record `affected`, `unaffected` or `unknown` with one-line evidence under **Pillar Revisit Audit:** in the work item. `unaffected` means you opened the artifact and confirmed; "probably fine" is a self-verify failure. Affected pillars are bundled into the fix or filed as follow-up WIs, and unresolved ones block close-out. Then sync `eval_matrix` in `.svc/lane-tasks-<WI>.json` (`UPDATED - WI-NNN`, `UNCHANGED - VERIFIED - <file:line>`, or `N/A - <reason>`); the PreToolUse eval gate blocks `TaskUpdate(completed)` until all 8 entries are non-null. Details: `references/process.md`.
 
 ### 4.5. Pattern scan — MANDATORY
 
@@ -334,7 +334,7 @@ Specify:
 - behavior to change
 - whether this is a code-only fix or requires spec/journey updates
 
-See references/process.md for "5.5. Register Discoveries — MANDATORY" (full detail moved verbatim).
+**5.5. Register Discoveries — MANDATORY** — MANDATORY before defining proof of fix: if the diagnosis surfaced several independent corrections (root-cause fix, pattern-scan siblings, pillar follow-ups, spec/journey drift, missing ACs or e2e), decompose them, create a WI file for each (canonical schema, heading `# WI-NNN: title`, `Status: identified`, `Source: diagnose-bug WI-<parent>`), update `docs/specs/work-items/INDEX.md`, rank them (the reported bug first) and point `**Next:**` at the top child. NEVER ask the user "implement or file?"; if there is only one correction, write "Register Discoveries: single correction - no decomposition needed." and continue to Step 6. Details: `references/process.md`.
 
 ### 6. Define proof of fix
 
@@ -385,7 +385,21 @@ See [references/advanced-diagnosis.md](references/advanced-diagnosis.md#retroact
 
 Regression briefs should explicitly capture the last-known-good behavior and how confidence in that expectation was established.
 
-See references/iron-law-no-fixes-without-root-cause.md for "Iron Law: No Fixes Without Root Cause" (full detail moved verbatim).
+## Iron Law: No Fixes Without Root Cause
+
+**Do not propose a fix until the root cause is identified.** A patch without root-cause understanding may fix only the symptom, introduce bugs in adjacent code, or mask a deeper architectural problem.
+
+1. **Reproduce** (Step 1).
+2. **Hypothesize** - a concrete, falsifiable hypothesis about the root cause.
+3. **Scope lock** - restrict investigation to the smallest relevant subsystem (`scripts/worktree.sh freeze <directory>` if available) so you do not "fix" unrelated code.
+4. **Trace** the data flow end to end. When the fault surface spans components (API -> service -> DB -> response), add logging at EVERY component boundary in one pass, run once, and read all boundary logs together.
+5. **Verify** with code evidence that confirms or refutes. For cross-system flows, the probe needs both a confirmation and a falsification check and must pass `scripts/validate-cross-system-probe-evidence.mjs`.
+6. **If refuted**, form a new hypothesis. Maximum 3 attempts, then escalate.
+7. **If confirmed**, go to Step 5 (smallest safe fix).
+
+**3-attempt escalation:** after 3 failed hypotheses, STOP investigating and do NOT start guessing fixes. Report what was tried, what was ruled out and the best current hypothesis; say whether this looks like a design problem (wrong architecture, especially if all 3 targeted code-level causes) or a code problem; then ask the user for domain knowledge or pair debugging.
+
+Common root-cause patterns (race, null access, state-machine violation, stale cache, schema mismatch, off-by-one) with verification tips: `references/iron-law-no-fixes-without-root-cause.md`.
 
 ## What Not To Do
 
@@ -400,7 +414,7 @@ See references/iron-law-no-fixes-without-root-cause.md for "Iron Law: No Fixes W
 - **Do not launch a broad Explore subagent before reading the spec** — the spec names the relevant components; read them directly with Read/Grep. Broad exploration without spec context costs 10x more and answers the wrong question ("what does the code do?" instead of "does the code match the spec?")
 - **Do not derive expected behavior from the broken code** — broken code describes actual behavior, not expected. Expected behavior comes from spec/journey/AC or user intent, never from reading what the code currently does and calling that correct
 
-See references/routing-after-this-skill.md for "Routing After This Skill" (full detail moved verbatim).
+**Routing After This Skill** — Implementation goes to `plan-changeset` or the direct execution flow; a user-facing or admin-facing bugfix MUST run `write-e2e` before close-out; drift goes to `sync-spec-code`; a missing capability goes to `validate-feature`; retroactive mode chains `write-e2e` -> `review-gate` -> `land-changeset` -> `verify-promotion`. With `--diagnose-only`, emit a Changeset Brief (file, line, before/after, rationale, confidence, test surface), set Tasks 2-3 to `manual` and mark Task 1 completed. Every output MUST end with the `**Next:**` trailer. Details: `references/routing-after-this-skill.md`.
 
 ## Pipeline Continuation
 

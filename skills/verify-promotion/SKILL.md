@@ -134,7 +134,7 @@ verify-promotion. If running sub-skills in the same session, they share this
 context. If spawning as subagents, pass the file paths explicitly — do NOT let
 each sub-skill independently discover artifacts by scanning `docs/specs/`.
 
-See references/restart-boundary-and-escalation.md for the Restart-Boundary Continuation (WI-552) detail, Verification Escalation Ladder, V2 Exhaustion Log, classification rules, and AI-first enforcement.
+**Restart-Boundary Continuation (WI-552) and Verification Escalation Ladder** — First run `node scripts/resolve-continuation.mjs status --wi "$WI"`. With no baton, verify normally and launch no new session. With a `deploy_stamped` or retryable `blocked` baton, this run is the lifecycle controller: run `reconcile` and launch EXACTLY ONCE, never remap the host silently, and on `launched` STOP. A `capability_limited` block is reported as the single blocker. In the launched child session (`SVC_SESSION_ID` matches the baton), run ONLY the declared verification tasks and close with `resolve-continuation.mjs consume --wi "$WI" --result <structured JSON>`; free-text results and stale session ids are freshness violations. Verification is AI-first: try V0 static, V1 live DOM, V2 live interaction in order, and V3 user delegation is the LAST resort (HARD-GATE AP-31), allowed only with a V2 Exhaustion Log listing every V2 mechanism tried and why it failed. Functional claims are never V3 by default; aesthetic claims and structural platform constraints may be V3. `review-gate` G7 FAILs a functional claim that ends at "user confirmed" without that log. Confidence tiers: `VERIFIED` (V0+V1+V2), `VERIFIED-L2` (partial V2 with log), `VERIFIED-USER` (V3 with justification and log), `UNVERIFIED`. Details: `references/restart-boundary-and-escalation.md`.
 
 ## Multi-PR Campaign Sampling
 
@@ -191,7 +191,7 @@ If the only evidence is bundle-grep/static proof, write `Verification tier: V0`
 and do not use unqualified `VERIFIED` or `complete` wording for browser-visible
 work.
 
-See references/report-and-g7-review.md for the Verification Report and G7 Review.
+**Verification Report and G7 Review** — Compile the report from the manifest reference, sync-spec-code results, AC/QA/E2E coverage, responsive evidence for browser-visible features, campaign samples (3+ shipped items) or a `single_lane_summary`, and findings. G7 passes only with no unresolved critical/high drift, complete or justified AC coverage, current QA/E2E/responsive evidence, and spec/journey state matching what shipped; then mark `VERIFIED-L1` (structural, visual and manual QA), `VERIFIED-L2` (structural and visual) or `VERIFIED-L3` (structural only; for browser-visible features only when visual verification is blocked by a documented pre-existing issue). On failure route back: behavior bug to `diagnose-bug` or the execution/planning path, spec mismatch to `write-spec`, journey mismatch to `write-journeys`. Details: `references/report-and-g7-review.md`.
 
 ### Auto-Invoke On-Demand Skills
 
@@ -207,7 +207,7 @@ After G7 passes and the WI is marked VERIFIED, check for post-completion signals
 If any on-demand skill is inserted, update `.svc/lane-tasks-<WI>.json` with the new task (or create a new WI if the current one is already VERIFIED). Log the insertion as a `taste` decision in `.svc/pipeline-decisions.jsonl`.
 Validate the milestone refresh trigger with `node scripts/check-journey-refresh-trigger.mjs --state <state.json>` before skipping it.
 
-See references/visual-baseline-promotion.md for Post-Verification: Visual Baseline Promotion.
+**Post-Verification: Visual Baseline Promotion** — If a track-visuals diff report exists and G7 passed, take the CHANGED entries marked intentional and check each screen's baseline with `git log -1 --format=%ci -- docs/specs/visuals/baseline/<screen>.png`. If another WI promoted it after this branch point, re-capture ONLY those screens against current main first; then run track-visuals in `update` mode. Afterwards delete screenshot files (`.png/.jpg/.webp`) from `.svc/visuals/<WI>/` but keep reports, manifests and logs. Skip when there are no visual changes or no browser-visible surface. Details: `references/visual-baseline-promotion.md`.
 
 ## Post-Verification: Landing-tagged WI handler (WI-139)
 
@@ -238,7 +238,7 @@ landing_visual_receipt:
 
 The tier-1 validator `validate-landing-side-by-side-exists.sh` enforces that any landing/marketing-page-tagged WI in VERIFIED state has at minimum the pre-implementation artifact on disk.
 
-See references/post-verification-canary-and-doc-sync.md for Canary Monitoring and Document Sync (through TODOS.md Cleanup).
+**Canary Monitoring and Document Sync** — If the feature has a live URL, capture a pre-deploy baseline BEFORE deploying (desktop and mobile screenshots, console errors, load time per journey page), then check every 60 seconds for 5 minutes minimum and compare to baseline. Alert levels: CRITICAL page fails to load (stop and report), HIGH new console errors, MEDIUM load time at least 2x, LOW new 404s; alert only on patterns persisting 2+ checks. Finish with a per-page health report and verdict HEALTHY, DEGRADED or BROKEN. For corrective, regression, deploy-affecting or acceptance-critical work, also rerun the same proof post-promotion per `references/pre-post-validation-loop.md` and classify the delta. Then sync docs: read only docs the diff could affect, auto-update factual items (versions, paths, commands), queue narrative changes for user approval, check README/CLAUDE.md/CHANGELOG/VERSION consistency, and clean up TODOS.md (mark completed items, add new TODO/FIXME/HACK from the promotion commit). Details: `references/post-verification-canary-and-doc-sync.md`.
 
 ### VERSION Guard
 
@@ -278,7 +278,7 @@ rather than editing canonical version state during verification.
 
 This closes the loop — documentation matches shipped reality.
 
-See references/post-verification-learnings-profile.md for Log Learnings and Update Builder Profile.
+**Log Learnings and Update Builder Profile** — Append operational discoveries to `docs/learnings/learnings.jsonl` (date, skill, feature, learning, confidence, saves_minutes). After a successful verification, update `~/.svc/builder-profile.md`: add the project to history, then update skills, financial context, social presence, patterns (comparing against past projects) and gap analysis, and append a changelog line. If the profile file does not exist, skip the profile update. Details: `references/post-verification-learnings-profile.md`.
 
 ## What Not To Do
 
@@ -286,7 +286,16 @@ See references/post-verification-learnings-profile.md for Log Learnings and Upda
 - Do not skip sync-back into spec/journey state
 - Do not treat passing tests alone as sufficient if drift remains
 
-See references/test-quality-audit.md for the Test Quality Audit.
+**Test Quality Audit** — After tests pass, audit test QUALITY: a passing test that proves nothing creates false confidence.
+
+| Check | Look for | Severity |
+|---|---|---|
+| Disabled tests | `.skip()`, `@Disabled`, `xit(`, `xdescribe(` on requirement-linked tests | BLOCKER |
+| Circular tests | System generates its own expected values | BLOCKER |
+| Assertion strength | `toBeDefined()` / `!= null` where a value assertion is needed | WARNING |
+| Expected value provenance | Expected value came from the system under test, not the spec or AC | BLOCKER |
+
+Test quality blockers override an otherwise passing verification; green CI with circular tests is a false green. Reference copy: `references/test-quality-audit.md`.
 
 ## Pipeline Continuation
 

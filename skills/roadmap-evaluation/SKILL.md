@@ -147,7 +147,7 @@ Inputs found:
   ☑/☐ staging-plan.md — staging recommended: yes/no
 ```
 
-See references/bootstrap-mode.md for Step 0b Bootstrap Mode.
+**Step 0b: Bootstrap Mode** — When the builder has no project artifacts, do not guess a roadmap. Write a bootstrap checklist to `docs/specs/roadmap.md` (frontmatter `mode: bootstrap`, `status: incomplete`, `missing_inputs` list) that names what to create in order: builder profile via `/mine-builder`, vision via `/write-vision`, work items, and project state (auto-created). Then STOP and do not proceed to Steps 1-5; re-run `/roadmap-evaluation` once at least the builder profile and vision exist. Details: `references/bootstrap-mode.md`.
 
 ### Step 1: Extract and Normalize
 
@@ -223,7 +223,7 @@ prerequisite for one that does.
 | `growth-ready` | Core product stable enough to invest in growth | Analytics, referral, content |
 | `prerequisite` | No direct revenue — enables a revenue milestone | Auth, data model, API layer |
 
-See references/steps-3-to-6.md for Steps 3-6: estimate costs, project timeline, risks and gaps, assemble output.
+**Steps 3-6: Costs, Timeline, Risks, Output** — Step 3: estimate per milestone agent cost (skill invocations times a token-cost tier), infrastructure cost (free-tier-first) and one-time/third-party cost; when cumulative monthly burn exceeds `budget_monthly`, emit a BUDGET WALL warning with options (defer, `/stage-revenue`, cut scope, switch to Sonnet). Step 4: convert sizes (XS=2h, S=4h, M=8h, L=20h, XL=40h) into weeks using `hours_weekly`, give optimistic 0.8x, realistic 1.0x and pessimistic 2.0x dates (calibrate to builder history if present), and if first revenue is over 8 weeks out emit a TIMELINE WARNING recommending `/stage-revenue`. Step 5: flag skill gaps, external blockers, vision-backlog gaps (unplanned vision goals and orphan work items) and abandonment patterns from the builder profile. Step 6: write `docs/specs/roadmap.md` with the frontmatter (budget, hours, first_revenue_date, milestones, cost, confidence, inputs_found), Summary, per-milestone sections with metadata, work items table and risks, Risks and Gaps, Cost Breakdown and Timeline tables. Details and templates: `references/steps-3-to-6.md`.
 
 ### Step 7: Present to Builder
 

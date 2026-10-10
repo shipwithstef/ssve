@@ -161,7 +161,7 @@ naturally.
 - **No corporate speak** — "What are your core competencies?" → "What are you good at?"
 - **Infer before asking** — if the user said "I'm a devops engineer at a startup", you already know: technical (infra), employed, probably Linux/AWS/Docker. Don't ask what they already told you.
 
-See references/mode-1-mining-steps.md for Mode 1 Steps 3-6 (social mining, per-platform capture, project history, pattern detection, gap analysis).
+**Mode 1 Steps 3-6: Mining** — Step 3: capture social presence for every platform the builder has, even if irrelevant to the current project (account age, followers, engagement quality, niche, posting frequency, paid tiers, content history, conversion history); engagement beats follower count, and account age and paid subscriptions are assets. Step 4: record each past project (what, when, stack, furthest milestone, revenue, honest reason it ended, reusable assets, what they would change), including side projects. Step 5: detect patterns only from 2+ projects, each with an id, confidence 1-10, observation count, source and pipeline action. Step 6: write a gap analysis (current capabilities, gaps blocking the next milestone, concrete recommendations such as tools and skills). Details: `references/mode-1-mining-steps.md`.
 
 ### Step 7: Write the Profile
 
@@ -169,7 +169,7 @@ Write `~/.svc/builder-profile.md` using the full template below.
 
 ---
 
-See references/builder-profile-template.md for the full Builder Profile Template.
+**Builder Profile Template** — `~/.svc/builder-profile.md` has these sections in order: Financial Context, Time Context, Skills & Strengths, Team & Network, Distribution & Social Presence (one subsection per platform), Existing Infrastructure, Business Situation, Strategic Goal, Project History, Builder Patterns (empty on first run, filled by the pipeline), Tool & Capability Gap Analysis, and Changelog. Mark unknown fields as unknown rather than inventing them. Details and field prompts: `references/builder-profile-template.md`.
 
 ## Mode 2: Change-Check
 
@@ -280,7 +280,7 @@ Update mode instead of writing directly.
 
 ---
 
-See references/profile-pipeline-effects.md for how the profile changes the pipeline, revenue jump-in points, social presence data, and key principles.
+**Profile Pipeline Effects** — Downstream skills adapt to the profile: no capital means free tiers and quick ships, an existing audience allows a smaller MVP, dormant channels are not launch plans, and no presence means SEO or marketplace distribution. Revenue advice follows stages ($0-1K reverse-engineer a winner, $1-3K double down and register an entity, $3-10K build the real product, $10K+ scale). Key principles: infer before asking, one cluster of questions at a time, the profile describes the person not the project, honest gaps beat invented answers, and patterns need evidence from 2+ projects. Details: `references/profile-pipeline-effects.md`.
 
 ## What This Produces
 

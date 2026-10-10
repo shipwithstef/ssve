@@ -152,19 +152,19 @@ full documents. Tier 3 personas are summarized as lightweight "Future Persona" s
 
 ---
 
-See references/mode-1-build-refresh.md for the full Mode 1 build/refresh procedure (Phases 1-5).
+**Mode 1: Build / Refresh Personas** — Read vision, challenge narratives, feature specs and the existing PERSONA_INDEX in full (Phase 1), cluster challenges into 3-7 persona archetypes and get user confirmation (Phase 2), write one file per persona with the fixed section structure including a 2026 world, lifecycle instances, skepticism, patience, trust triggers and skill implications (Phase 3), write `PERSONA_INDEX.md` with the lifecycle coverage matrix (Phase 4), then record vision gaps in its Vision Feedback section. NEVER edit `vision.md` directly; present findings to the user instead (Phase 5). Details: `references/mode-1-build-refresh.md`.
 
-See references/mode-2-skill-audit.md for the Mode 2 skill audit procedure.
+**Mode 2: Skill Audit** — On "persona audit" style requests, read all persona files and each consuming skill (write-journeys, copywriting, cro, onboarding, signup, popups, content-strategy) and judge whether it serves different personas or treats users as identical. Findings must be specific, tied to a named persona, and ranked by impact; these are recommendations only, so do not change skills. Save the result to `docs/specs/personas/SKILL_AUDIT.md` with a datestamp. Details: `references/mode-2-skill-audit.md`.
 
-See references/mode-3-add-persona.md for the Mode 3 add-new-persona procedure.
+**Mode 3: Add New Persona** — When the user describes a missing user type, load existing personas, challenges and vision, then interview the owner ONE question per message (identity, background, tools and budget, goals, fears, trust triggers, and how they differ from existing personas). After roughly 5-8 answers, draft the persona with the Mode 1 template for review, assign the next `P[N]` ID, write `docs/specs/personas/P[N]-name.md`, update `PERSONA_INDEX.md`, and log any vision gap. Details: `references/mode-3-add-persona.md`.
 
-See references/mode-4-expand-persona.md for the Mode 4 expand-persona procedure.
+**Mode 4: Expand Persona** — For a thin persona, read its file and flag generic or vague sections (world, skepticism, patience, trust triggers, touchpoints, skill implications). Ask the owner 1-2 targeted questions per thin section, update only the thin parts and show the diff, then check the cascade: overlap with other personas, changed skill guidance, new vision gaps. Details: `references/mode-4-expand-persona.md`.
 
-See references/mode-5-interview.md for the Mode 5 interview procedure.
+**Mode 5: Interview** — Interview the product owner instead of building artifacts: load all personas, vision and challenges, then ask one question at a time across five categories (reality check on existing personas, who is missing, what is wrong, competitive landscape, product implications). Follow the conversation rather than a template, then synthesize key insights, persona updates needed, new persona candidates, vision feedback and affected skills. Details: `references/mode-5-interview.md`.
 
-See references/mode-6-discover-gaps.md for the Mode 6 persona-gap discovery procedure.
+**Mode 6: Discover Persona Gaps** — Reason from product to users: load personas, the Lifecycle Coverage Matrix, feature specs and the journey analysis sections (ungrounded preconditions, "missing persona" findings), then run six gap analyses (entity types, feature touchpoints, lifecycle stages, progression dead ends, new features, journey-driven gaps). Rank candidates in a gap report, ask the user which to pursue, route to Mode 3 (new) or Mode 4 (expand), and mark skipped ones "reviewed, not needed" in `PERSONA_INDEX.md`. Details: `references/mode-6-discover-gaps.md`.
 
-See references/mode-7-tiered-auto-discovery.md for the Mode 7 tiered auto-discovery procedure (Phases 1-6).
+**Mode 7: Tiered Auto-Discovery** — Read the product's specs, entity list and flows without asking, propose personas as Tier 1 (platform-native), Tier 2 (near-future, small specific additions) and Tier 3 (vision, needs new entities or integrations), and classify honestly. Do NOT write any files during Phase 4; the user must approve the proposal first. Then build only approved personas (Tier 3 as lightweight stubs), keep 2026 context mandatory, make Tier 2 additions specific enough to estimate, and write them to `docs/specs/personas/TIER2_BACKLOG.md`. Details: `references/mode-7-tiered-auto-discovery.md`.
 
 ## Phase Receipt Contract
 

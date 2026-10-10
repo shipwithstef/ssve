@@ -158,23 +158,23 @@ digraph feature_discovery {
 
 ---
 
-See references/process.md for "0. Task Graph Setup — MANDATORY" (full detail moved verbatim).
+**0. Task Graph Setup — MANDATORY** — MANDATORY before any validation work: make sure `.svc/lane-tasks-<WI>.json` has a Task {T} with nine `process_tasks` ({T}.1 context-scan through {T}.9 finalize). If the file and process_tasks exist, skip setup and just hydrate; if the file exists without process_tasks, add them to Task {T} only (never overwrite the file); if no file exists, run `node scripts/task-graph.mjs init .svc/lane-tasks-<WI>.json --wi <WI-###> --lane feature` and populate it. Set status with `node scripts/task-graph.mjs set-status`, update the file before the task system on each completion, and never mark Task {T} completed until all nine process tasks are completed or skipped ({T}.3-{T}.7 may be skipped only on the escape-check path). Details: `references/process.md`.
 
 ## Step 0: Context Scan
 
 Before asking a single question, scan the project for existing artifacts related to the idea.
 
-See references/step-0-context-scan.md for "What to check (in this order — high-level first, detail only when needed)" (full detail moved verbatim).
+**What to check (in this order — high-level first, detail only when needed)** — Check product-level truth first, then code: journeys (`docs/specs/journeys/*.feature.md`), personas (`docs/specs/personas/P*.md`), vision, `domain-profile.md`, and `analyze-competitors.md` (feeds K3). Read journeys in full, including their Journey Analysis gaps. Every feature spec moving to BASELINED MUST carry an `## Industry Grounding` section, checked with `scripts/lib/structured-gate-engine.mjs` against `analyze-competitors.data.json` (populated landscape blocks BASELINED unless aligned or compensated). Details: `references/step-0-context-scan.md`.
 
-See references/step-0-context-scan.md for "Concept deduplication and industry pattern matching" (full detail moved verbatim).
+**Concept deduplication and industry pattern matching** — When the scan finds related code, look for concept fragmentation: two components creating the same entity are the same feature under different names. Name the industry pattern (producer, consumer, system sides), state your diagnosis yourself instead of asking the user, and recommend consolidating duplicate names. This diagnosis replaces Q1-Q3 when the codebase already answers them. Details: `references/step-0-context-scan.md`.
 
-See references/step-0-context-scan.md for "What to do with findings" (full detail moved verbatim).
+**What to do with findings** — Surface what you found instead of re-asking: an existing spec for the idea (offer update vs. new), a matching persona (use it for Q1/Q2), an overlapping journey (name the step the feature extends), unclear vision fit (ask how it connects), or nothing at all (say "starting fresh"). Details: `references/step-0-context-scan.md`.
 
 ## Step 1: Business Questions
 
 This step behaves differently based on invocation mode.
 
-See references/step-1-business-questions.md for "Guided Mode (standalone or `--progressive` without `--auto-approve`)" (full detail moved verbatim).
+**Guided Mode (standalone or `--progressive` without `--auto-approve`)** — Ask only unresolved, consequential owner choices; skip any question the context scan, codebase, or the user's message already answers. For every question give a RECOMMENDATION and let the user Accept / Customize / Override. When confidence is low, analyze current cited evidence first; invoke `research` only if `researchDecision(question)` returns `external_research_required`. Details: `references/step-1-business-questions.md`.
 
 ### Auto Mode (`--progressive --auto-approve`)
 
@@ -214,7 +214,7 @@ Per question, call `researchDecision(question)` from `scripts/lib/research-decis
 
 Missing ordinary confidence is analysis. Repository reading, knowledge recall, and codebase answers are analysis. A numerical score alone is not evidence. Sufficient verified current cited evidence can resolve ordinary questions. Do not fabricate a completed `research` receipt when only local analysis ran.
 
-See references/step-1-business-questions.md for "Live market signals (recommended: last30days)" (full detail moved verbatim).
+**Live market signals (recommended: last30days)** — If `/last30days` is installed, run it (`/last30days "<problem> <domain> pain points complaints"`) only when an unresolved, consequential market question needs current external evidence; adequate existing evidence does not trigger a search. Use signal strength, recency, cross-platform convergence and competitor mentions for Q1-Q4/Q6, and cite the source and date in the brief. If it is unavailable, stay on analysis unless `researchDecision` returns `external_research_required`. Details: `references/step-1-business-questions.md`.
 
 ### Informed by Step 0
 
@@ -249,7 +249,7 @@ Use the template at `feature-ship-brief-template.md` for the final document form
 
 ---
 
-See references/step-3-cross-validation.md for "Step 3: Cross-Validation" (full detail moved verbatim).
+**Step 3: Cross-Validation** — Check the brief (or accepted scope) against existing personas, journeys, specs and vision, and report conflicts honestly without reopening settled decisions. New user type: flag and send to `/build-personas`. New or conflicting flow: note that `/write-journeys` must add or fix a journey. Spec conflict: warn and resolve before design. Vision misalignment: say so explicitly. Details: `references/step-3-cross-validation.md`.
 
 ## Step 3b: Ship Decision
 
@@ -288,7 +288,7 @@ sensitivity based on past project outcomes and builder patterns:
 
 Count the kill signals that fire. Each must include the specific evidence that triggered it.
 
-See references/step-3b-ship-decision.md for "Decision" (full detail moved verbatim).
+**Decision** — Count fired kill signals: 0-1 is SHIP; 2 with a stronger alternative is PIVOT; 2 with no alternative is SHIP WITH WARNINGS (attach signals as risk flags); 2+ with only K1/K6 firing because of a Builder-Profile timing constraint is DEFER; 3+ is NO-SHIP. DEFER is not an escape hatch: K2/K3/K4/K5/K7 firing means NO-SHIP, and if you cannot name a concrete milestone that would flip the signal, it is NO-SHIP. Details: `references/step-3b-ship-decision.md`.
 
 ### Decision Logging
 
@@ -311,13 +311,13 @@ node scripts/pipeline-log.mjs append \
 
 In auto mode, also log each kill signal assessment as a separate `mechanical` entry so the full reasoning is reconstructable.
 
-See references/step-3b-ship-decision.md for "NO-SHIP Evidence Package" (full detail moved verbatim).
+**NO-SHIP Evidence Package** — On NO-SHIP, produce a structured rejection, not a vague "reconsider": for every fired signal give the evidence and what would change it, then a recommendation and an "If You Disagree" clause (override needs counter-evidence for at least N-1 signals). In auto mode NO-SHIP ALWAYS stops the pipeline and presents findings; killing a feature is a User-class decision, never silent. Details: `references/step-3b-ship-decision.md`.
 
-See references/step-3b-ship-decision.md for "DEFER Protocol" (full detail moved verbatim).
+**DEFER Protocol** — A DEFER MUST name the blocking kill signal(s), the Builder-Profile constraint, a CONCRETE verifiable unblocking milestone ("after first paying customer", not "when users exist"), and a revisit trigger. Write the brief with `Status: DEFERRED`, add a `blocked-by-<milestone-slug>` row to `docs/specs/work-items/INDEX.md`, log the decision with `(Until: <milestone>)`, and halt the pipeline; no downstream skill runs. DEFER is non-destructive and still needs user confirmation. Details: `references/step-3b-ship-decision.md`.
 
-See references/step-3b-ship-decision.md for "Pivot Protocol" (full detail moved verbatim).
+**Pivot Protocol** — On PIVOT (or when the user asks for alternatives after NO-SHIP), build on what is strong, read the builder profile so alternatives fit the builder's skills, channels, time and past failures, then propose 1-3 directions (why stronger, what is preserved and sacrificed, smallest test) and let the user pick. A chosen pivot re-runs Step 1 and must pass the same kill-signal gate; an override requires counter-evidence for at least N-1 signals and keeps the NO-SHIP evidence as a risk section. Details: `references/step-3b-ship-decision.md`.
 
-See references/step-4-write-commit-and-route.md for "Step 4: Write, Commit, and Route" (full detail moved verbatim).
+**Step 4: Write, Commit, and Route** — Write the brief to `docs/specs/features/YYYY-MM-DD-<feature>-brief.md` with a `## Cross-Validation` section when P4 applies (otherwise cite existing scope; do not create a duplicate), then route by verdict: NO-SHIP stops the pipeline with the evidence package; DEFER shelves it; PIVOT re-runs with the new direction; otherwise route to brainstorming/write-spec, `/explore-solutions`, plan-changeset, `/build-personas` or `/write-journeys` by scope and risk. Insert on-demand skills (`manage-finops`, `monetization-architecture`, `find-opportunity`, `stage-revenue`, `analyze-marketing`, `research`) per signals, update `.svc/lane-tasks-<WI>.json`, and log the insertion as a `mechanical` decision. Details: `references/step-4-write-commit-and-route.md`.
 
 ## Key Principles
 

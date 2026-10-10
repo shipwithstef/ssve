@@ -188,7 +188,7 @@ node scripts/scan-deprecated-foundations.mjs --root . --path <file-or-dir> --fir
 
 Do not design through a capability blocker. Route before implementation churn.
 
-See references/adversarial-engineering-review.md for the full Adversarial Engineering Review.
+**Adversarial Engineering Review** — After the tech design is drafted, P0 challenges it interactively (max 8 issues per section). Tag every recommendation `[Layer 1]` tried-and-true, `[Layer 2]` new-and-popular (needs stronger justification), `[Layer 3]` first principles or `[EUREKA]`, plus a `[Confidence: X/10]` score (below 5 goes to an appendix unless it is a P0 production risk). Review architecture (end-to-end data flow, a System Contract Map for cross-runtime flows, feature toggles and realistic mocks for every external dependency, and a first-demo that runs locally with no credentials), code quality, tests, performance, and motion (animate only `transform`/`opacity`; animating `top`/`left`/`width`/`height`/`margin` is BANNED). ASCII diagrams for data flow, state machines, dependency graphs and pipelines are mandatory and must be updated in the same commit as the design. If the design adds 8+ new files or 2+ new classes/services, STOP and run the scope-reduction trigger: explain what is overbuilt, propose a minimal version, and ask the team whether to reduce. Details: `references/adversarial-engineering-review.md`.
 
 Cross-system flows (OAuth, hosted login, SSO, payments, webhooks, deep links) require a System Contract Map; the full rule is in that reference.
 
@@ -244,11 +244,11 @@ Identify:
 - **Testing:** What test frameworks and conventions exist
 - **Boundaries:** Where this feature touches existing code
 
-See references/step-2-5-concern-scan.md for Step 2.5 Concern Scan.
+**Step 2.5: Concern Scan** — Before architecting, run `node <SKILLS_PATH>/scripts/scan-concerns.mjs --project <repo-root> --paths <planned-or-touched-files> --json`, open each matched concern's `source_file` checklist, and fold its requirements into the matching Technical Design section. CRITICAL/HIGH matches that name a specialist in `required_skills` (e.g. `review-security`, `manage-finops`) MUST become an explicit design decision or a routed follow-on task, never left implicit. Details: `references/step-2-5-concern-scan.md`.
 
-See references/step-3-architecture-decision.md for Step 3 Architecture Decision.
+**Step 3: Architecture Decision** — Write the `## Technical Design` section: architecture summary, components table, data model, data flow, external dependencies and a Technology Decisions table (choice plus rationale). Two subsections are MANDATORY: a Cost Model (compute, storage, bandwidth, external API, background jobs, with scaling trigger points, a red line, and year-1 projections; a $0 claim must name the free-tier quotas used) and Operations & Ownership (owner, on-call, SLA/SLO, error budget, monitoring, alerting, runbook, failure modes, recovery, backup, dependency failure impact; "best effort" is valid only if stated explicitly). If the feature touches core mechanics (earn, redeem, verify, enroll, loyalty, points, reward), a Competitive Tech Alternatives table is REQUIRED, and if the landscape is populated and our tech matches no competitor, add an ADR explaining the divergence. Details: `references/step-3-architecture-decision.md`.
 
-See references/steps-4-5-feasibility-risks.md for Step 4 feasibility check and Step 5 risks and trade-offs.
+**Steps 4-5: Feasibility, Risks, Trade-offs** — Step 4 is the critical gate: build a Feasibility Matrix checking every spec AC against the design, with a `Persona pressure` column citing a concrete persona ID/path or `N/A - system-only` for user/admin-facing ACs. If an AC is infeasible, explain why, propose alternatives, and loop back to write-spec; do NOT proceed with a design that leaves ACs unsatisfied. Step 5 adds Risks (impact, mitigation) and Trade-offs (chose, over, rationale) tables. Details: `references/steps-4-5-feasibility-risks.md`.
 
 ### Step 6: Trigger G4 Review
 
@@ -285,7 +285,7 @@ Mark all planned items as `PLANNED`:
 - `PLANNED` — users table: add timezone column (migration)
 ```
 
-See references/decision-logging.md for Decision Logging.
+**Decision Logging** — After the design is written into the spec, append one entry per Technology Decisions row (type `taste` if alternatives existed, `mechanical` if obvious) with `node scripts/pipeline-log.mjs append --path .svc/pipeline-decisions.jsonl --run-id <WI-ID> --skill design-tech --phase <task-id> ...`, and log the feasibility matrix summary as a single `gate-result` entry. Details: `references/decision-logging.md`.
 
 ### Step 8: Handoff
 
@@ -378,7 +378,7 @@ node scripts/validate-design-chrome-testability.mjs --root .
 This companion rule prevents later E2E positional selector exceptions by
 requiring chrome controls to be testable before implementation starts.
 
-See references/retrieval-augmented-reasoning.md for Retrieval-Augmented Reasoning.
+**Retrieval-Augmented Reasoning** — When uncertain mid-design, do NOT guess: pause, analyze locally (grep, read the slice, installed docs, cited `references/knowledge/` nodes), incorporate the result, and continue. Invoke `research` only when `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns `external_research_required`; a new dependency or API choice is a consequential amendment, not an automatic research trigger. Log non-trivial retrievals in `.svc/pipeline-decisions.jsonl`, and never fabricate a `research` receipt when only local analysis ran. Details: `references/retrieval-augmented-reasoning.md`.
 
 ## Pipeline Continuation
 

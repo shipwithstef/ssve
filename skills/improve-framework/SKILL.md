@@ -92,7 +92,7 @@ These two skills produce DIFFERENT artifacts and should never be conflated:
 
 Reciprocal note in `skills/evolve-framework/SKILL.md` under "Scope boundary vs improve-framework".
 
-See references/step-0-locate-source.md for Step 0 locating the framework source repo.
+**Step 0: Locate the Framework Source Repo (MANDATORY FIRST STEP)** — Before anything else, find the svc framework git repo; all skill edits, proposals, `FRAMEWORK-STATE.md` updates and commits go there, never to the install copy at `<SKILLS_PATH>` or the current project repo. Resolve the skills root (`SVC_SKILLS_PATH`, else the first existing host skills dir), read `<skills root>/.source-repo`, and fall back to matching the inode of the installed `improve-framework/SKILL.md` to its owning git repo. If none is found, stop with an error rather than guessing, and clone the framework repo only if it was never cloned on this machine. After that, treat every path as relative to `$FRAMEWORK_REPO`. Details and script: `references/step-0-locate-source.md`.
 
 ## Recursion Guard
 
@@ -151,7 +151,7 @@ Read `FRAMEWORK-STATE.md` first. This tells you:
 Also read `references/knowledge/svc/CAPABILITIES.md` — our own capabilities
 in structured format. This is what you're improving.
 
-See references/step-1-5-pending-proposals.md for Step 1.5 pending proposals.
+**Step 1.5: Pending Proposals** — Before gathering new evidence, list `proposals/*.md` excluding any with `**Status:** BLOCKED` in the first 20 lines, and run `bash test-framework/evals/tier-1/validate-proposal-triage-sla.sh`: every open proposal past the `max_open_days` window in `proposals/triage.json` needs exactly one disposition (`accepted_wi`, `backlog_wi` plus reason, `rejected_reason` or `deferred_until`). A `backlog_wi` pointer is never dispatch authorization, so read that WI and its dependencies and respect freezes. If actionable pending proposals exist they ARE the evidence: skip Steps 2-3 and go to Step 5 (do not re-diagnose); with several, ask the user or take the newest. If only BLOCKED or no proposals exist, continue to Step 2. Also emit a one-line reminder for placeholder rules (`source: local`, `last_evaluated` null) in `skills-manifest.json`; these are non-blocking. Details: `references/step-1-5-pending-proposals.md`.
 
 ### Step 2: Gather Evidence
 
@@ -282,7 +282,7 @@ If it still fails: the fix is incomplete — iterate.
 If the gap was qualitative (not testable by test-framework): require a
 cross-model review or manual verification instead.
 
-See references/improvement-record.md for the Improvement Record output artifact.
+**Output Artifact: Improvement Record** — Write `proposals/<date>-framework-improvement.md` in the framework source repo (not the current project) with sections Evidence (source, exact finding with file:line, severity), Diagnosis (root cause, category, already in FRAMEWORK-STATE.md?), Implementation (route, files, commit SHAs), Replay Verification (target, PASS/FAIL/PARTIAL, evidence) and FRAMEWORK-STATE.md Mutations. Timing: for quick-fix and direct SKILL.md edit routes write it AFTER implementation; for normal pipeline routes write it BEFORE as a plan, then update with commits and replay results. The replay target must exist and pass. Details and template: `references/improvement-record.md`.
 
 ### Step 6b: Move Proposal to Done
 
@@ -296,7 +296,7 @@ git add proposals/done/<date>-framework-improvement.md && git commit -m "improve
 
 Proposals live in `proposals/` while pending. Once implemented and verified, they move to `proposals/done/` and are committed. Do NOT leave implemented proposals in `proposals/` — that directory should only contain actionable pending work.
 
-See references/step-6c-sync-remote.md for Step 6c remote sync.
+**Step 6c: Sync to Remote (MANDATORY BEFORE DECLARING DONE)** — After the Step 6b commit, push from the framework repo (`git push origin main`) and report the remote SHA and unpushed-commit count; unpushed work silently piles up otherwise. On a non-fast-forward, run `git fetch` and `git pull --rebase origin main` ONCE and retry, stopping on conflicts. If main is protected, push branch `skills/improve-framework/<date>-<slug>` and open a PR with the proposal as body; the loop is not done until the PR is open. On auth failure (`Repository not found`, 401/403), you may `gh auth switch` ONCE to the account named in the remote URL only if it already appears in `gh auth status`, then restore the previous account and name the account used. NEVER force-push (any variant) without an explicit user directive, never run `gh auth login`, create accounts, disable branch protection, or edit `~/.gitconfig` or the remote URL. Details: `references/step-6c-sync-remote.md`.
 
 ### Step 7: Mutate Framework Memory
 

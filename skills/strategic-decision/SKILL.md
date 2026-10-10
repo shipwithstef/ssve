@@ -134,7 +134,7 @@ Skip this phase if the question is clearly scoped.
 
 ## Phase 0 — Declare constraint profile (interactive)
 
-See references/phase-0-constraint-profile.md for Phase 0 steps 0a-0c (elicit constraints, comparison mode, write CONSTRAINT-PROFILE.md).
+**Phase 0a-0c: Constraint Profile** — 0a: present the 4 canonical profiles from `_shared/constraint-profiles.md` (Bootstrapper, Self-financed, Funded startup, Enterprise) plus a comparison-mode option, and let the caller pick with optional overrides; NEVER silently default. 0b: in comparison mode, run Phases 1-7 three times (Bootstrapper, Self-financed, Funded) and write `MULTI-PROFILE-DELTA.md` showing where the winner flips. 0c: write `CONSTRAINT-PROFILE.md` with the profile, overrides, declared thresholds (monthly bill, runway, reversibility) and a validity note that the decision holds ONLY for that profile. Details: `references/phase-0-constraint-profile.md`.
 
 ### 0d. Stop-gate
 
@@ -236,7 +236,7 @@ Force-generative prompts when stuck:
 
 Write OPTIONS.md with ≥10 (or ≥30 if broad domain) 1-line descriptions + category tag per option.
 
-See references/phase-2-5-escape-hatch.md for Phase 2.5 should-we-build-this escape hatch.
+**Phase 2.5: Escape Hatch (should we build this at all?)** — Before eliminating options, ask whether not solving the problem, delivering the value another way, or a reframe removes the decision (e.g. a feature competitors have that no customer uses). Append an "Escape Hatch Analysis" table (option, feasibility, impact on core journey, verdict) to `DIMENSIONS.md`. If an escape hatch is viable, SHORT-CIRCUIT to Phase 7 with the decision "don't build in original form, adopt <reframe> instead", route to `validate-feature`, and stop; otherwise proceed to Phase 3. Details: `references/phase-2-5-escape-hatch.md`.
 
 ## Phase 3 — Elimination gates
 
@@ -270,7 +270,7 @@ Compare each survivor using `_shared/product-question-format.md`: evidence, mean
 
 Write QUESTIONNAIRE.md for compatibility, with substantive per-survivor comparison blocks. Retain a Constraint Profile Validity header (profile plus overrides; identify which risks/personas change under another profile) and an Adoption Timing footer (Now / Next / Later / Never, tied to EV-MODEL.md or revisit triggers). Include funnel-impact cost evidence where relevant to Phase 5; mark unknown inputs instead of manufacturing precise values. No fixed section or competitor count.
 
-See references/phases-5-6-ev-and-adversarial.md for Phase 5 EV model and Phase 6 adversarial review.
+**Phase 5 EV Model and Phase 6 Adversarial Review** — Phase 5: for each survivor compute `EV_per_action = P(completes given friction) x LTV - cost per attempt` from the unit cost, completion rate and LTV inputs, giving EV at Y1/Y2/Y3 under Low/Base/High growth, break-even completion rate, and a sensitivity ranking; write `EV-MODEL.md` (one `EV-MODEL-<profile>.md` per profile plus `MULTI-PROFILE-DELTA.md` if comparison mode ran). Invoke `manage-finops` only optionally, when `vision.md` exists and the decision is infrastructure-cost-heavy. Phase 6: invoke `agents/strategic-reviewer` (via `scripts/dispatch-worker.sh --agent strategic-reviewer --input-paths <manifest>` on Claude Code and Kimi; inline load on Codex and Gemini) with all `docs/specs/decisions/<slug>/` artifacts, this SKILL.md, `_shared/constraint-profiles.md`, `_shared/product-question-format.md`, `references/elimination-gate-protocol.md` and relevant cited specs; the parent writes the YAML findings to `REVIEW.md`. CRITICAL findings MUST be resolved before proceeding by looping back to the flagged phase; HIGH go in DECISION.md under Why NOT alternatives; MEDIUM under Risks; LOW optional. Details: `references/phases-5-6-ev-and-adversarial.md`.
 
 ## Phase 7 — Decision synthesis
 

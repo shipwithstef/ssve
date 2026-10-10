@@ -142,7 +142,7 @@ All three feature types go through UX design, but the experience they design is 
 
 ## Process
 
-See references/process.md for "Step 1: Read The Spec, Journeys, and Personas" (full detail moved verbatim).
+**Step 1: Read The Spec, Journeys, and Personas** — Read the DRAFT feature spec (`docs/specs/features/<feature>.md`), every referenced journey, all relevant personas and `docs/specs/vision.md` to find the user stories that need screen flows, the ACs that define the experience, the UI or admin journey steps, and the personas' goals and comfort level. Also read `docs/specs/domain-profile.md` (regulated domains need consent gates and trust moments; technical domains need dense defaults) and `docs/specs/analyze-competitors.md` when they exist. Details: `references/process.md`.
 
 ### Step 1.5: Applicable interaction improvement
 
@@ -175,9 +175,9 @@ Identify every distinct screen or view the feature requires. A "screen" is any s
 
 **For Integrations:** Screens are setup wizards, connection status views, credential management forms.
 
-See references/process.md for "Step 3: State Machines Per Screen" (full detail moved verbatim).
+**Step 3: State Machines Per Screen** — Map each screen as a state machine in a `## State Machines` section with State, Description, Transitions To and Trigger columns. Every screen MUST have at least LOADING, POPULATED, EMPTY and ERROR; name the trigger of each transition and the data condition that makes a screen empty versus populated; cover offline or degraded states if relevant; and for tabs, accordions and segmented controls specify what is mounted, visible and hidden on each transition. Details: `references/process.md`.
 
-See references/process.md for "Step 4: Flow Diagrams" (full detail moved verbatim).
+**Step 4: Flow Diagrams** — Write a `## Flow Diagrams` section with at least one flow per journey scenario, showing branching points, error-recovery paths and exit points, and an AC Coverage table mapping each AC to a flow, screen and state. Details: `references/process.md`.
 
 ### Step 5: Information Hierarchy
 
@@ -234,7 +234,7 @@ Define the experience for every non-happy-path state. This is where most UX fail
 - Error copy must be actionable — "Something went wrong" is never acceptable
 - Define timeout thresholds (when does "loading" become "error"?)
 
-See references/process.md for "Step 7: Accessibility Requirements" (full detail moved verbatim).
+**Step 7: Accessibility Requirements** — Write feature-specific (not generic WCAG) accessibility decisions: keyboard navigation (tab order, shortcuts, focus management), screen reader (announcements, live regions, landmarks) and cognitive concerns (reading level, reduced motion, time limits, error prevention). Keyboard navigation MUST cover every interactive element, focus MUST be specified for modals, dynamic content and route changes, state changes from Step 3 need announcements, and every timed interaction needs an extension mechanism. Details: `references/process.md`.
 
 ### Step 8: Responsive Strategy
 
@@ -268,7 +268,7 @@ Define how the experience adapts across viewport sizes. This is behavior strateg
 - Small viewport must still satisfy all ACs — no features can be desktop-only unless explicitly specified in the spec
 - Touch target decisions must reference primary actions from Step 2
 
-See references/process.md for "Step 9: Assemble The UX Design Document" (full detail moved verbatim).
+**Step 9: Assemble The UX Design Document** — Write the full design to `docs/specs/ux/<feature-name>.md` with Status DRAFT (pending G2 review) and these sections in order: header (feature spec link, type, personas, date), Persona Trace, Screen Inventory, Signature Hook, State Machines, Flow Diagrams, Information Hierarchy, Error and Loading States, Accessibility Requirements, Responsive Strategy, AC Traceability (every AC mapped to screen, state, flow, covered Yes/Partial/No) and Open Questions. Details: `references/process.md`.
 
 ### Step 10: AC Traceability Check
 

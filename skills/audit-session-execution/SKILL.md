@@ -285,7 +285,7 @@ If no match is found, say so explicitly in the report:
 
 Do not write "unavailable" unless the host-trace search was attempted first.
 
-See references/steps-5-deep-analysis.md for Steps 5 and 5.5 (deep context and capability analysis, forensic anti-pattern sweep).
+**Steps 5 and 5.5: Deep Analysis and Forensic Sweep** — Step 5: tag every token claim `EXACT` (provider or tool exposed counts), `ESTIMATED` (inferred from artifact size, rereads, retries) or `UNKNOWN`; NEVER fabricate exact counts, and still analyze the dimensions when only estimated. Hunt for waste and context degradation per `context-budget.md`: over-reading and subagent bleed, blanket repo scans (AP-4), unwrapped untrusted content (AP-25), whole-file rewrites, idle MCP bloat, cyclic failures, silent context loss (omitted spec requirements, skipped lane steps, spec drift), unnecessary broad research, positional attention decay, and L1 to L4 load-order violations; then list missing skills/MCPs, knowledge rules, workflow phases and friction points. Step 5.5 sweep: AP-27 Ghost Skill (task said `Invoke: /skill` but the skill was never loaded) is an instant Contract FAIL; AP-26 Skill Substitution (a narrower shortcut replacing an invoked skill without surfacing the trade-off) is a Verification FAIL; AP-28 Premature User Handoff (asking the user to verify manually at the first hurdle without exhausting the V0 to V2 ladder, unless purely aesthetic or platform-blocked) is a Verification FAIL. Each failure MUST be flagged and come with a concrete enforcement constraint. Details: `references/steps-5-deep-analysis.md`.
 
 ### 6. Separate fault domains
 
@@ -299,7 +299,7 @@ Every issue must land in exactly one bucket first:
 
 Therefore, both framework-specific findings AND mechanical-enforcement proposals for agent-specific faults must feed `evolve-framework`.
 
-See references/step-7-report.md for Step 7 report template.
+**Step 7: Write the Report** — Write `proposals/<date>-session-audit-<slug>.md` with these sections: Scope, Evidence Inventory (prompt/session source, WI file, lane task graph, decision log, transcript status as `auto-discovered`, `searched host traces, none matched` or `intentionally omitted by scope`, runtime proof), Expected Contract, Actual Execution, Expected vs Actual Matrix, Dimension Scores, Token / Context Notes (exact vs estimated vs unknown), Findings (each with domain project/agent/framework-specific, severity, description, evidence, fix), Framework Gaps For evolve-framework (framework-specific only), Non-Framework Corrections, and Confidence. Details and template: `references/step-7-report.md`.
 
 ## Decision Rules
 
@@ -340,7 +340,7 @@ next concrete action: commit the changes, open a PR, merge/squash-merge to the
 target branch, run post-merge validation, or log an explicit user-approved
 `do-not-land-approved` decision in `.svc/pipeline-decisions.jsonl`.
 
-See references/rationalizations-red-flags.md for the Rationalization Table and Red Flags.
+**Rationalization Table and Red Flags** — Do not accept these excuses: "the transcript is enough" (start from the WI, lane-task graph and decision log), "the user corrected it so it's fine" (a correction is evidence of drift), "I can compute tokens from file length" (tag `ESTIMATED`), "everything bad is a framework gap" (separate project, agent and framework failures), "it felt messy" (every claim needs file or transcript evidence), and "jump to improve-framework" (only when the gap is concrete). Red flags in your own report: no Expected vs Actual matrix, exact token numbers without a source, project and framework defects mixed in one bucket, a framework gap already marked fixed in `FRAMEWORK-STATE.md`, transcript read first despite an available WI/task graph, or a transcript called unavailable without a host-trace search. Details: `references/rationalizations-red-flags.md`.
 
 ## Self-Verify
 

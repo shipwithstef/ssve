@@ -321,9 +321,9 @@ When a capability has `dependencies[]`, check those first:
 - If a dependency is V0/V1, flag: "You want X but Y is not ready. Build Y first."
 - Sequence gaps in dependency order, not just BPS order.
 
-See references/step-6-outputs-and-refresh.md for Step 6 outputs and Refresh / Diff Mode.
+**Step 6: Write Outputs, and Refresh / Diff Mode** — Write three artifacts: 6a the human-readable `docs/specs/capability-catalog.md` (executive summary, capabilities by category with frequency, maturity, Kano, convergence, BPS, coverage and gap columns, mechanic reference, P0 (BPS 25+) / P1 (BPS 18-24) gap tables, convergence alerts, journey scaffolding guide, recommendations); 6b the machine artifact `docs/specs/capability-catalog.data.json` conforming to `references/schemas/capability-catalog.schema.json` and MUST include `capabilities[]` with all 6 classification dimensions, `mechanics[]`, `journey_mappings[]`, `gap_report[]`, `convergence_alerts[]` and `build_priority_ranking[]`; 6c the domain-general subset (no project coverage data) at `references/knowledge/domains/<domain>/CAPABILITY-CATALOG.json` with a dated `.version` (stale after 30 days) and an updated `references/knowledge/INDEX.md`. With `--refresh` (auto-signaled by `refresh-competitors` when 2+ competitors change classification, convergence velocity shifts, or new universal capabilities appear), load the prior catalog, compare each capability, and emit a diff report (new, upgraded, downgraded, coverage changes). Details: `references/step-6-outputs-and-refresh.md`.
 
-See references/downstream-integration.md for the Downstream Integration Contract and query API.
+**Downstream Integration Contract and Query API** — `write-journeys` reads the machine catalog to scaffold journeys (run `node skills/write-journeys/scripts/capability-journeys.mjs --root .`, which only emits `J-CAP-*` journeys for table-stakes capabilities that stack matchers prove are implemented); `write-spec` checks spec completeness against it; `audit-coverage` uses it as the coverage checklist; `validate-feature` maps ideas to capabilities and dependency gaps. Downstream skills should query it with `node skills/catalog-domain-capabilities/scripts/query-capability-catalog.mjs` using presets `gaps`, `converging`, `top-p0`, `journey-scaffold` and filters `--journey`, `--status`, `--kano`, `--convergence`, `--category`, `--min-bps`, `--depth`, `--limit`, rather than loading the full JSON. Details: `references/downstream-integration.md`.
 
 ## Phase Receipt Contract
 
@@ -364,7 +364,7 @@ For existing products:
 4. Focus on gaps and convergence alerts
 5. **Zombie capability detection**: find capabilities in the codebase that are not in any competitor or industry norm
 
-See references/zombie-capability-detection.md for Zombie Capability Detection.
+**Zombie Capability Detection** — A zombie is a capability present in the project's code or specs but absent from the domain catalog's L1-L3 tiers (possible dead code or over-engineering). Score each: no competitor implements it +3, no journey maps to it +2, code exists but no spec +2, untouched over 6 months +1; a score of 6 or more is flagged as a zombie with a deprecation-audit recommendation. Store results in `zombie_capabilities[]` in the machine artifact. Details and detection commands: `references/zombie-capability-detection.md`.
 
 ## Self-Verify
 
