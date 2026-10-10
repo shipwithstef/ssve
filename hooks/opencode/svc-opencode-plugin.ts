@@ -69,7 +69,29 @@ function hookMode(): "advisory" | "enforce" {
   return mode;
 }
 
-async function runSvcHook(label: string, action: () => Promise<void> | void): Promise<void> {
+// Same rule as hooks/lib/hook-policy.mjs repoSettingsOff: the repo's .claude settings
+// written by scripts/svc-repo.mjs switch svc off for this repo, in advisory mode only.
+function repoSettingsOff(start: string): boolean {
+  let dir = path.resolve(start);
+  for (;;) {
+    for (const f of ["settings.local.json", "settings.json"]) {
+      try {
+        if (JSON.parse(fs.readFileSync(path.join(dir, ".claude", f), "utf8"))?.env?.SVC_REPO_MODE === "off") return true;
+      } catch { /* absent or unreadable settings do not switch svc off */ }
+    }
+    if (fs.existsSync(path.join(dir, ".git"))) return false;
+    const up = path.dirname(dir);
+    if (up === dir) return false;
+    dir = up;
+  }
+}
+
+function repoOptOut(start: string): boolean {
+  if (hookMode() === "enforce") return false;
+  return process.env.SVC_REPO_MODE === "off" || repoSettingsOff(start);
+}
+
+async function runSvcHookChecked(label: string, action: () => Promise<void> | void): Promise<void> {
   try { await action(); }
   catch (error: any) {
     if (hookMode() === "enforce") throw error;
@@ -435,6 +457,8 @@ function checkDanglingSymlinks(directory: string): void {
 export const SvcPlugin: Plugin = async ({ project, directory, worktree }) => {
   // Track edited files for batch format/typecheck at session idle
   const editedFiles = new Set<string>();
+  const runSvcHook = (label: string, action: () => Promise<void> | void): Promise<void> =>
+    repoOptOut(worktree || directory || process.cwd()) ? Promise.resolve() : runSvcHookChecked(label, action);
 
   return {
     // --- Inject svc environment variables into all shell execution ---

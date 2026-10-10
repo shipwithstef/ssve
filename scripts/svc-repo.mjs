@@ -12,6 +12,8 @@
  *     still works) or "off" with --hard (hidden everywhere).
  *   - env.SVC_REPO_MODE = "off": svc-hook-boundary skips every svc hook in advisory
  *     mode. Enforce mode ignores it, so a repo file can never switch off enforcement.
+ *     Claude Code injects the env; every other host's hooks read the same key from these
+ *     files (hooks/lib/hook-policy.mjs repoSettingsOff, and the OpenCode plugin).
  * on removes exactly those keys. Other settings are left untouched.
  */
 

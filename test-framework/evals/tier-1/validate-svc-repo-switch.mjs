@@ -106,3 +106,52 @@ test("on is a no-op when already on and never deletes an owner's own override (r
   assert.deepEqual(applyOn(roundTrip, skills), owner, "a second on changes nothing");
   assert.deepEqual(applyOn(owner, skills), owner, "on without a prior off changes nothing");
 });
+
+test("a non-Claude host sees the repo switch from the settings file alone, from any subdirectory, and enforce still wins (review #127 harness parity)", () => {
+  const home = tmp("svc-repo-host-");
+  const repo = tmp("svc-repo-files-");
+  spawnSync("git", ["init", "-q", repo]);
+  const sub = path.join(repo, "src", "deep");
+  fs.mkdirSync(sub, { recursive: true });
+  assert.equal(spawnSync(process.execPath, [script, "off", "--dir", repo]).status, 0);
+  const marker = path.join(home, "child-ran");
+  const child = path.join(home, "child.mjs");
+  fs.writeFileSync(child, `import fs from "node:fs"; fs.writeFileSync(${JSON.stringify(marker)}, "1"); process.stdout.write("{}");`);
+  const spec = Buffer.from(JSON.stringify({ command: `'${process.execPath}' '${child}'`, host: "codex", event: "Stop", timeoutMs: 5000 })).toString("base64url");
+  const run = (mode) => {
+    fs.rmSync(marker, { force: true });
+    const env = { ...process.env, HOME: home, SVC_SESSION_ID: `repo-files-${mode ?? "advisory"}` };
+    for (const k of ["SVC_HOOK_MODE", "SVC_REPO_MODE", "CLAUDE_PROJECT_DIR"]) delete env[k];
+    if (mode) env.SVC_HOOK_MODE = mode;
+    spawnSync(process.execPath, [path.join(root, "hooks/svc-hook-boundary.mjs"), "svc-fixture", "--spec", spec], { env, cwd: sub, input: "{}", encoding: "utf8", timeout: 12000 });
+    return fs.existsSync(marker);
+  };
+  assert.equal(run(undefined), false, "advisory + repo off in .claude/settings.local.json skips the hook");
+  assert.equal(run("enforce"), true, "enforce ignores the repo file");
+  assert.equal(spawnSync(process.execPath, [script, "on", "--dir", repo]).status, 0);
+  assert.equal(run(undefined), true, "svc on brings the hook back");
+});
+
+test("OpenCode reads the repo switch exactly as the shared resolver does", async () => {
+  const { repoSettingsOff } = await import("../../../hooks/lib/hook-policy.mjs");
+  const src = fs.readFileSync(path.join(root, "hooks/opencode/svc-opencode-plugin.ts"), "utf8");
+  const start = src.indexOf("function repoSettingsOff(");
+  let depth = 0, i = src.indexOf("{", start);
+  for (; i < src.length; i++) { if (src[i] === "{") depth++; else if (src[i] === "}" && --depth === 0) break; }
+  const dir = tmp("svc-repo-oc-");
+  const harness = path.join(dir, "h.ts");
+  fs.writeFileSync(harness, `import fs from "node:fs";\nimport path from "node:path";\n${src.slice(start, i + 1)}\nprocess.stdout.write(String(repoSettingsOff(process.argv[2])));\n`);
+  const cases = [["none", null], ["local-off", { "settings.local.json": { env: { SVC_REPO_MODE: "off" } } }], ["shared-off", { "settings.json": { env: { SVC_REPO_MODE: "off" } } }], ["other", { "settings.json": { env: { SVC_REPO_MODE: "on" } } }], ["broken", { "settings.json": "{not json" }]];
+  for (const [name, files] of cases) {
+    const repo = path.join(dir, name);
+    fs.mkdirSync(path.join(repo, ".git"), { recursive: true });
+    fs.mkdirSync(path.join(repo, ".claude"), { recursive: true });
+    for (const [f, v] of Object.entries(files || {})) fs.writeFileSync(path.join(repo, ".claude", f), typeof v === "string" ? v : JSON.stringify(v));
+    const sub = path.join(repo, "a", "b"); fs.mkdirSync(sub, { recursive: true });
+    const r = spawnSync(process.execPath, ["--experimental-strip-types", "--no-warnings", harness, sub], { encoding: "utf8" });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.stdout, String(repoSettingsOff(sub)), name);
+  }
+  assert.equal(repoSettingsOff(path.join(dir, "local-off", "a", "b")), true);
+  assert.equal(repoSettingsOff(path.join(dir, "broken", "a", "b")), false);
+});

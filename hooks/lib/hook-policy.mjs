@@ -47,9 +47,31 @@ export function hookPolicyWarning(result, output = process.stderr) {
 }
 
 /**
- * Per-repo opt-out (scripts/svc-repo.mjs off sets SVC_REPO_MODE=off). It applies only in
- * advisory mode; resolveHookMode already keeps an owner's enforce over any env value.
+ * The repo's own switch, read from the files scripts/svc-repo.mjs writes
+ * (.claude/settings.local.json or .claude/settings.json, env.SVC_REPO_MODE). Claude Code
+ * injects that env itself; Codex, Grok, Kimi, Gemini and Cursor do not, so the hook reads
+ * the files directly. Walks up from cwd to the repository root (a .git entry).
  */
-export function repoOptOut(env = process.env, home = env.HOME || os.homedir(), mode = resolveHookMode(env, home)) {
-  return env.SVC_REPO_MODE === "off" && mode.mode !== "enforce";
+export function repoSettingsOff(cwd = process.cwd()) {
+  let dir = path.resolve(cwd);
+  for (;;) {
+    for (const f of ["settings.local.json", "settings.json"]) {
+      try {
+        if (JSON.parse(fs.readFileSync(path.join(dir, ".claude", f), "utf8"))?.env?.SVC_REPO_MODE === "off") return true;
+      } catch { /* absent or unreadable settings do not switch svc off */ }
+    }
+    if (fs.existsSync(path.join(dir, ".git"))) return false;
+    const up = path.dirname(dir);
+    if (up === dir) return false;
+    dir = up;
+  }
+}
+
+/**
+ * Per-repo opt-out (scripts/svc-repo.mjs off). It applies only in advisory mode;
+ * resolveHookMode already keeps an owner's enforce over any env value or repo file.
+ */
+export function repoOptOut(env = process.env, home = env.HOME || os.homedir(), mode = resolveHookMode(env, home), cwd = env.CLAUDE_PROJECT_DIR || process.cwd()) {
+  if (mode.mode === "enforce") return false;
+  return env.SVC_REPO_MODE === "off" || repoSettingsOff(cwd);
 }
