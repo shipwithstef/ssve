@@ -16,6 +16,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -23,12 +24,14 @@ export function loadPlaybook(file = path.join(ROOT, "references", "harness-playb
   return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
+const subst = (str, values) => str.replace(/\{([a-z_]+)\}/g, (m, k) => (values[k] !== undefined ? values[k] : m));
+
 export function fill(argv, values) {
-  return argv.map((a) => a.replace(/\{([a-z_]+)\}/g, (m, k) => (values[k] !== undefined ? values[k] : m)));
+  return argv.map((a) => subst(a, values));
 }
 
 export function renderPrompt(playbook, values) {
-  return playbook.reference_prompt.template.replace(/\{([a-z_]+)\}/g, (m, k) => (values[k] !== undefined ? values[k] : m));
+  return subst(playbook.reference_prompt.template, values);
 }
 
 export function missingFlags(helpText, flags) {
@@ -89,6 +92,4 @@ function main(argv) {
   return 2;
 }
 
-// Main-module check that survives the symlinked install path (~/.claude/skills/...).
-const isMain = (() => { try { return Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
-if (isMain) process.exit(main(process.argv.slice(2)));
+if (isMain(import.meta.url)) process.exit(main(process.argv.slice(2)));

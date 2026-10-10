@@ -24,6 +24,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
 
 const PROFILES = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "references", "delivery-profiles.json");
 
@@ -36,6 +37,8 @@ export function checkProfile(result, profileName, file = PROFILES) {
 
 const SPECULATIVE = /\b(framework|pluggable|plug-?in system|extensib\w*|generic\w*|registry|factory|strategy pattern|abstraction layer|future[- ]proof\w*|configurable|for future use|in case we|later we (?:can|could|might)|one day)\b/gi;
 const AC_ID = /\bAC[-_ ]?\d+(?:\.\d+)?\b/gi;
+const HAS_AC = new RegExp(AC_ID.source, "i");
+const normAc = (id) => id.toUpperCase().replace(/[-_ ]/, "-");
 const DEP = /\b(add(?:s|ing)? (?:a |the )?(?:new )?(?:dependency|dependencies|package|library)|npm (?:i|install) |pip install |go get |cargo add )/i;
 
 export function loadPlan(file) {
@@ -51,7 +54,7 @@ const str = (v) => (typeof v === "string" ? v : JSON.stringify(v ?? ""));
 export function acIds(plan) {
   const ids = new Set();
   const digests = plan.ac_digests;
-  const scan = (s) => { for (const m of str(s).matchAll(AC_ID)) ids.add(m[0].toUpperCase().replace(/[-_ ]/, "-")); };
+  const scan = (s) => { for (const m of str(s).matchAll(AC_ID)) ids.add(normAc(m[0])); };
   if (digests && typeof digests === "object") {
     const list = digests.entries ?? digests.digests;
     if (Array.isArray(list)) for (const d of list) scan(d.ac_id ?? d.id ?? d.ac ?? d);
@@ -60,7 +63,7 @@ export function acIds(plan) {
   return ids;
 }
 
-export function workItems(plan) {
+function workItems(plan) {
   if (Array.isArray(plan.changeset_blueprints) && plan.changeset_blueprints.length) {
     return plan.changeset_blueprints.map((b) => ({ id: b.file, action: b.action, text: str(b.blueprint) + " " + str(b.file) }));
   }
@@ -77,11 +80,11 @@ export function score(plan, chain = null) {
   const components = {};
 
   // unanchored: an item counts as anchored when it names an AC id (any id when the plan lists none).
-  const blueprints = Array.isArray(plan.changeset_blueprints) && plan.changeset_blueprints.length > 0;
-  const anyCited = items.some((it) => new RegExp(AC_ID.source, "i").test(str(it.text)));
+  const blueprints = items.some((i) => i.action);
+  const anyCited = items.some((it) => HAS_AC.test(str(it.text)));
   if (items.length && (blueprints || anyCited)) {
     const unanchored = items.filter((it) => {
-      const cited = [...str(it.text).matchAll(AC_ID)].map((m) => m[0].toUpperCase().replace(/[-_ ]/, "-"));
+      const cited = [...str(it.text).matchAll(AC_ID)].map((m) => normAc(m[0]));
       return acs.size ? !cited.some((c) => acs.has(c)) : cited.length === 0;
     });
     components.unanchored = { weight: 35, share: unanchored.length / items.length, items: unanchored.map((u) => u.id),
@@ -148,6 +151,4 @@ function main(argv) {
   return code;
 }
 
-// Main-module check that survives the symlinked install path (~/.claude/skills/...).
-const isMain = (() => { try { return Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
-if (isMain) process.exit(main(process.argv.slice(2)));
+if (isMain(import.meta.url)) process.exit(main(process.argv.slice(2)));

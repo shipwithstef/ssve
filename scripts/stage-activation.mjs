@@ -9,13 +9,15 @@
 // Usage:
 //   node scripts/stage-activation.mjs --diff <base>..<head> [--conditions <file>]
 //   node scripts/stage-activation.mjs --staged [--conditions <file>]
-//   node scripts/stage-activation.mjs --manifest <plan.json> [--conditions <file>]
+//   node scripts/stage-activation.mjs --manifest <plan.json|plan.md> [--profile prototype|mvp|production] [--conditions <file>]
 //     (before any code exists: evaluates the plan's scope paths and blueprints,
-//      so planning can fix the chain up front)
+//      so planning can fix the chain up front; --profile marks triggered conditional
+//      stages the delivery profile does not keep as "deferred")
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { loadStageRegistry as loadCanonicalStageRegistry } from "./lib/stage-registry.mjs";
+import { loadPlan } from "./overengineering-index.mjs";
 
 // WI-521 Batch C (C1, closes WI-519/G4): the hardcoded 6-stage essential table
 // this file used to carry was a SECOND copy of the same vocabulary now owned
@@ -73,6 +75,7 @@ function parseArgs(argv) {
     if (arg === "--diff") out.diff = argv[++i];
     else if (arg === "--staged") out.staged = true;
     else if (arg === "--manifest") out.manifest = argv[++i];
+    else if (arg === "--profile") out.profile = argv[++i];
     else if (arg === "--conditions") out.conditions = argv[++i];
     else if (arg === "--registry") out.registry = argv[++i];
     else fail(`unknown argument: ${arg}`, 2);
@@ -88,12 +91,19 @@ function git(args) {
 
 function manifestInput(file) {
   let plan;
-  try { plan = JSON.parse(readFileSync(file, "utf8")); }
-  catch (error) { fail(`--manifest is not readable JSON: ${error.message}`, 2); }
+  try { plan = loadPlan(file); }
+  catch (error) { fail(`--manifest is not a readable plan: ${error.message}`, 2); }
   const blueprints = Array.isArray(plan.changeset_blueprints) ? plan.changeset_blueprints : [];
   const files = [...new Set([...(plan.scope?.included || []), ...blueprints.map((b) => b.file)].filter((f) => typeof f === "string"))];
   const text = blueprints.map((b) => `${b.file}\n${b.blueprint || ""}`).join("\n");
   return { files, text };
+}
+
+function profileKeeps(name) {
+  const profiles = JSON.parse(readFileSync("references/delivery-profiles.json", "utf8")).profiles;
+  const profile = profiles[name];
+  if (!profile) fail(`--profile must be one of ${Object.keys(profiles).join(", ")}`, 2);
+  return profile.conditional_stages === "all" ? null : new Set(profile.conditional_stages);
 }
 
 function changedFiles(args) {
@@ -227,5 +237,14 @@ const output = [
   })),
   ...Object.entries(conditions).map(([name, def]) => evaluateCondition(name, def, files, text)),
 ];
+const keeps = args.profile ? profileKeeps(args.profile) : null;
+if (keeps) {
+  for (const row of output) {
+    if (row.result === "active" && !ESSENTIAL_STAGES.includes(row.stage) && !keeps.has(row.stage)) {
+      row.result = "deferred";
+      row.deferred_by = `delivery profile ${args.profile}`;
+    }
+  }
+}
 
 console.log(JSON.stringify(output, null, 2));

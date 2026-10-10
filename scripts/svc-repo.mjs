@@ -19,6 +19,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
+import { readJsonAtomic, writeJsonAtomic } from "./state-io.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OFF_VALUES = new Set(["user-invocable-only", "off"]);
@@ -33,24 +35,24 @@ function repoRoot(dir) {
 }
 
 function readJson(file) {
-  try { return JSON.parse(fs.readFileSync(file, "utf8")); }
-  catch (e) { if (e.code === "ENOENT") return {}; throw new Error(`${file} is not valid JSON: ${e.message}`); }
+  try { return readJsonAtomic(file) ?? {}; }
+  catch (e) { throw new Error(`${file} is not valid JSON: ${e.message}`); }
 }
 
+// Write through a symlinked settings file (dotfile managers) instead of replacing the link.
 function writeJson(file, obj) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  // Write through a symlinked settings file (dotfile managers) instead of replacing the link.
-  try { file = fs.realpathSync(file); } catch { /* new file */ }
-  const tmp = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(obj, null, 2) + "\n");
-  fs.renameSync(tmp, file);
+  let target = file;
+  try { target = fs.realpathSync(file); } catch { /* new file */ }
+  writeJsonAtomic(target, obj);
 }
+
+const savedOverrides = (settings) => (settings.env?.SVC_REPO_SAVED ? JSON.parse(settings.env.SVC_REPO_SAVED) : {});
 
 // Earlier values of svc skills' overrides are kept in env.SVC_REPO_SAVED so "on" restores them.
 export function applyOff(settings, skills, { hard = false } = {}) {
   const out = structuredClone(settings);
   out.skillOverrides = { ...(out.skillOverrides || {}) };
-  const saved = out.env?.SVC_REPO_SAVED ? JSON.parse(out.env.SVC_REPO_SAVED) : {};
+  const saved = savedOverrides(out);
   for (const s of skills) {
     if (out.skillOverrides[s] !== undefined && !(s in saved) && out.env?.SVC_REPO_MODE !== "off") saved[s] = out.skillOverrides[s];
     out.skillOverrides[s] = hard ? "off" : "user-invocable-only";
@@ -62,7 +64,7 @@ export function applyOff(settings, skills, { hard = false } = {}) {
 
 export function applyOn(settings, skills) {
   const out = structuredClone(settings);
-  const saved = out.env?.SVC_REPO_SAVED ? JSON.parse(out.env.SVC_REPO_SAVED) : {};
+  const saved = savedOverrides(out);
   if (out.skillOverrides) {
     for (const s of skills) {
       if (!OFF_VALUES.has(out.skillOverrides[s])) continue;
@@ -115,6 +117,4 @@ function main(argv) {
   return 0;
 }
 
-// Main-module check that survives the symlinked install path (~/.claude/skills/...).
-const isMain = (() => { try { return Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
-if (isMain) process.exit(main(process.argv.slice(2)));
+if (isMain(import.meta.url)) process.exit(main(process.argv.slice(2)));

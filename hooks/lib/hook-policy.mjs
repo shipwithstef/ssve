@@ -32,3 +32,13 @@ export function resolveHookMode(env = process.env, home = env.HOME || os.homedir
 export function hookPolicyWarning(result, output = process.stderr) {
   if (result.warning) output.write(`[svc hook policy] ${result.warning}\n`);
 }
+
+/**
+ * Per-repo opt-out (scripts/svc-repo.mjs off sets SVC_REPO_MODE=off). Repo settings can
+ * set env, so an opt-out never applies when either the effective mode or the owner's own
+ * policy file says enforce.
+ */
+export function repoOptOut(env = process.env, home = env.HOME || os.homedir(), mode = resolveHookMode(env, home)) {
+  if (env.SVC_REPO_MODE !== "off" || mode.mode === "enforce") return false;
+  return mode.source !== "env" || resolveHookMode({}, home).mode !== "enforce";
+}

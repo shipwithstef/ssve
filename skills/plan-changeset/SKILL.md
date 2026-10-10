@@ -128,7 +128,7 @@ Before writing anything, read and hold in context:
 ## Delivery Profile, Chain and Over-engineering Check
 
 1. **Pick the delivery profile first** from `references/delivery-profiles.json`: `prototype`, `mvp` (default) or `production`. It sets the test budget, chain depth, review depth and receipt level. A prototype needs a smoke test per AC, not an edge-case matrix; production needs edge cases and journeys. Moving a prototype up is one range attestation, never per-commit backfill. Record the profile and why in `decision_trace`.
-2. **Derive the chain from the plan, not from habit:** `node scripts/stage-activation.mjs --manifest <plan-body.json>` evaluates conditional stages against the planned files and blueprints before any code exists. Essential stages always run; conditional stages run when triggered and the profile allows them.
+2. **Derive the chain from the plan, not from habit:** `node scripts/stage-activation.mjs --manifest <plan> --profile <profile>` evaluates conditional stages against the planned files and blueprints before any code exists. Essential stages always run; triggered conditional stages the profile does not keep come back `deferred`.
 3. **Score over-engineering before review:** `node scripts/overengineering-index.mjs <plan-body.json> --chain <activation.json> --profile <profile>`. Over the profile's limit means cut the listed items or justify each against an AC in `decision_trace`; review-plan treats an unjustified over-limit plan as a finding.
 
 ## Execution Mode (resolve BEFORE planning — WI-386)

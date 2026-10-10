@@ -24,13 +24,14 @@
  */
 
 import fs from "node:fs";
-import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
 
 const NAME_OK = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
 const COLOR_FN = /^(rgba?|hsla?|oklch|oklab|lab|lch|hwb)\(\s*[^()]*\)$/i;
 const HEX = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 const LENGTH = /^-?\d*\.?\d+(px|rem|em|%)?$/;
 const GENERATED = "generated from tokens.json by scripts/design-tokens.mjs";
+const VAR_RE = /^var\(--([A-Za-z0-9_-]+)\)$/;
 
 // Tokenize CSS into blocks with their full prelude chain and own declarations.
 export function parseBlocks(css) {
@@ -69,7 +70,7 @@ const DARK_PART = /^(?::root|html|:host)?(?:\.dark|\.theme-dark|\[data-theme=["'
 const LIGHT_PART = /^(?:(?::root|html|:host)(?::not\(\.dark\))?(?:\.light|\[data-theme=["']?light["']?\])?|\.light|\[data-theme=["']?light["']?\])$/;
 
 // -> { theme: "light" | "dark" | null, conditional: "<at-rule>" | null, darkMechanism }
-export function classifyBlock(chain) {
+function classifyBlock(chain) {
   const ats = chain.filter((p) => p.startsWith("@"));
   const selector = [...chain].reverse().find((p) => !p.startsWith("@"));
   const darkMedia = ats.some((a) => /prefers-color-scheme\s*:\s*dark/i.test(a));
@@ -82,15 +83,14 @@ export function classifyBlock(chain) {
   const light = parts.some((p) => LIGHT_PART.test(p));
   if (dark) return { theme: "dark", conditional: other || null, darkMechanism: dark };
   if (light && darkMedia) return { theme: "dark", conditional: other || null, darkMechanism: "media" };
-  if (light && !lightMedia) return { theme: "light", conditional: other || null, root: theme ? "@theme" : ":root" };
-  if (light) return { theme: "light", conditional: other || null, root: ":root" };
+  if (light) return { theme: "light", conditional: other || null, root: theme && !lightMedia ? "@theme" : ":root" };
   return { theme: null };
 }
 
-export function classify(name, value) {
+function classify(name, value) {
   const v = value.trim();
   if (HEX.test(v) || COLOR_FN.test(v)) return "color";
-  if (/^var\(--[A-Za-z0-9_-]+\)$/.test(v)) return "alias";
+  if (VAR_RE.test(v)) return "alias";
   if (/(radius|rounded)/i.test(name) && LENGTH.test(v)) return "radius";
   if (/(space|spacing|gap|gutter|pad|margin|size-\d)/i.test(name) && LENGTH.test(v)) return "spacing";
   if (/shadow/i.test(name)) return "shadow";
@@ -125,12 +125,12 @@ export function extract(cssTexts, name = "System") {
     if (kind !== "alias") return kind;
     if (seen.has(k)) return "other";
     seen.add(k);
-    const target = (light.get(k) || dark.get(k)).match(/^var\(--([A-Za-z0-9_-]+)\)$/)[1];
+    const target = (light.get(k) || dark.get(k)).match(VAR_RE)[1];
     return kinds.has(target) ? resolveKind(target, seen) : "other";
   };
   const colorValue = (v) => {
     const t = v.trim();
-    const alias = t.match(/^var\(--([A-Za-z0-9_-]+)\)$/);
+    const alias = t.match(VAR_RE);
     if (alias) return resolveKind(alias[1]) === "color" ? `{${alias[1]}}` : null;
     return HEX.test(t) || COLOR_FN.test(t) ? t : null;
   };
@@ -223,7 +223,7 @@ function oklchToRgb(L, C, H) {
   ];
   return lin.map((c) => clamp01(c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055));
 }
-export function toRgb(color) {
+function toRgb(color) {
   const v = String(color).trim();
   if (HEX.test(v)) return hexToRgb(v);
   const fn = v.match(/^([a-z]+)\(/i)?.[1]?.toLowerCase();
@@ -233,7 +233,7 @@ export function toRgb(color) {
   if (fn === "oklch" && a.length >= 3) return oklchToRgb(num(a[0], 1), num(a[1], 0.4), parseFloat(a[2]) || 0);
   return null;
 }
-export function luminance(color) {
+function luminance(color) {
   const rgb = toRgb(color);
   if (!rgb) return null;
   const lin = rgb.map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
@@ -306,6 +306,4 @@ function main(argv) {
   return 2;
 }
 
-// Main-module check that survives the symlinked install path (~/.claude/skills/...).
-const isMain = (() => { try { return Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
-if (isMain) process.exit(main(process.argv.slice(2)));
+if (isMain(import.meta.url)) process.exit(main(process.argv.slice(2)));

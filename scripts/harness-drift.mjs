@@ -18,6 +18,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
+import { writeJsonAtomic } from "./state-io.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const BASELINE = path.join(ROOT, "references", "harness-baseline.json");
@@ -55,21 +57,22 @@ const wordRe = (k) => new RegExp(`(^|[^A-Za-z0-9_-])${esc(k)}(?=$|[^A-Za-z0-9_])
 
 export function proposals(updates, baseline, installed, watch, skipSurfaces = []) {
   const res = [];
+  const areas = watch.map((w) => ({ ...w, res: w.keywords.map(wordRe) }));
   const skip = skipSurfaces.length ? new RegExp(`^\\\\?\\[(?:${skipSurfaces.map(esc).join("|")})[^\\]]*\\]`, "i") : null;
   for (const u of updates) {
     if (!(cmpVersion(u.version, baseline) > 0 && cmpVersion(u.version, installed) <= 0)) continue;
     for (const e of u.entries) {
       if (skip && skip.test(e.text)) continue;
-      const areas = watch.filter((w) => w.keywords.some((k) => wordRe(k).test(e.text)));
-      if (!areas.length) continue;
-      res.push({ version: u.version, action: /^add/.test(e.kind) ? "adopt" : "check", areas: areas.map((a) => a.area),
-        owners: [...new Set(areas.flatMap((a) => a.owners))], text: e.text.length > 220 ? e.text.slice(0, 219) + "…" : e.text });
+      const hit = areas.filter((w) => w.res.some((re) => re.test(e.text)));
+      if (!hit.length) continue;
+      res.push({ version: u.version, action: /^add/.test(e.kind) ? "adopt" : "check", areas: hit.map((a) => a.area),
+        owners: [...new Set(hit.flatMap((a) => a.owners))], text: e.text.length > 220 ? e.text.slice(0, 219) + "…" : e.text });
     }
   }
   return res;
 }
 
-function installedVersion(host, spec, override) {
+function installedVersion(spec, override) {
   if (override) return override;
   const [bin, ...args] = spec.version_cmd;
   const r = spawnSync(bin, args, { encoding: "utf8", timeout: 15000 });
@@ -96,12 +99,12 @@ function main(argv) {
     if (!/^\d+\.\d+\.\d+/.test(v || "")) { process.stderr.write("mark-tuned needs --version x.y.z\n"); return 2; }
     spec.tuned_version = v;
     spec.tuned_on = new Date().toISOString().slice(0, 10);
-    fs.writeFileSync(BASELINE, JSON.stringify(data, null, 2) + "\n");
+    writeJsonAtomic(BASELINE, data);
     process.stdout.write(`${host} baseline set to ${v}\n`);
     return 0;
   }
   if (cmd !== "check") { process.stderr.write("usage: harness-drift.mjs check [--host H] [--installed V] [--changelog F|URL] [--json] | mark-tuned --host H --version V\n"); return 2; }
-  const installed = installedVersion(host, spec, opt("--installed"));
+  const installed = installedVersion(spec, opt("--installed"));
   const report = { host, tuned_version: spec.tuned_version, installed, proposals: [] };
   if (!installed) report.status = "not installed or version unreadable";
   else if (!spec.tuned_version) report.status = "no baseline yet: run mark-tuned after reviewing svc on this version";
@@ -123,6 +126,4 @@ function main(argv) {
   return report.proposals.length ? 3 : 0;
 }
 
-// Main-module check that survives the symlinked install path (~/.claude/skills/...).
-const isMain = (() => { try { return Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
-if (isMain) process.exit(main(process.argv.slice(2)));
+if (isMain(import.meta.url)) process.exit(main(process.argv.slice(2)));

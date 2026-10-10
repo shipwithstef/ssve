@@ -1,5 +1,5 @@
 {
-  "$comment": "Which harness version svc was last tuned against, and which areas of the harness svc depends on. scripts/harness-drift.mjs compares the installed version with tuned_version, reads the release notes in between, and lists entries that touch a watched area: 'Added' entries are adopt candidates, the rest are check candidates. After acting on them, record the new baseline with `harness-drift.mjs mark-tuned`. Add a host's changelog_url to track it; watch areas and keywords are plain data and can be extended by people or models. Keywords match whole words, case-insensitive; entries tagged for a surface in skip_surfaces (\"[VS Code] ...\") are ignored.",
+  "$comment": "Which harness version svc was last tuned against, and which areas of the harness svc depends on. scripts/harness-drift.mjs compares the installed version with tuned_version, reads the release notes in between, and lists entries that touch a watched area: 'Added' entries are adopt candidates, the rest are check candidates. After acting on them, record the new baseline with `harness-drift.mjs mark-tuned`. To track another harness, add a hosts entry with version_cmd, tuned_version and a changelog_url whose notes use <Update label=...> sections; watch areas and keywords are plain data and can be extended by people or models. Keywords match whole words, case-insensitive; entries tagged for a surface in skip_surfaces (\"[VS Code] ...\") are ignored.",
   "hosts": {
     "claude": {
       "version_cmd": [
@@ -8,48 +8,7 @@
       ],
       "tuned_version": "2.1.296",
       "tuned_on": "2026-10-10",
-      "changelog_url": "https://code.claude.com/docs/en/changelog.md",
-      "changelog_format": "update-tags"
-    },
-    "codex": {
-      "version_cmd": [
-        "codex",
-        "--version"
-      ],
-      "tuned_version": null,
-      "tuned_on": null,
-      "changelog_url": null,
-      "changelog_format": null
-    },
-    "grok": {
-      "version_cmd": [
-        "grok",
-        "--version"
-      ],
-      "tuned_version": null,
-      "tuned_on": null,
-      "changelog_url": null,
-      "changelog_format": null
-    },
-    "cursor": {
-      "version_cmd": [
-        "cursor-agent",
-        "--version"
-      ],
-      "tuned_version": null,
-      "tuned_on": null,
-      "changelog_url": null,
-      "changelog_format": null
-    },
-    "agy": {
-      "version_cmd": [
-        "agy",
-        "version"
-      ],
-      "tuned_version": null,
-      "tuned_on": null,
-      "changelog_url": null,
-      "changelog_format": null
+      "changelog_url": "https://code.claude.com/docs/en/changelog.md"
     }
   },
   "watch": [

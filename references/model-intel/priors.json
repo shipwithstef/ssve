@@ -1,9 +1,5 @@
 {
   "$comment": "Starting ladders per task type for scripts/route-model.mjs. Rung 0 is the first attempt; each failure moves one rung up. At most 3 rungs: two-model cascades capture almost all of the gain and deeper ones rarely help (arXiv 2605.06350: more than 2 models added no accuracy in 118 of 135 comparisons). The usual first escalation raises effort on the same model because it is the cheaper step; the next changes model. An arm keeps its prior until it has min_samples recorded outcomes on the current model id.",
-  "updated": "2026-10-10",
-  "target_success": {
-    "high": 0.9
-  },
   "min_samples": 5,
   "prior_strength": 4,
   "failure_penalty": 10,
@@ -222,5 +218,51 @@
     "analyze-marketing": "writing",
     "addon-gateway": "writing",
     "ad-video-script": "writing"
+  },
+  "high_risk_target": 0.9,
+  "text_rules": {
+    "_comment": "Request-text classifier, tried when no task type or known skill is given. Patterns are case-insensitive JS regex sources. Security wins whenever it matches; a debug match removes explore from contention; otherwise the earliest match in the text names the task.",
+    "priority": [
+      "security"
+    ],
+    "suppress": {
+      "debug": [
+        "explore"
+      ]
+    },
+    "rules": [
+      [
+        "security",
+        "\\b(security|vulnerab\\w*|exploit\\w*|cves?|authn|authz|authentication|authorization|auth (?:token|flow|bypass|check|logic|middleware)s?|secrets?|xss|csrf|(?:sql|command|code|prompt|header|ldap) injection|injection (?:attack|vuln\\w*)|access control|pentest\\w*|rls)\\b"
+      ],
+      [
+        "debug",
+        "\\b(bugs?|broken|fail\\w*|errors?|crash\\w*|regress\\w*|stack ?traces?|flaky|why (?:does|is|do))\\b|doesn'?t work|not working"
+      ],
+      [
+        "review",
+        "\\b(review\\w*|audit\\w*|critique\\w*)\\b|check (?:this|the) (?:diff|pr|plan)"
+      ],
+      [
+        "plan",
+        "\\b(plan\\w*|design\\w*|architect\\w*|spec|specs|strateg\\w*|approach\\w*|trade-?offs?)\\b"
+      ],
+      [
+        "mechanical",
+        "\\b(renam\\w*|reformat\\w*|format\\w*|typos?|bump\\w*|sort imports|lint fix\\w*|changelog|summari[sz]\\w*)\\b|move (?:the )?files?|update (?:the )?\\w+ field"
+      ],
+      [
+        "exec",
+        "\\b(implement\\w*|build|add|wire|refactor\\w*|port|integrat\\w*|create)\\b"
+      ],
+      [
+        "explore",
+        "\\b(locate|search\\w*|inventor\\w*)\\b|where is|list all|which files|find (?:all|where|the file)"
+      ],
+      [
+        "writing",
+        "\\b(posts?|blog\\w*|emails?|tweets?|announce\\w*|readme|docs? page|marketing copy|landing copy)\\b"
+      ]
+    ]
   }
 }

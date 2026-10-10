@@ -55,7 +55,8 @@ export function buildIndex(roots) {
   const seen = new Set();
   for (const root of roots) {
     let dirs;
-    try { dirs = fs.readdirSync(root).sort(); } catch { continue; }
+    let realRoot;
+    try { dirs = fs.readdirSync(root).sort(); realRoot = fs.realpathSync(root); } catch { continue; }
     const skills = [];
     for (const dir of dirs) {
       const file = path.join(root, dir, "SKILL.md");
@@ -63,7 +64,7 @@ export function buildIndex(roots) {
       try {
         // A SKILL.md that resolves outside its pack root (a symlink elsewhere) is not listed.
         const real = fs.realpathSync(file);
-        if (!real.startsWith(fs.realpathSync(root) + path.sep)) continue;
+        if (!real.startsWith(realRoot + path.sep)) continue;
         text = fs.readFileSync(real, "utf8");
       } catch { continue; }
       const { name, description } = readFrontmatter(text);

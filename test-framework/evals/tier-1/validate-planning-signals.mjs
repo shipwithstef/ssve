@@ -74,6 +74,12 @@ test("CLI: --profile exits 1 when over, reads SVC_PLAN_BODY markdown, and stage 
   assert.equal(stages.plan, "active");
   assert.equal(stages.translations, "active");
   assert.equal(stages.perf, "na");
+  const proto = spawnSync(process.execPath, [path.join(root, "scripts/stage-activation.mjs"), "--manifest", path.join(dir, "lean.json"), "--profile", "prototype"], { cwd: root, encoding: "utf8" });
+  const protoStages = Object.fromEntries(JSON.parse(proto.stdout).map((s) => [s.stage, s.result]));
+  assert.equal(protoStages.translations, "deferred", "a prototype defers stages its profile does not keep");
+  assert.equal(protoStages.plan, "active", "essential stages are never deferred");
+  const md = spawnSync(process.execPath, [path.join(root, "scripts/stage-activation.mjs"), "--manifest", path.join(dir, "lean.md")], { cwd: root, encoding: "utf8" });
+  assert.equal(md.status, 0, "a plan .md with an SVC_PLAN_BODY block is accepted");
   const chained = oei(path.join(dir, "lean.json"), "--json", "--chain", "/dev/stdin");
   assert.equal(chained.status, 2, "an unreadable --chain is an input error, not a silent pass");
   const both = spawnSync(process.execPath, [path.join(root, "scripts/stage-activation.mjs"), "--manifest", "x.json", "--staged"], { cwd: root, encoding: "utf8" });

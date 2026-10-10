@@ -19,6 +19,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
+import { appendJsonlLine } from "./state-io.mjs";
+import { readOutcomes } from "./route-model.mjs";
+import { svcSkillNames } from "./svc-repo.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_LEDGER = path.join(ROOT, ".svc", "mirror-ledger.jsonl");
@@ -28,12 +32,6 @@ export function rowsFromReport(report, { model, harness = null, date = new Date(
     date, skill: t.skill, task: t.task, model, harness, verdict: t.verdict,
     pass_delta: t.pass_delta, bare_pass: t.bare?.pass_rate ?? null, with_pass: t.with_skill?.pass_rate ?? null, token_delta: t.token_delta ?? null,
   }));
-}
-
-export function readLedger(file) {
-  let text = "";
-  try { text = fs.readFileSync(file, "utf8"); } catch { return []; }
-  return text.split("\n").filter(Boolean).flatMap((l) => { try { return [JSON.parse(l)]; } catch { return []; } });
 }
 
 export function advise(rows, included = []) {
@@ -52,7 +50,7 @@ export function advise(rows, included = []) {
     else if (now.every((r) => r.verdict === "no-gain") && before.some((r) => r.verdict === "earns-keep")) {
       const old = before.filter((r) => r.verdict === "earns-keep").pop().model;
       action = "caught-up"; why = `earned its tokens on ${old}, ties on ${current}: slim or retire unless it owns a contract artifact`;
-    } else if (now.length >= 2 && now.slice(-2).every((r) => r.verdict === "no-gain")) { action = "slim"; why = `no gain on ${current} in the last ${Math.min(now.length, 2)} runs`; }
+    } else if (now.length >= 2 && now.slice(-2).every((r) => r.verdict === "no-gain")) { action = "slim"; why = `no gain on ${current} in the last 2 runs`; }
     else if (last.verdict === "earns-keep") { action = "keep"; why = `beats bare ${current} by ${last.pass_delta}`; }
     else { action = "watch"; why = `one no-gain run on ${current}; run again before acting`; }
     out.push({ skill, model: current, action, why, runs_on_model: now.length, last_date: last.date });
@@ -73,15 +71,14 @@ function main(argv) {
     if (!file || !model) { process.stderr.write("usage: mirror-ledger.mjs record <report.json> --model <id> [--harness name@version] [--ledger file]\n"); return 2; }
     const rows = rowsFromReport(JSON.parse(fs.readFileSync(file, "utf8")), { model, harness: opt("--harness") || null });
     if (!rows.length) { process.stderr.write("mirror-ledger: report has no tasks\n"); return 2; }
-    fs.mkdirSync(path.dirname(ledger), { recursive: true });
-    fs.appendFileSync(ledger, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
+    for (const r of rows) appendJsonlLine(ledger, r);
     process.stdout.write(`recorded ${rows.length} rows to ${ledger}\n`);
     return 0;
   }
   if (cmd === "advise") {
     let included = [];
-    try { included = JSON.parse(fs.readFileSync(path.join(ROOT, "skills-manifest.json"), "utf8")).includedSkills; } catch { /* outside the framework repo */ }
-    const result = advise(readLedger(ledger), included);
+    try { included = svcSkillNames(); } catch { /* outside the framework repo */ }
+    const result = advise(readOutcomes([ledger]), included);
     if (rest.includes("--json")) { process.stdout.write(JSON.stringify(result, null, 2) + "\n"); return 0; }
     if (!result.proposals.length) process.stdout.write("no mirror runs recorded yet: run scripts/skill-ab-eval.mjs, then mirror-ledger.mjs record\n");
     for (const p of result.proposals) process.stdout.write(`${p.action.padEnd(9)} ${p.skill.padEnd(24)} ${p.why}\n`);
@@ -92,6 +89,4 @@ function main(argv) {
   return 2;
 }
 
-// Main-module check that survives the symlinked install path (~/.claude/skills/...).
-const isMain = (() => { try { return Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
-if (isMain) process.exit(main(process.argv.slice(2)));
+if (isMain(import.meta.url)) process.exit(main(process.argv.slice(2)));

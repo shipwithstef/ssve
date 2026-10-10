@@ -13,7 +13,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.
 const script = path.join(root, "scripts/route-model.mjs");
 const intel = loadIntel();
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "route-model-"));
-const cli = (args, env = {}) => spawnSync(process.execPath, [script, ...args], { encoding: "utf8", env: { ...process.env, SVC_ROUTE_ALLOW_FABLE: "", ...env } });
+const cli = (args, env = {}) => spawnSync(process.execPath, [script, ...args], { encoding: "utf8", env: { ...process.env, SVC_ROUTE_ALLOW_OPT_IN: "", ...env } });
 const rows = (taskType, model, effort, pass, fail) => [
   ...Array.from({ length: pass }, () => ({ task_type: taskType, model, effort, outcome: "pass" })),
   ...Array.from({ length: fail }, () => ({ task_type: taskType, model, effort, outcome: "fail", failure_kind: "verify_fail" })),
@@ -100,8 +100,8 @@ test("the ladder stops after the last rung instead of looping", () => {
 test("fable rungs are skipped unless allowed", () => {
   const off = pick({ taskType: "plan", risk: "high" }, intel);
   assert.notEqual(off.model, "fable");
-  assert.match(off.note, /fable rung skipped/);
-  assert.equal(pick({ taskType: "plan", risk: "high", allowFable: true }, intel).model, "fable");
+  assert.match(off.note, /rung skipped/);
+  assert.equal(pick({ taskType: "plan", risk: "high", allowOptIn: true }, intel).model, "fable");
 });
 
 test("outcomes move the start: a failing cheap arm is skipped, a proven cheap arm is used", () => {
