@@ -122,6 +122,7 @@ function loadInput(args) {
     change_type: args["change-type"],
     lane: args.lane,
     delivery_mode: args["delivery-mode"],
+    delivery_profile: args["delivery-profile"],
     delivery_tier: {
       mode: args["delivery-tier"],
       rationale: args["delivery-tier-rationale"],
@@ -591,14 +592,37 @@ export function boundedDepths(planning) {
   };
 }
 
+const BOUNDED_KEYS = ["plan_mode", "review_depth", "execution", "teach_terms", "first_question"];
+const LIGHT = new Set(["single-pass", "single-lens"]);
+
+// Sets each stage's depth for the current planning mode. A stage that was completed at a
+// lighter depth than it now needs (risk rose into an irreversible zone, or the work moved
+// from a bounded to a contract plan) is reopened, not relabelled: relabelling would claim
+// a full review that never happened. Returns the reopened tasks for mutation_history.
 function applyPlanningDepth(tasks, planning) {
-  if (planning.mode !== "bounded") return tasks;
-  const depths = boundedDepths(planning);
+  const reopened = [];
+  const reopen = (task, why, from) => {
+    if (task.status !== "completed") return;
+    task.status = "pending";
+    task.metadata.reopened = { reason: why, previous: from, at: new Date().toISOString() };
+    reopened.push({ id: task.id, skill: task.metadata.skill, reason: why });
+  };
+  const depths = planning.mode === "bounded" ? boundedDepths(planning) : {};
   for (const task of tasks) {
-    const extra = depths[task.metadata?.skill];
-    if (extra) task.metadata = { ...task.metadata, ...extra };
+    const skill = task.metadata?.skill;
+    const prior = { review_depth: task.metadata?.review_depth, plan_mode: task.metadata?.plan_mode };
+    if (planning.mode === "bounded") {
+      const extra = depths[skill];
+      if (!extra) continue;
+      if (extra.review_depth === "full" && LIGHT.has(prior.review_depth)) reopen(task, "irreversible zone touched: full review required", prior.review_depth);
+      task.metadata = { ...task.metadata, ...extra };
+    } else {
+      if (LIGHT.has(prior.review_depth)) reopen(task, "contract planning requires full review depth", prior.review_depth);
+      if (prior.plan_mode === "brief") reopen(task, "contract planning requires the full changeset, not a brief", "brief");
+      for (const k of BOUNDED_KEYS) delete task.metadata[k];
+    }
   }
-  return tasks;
+  return reopened;
 }
 
 export function compileDeliveryGraph(input) {
@@ -692,7 +716,9 @@ export function compileDeliveryGraph(input) {
     closeout_classification_required: true,
   };
 
-  const tasks = applyPlanningDepth(attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph), questions), planning);
+  const tasks = attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph), questions);
+  const reopened = applyPlanningDepth(tasks, planning);
+  if (reopened.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "reopen_for_depth", reason: "Planning depth increased; lighter completed stages reopened.", tasks: reopened });
   const superseded = [...(existingGraph?.delivery_graph?.research?.superseded_tasks || []),
     ...existingTasks.filter(task => !tasks.some(current => current.id === task.id)).map(task => ({
       task: structuredClone(task), disposition: "research no longer required; no completion receipt issued",

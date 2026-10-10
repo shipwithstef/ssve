@@ -49,7 +49,8 @@ export function snapshot(dir) {
     for (const e of fs.readdirSync(path.join(dir, rel), { withFileTypes: true })) {
       if (SKIP.has(e.name)) continue;
       const r = rel ? `${rel}/${e.name}` : e.name;
-      if (e.isDirectory()) walk(r);
+      if (e.isSymbolicLink()) out[r] = `link:${fs.readlinkSync(path.join(dir, r))}`;
+      else if (e.isDirectory()) walk(r);
       else if (e.isFile()) out[r] = crypto.createHash("sha256").update(fs.readFileSync(path.join(dir, r))).digest("hex");
     }
   };
@@ -84,10 +85,30 @@ export function rank(variants) {
   return [...variants].sort((a, b) => order[a.status] - order[b.status] || (b.score ?? 0) - (a.score ?? 0) || (a.cost_usd ?? 0) - (b.cost_usd ?? 0)).map((v) => v.variant);
 }
 
+// Each variant gets real files: links are dereferenced and dependencies are copied, so
+// nothing in the copy points back into the source and a worker cannot write through it.
 function copyBase(base, dir) {
-  fs.cpSync(base, dir, { recursive: true, filter: (src) => !SKIP.has(path.basename(src)) || src === base });
+  fs.cpSync(base, dir, { recursive: true, dereference: true, filter: (src) => !SKIP.has(path.basename(src)) || src === base });
   const nm = path.join(base, "node_modules");
-  if (fs.existsSync(nm)) fs.symlinkSync(nm, path.join(dir, "node_modules"), "dir");
+  if (fs.existsSync(nm)) fs.cpSync(nm, path.join(dir, "node_modules"), { recursive: true, dereference: true });
+}
+
+// Symlinks a worker created that resolve outside its own copy.
+export function escapingLinks(dir) {
+  const root = fs.realpathSync(dir);
+  const out = [];
+  const walk = (rel) => {
+    for (const e of fs.readdirSync(path.join(dir, rel), { withFileTypes: true })) {
+      if (SKIP.has(e.name)) continue;
+      const r = rel ? `${rel}/${e.name}` : e.name;
+      if (e.isSymbolicLink()) {
+        const target = path.resolve(path.dirname(path.join(root, r)), fs.readlinkSync(path.join(dir, r)));
+        if (target !== root && !target.startsWith(root + path.sep)) out.push(r);
+      } else if (e.isDirectory()) walk(r);
+    }
+  };
+  walk("");
+  return out;
 }
 
 function workerPrompt(spec, i) {
@@ -116,8 +137,11 @@ async function runVariant(spec, i, root, spent) {
   }
   spent.usd += worker.cost_usd ?? 0;
   const changed = changedFiles(before, snapshot(dir));
-  const outside = changed.filter((f) => !insideOwned(f, spec.owned));
-  const base = { variant: i + 1, dir, changed, cost_usd: worker.cost_usd ?? null, worker_ms: Date.now() - t0, note: (worker.text || "").trim().split("\n").slice(-2).join(" ").slice(0, 400) };
+  const outside = [...changed.filter((f) => !insideOwned(f, spec.owned)), ...escapingLinks(dir).map((f) => `${f} (link outside the copy)`)];
+  // The starting hash of every changed file, so apply() can refuse to overwrite a file
+  // that changed in the target after the probe started.
+  const baseline = Object.fromEntries(changed.map((f) => [f, before[f] ?? null]));
+  const base = { variant: i + 1, dir, changed, baseline, cost_usd: worker.cost_usd ?? null, worker_ms: Date.now() - t0, note: (worker.text || "").trim().split("\n").slice(-2).join(" ").slice(0, 400) };
   if (!worker.ok && changed.length === 0) return { ...base, status: "worker_error", score: 0, reason: worker.error || worker.stop || "worker failed" };
   if (outside.length) return { ...base, status: "out_of_bounds", score: 0, outside };
   const r = spawnSync("sh", ["-c", spec.check], { cwd: dir, encoding: "utf8", timeout: (spec.check_timeout_s ?? 300) * 1000 });
@@ -133,7 +157,12 @@ export async function run(spec, { lanes } = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "probe-"));
   const spent = { usd: 0 };
   const t0 = Date.now();
+  // Workers must never touch the original project. Its fingerprint is taken before and
+  // after; any difference aborts the run rather than reporting variants as clean.
+  const original = snapshot(spec.base);
   const variants = await pool(Array.from({ length: spec.variants }, (_, i) => i), n, (i) => runVariant(spec, i, root, spent));
+  const touched = changedFiles(original, snapshot(spec.base));
+  if (touched.length) throw new Error(`a worker changed the original project: ${touched.join(", ")}`);
   const ranking = rank(variants);
   const winner = variants.find((v) => v.variant === ranking[0] && v.status === "pass") || null;
   return {
@@ -144,9 +173,28 @@ export async function run(spec, { lanes } = {}) {
 }
 
 // Copy the winner's changed files into the target and remove the ones it deleted.
+const hashOf = (file) => {
+  try {
+    const st = fs.lstatSync(file);
+    if (st.isSymbolicLink()) return `link:${fs.readlinkSync(file)}`;
+    return st.isFile() ? crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex") : null;
+  } catch { return null; }
+};
+
+// Every destination is checked before anything is written: it must stay inside the
+// target and still hold the content the probe started from. A file changed since (by the
+// owner or another stream) makes the whole result stale; nothing is written.
 export function apply(result, to) {
   const w = result.variants.find((v) => v.variant === result.winner);
   if (!w) throw new Error("no passing variant to apply");
+  const root = path.resolve(to);
+  const stale = [];
+  for (const f of w.changed) {
+    const dst = path.resolve(root, f);
+    if (dst !== root && !dst.startsWith(root + path.sep)) throw new Error(`refusing to write outside the target: ${f}`);
+    if (w.baseline && Object.hasOwn(w.baseline, f) && hashOf(dst) !== w.baseline[f]) stale.push(f);
+  }
+  if (stale.length) throw new Error(`stale result: changed in the target since the probe started: ${stale.join(", ")}`);
   for (const f of w.changed) {
     const src = path.join(w.dir, f);
     const dst = path.join(to, f);

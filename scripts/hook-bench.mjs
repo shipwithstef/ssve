@@ -42,7 +42,7 @@ function run(cmd, cwd, input, env) {
   return new Promise((resolve) => {
     const t = process.hrtime.bigint();
     const child = spawn("sh", ["-c", cmd], { cwd, env, stdio: ["pipe", "ignore", "ignore"] });
-    child.on("close", () => resolve(Number(process.hrtime.bigint() - t) / 1e6));
+    child.on("close", (code) => resolve({ ms: Number(process.hrtime.bigint() - t) / 1e6, code }));
     child.stdin.on("error", () => {});
     child.stdin.end(input);
   });
@@ -65,6 +65,9 @@ function setup() {
   // The repository counts as svc-governed when it has an (empty) marker directory.
   fs.mkdirSync(path.join(repo, ".svc"));
   delete env.SVC_HOOK_MODE;
+  // Measure the full, enabled hook set: an inherited switch-off, disabled-hook list or
+  // reduced profile would make the numbers look fast without running the real handlers.
+  for (const k of ["SVC_REPO_MODE", "SVC_DISABLED_HOOKS", "SVC_HOOK_PROFILE", "SVC_HOOKD"]) delete env[k];
   execFileSync("git", ["init", "-q", repo]);
   execFileSync("git", ["-C", repo, "-c", "user.email=b@b", "-c", "user.name=b", "add", "-A"]);
   execFileSync("git", ["-C", repo, "-c", "user.email=b@b", "-c", "user.name=b", "commit", "-q", "-m", "bench"]);
@@ -76,6 +79,7 @@ function setup() {
 export async function bench({ runs = 5, budgets } = {}) {
   const unit = nodeStartMs(runs);
   const ctx = setup();
+  const failures = [];
   const file = path.join(ctx.repo, "src", "a.ts");
   const cases = [
     ["PreToolUse", "Edit", { file_path: file, old_string: "1", new_string: "2" }],
@@ -100,11 +104,12 @@ export async function bench({ runs = 5, budgets } = {}) {
       }
       const payload = JSON.stringify({ session_id: "bench", hook_event_name: event, cwd: ctx.repo, tool_name: tool, tool_input: input, prompt: "fix the login bug" });
       const walls = [], per = handlers.map(() => []);
+      // A handler that crashed is not evidence of speed: failures are reported and fail the run.
       for (let r = 0; r < runs; r++) {
         const t = process.hrtime.bigint();
-        const times = await Promise.all(handlers.map((h) => run(h.command, ctx.repo, payload, ctx.env)));
+        const results = await Promise.all(handlers.map((h) => run(h.command, ctx.repo, payload, ctx.env)));
         walls.push(Number(process.hrtime.bigint() - t) / 1e6);
-        times.forEach((ms, i) => per[i].push(ms));
+        results.forEach((x, i) => { per[i].push(x.ms); if (x.code !== 0) failures.push({ handler: handlers[i].name, event: tool ? `${event}:${tool}` : event, exit: x.code }); });
       }
       const key = tool ? `${event}:${tool}` : event;
       const wall = handlers.length ? median(walls) : 0;
@@ -115,7 +120,7 @@ export async function bench({ runs = 5, budgets } = {}) {
   } finally {
     fs.rmSync(ctx.tmp, { recursive: true, force: true });
   }
-  return { node_start_ms: Math.round(unit), runs, events };
+  return { node_start_ms: Math.round(unit), runs, events, failures, ok: failures.length === 0 };
 }
 
 async function main(argv) {
@@ -131,7 +136,8 @@ async function main(argv) {
       process.stdout.write(`${e.over ? "OVER" : "ok  "} ${e.event.padEnd(22)} ${String(e.wall_ms).padStart(5)} ms = ${String(e.node_starts).padStart(4)} node starts${b}; ${e.handlers} sync handlers; slowest ${e.slowest.map((s) => `${s.name} ${s.ms}ms`).join(", ") || "-"}\n`);
     }
   }
-  return result.events.some((e) => e.over) ? 1 : 0;
+  for (const f of result.failures) process.stderr.write(`FAIL ${f.event}: ${f.handler} exited ${f.exit}\n`);
+  return result.events.some((e) => e.over) || !result.ok ? 1 : 0;
 }
 
 if (isMain(import.meta.url)) main(process.argv.slice(2)).then((c) => process.exit(c));

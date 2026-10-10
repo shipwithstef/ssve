@@ -74,3 +74,30 @@ test("no new variant starts once the budget is spent", async () => {
   const r = await run({ question: "q", base: base(), prompt: "p", owned: ["src"], check: "true", variants: 3, worker_cmd: "true", budget_usd: 0 }, { lanes: { max_parallel: 1, why: "t" } });
   assert.ok(r.variants.every((v) => v.status === "skipped"));
 });
+
+test("a worker cannot write through a symlink into the source (review #127 P1)", async () => {
+  const dir = base();
+  fs.writeFileSync(path.join(dir, "outside.txt"), "orig\n");
+  fs.symlinkSync("../outside.txt", path.join(dir, "src", "link.txt"));
+  const r = await run({ question: "q", base: dir, prompt: "p", owned: ["src"], check: "true", variants: 1, worker_cmd: "echo changed > src/link.txt" }, { lanes: { max_parallel: 1, why: "t" } });
+  assert.equal(fs.readFileSync(path.join(dir, "outside.txt"), "utf8"), "orig\n", "the original is untouched");
+  assert.deepEqual(r.variants[0].changed, ["src/link.txt"], "the write landed in the copy and is reported");
+});
+
+test("a worker that creates a link pointing outside its copy fails", async () => {
+  const r = await run({ question: "q", base: base(), prompt: "p", owned: ["src"], check: "true", variants: 1, worker_cmd: "ln -s /etc src/escape" }, { lanes: { max_parallel: 1, why: "t" } });
+  assert.equal(r.variants[0].status, "out_of_bounds");
+});
+
+test("a worker that writes into the original project aborts the run", async () => {
+  const dir = base();
+  await assert.rejects(run({ question: "q", base: dir, prompt: "p", owned: ["src"], check: "true", variants: 1, worker_cmd: `echo hacked >> ${JSON.stringify(path.join(dir, "README.md"))}` }, { lanes: { max_parallel: 1, why: "t" } }), /changed the original project/);
+});
+
+test("apply refuses a stale result instead of overwriting newer work (review #127 P1)", async () => {
+  const dir = base();
+  const r = await run({ question: "q", base: dir, prompt: "p", owned: ["src"], check: "true", variants: 1, worker_cmd: "echo 'export const padding = 5;' > src/drop.mjs" }, { lanes: { max_parallel: 1, why: "t" } });
+  fs.writeFileSync(path.join(dir, "src", "drop.mjs"), "export const padding = 7; // owner's newer change\n");
+  assert.throws(() => apply(r, dir), /stale result/);
+  assert.match(fs.readFileSync(path.join(dir, "src", "drop.mjs"), "utf8"), /owner's newer change/, "nothing was written");
+});

@@ -96,3 +96,13 @@ test("env can raise the hook mode to enforce but never lower the owner's enforce
   assert.equal(resolveHookMode({ SVC_HOOK_MODE: "enforce" }, home).mode, "enforce");
   assert.equal(resolveHookMode({ SVC_HOOK_MODE: "advisory" }, home).mode, "advisory");
 });
+
+test("on is a no-op when already on and never deletes an owner's own override (review #127 P2)", async () => {
+  const { applyOff, applyOn } = await import("../../../scripts/svc-repo.mjs");
+  const owner = { skillOverrides: { "write-spec": "off" } };
+  const skills = ["write-spec", "design-ux"];
+  const roundTrip = applyOn(applyOff(owner, skills), skills);
+  assert.deepEqual(roundTrip, owner, "off then on restores the owner's settings");
+  assert.deepEqual(applyOn(roundTrip, skills), owner, "a second on changes nothing");
+  assert.deepEqual(applyOn(owner, skills), owner, "on without a prior off changes nothing");
+});

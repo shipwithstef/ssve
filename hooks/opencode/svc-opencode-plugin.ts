@@ -38,22 +38,35 @@ function isDisabled(hookId: string): boolean {
   return disabled.includes(hookId);
 }
 
-function hookMode(): "advisory" | "enforce" {
-  const envMode = process.env.SVC_HOOK_MODE;
-  let raw: unknown = envMode;
-  if (envMode === undefined) {
-    try {
-      raw = JSON.parse(fs.readFileSync(path.join(process.env.HOME || os.homedir(), ".svc", "hook-policy.json"), "utf8")).mode;
-    } catch (error: any) {
-      if (error?.code === "ENOENT") return "advisory";
-      console.error(`[svc hook policy] invalid hook-policy.json (${error?.message || error}); using advisory`);
-      return "advisory";
-    }
+// Same precedence as hooks/lib/hook-policy.mjs resolveHookMode: owner file first, then
+// the environment, then advisory. The environment can raise advisory to enforce but never
+// lower an owner's enforce; only ~/.svc/hook-policy.json can do that.
+function ownerHookMode(): "advisory" | "enforce" {
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(process.env.HOME || os.homedir(), ".svc", "hook-policy.json"), "utf8")).mode;
+    const normalized = typeof raw === "string" ? raw.trim().toLowerCase() : raw;
+    if (normalized === "advisory" || normalized === "enforce") return normalized;
+    console.error(`[svc hook policy] invalid hook mode '${String(raw)}' in hook-policy.json; using advisory`);
+  } catch (error: any) {
+    if (error?.code !== "ENOENT") console.error(`[svc hook policy] invalid hook-policy.json (${error?.message || error}); using advisory`);
   }
-  const normalized = envMode === undefined ? raw : typeof raw === "string" ? raw.trim().toLowerCase() : raw;
-  if (normalized === "advisory" || normalized === "enforce") return normalized;
-  console.error(`[svc hook policy] invalid hook mode '${String(raw)}'; using advisory`);
   return "advisory";
+}
+
+function hookMode(): "advisory" | "enforce" {
+  const owner = ownerHookMode();
+  const envMode = process.env.SVC_HOOK_MODE;
+  if (envMode === undefined) return owner;
+  const mode = envMode.trim().toLowerCase();
+  if (mode !== "advisory" && mode !== "enforce") {
+    console.error(`[svc hook policy] invalid SVC_HOOK_MODE '${envMode}'; using ${owner}`);
+    return owner;
+  }
+  if (owner === "enforce" && mode === "advisory") {
+    console.error("[svc hook policy] SVC_HOOK_MODE=advisory ignored: ~/.svc/hook-policy.json sets enforce, and only that file can lower it");
+    return "enforce";
+  }
+  return mode;
 }
 
 async function runSvcHook(label: string, action: () => Promise<void> | void): Promise<void> {

@@ -141,3 +141,15 @@ test("record appends a valid row and rejects an invalid one; stats reads it back
   const s = JSON.parse(stats.stdout).find((r) => r.model === "sonnet" && r.effort === "medium");
   assert.equal(s.samples, 1);
 });
+
+test("an outcome mirrored to the project log and the global log counts once (review #127 P2)", async () => {
+  const { readOutcomes } = await import("../../../scripts/route-model.mjs");
+  const fsm = await import("node:fs"), osm = await import("node:os"), pathm = await import("node:path");
+  const dir = fsm.mkdtempSync(pathm.join(osm.tmpdir(), "rm-mirror-"));
+  const local = pathm.join(dir, "local.jsonl"), global = pathm.join(dir, "global.jsonl");
+  const rows = [1, 2, 3].map((n) => JSON.stringify({ id: `e${n}`, task_type: "exec", model: "haiku", effort: "low", outcome: "pass" }));
+  const legacy = JSON.stringify({ ts: "2026-10-10T00:00:00Z", task_type: "exec", model: "haiku", effort: "low", outcome: "fail" });
+  fsm.writeFileSync(local, [...rows, legacy].join("\n") + "\n");
+  fsm.writeFileSync(global, [...rows, legacy, JSON.stringify({ id: "e4", task_type: "exec", model: "haiku", effort: "low", outcome: "pass" })].join("\n") + "\n");
+  assert.equal(readOutcomes([local, global]).length, 5, "three mirrored + one mirrored legacy row + one distinct trial");
+});

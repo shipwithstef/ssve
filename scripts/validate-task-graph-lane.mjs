@@ -257,10 +257,16 @@ function validateLane(graph, filePath) {
   const graphSkills = collectGraphSkills(graph);
   const missing = [];
 
+  // Bounded planning (docs/decisions/2026-10-10-bounded-delivery.md): the brief that
+  // plan-changeset writes in brief mode is the spec, so it stands in for write-spec, and
+  // only when the graph says bounded and plan-changeset is marked brief.
+  const bounded = graph.delivery_graph?.planning?.mode === "bounded";
+  const briefTask = (graph.tasks ?? []).some((task) => taskSkill(task) === "plan-changeset" && task?.metadata?.plan_mode === "brief");
+  const substituted = [];
   for (const skill of laneModel.mandatory) {
-    if (!graphSkills.has(skill)) {
-      missing.push(skill);
-    }
+    if (graphSkills.has(skill)) continue;
+    if (skill === "write-spec" && bounded && briefTask) { substituted.push({ skill, by: "plan-changeset (brief mode)" }); continue; }
+    missing.push(skill);
   }
 
   const chainValidation = validateMandatoryDeliveryChain(
@@ -279,6 +285,7 @@ function validateLane(graph, filePath) {
     graphSkills: Array.from(graphSkills),
     mandatory: laneModel.mandatory,
     missing,
+    substituted,
     mandatoryChain: chainValidation,
     visualProcess: { required: visualRequired, pass: !visualRequired || visualDiffProcess, errors: visualErrors },
     designTechRiskGate,

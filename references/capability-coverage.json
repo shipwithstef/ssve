@@ -2039,8 +2039,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-blocking-discovery-halt.sh",
-        "test-framework/evals/tier-1/validate-delivery-graph-closeout-classification.sh",
-        "test-framework/evals/tier-1/validate-delivery-graph-compiler.sh"
+        "test-framework/evals/tier-1/validate-bounded-planning.mjs",
+        "test-framework/evals/tier-1/validate-delivery-graph-closeout-classification.sh"
       ]
     },
     {
@@ -3197,6 +3197,7 @@
       "source": "scripts/validate-task-graph-lane.mjs",
       "status": "tested",
       "evidence": [
+        "test-framework/evals/tier-1/validate-bounded-planning.mjs",
         "test-framework/evals/tier-1/validate-mandatory-delivery-chain.sh",
         "test-framework/evals/tier-1/validate-risk-triggered-contracts.sh"
       ]

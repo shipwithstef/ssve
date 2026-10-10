@@ -53,20 +53,29 @@ export function applyOff(settings, skills, { hard = false } = {}) {
   const out = structuredClone(settings);
   out.skillOverrides = { ...(out.skillOverrides || {}) };
   const saved = savedOverrides(out);
+  const switched = new Set(out.env?.SVC_REPO_SWITCHED ? JSON.parse(out.env.SVC_REPO_SWITCHED) : []);
   for (const s of skills) {
     if (out.skillOverrides[s] !== undefined && !(s in saved) && out.env?.SVC_REPO_MODE !== "off") saved[s] = out.skillOverrides[s];
     out.skillOverrides[s] = hard ? "off" : "user-invocable-only";
+    switched.add(s);
   }
   out.env = { ...(out.env || {}), SVC_REPO_MODE: "off" };
   if (Object.keys(saved).length) out.env.SVC_REPO_SAVED = JSON.stringify(saved);
+  // Which skills this switch changed, so "on" restores exactly those and nothing the
+  // owner set by hand.
+  out.env.SVC_REPO_SWITCHED = JSON.stringify([...switched].sort());
   return out;
 }
 
 export function applyOn(settings, skills) {
   const out = structuredClone(settings);
+  // Already on: nothing to undo. Touching overrides here would delete the owner's own.
+  if (out.env?.SVC_REPO_MODE !== "off") return out;
   const saved = savedOverrides(out);
+  const switched = out.env?.SVC_REPO_SWITCHED ? new Set(JSON.parse(out.env.SVC_REPO_SWITCHED)) : null;
   if (out.skillOverrides) {
     for (const s of skills) {
+      if (switched && !switched.has(s)) continue;
       if (!OFF_VALUES.has(out.skillOverrides[s])) continue;
       if (s in saved) out.skillOverrides[s] = saved[s];
       else delete out.skillOverrides[s];
@@ -76,6 +85,7 @@ export function applyOn(settings, skills) {
   if (out.env) {
     delete out.env.SVC_REPO_MODE;
     delete out.env.SVC_REPO_SAVED;
+    delete out.env.SVC_REPO_SWITCHED;
     if (!Object.keys(out.env).length) delete out.env;
   }
   return out;

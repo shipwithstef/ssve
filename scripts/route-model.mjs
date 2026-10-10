@@ -26,6 +26,7 @@
  *   - Past the last rung: stop and report instead of looping.
  */
 
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -63,14 +64,23 @@ export function classify({ taskType, skill, text } = {}, priors) {
 
 function armKey(taskType, model, effort) { return `${taskType}|${model}|${effort}`; }
 
+// Each outcome is written to the project log and the global mirror, so the same event
+// appears in both files. Count it once: by its id, or for older rows without one, by its
+// exact content (the two copies are byte-identical rows).
 export function readOutcomes(files) {
   const rows = [];
+  const seen = new Set();
   for (const f of files) {
     let text;
     try { text = fs.readFileSync(f, "utf8"); } catch { continue; }
     for (const line of text.split("\n")) {
       if (!line.trim()) continue;
-      try { rows.push(JSON.parse(line)); } catch { /* skip a torn line */ }
+      let row;
+      try { row = JSON.parse(line); } catch { continue; /* skip a torn line */ }
+      const key = row.id ? `id:${row.id}` : `row:${line.trim()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push(row);
     }
   }
   return rows;
@@ -248,7 +258,7 @@ function main(argv) {
   const files = outcomeFiles();
   if (cmd === "record") {
     const row = {
-      ts: new Date().toISOString(), task_type: args.taskType, skill: args.skill || null, model: args.model,
+      id: crypto.randomUUID(), ts: new Date().toISOString(), task_type: args.taskType, skill: args.skill || null, model: args.model,
       model_id: intel.models.models[args.model]?.id || null, effort: args.effort,
       rung: args.rung !== undefined ? Number(args.rung) : null, outcome: args.outcome, failure_kind: args.failureKind || null,
       signal: args.signal || null, tokens: args.tokens !== undefined ? Number(args.tokens) : null,

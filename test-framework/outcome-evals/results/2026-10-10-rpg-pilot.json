@@ -15,9 +15,9 @@
       "arm": "solo",
       "runs": 1,
       "errors": 0,
-      "solved": "0/1",
-      "solve_rate": 0,
-      "mean_hidden_score": 0.667,
+      "solved": "1/1",
+      "solve_rate": 1,
+      "mean_hidden_score": 1,
       "mean_cost_usd": 3.7236,
       "mean_turns": 84,
       "judged": 1,
@@ -29,7 +29,7 @@
       "errors": 0,
       "solved": "0/1",
       "solve_rate": 0,
-      "mean_hidden_score": 0.667,
+      "mean_hidden_score": 0.833,
       "mean_cost_usd": 1.9326,
       "mean_turns": 32,
       "judged": 1,
@@ -68,10 +68,10 @@
       "step_replies": [
         "ed.** I had called the meadow \"Westfold\", which is a place in Tolkien's Rohan; it's now \"Wetherfold\". One random player-name syllable could produce \"Lorian\", close to Tolkien's Lórien; it's been swapped.\n- **Treat legal and cost figures as planning estimates.** Check current prices, and have a games/IP lawyer review before you take money.\n\nNothing is committed yet; say if you want me to commit it."
       ],
-      "hidden_pass": 4,
+      "hidden_pass": 6,
       "hidden_total": 6,
-      "score": 0.6666666666666666,
-      "solved": false,
+      "score": 1,
+      "solved": true,
       "judge_model": "opus",
       "judge_total": 25,
       "judge_scores": {
@@ -159,11 +159,7 @@
           "reason": "no commits"
         }
       },
-      "hidden_failures": [
-        "solo: one player can play; actions change the world without errors: error: 'playing changes the state'",
-        "hostile clients: malformed, oversized and flooding traffic to the game's own endpoints leaves it playable: error: 'a new player can still play after the attack'"
-      ],
-      "regraded_at": "2026-10-10T22:32:33.039Z"
+      "regraded_at": "2026-10-10T22:36:19.370Z"
     },
     {
       "task": "rpg-founder",
@@ -184,9 +180,9 @@
       "step_replies": [
         ".\n\nThe cost and revenue figures are the docs subagent's estimates, not current price lists, so check them before you commit money.\n\n**Limits of the prototype:** there are no accounts yet, nothing is saved (the world resets when the server restarts), there is one shared world, and players can't rename themselves in the game (add `?name=YourName` to the URL instead). Nothing is committed to git yet."
       ],
-      "hidden_pass": 4,
+      "hidden_pass": 5,
       "hidden_total": 6,
-      "score": 0.6666666666666666,
+      "score": 0.8333333333333334,
       "solved": false,
       "judge_model": "opus",
       "judge_total": 24,
@@ -275,11 +271,10 @@
           "reason": "no commits"
         }
       },
+      "regraded_at": "2026-10-10T22:36:30.541Z",
       "hidden_failures": [
-        "hostile clients: malformed, oversized and flooding traffic to the game's own endpoints leaves it playable: error: 'a new player can still play after the attack'",
         "load: four players at once all see four players, frames stay under 25 ms: error: 'p95 frame interval 49.9 ms'"
-      ],
-      "regraded_at": "2026-10-10T22:32:45.250Z"
+      ]
     },
     {
       "task": "rpg-founder",
@@ -392,7 +387,7 @@
           "commits_per_10_min": 3.8
         }
       },
-      "regraded_at": "2026-10-10T22:32:53.622Z"
+      "regraded_at": "2026-10-10T22:36:38.988Z"
     }
   ]
 }
