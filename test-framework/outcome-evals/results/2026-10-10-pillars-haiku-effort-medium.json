@@ -49,7 +49,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/review-faults-large-svc-0"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/review-faults-large-svc-0",
+      "regraded_at": "2026-10-10T18:27:38.250Z"
     },
     {
       "task": "review-faults-large",
@@ -74,7 +75,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/review-faults-large-svc-1"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/review-faults-large-svc-1",
+      "regraded_at": "2026-10-10T18:27:38.477Z"
     },
     {
       "task": "review-faults-large",
@@ -99,7 +101,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/review-faults-large-svc-2"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/review-faults-large-svc-2",
+      "regraded_at": "2026-10-10T18:27:38.699Z"
     },
     {
       "task": "plan-defects",
@@ -124,7 +127,8 @@
       "hidden_total": 6,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/plan-defects-svc-0"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/plan-defects-svc-0",
+      "regraded_at": "2026-10-10T18:27:38.884Z"
     },
     {
       "task": "plan-defects",
@@ -149,7 +153,8 @@
       "hidden_total": 6,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/plan-defects-svc-1"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/plan-defects-svc-1",
+      "regraded_at": "2026-10-10T18:27:39.070Z"
     },
     {
       "task": "plan-defects",
@@ -174,7 +179,8 @@
       "hidden_total": 6,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/plan-defects-svc-2"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/plan-defects-svc-2",
+      "regraded_at": "2026-10-10T18:27:39.246Z"
     },
     {
       "task": "security-payments",
@@ -199,7 +205,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/security-payments-svc-0"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/security-payments-svc-0",
+      "regraded_at": "2026-10-10T18:27:39.416Z"
     },
     {
       "task": "security-payments",
@@ -224,7 +231,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/security-payments-svc-1"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/security-payments-svc-1",
+      "regraded_at": "2026-10-10T18:27:39.594Z"
     },
     {
       "task": "security-payments",
@@ -249,7 +257,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/security-payments-svc-2"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/security-payments-svc-2",
+      "regraded_at": "2026-10-10T18:27:39.802Z"
     },
     {
       "task": "audit-claims",
@@ -274,7 +283,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/audit-claims-svc-0"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/audit-claims-svc-0",
+      "regraded_at": "2026-10-10T18:27:39.980Z"
     },
     {
       "task": "audit-claims",
@@ -299,7 +309,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/audit-claims-svc-1"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/audit-claims-svc-1",
+      "regraded_at": "2026-10-10T18:27:40.159Z"
     },
     {
       "task": "audit-claims",
@@ -324,7 +335,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/audit-claims-svc-2"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/audit-claims-svc-2",
+      "regraded_at": "2026-10-10T18:27:40.369Z"
     },
     {
       "task": "bugfix-rootcause",
@@ -349,7 +361,8 @@
       "hidden_total": 4,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/bugfix-rootcause-svc-0"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/bugfix-rootcause-svc-0",
+      "regraded_at": "2026-10-10T18:27:40.668Z"
     },
     {
       "task": "bugfix-rootcause",
@@ -374,7 +387,8 @@
       "hidden_total": 4,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/bugfix-rootcause-svc-1"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/bugfix-rootcause-svc-1",
+      "regraded_at": "2026-10-10T18:27:40.970Z"
     },
     {
       "task": "bugfix-rootcause",
@@ -399,7 +413,8 @@
       "hidden_total": 4,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/bugfix-rootcause-svc-2"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/bugfix-rootcause-svc-2",
+      "regraded_at": "2026-10-10T18:27:41.255Z"
     },
     {
       "task": "drift-detect",
@@ -424,7 +439,8 @@
       "hidden_total": 6,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/drift-detect-svc-0"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/drift-detect-svc-0",
+      "regraded_at": "2026-10-10T18:27:41.475Z"
     },
     {
       "task": "drift-detect",
@@ -449,7 +465,8 @@
       "hidden_total": 6,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/drift-detect-svc-1"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/drift-detect-svc-1",
+      "regraded_at": "2026-10-10T18:27:41.700Z"
     },
     {
       "task": "drift-detect",
@@ -474,7 +491,8 @@
       "hidden_total": 6,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/drift-detect-svc-2"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T18-15-20-565Z/drift-detect-svc-2",
+      "regraded_at": "2026-10-10T18:27:41.904Z"
     }
   ]
 }

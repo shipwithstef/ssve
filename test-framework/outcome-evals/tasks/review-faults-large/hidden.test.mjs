@@ -1,7 +1,6 @@
 // Grader for the review-exec pillar, multi-file variant. Each planted defect crosses a file
-// boundary or contradicts nearby correct-looking code; the concurrency guard in book() and
-// the session code are correct and serve as decoys. A finding counts when it names the
-// file, a line within 3 of the defect and words that describe it; one test caps noise.
+// boundary or contradicts nearby correct-looking code. A finding counts when it names the
+// file, a line within 3 of the defect and words that describe it.
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -29,7 +28,12 @@ for (const f of FAULTS) {
   });
 }
 
-test("at most 4 findings that match no planted defect", () => {
-  const noise = (findings() || []).filter((x) => !FAULTS.some((f) => matches(f, x)));
-  assert.ok(noise.length <= 4, `${noise.length} unmatched findings`);
+// Precision: the one decoy proven correct is the concurrency guard in book() (the seat is
+// held synchronously before the charge is awaited). A finding there that claims
+// overbooking is a false alarm. Other unplanted findings are not penalised: reviewers
+// found a real one (a non-ASCII session cookie makes readSession throw outside the
+// handler's try block, crashing the server), so "unmatched" does not mean "wrong".
+test("no false alarm on the correct concurrency guard in book() (AC4)", () => {
+  const alarms = (findings() || []).filter((x) => String(x.file || "").endsWith("bookings.mjs") && Number(x.line) >= 18 && Number(x.line) <= 27 && /overbook|race|concurr|capacity|more than/i.test(`${x.issue || ""}`));
+  assert.equal(alarms.length, 0, alarms.map((x) => `${x.line}: ${x.issue}`).join("; "));
 });

@@ -54,7 +54,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-bare-0"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-bare-0",
+      "regraded_at": "2026-10-10T18:27:31.748Z"
     },
     {
       "task": "review-faults-large",
@@ -78,7 +79,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-bare-1"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-bare-1",
+      "regraded_at": "2026-10-10T18:27:31.960Z"
     },
     {
       "task": "review-faults-large",
@@ -102,7 +104,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-bare-2"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-bare-2",
+      "regraded_at": "2026-10-10T18:27:32.190Z"
     },
     {
       "task": "review-faults-large",
@@ -126,7 +129,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-bare-3"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-bare-3",
+      "regraded_at": "2026-10-10T18:27:32.383Z"
     },
     {
       "task": "review-faults-large",
@@ -150,7 +154,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-bare-4"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-bare-4",
+      "regraded_at": "2026-10-10T18:27:32.590Z"
     },
     {
       "task": "review-faults-large",
@@ -174,7 +179,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-svc-0"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-svc-0",
+      "regraded_at": "2026-10-10T18:27:32.820Z"
     },
     {
       "task": "review-faults-large",
@@ -198,7 +204,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-svc-1"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-svc-1",
+      "regraded_at": "2026-10-10T18:27:33.041Z"
     },
     {
       "task": "review-faults-large",
@@ -222,7 +229,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-svc-2"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-svc-2",
+      "regraded_at": "2026-10-10T18:27:33.227Z"
     },
     {
       "task": "review-faults-large",
@@ -246,7 +254,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-svc-3"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-svc-3",
+      "regraded_at": "2026-10-10T18:27:33.422Z"
     },
     {
       "task": "review-faults-large",
@@ -270,7 +279,8 @@
       "hidden_total": 5,
       "score": 1,
       "solved": true,
-      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-svc-4"
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-00-42-994Z/review-faults-large-svc-4",
+      "regraded_at": "2026-10-10T18:27:33.614Z"
     }
   ]
 }
