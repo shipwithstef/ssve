@@ -3,8 +3,9 @@ name: analyze-domain
 version: "1.0"
 description: >
   Identifies the project's industry, stack and domain, loads stack convention packs, and
-  writes docs/specs/domain-profile.md; also answers domain questions for other skills. Use
-  for "what domain is this", "industry context", "domain expertise".
+  writes docs/specs/domain-profile.md; also answers domain questions for other skills. Terms
+  mode names 10 expert terms and the question to settle first, before a bounded plan. Use
+  for "what domain is this", "industry context", "domain expertise", "teach me the terms".
 phases:
   - id: P1-KnowledgeFirstCheck
     trigger: always
@@ -83,6 +84,16 @@ If the domain is new: proceed with identify mode, then write knowledge layers
 when done (see Step 7).
 
 ## Modes
+
+### Terms Mode (first step of a bounded plan)
+
+People outside a field cannot yet say precisely what they want, so the work goes back and forth round after round. Before any brief or code, settle the words. Do not plan or write code in this mode.
+1. Name **10 terms** an expert in this field would use for what is being built. For each term, write one line on what it means and one line on how it changes what the owner should ask for.
+2. Name **the one question to settle first** and what its answer decides. For a chess web app, "who plays whom" decides whether a server is needed at all.
+3. Ground the terms in `references/knowledge/` and the stack packs, not memory alone. Mark any term that comes from memory.
+4. Write the terms to section 0 of the brief. Write the first question to the cockpit steering box, with a stated default. If the owner does not answer, the default goes into the decision log as an assumption and the build proceeds.
+
+This step is kept only while the ambiguity eval shows it cuts rounds (ledger row 62).
 
 ### Identify Mode (default — no existing domain-profile.md)
 

@@ -1941,6 +1941,15 @@
       ]
     },
     {
+      "id": "engine:scripts/chaos-probe.mjs",
+      "kind": "engine",
+      "source": "scripts/chaos-probe.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-chaos-probe.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/check-chain-receipts.mjs",
       "kind": "engine",
       "source": "scripts/check-chain-receipts.mjs",
@@ -2396,6 +2405,15 @@
       "evidence": [
         "test-framework/tests/delivery-plan-contract.test.mjs",
         "test-framework/tests/two-box-receipts.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/probe-loop.mjs",
+      "kind": "engine",
+      "source": "scripts/probe-loop.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-probe-loop.mjs"
       ]
     },
     {

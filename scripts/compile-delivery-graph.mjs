@@ -53,6 +53,33 @@ const LANE_BASE_SKILLS = {
   "brownfield-conversion": ["onboard-repo", "plan-capabilities", "review-gate", "verify-promotion"],
 };
 
+// Bounded planning (docs/decisions/2026-10-10-bounded-delivery.md). For a prototype or
+// MVP profile the upstream design skills fold into a one-page brief: analyze-domain names
+// the expert terms and the first question, plan-changeset writes the brief, and
+// execute-changeset runs the probe loop. The mandatory delivery chain and its receipts
+// are unchanged; only the depth of each stage changes. Full review depth returns
+// whenever the change touches an irreversible zone.
+const BOUNDED_UPSTREAM = {
+  greenfield: ["analyze-domain", "plan-changeset"],
+  "brownfield-feature": ["analyze-domain", "plan-changeset"],
+};
+const IRREVERSIBLE_PATH = /(^|\/)(auth|login|session|payments?|billing|checkout|stripe|wallet|ledger|migrations?|secrets?|deploy|infra|terraform)(\/|\.|-|_|$)|(^|\/)(\.env[^/]*|wrangler\.toml|Dockerfile)$/i;
+const IRREVERSIBLE_FLAGS = new Set(["auth", "payments", "money", "data-migration", "data-deletion", "deploy-affecting", "secrets", "security-sensitive"]);
+
+export function irreversibleZones(plannedFiles = [], riskFlags = []) {
+  return unique([
+    ...plannedFiles.filter((f) => IRREVERSIBLE_PATH.test(String(f))),
+    ...riskFlags.filter((f) => IRREVERSIBLE_FLAGS.has(f)).map((f) => `flag:${f}`),
+  ]);
+}
+
+export function planningMode(input, lane) {
+  const profile = String(input.delivery_profile || "").trim();
+  if (profile && !["prototype", "mvp", "production"].includes(profile)) throw new Error(`Unsupported delivery profile: ${profile}`);
+  const bounded = ["prototype", "mvp"].includes(profile) && lane !== "framework";
+  return { mode: bounded ? "bounded" : "contract", profile: profile || null };
+}
+
 function parseArgs(argv) {
   const args = {};
   for (let i = 0; i < argv.length; i += 1) {
@@ -551,15 +578,41 @@ function attachResearchRequestors(tasks, questions) {
   return tasks;
 }
 
+// In bounded mode each stage records how deep it goes; validate-delivery-graph checks it.
+export function boundedDepths(planning) {
+  const zones = planning.irreversible_zones.length > 0;
+  return {
+    "analyze-domain": { teach_terms: 10, first_question: true },
+    "plan-changeset": { plan_mode: "brief" },
+    "review-plan": { review_depth: zones ? "full" : "single-pass" },
+    "execute-changeset": { execution: "probe-loop" },
+    "review-exec": { review_depth: zones ? "full" : "single-lens" },
+    "audit-implementation": { review_depth: zones ? "full" : "single-lens" },
+  };
+}
+
+function applyPlanningDepth(tasks, planning) {
+  if (planning.mode !== "bounded") return tasks;
+  const depths = boundedDepths(planning);
+  for (const task of tasks) {
+    const extra = depths[task.metadata?.skill];
+    if (extra) task.metadata = { ...task.metadata, ...extra };
+  }
+  return tasks;
+}
+
 export function compileDeliveryGraph(input) {
   const wi = requireString(input.wi, "wi");
   const lane = requireString(input.lane, "lane");
   const changeType = requireString(input.change_type, "change_type");
   if (!LANE_BASE_SKILLS[lane]) throw new Error(`Unsupported lane: ${lane}`);
 
-  const laneSkills = injectMandatoryDeliveryChain(LANE_BASE_SKILLS[lane]);
+  const planning = planningMode(input, lane);
   const riskFlags = unique(list(input.risk_flags));
   const plannedFiles = unique(list(input.planned_files || input.files_planned || input.files));
+  const upstream = planning.mode === "bounded" && BOUNDED_UPSTREAM[lane] ? BOUNDED_UPSTREAM[lane] : LANE_BASE_SKILLS[lane];
+  const laneSkills = injectMandatoryDeliveryChain(upstream);
+  planning.irreversible_zones = irreversibleZones(plannedFiles, riskFlags);
   const platformContracts = unique(list(input.platform_contracts));
   const solutionConfidence = normalizeSolutionConfidence(input, wi, riskFlags);
   const compression = normalizeCompression(input);
@@ -584,6 +637,13 @@ export function compileDeliveryGraph(input) {
   const conditionals = conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence, researchInsertions });
   const requiredSkills = unique([...laneSkills, ...conditionals.map((item) => item.skill)]);
   const requiredSteps = buildTaskSteps(laneSkills, conditionals);
+  // Without the design skills as anchors, persona coverage would trail the chain; in a
+  // bounded plan it feeds the brief, so it runs before plan-changeset.
+  if (planning.mode === "bounded") {
+    const i = requiredSteps.findIndex((step) => step.skill === "build-personas");
+    const plan = requiredSteps.findIndex((step) => step.skill === "plan-changeset");
+    if (i > plan && plan !== -1) requiredSteps.splice(plan, 0, ...requiredSteps.splice(i, 1));
+  }
   const chainValidation = validateMandatoryDeliveryChain(requiredSteps.map((step) => step.skill));
   if (!chainValidation.pass) {
     throw new Error(`compiler produced an invalid mandatory delivery chain: ${chainValidation.errors.join("; ")}`);
@@ -603,6 +663,7 @@ export function compileDeliveryGraph(input) {
     lane,
     delivery_mode: input.delivery_mode || "interactive",
     delivery_tier: deliveryTier,
+    planning,
     risk_flags: riskFlags,
     planned_files: plannedFiles,
     platform_contracts: platformContracts,
@@ -631,7 +692,7 @@ export function compileDeliveryGraph(input) {
     closeout_classification_required: true,
   };
 
-  const tasks = attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph), questions);
+  const tasks = applyPlanningDepth(attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph), questions), planning);
   const superseded = [...(existingGraph?.delivery_graph?.research?.superseded_tasks || []),
     ...existingTasks.filter(task => !tasks.some(current => current.id === task.id)).map(task => ({
       task: structuredClone(task), disposition: "research no longer required; no completion receipt issued",

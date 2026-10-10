@@ -12,6 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { validateResearchGraph } from "./lib/research-decision.mjs";
 import { MANDATORY_DELIVERY_CHAIN } from "./lib/mandatory-delivery-chain.mjs";
+import { irreversibleZones } from "./compile-delivery-graph.mjs";
 
 const CUTOFF = Date.parse("2026-05-11T00:00:00.000Z");
 const EVIDENCE_KEYS = [
@@ -266,6 +267,24 @@ function validateGraph(graph, filePath, validSkipIds) {
     }
     if (!deployedUnverified && !completed) {
       addIssue(issues, "high-compression in-flight graph must use status deployed-unverified until promotion evidence closes");
+    }
+  }
+
+  // Bounded planning keeps the chain but lightens each stage; an irreversible zone
+  // (auth, money, data migration, deploy, secrets) restores full review depth. The zone
+  // list is recomputed, so editing it out of the graph does not lower the depth.
+  if (dg.planning?.mode === "bounded") {
+    if (graph.lane === "framework") addIssue(issues, "bounded planning is not allowed on the framework lane");
+    const zones = irreversibleZones(dg.planned_files || [], dg.risk_flags || []);
+    if (JSON.stringify(zones) !== JSON.stringify(dg.planning.irreversible_zones || [])) {
+      addIssue(issues, `bounded graph irreversible_zones do not match its planned files and risk flags (expected ${JSON.stringify(zones)})`);
+    }
+    if (zones.length) {
+      for (const skill of ["review-plan", "review-exec", "audit-implementation"]) {
+        for (const task of tasksWithSkill(tasks, skill)) {
+          if (task?.metadata?.review_depth !== "full") addIssue(issues, `bounded graph touches ${zones.join(", ")} but ${skill} is not at full review depth`);
+        }
+      }
     }
   }
 

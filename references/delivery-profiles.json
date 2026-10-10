@@ -15,7 +15,8 @@
         "pricing",
         "security",
         "compliance"
-      ]
+      ],
+      "planning": "bounded: terms first, a one-page brief that grows, the probe loop; full review depth only on irreversible zones"
     },
     "mvp": {
       "goal": "Real users, small scale: works reliably on the main paths and is easy to change.",
@@ -25,7 +26,8 @@
       "review": "Independent review of plan and implementation.",
       "receipts": "Full receipt envelope on merges to main. Gaps are covered by one range attestation when an audit needs them, never by replaying stages.",
       "max_index": 40,
-      "conditional_stages": "all"
+      "conditional_stages": "all",
+      "planning": "bounded, as prototype, with the mvp test budget"
     },
     "production": {
       "goal": "Many users or money or data at stake: correct, observable, reversible.",
@@ -35,7 +37,8 @@
       "review": "Full chain with cross-family independent review.",
       "receipts": "Full envelope on every pushed commit; enforce mode when the owner sets it.",
       "max_index": 40,
-      "conditional_stages": "all"
+      "conditional_stages": "all",
+      "planning": "contract: the full sealed changeset; moves to bounded only if the pilot shows no loss (docs/decisions/2026-10-10-bounded-delivery.md)"
     }
   },
   "method": {

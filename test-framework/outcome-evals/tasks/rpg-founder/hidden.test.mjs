@@ -72,6 +72,38 @@ test("multiplayer: two players share a world and see each other move", async () 
   } finally { await browser.close(); }
 });
 
+test("hostile clients: malformed, oversized and flooding traffic to the game's own endpoints leaves it playable", async () => {
+  // Discover what the client really talks to (HTTP routes and WebSocket URLs), then attack
+  // exactly that surface. A sound server rejects bad input with a 4xx and keeps serving.
+  const seen = new Map(), sockets = new Set();
+  const first = await players(1);
+  first.pages[0].on("request", (r) => { const u = new URL(r.url()); if (u.origin === base && r.method() !== "GET") seen.set(`${r.method()} ${u.pathname}`, { method: r.method(), path: u.pathname }); });
+  first.pages[0].on("websocket", (ws) => sockets.add(ws.url()));
+  const acts = await first.pages[0].evaluate(() => window.__game.actions());
+  for (let i = 0; i < 12; i++) await first.pages[0].evaluate((a) => window.__game.act(a), acts[i % acts.length]);
+  await first.pages[0].waitForTimeout(600);
+  const bad = ["{not json", "", "null", "[]", '{"action":"__unknown__"}', '{"id":{"$gt":""},"action":"move"}', JSON.stringify({ action: "x".repeat(5000) }), "x".repeat(1024 * 1024)];
+  const codes = [];
+  const send = async (m, p, body) => { try { const r = await fetch(base + p, { method: m, body, headers: { "content-type": "application/json" } }); await r.arrayBuffer(); codes.push(r.status); } catch { codes.push(0); } };
+  for (const { method, path: p } of seen.values()) for (const body of bad) await send(method, p, body);
+  for (const p of ["/state?id=%00", "/act", "/api/../../etc/passwd", "/" + "a".repeat(3000)]) await send("POST", p, "{bad");
+  await first.pages[0].evaluate(async (urls) => {
+    for (const url of urls) await new Promise((done) => { const ws = new WebSocket(url); ws.onopen = () => { for (const m of ["{not json", "null", '{"type":"__unknown__"}', "x".repeat(200000)]) ws.send(m); setTimeout(() => { ws.close(); done(); }, 300); }; ws.onerror = () => done(); });
+  }, [...sockets]);
+  await Promise.all(Array.from({ length: 150 }, (_, i) => { const e = [...seen.values()][i % Math.max(1, seen.size)]; return e ? send(e.method, e.path, "{}") : send("GET", "/", undefined); }));
+  await first.browser.close();
+  assert.equal(codes.filter((c) => c >= 500).length, 0, `bad input must get a 4xx, not a server error (got ${codes.filter((c) => c >= 500).length} 5xx)`);
+  const again = await players(1);
+  try {
+    const p = again.pages[0];
+    const before = JSON.stringify(await st(p));
+    const acts2 = await p.evaluate(() => window.__game.actions());
+    for (let i = 0; i < 10; i++) await p.evaluate((a) => window.__game.act(a), acts2[i % acts2.length]);
+    await p.waitForTimeout(500);
+    assert.notEqual(JSON.stringify(await st(p)), before, "a new player can still play after the attack");
+  } finally { await again.browser.close(); }
+});
+
 test("load: four players at once all see four players, frames stay under 25 ms", async () => {
   const { browser, pages, errors } = await players(4);
   try {

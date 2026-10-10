@@ -134,55 +134,7 @@ Skip this phase if the question is clearly scoped.
 
 ## Phase 0 — Declare constraint profile (interactive)
 
-### 0a. Elicit constraints
-
-Present the 4 canonical profiles from `_shared/constraint-profiles.md` + let caller pick
-one with optional overrides. DO NOT silently default.
-
-Format the elicitation like this:
-
-> "This decision's answer depends on your constraint profile. Pick one:
->
-> 1. **Bootstrapper** — $0 budget, conservative, solo, growth=Base
-> 2. **Self-financed** — $X pre-profit (you specify X), moderate, solo/small, growth=Base-Aggressive
-> 3. **Funded startup** — $Y/mo burn covered, aggressive, small team, growth=Aggressive
-> 4. **Enterprise** — budget-allocated, compliance-heavy, full team
->
-> Or: tell me you want **comparison mode** and I'll run the analysis across 3 profiles
-> to show where the winner flips."
-
-### 0b. Comparison mode (optional)
-
-If caller picks comparison mode, run Phases 1-7 three times (Bootstrapper / Self-financed /
-Funded by default) and produce MULTI-PROFILE-DELTA.md showing:
-
-| Profile | Winner | Runner-up | Key reason |
-|---|---|---|---|
-| Bootstrapper | X | Y | Free tier covers us |
-| Self-financed | Z | X | $X budget lets us pay for quality |
-| Funded | W | Z | Quality differentiator matters at scale |
-
-Caller picks their profile based on the delta.
-
-### 0c. Write CONSTRAINT-PROFILE.md
-
-Stating the profile explicitly:
-
-```markdown
-# Constraint Profile — <decision slug>
-
-**Profile:** Bootstrapper
-**Overrides:** (none, or list e.g. "growth_scenario: Aggressive")
-
-## Declared thresholds
-- Acceptable monthly bill: $100 max
-- Runway: indefinite but cash-zero
-- Reversibility tolerance: weeks (1 migration ok)
-
-## Validity
-This decision is valid ONLY for this profile. A different profile may flip the recommendation —
-see MULTI-PROFILE-DELTA.md if comparison mode was run.
-```
+See references/phase-0-constraint-profile.md for Phase 0 steps 0a-0c (elicit constraints, comparison mode, write CONSTRAINT-PROFILE.md).
 
 ### 0d. Stop-gate
 
@@ -284,31 +236,7 @@ Force-generative prompts when stuck:
 
 Write OPTIONS.md with ≥10 (or ≥30 if broad domain) 1-line descriptions + category tag per option.
 
-## Phase 2.5 — Should we build this at all? (escape hatch)
-
-Before eliminating, ask the higher-order question:
-
-- Is there a viable outcome where we simply DON'T solve this problem?
-- Does the user value require this specific capability, or can we deliver value another way?
-- Are we building a feature competitors all have but nobody's customers actually use?
-- What does the product look like if we remove this feature?
-- Is there an innovative reframe (e.g., "we don't need a POI provider if we ship QR-code stickers to businesses") that eliminates the decision?
-
-Append "Escape Hatch Analysis" section to DIMENSIONS.md:
-
-```markdown
-## Escape Hatch Analysis
-
-| Option | Feasibility | Impact on core journey | Verdict |
-|---|---|---|---|
-| Don't build | high | core journey still works | **Pursue** → Route to validate-feature with reframe |
-| Innovative reframe: QR-stickers | medium | changes product shape | Drop — premature |
-```
-
-If escape hatch is VIABLE, SHORT-CIRCUIT to Phase 7 with decision "don't build in original
-form — adopt <reframe> instead" + route to `validate-feature` for the reframe. Stop.
-
-If not viable, proceed to Phase 3.
+See references/phase-2-5-escape-hatch.md for Phase 2.5 should-we-build-this escape hatch.
 
 ## Phase 3 — Elimination gates
 
@@ -342,85 +270,7 @@ Compare each survivor using `_shared/product-question-format.md`: evidence, mean
 
 Write QUESTIONNAIRE.md for compatibility, with substantive per-survivor comparison blocks. Retain a Constraint Profile Validity header (profile plus overrides; identify which risks/personas change under another profile) and an Adoption Timing footer (Now / Next / Later / Never, tied to EV-MODEL.md or revisit triggers). Include funnel-impact cost evidence where relevant to Phase 5; mark unknown inputs instead of manufacturing precise values. No fixed section or competitor count.
 
-## Phase 5 — Funnel-adjusted EV model
-
-For each survivor, compute expected value per action, NOT just unit infra cost:
-
-```
-EV_per_action = P(action_completes_given_friction) × LTV_per_completed_action − Cost_per_attempt
-```
-
-Required inputs:
-- Unit infra cost per action (from Phase 1b)
-- Completion rate per option (from Phase 1b research / industry benchmarks)
-- LTV per completed action (from business spec / builder projections)
-
-Required outputs per survivor:
-- EV per action at Y1 / Y2 / Y3
-- Under Low / Base / High growth scenarios (9 cells per option)
-- Break-even math: at what completion rate does this go net-negative?
-- Sensitivity tornado: rank inputs by EV impact
-
-### manage-finops invocation policy (optional helper, NOT required)
-
-`skills/manage-finops/SKILL.md` requires `docs/specs/vision.md`. `strategic-decision` treats vision
-as optional because many strategic decisions happen pre-vision (vendor / framework / database
-picks before product exists).
-
-**Default:** Phase 5 computes EV directly from builder-profile + Phase 1b research +
-QUESTIONNAIRE §7.
-
-**Optional escalation:** IF vision.md exists AND decision is specifically
-infrastructure/platform-cost-heavy, invoke `manage-finops` for richer FinOps Spec. Skill
-continues without it if vision absent.
-
-### Multi-profile handling
-
-If Phase 0b ran comparison mode:
-- Run EV model per profile → `EV-MODEL-<profile>.md`
-- Produce `MULTI-PROFILE-DELTA.md` showing where winner flips
-
-Otherwise single `EV-MODEL.md`.
-
-## Phase 6 — Adversarial review
-
-Invoke `agents/strategic-reviewer` with input manifest:
-
-**Always pass:**
-- `docs/specs/decisions/<slug>/` (all phase artifacts)
-- `skills/strategic-decision/SKILL.md` (meta-prompt to audit against)
-- `_shared/constraint-profiles.md`
-- `_shared/product-question-format.md`
-- `references/elimination-gate-protocol.md`
-
-**Conditional pass (if relevant):**
-- Feature specs cited in QUESTIONNAIRE Persona Fit
-- Journeys referenced by cited features
-- Personas referenced by features / journeys
-- Vision.md / domain-profile.md / analyze-competitors.md if decision cites them
-- Research files cited in DIMENSIONS.md or EV-MODEL.md
-- CLAUDE.md / router-context.md if platform/deployment-constrained
-- `~/.svc/builder-profile.md` if CONSTRAINT-PROFILE has overrides
-- `.svc/pipeline-decisions.jsonl` (grep-scoped to same-topic past decisions)
-
-### Host-adaptive invocation
-
-| Host | Mechanism |
-|---|---|
-| Claude Code | `scripts/dispatch-worker.sh --agent strategic-reviewer --input-paths <manifest>` → runtime enforces tool allowlist + fresh context |
-| Kimi CLI | same script; Kimi's runtime enforces agent YAML |
-| Codex CLI | inline load of `agents/strategic-reviewer.md` append content; no runtime enforcement — prompt-level discipline + eval regression catches violations |
-| Gemini CLI | same as Codex |
-
-Agent emits YAML findings (see `agents/strategic-reviewer.md` output format). Parent
-(this skill) writes the YAML to REVIEW.md.
-
-### What to do with findings
-
-- CRITICAL → must be resolved before proceeding; loop back to the phase the reviewer flagged
-- HIGH → address in DECISION.md §Why NOT alternatives with explicit reasoning
-- MEDIUM → note in DECISION.md §Risks for revisit
-- LOW → optional; note if worth capturing
+See references/phases-5-6-ev-and-adversarial.md for Phase 5 EV model and Phase 6 adversarial review.
 
 ## Phase 7 — Decision synthesis
 

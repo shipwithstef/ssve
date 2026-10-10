@@ -131,6 +131,21 @@ Before writing anything, read and hold in context:
 2. **Derive the chain from the plan, not from habit:** `node scripts/stage-activation.mjs --manifest <plan> --profile <profile>` evaluates conditional stages against the planned files and blueprints before any code exists. Essential stages always run; triggered conditional stages the profile does not keep come back `deferred`.
 3. **Score over-engineering before review:** `node scripts/overengineering-index.mjs <plan-body.json> --chain <activation.json> --profile <profile>`. Over the profile's limit means cut the listed items or justify each against an AC in `decision_trace`; review-plan treats an unjustified over-limit plan as a finding.
 
+## Bounded planning (prototype and MVP)
+
+When the delivery graph says `planning.mode: bounded`, write a **brief** from `references/brief-template.md`, not a changeset. The brief has five parts:
+- the expert terms and the first question;
+- done-when checks;
+- boundaries: owned paths, a versioned contract, never-touch paths, irreversible zones;
+- open questions, each with the check that decides it;
+- an append-only decision log.
+
+Settle open questions with `scripts/probe-loop.mjs`. The brief grows as the build teaches you; record each change through the existing amendment and `mutation_history` paths. Do not pre-write code, blueprints, an edge-case matrix or a 15-environment table for a prototype.
+
+Two things stay at full depth:
+- **Irreversible zones.** Plan auth, money, data migrations, deploys and secrets at full depth even here.
+- **Receipts.** Where the repository enforces the 5-receipt envelope (`.svc/chain-policy.json` refuse mode), the brief is also rendered as the inline v5 body the receipt needs. A `bounded` plan kind in the receipt schema is a follow-up work item (ledger row 61).
+
 ## Execution Mode (resolve BEFORE planning — WI-386)
 
 Before authoring the manifest, resolve and record the execution mode, because it decides whether §3a (Changeset Blueprint) is authored at all:

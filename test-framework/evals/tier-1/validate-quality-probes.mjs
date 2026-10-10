@@ -90,3 +90,17 @@ test("the dimensions registry names a class, a measure and a known source for ev
   }
   for (const layer of ["correctness", "production", "engineering", "efficiency", "product", "game"]) assert.ok(reg.dimensions.some((d) => d.layer === layer), layer);
 });
+
+test("history reads commit count, first-commit time and cadence from git", async () => {
+  const { history } = await import("../../../scripts/quality-probes.mjs");
+  const { spawnSync } = await import("node:child_process");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "qp-hist-"));
+  assert.equal(history(dir).reason, "no git history");
+  const git = (...a) => spawnSync("git", ["-c", "user.email=t@t", "-c", "user.name=t", ...a], { cwd: dir });
+  git("init", "-q");
+  for (const n of [1, 2, 3]) { fs.writeFileSync(path.join(dir, `f${n}.mjs`), `export const n = ${n};\n`); git("add", "."); git("commit", "-qm", `c${n}`); }
+  const h = history(dir, Date.now() - 10 * 60000);
+  assert.equal(h.commits, 3);
+  assert.ok(h.first_commit_min >= 9 && h.first_commit_min <= 11);
+  assert.ok(h.commits_per_10_min > 0);
+});

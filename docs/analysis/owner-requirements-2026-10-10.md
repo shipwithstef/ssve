@@ -12,7 +12,7 @@ Status values:
 
 | # | Requirement | Status | Evidence / what remains |
 |---|---|---|---|
-| 1 | Hooks must not slow the user; reliable first | partial | Git memo: dispatcher 428 → ~200 ms. `if` filters on two validators. Heartbeat async. Advisory mode no longer auto-provisions worktrees (3.9 s). The remaining ~60–80 ms per hook is Node start-up; the fix (native Go client plus warm daemon) is built but waits for owner approval, see `docs/decisions/2026-10-10-speed-and-defaults.md` H3 |
+| 1 | Hooks must not slow the user; reliable first | partial | Git memo: dispatcher 428 → ~200 ms. `if` filters on two validators. Heartbeat async. Advisory mode no longer auto-provisions worktrees (3.9 s). Measured now: ~300 ms per edit, ~100 ms per shell call. The owner consented to the native Go client plus warm daemon (H3, `docs/decisions/2026-10-10-speed-and-defaults.md`); the blocker is a Bash allow rule in `.claude/settings.json` that the owner adds. Until then: explore-time injection opt-in (D6) and a minimal worker hook profile (row 60) |
 | 2 | Hooks run only when they add value | partial | `if` filters; D6 review in the decision record. Explore-time rule injection stays until H3 makes it free |
 | 3 | Use the latest Claude Code and ML techniques, Rust or Go where they help | partial | Uses `if`, `async`, skill `!` dynamic context, `skillOverrides`, model aliases. Go front door built (H3) |
 | 4 | Decide strategically myself; record and review | done | `docs/decisions/2026-10-10-speed-and-defaults.md`; strategic-reviewer pass |
@@ -66,7 +66,7 @@ Status values:
 
 | # | Requirement | Status | Evidence / what remains |
 |---|---|---|---|
-| 35 | Challenge the plan at full changeset depth; each step says how to build it and how to verify it, down to the lowest useful detail, so any model, even a weak one, produces a provable result | open | Extend plan-changeset blueprints with a per-step verification command and expected evidence; review-plan rejects steps without one |
+| 35 | Challenge the plan; each step says how to verify it, so any model, even a weak one, produces a provable result | superseded in part (row 61) | The owner replaced "full changeset depth" with a bounded plan that grows (row 61). What stays: every open question in the brief names the executable check that decides it, so verification stays per step |
 | 36 | Prompts improve themselves from measured experience, per model, as models change | partial | `node scripts/outcome-eval.mjs promote --candidate <variant> --baseline <current> <results>` changes a prompt or method only on an established judged gain (CI above zero and p < 0.05), a higher solve rate, or equal results at lower cost. It is tested on the recorded results: production promoted on the product task; blueprint and lean rejected on spec-complete work, which moved the default there to plain. Candidate prompts run as `svc:<variant>` arms; the standing-rules section was the first change adopted this way and re-measured after wiring (11/20 → 19/20). Missing: automatic generation of new variants and a schedule that re-runs them on model releases |
 | 37 | Best blueprint, not every variation: proven foundations and templates over boilerplate; innovation by trial and error only where nothing proven exists | partial | Over-engineering index and delivery profiles exist; no curated foundation catalog yet |
 | 38 | Chief of staff rebuilt with real memory (Claude memory, repo files or an open-source store, chosen by evidence) | partial | Measured first: in a two-session scenario, owner rules from session 1 reached session 2 in 10/20 bare runs and 11/20 with the old svc prompt; models that wrote to `CLAUDE.md` (loaded into every session) kept them. The standing-rules section in `_shared/before-starting.md` now records owner rules there: 19/20 (p = 0.002 vs bare). See `test-framework/outcome-evals/PILLARS.md`. Still to do: the CoS's own decision queue measured the same way, and an external store compared against `CLAUDE.md` |
@@ -88,3 +88,19 @@ Status values:
 | 49 | Boxes and the rest must work on every harness, Claude Code first | open | Plan Phase 3.1: a transport interface for Two-Box roles with a Claude Code transport and an isolation probe |
 | 50 | Keep content only where it brings value now; drop the rest; re-decide per model as reality changes | partial | Procedure defined in the approved plan (value tests cheapest first, states keep/slim/lazy/retire/archive, per-model state, recheck on harness or model change). Still to do: `value-audit` script and its first run on this branch's reductions |
 | 51 | Say honestly whether the public post's claims are backed | done | Answered in session with the measured evidence: gains on vague product requests, continuity and test strength; no gain on single checks or the small game |
+
+## Added after the coherence audit (owner asks not yet recorded)
+
+| # | Requirement | Status | Evidence / what remains |
+|---|---|---|---|
+| 52 | Stage-level linter nudges so the model self-corrects; self-evals on greenfield, brownfield and post-onboarding scenarios | open | Not started |
+| 53 | UX from total novice to expert | partial | Row 62 (expert terms first, parallel teaching) addresses the novice end; no eval of the expert end |
+| 54 | One cohesive organism: every skill feeds the next, no contradictions, data models can update | done | `scripts/framework-coherence.mjs` (0 findings) plus tier-1 `validate-framework-coherence.mjs`; commit 3dc5e8c |
+| 55 | Budget-aware paid upgrades offered ("costs more, gets better": sound, video) | open | Not started |
+| 56 | Align with what session 016U3 produced | open | Not re-checked since the takeover |
+| 57 | Founder-level RPG benchmark (compliance, monetisation, engine, level design, economics, brand and socials, auth, Cloudflare hosting, flags, environments), published anonymised | partial | Task `test-framework/outcome-evals/tasks/rpg-founder` with graders proven by `check`; pilot gated on rows 58–62 |
+| 58 | Align every skill with current frontier knowledge: less steering, control only where it matters, "just enough", safe enterprise estimation, optimised Two-Box | partial | Progressive disclosure of the 33 skills over 500 lines (in progress); loop-path skills restated as outcome, check and boundary |
+| 59 | Deliver at the speed of the Opus + Haiku demos with the same reliability; nothing pilots until hooks, skills, CLAUDE.md, routing and chaining are aligned | partial | `docs/decisions/2026-10-10-bounded-delivery.md` phases A–D; pilot is phase E |
+| 60 | Bind planning and grading to science: ML, chaos engineering, simulation, any language that helps | partial | The formula (experiments per minute × check quality × selection ÷ overhead); `chaos-probe.mjs` and new grading metrics (phase C); Go hook client (row 1) |
+| 61 | The plan is not a full changeset: bounded by boundaries, discovered, mutable through feedback, growing | partial | Brief mode in plan-changeset and the probe loop (phase B); production keeps the full chain until the pilot shows no loss |
+| 62 | Teach the expert terms first and the question to settle first; a parallel teaching session that grows the owner's domain expertise from high level to deep, tied to the cockpit; steer if they can, otherwise defaults proceed | partial | Phase B0: terms step before the brief, `teach-project` domain mode; kept only if an ambiguity eval shows fewer rounds |

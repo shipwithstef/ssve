@@ -197,7 +197,7 @@ export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit
   });
 }
 
-async function pool(items, n, fn) {
+export async function pool(items, n, fn) {
   const out = []; let i = 0;
   await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) { const k = i++; out[k] = await fn(items[k]); } }));
   return out;

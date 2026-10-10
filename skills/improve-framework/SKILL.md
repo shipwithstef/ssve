@@ -92,58 +92,7 @@ These two skills produce DIFFERENT artifacts and should never be conflated:
 
 Reciprocal note in `skills/evolve-framework/SKILL.md` under "Scope boundary vs improve-framework".
 
-## Step 0: Locate the Framework Source Repo — MANDATORY FIRST STEP
-
-Before anything else, locate the svc framework git repo. All skill edits, proposals, FRAMEWORK-STATE.md updates, and commits go there — not to the install copy at `<SKILLS_PATH>` and not to the current project repo.
-
-```bash
-# 1. Resolve the host-specific installed skills root
-SKILLS_ROOT="${SVC_SKILLS_PATH:-}"
-if [ -z "$SKILLS_ROOT" ]; then
-  for candidate in \
-    "$HOME/.codex/skills" \
-    "$HOME/.kimi/skills" \
-    "$HOME/.gemini/skills" \
-    "$HOME/.config/opencode/skills" \
-    "$HOME/.cursor/skills" \
-    "$HOME/.claude/skills"
-  do
-    [ -d "$candidate" ] && SKILLS_ROOT="$candidate" && break
-  done
-fi
-
-# 2. Check for a pointer written at install time
-FRAMEWORK_REPO=""
-if [ -n "$SKILLS_ROOT" ]; then
-  FRAMEWORK_REPO=$(cat "$SKILLS_ROOT/.source-repo" 2>/dev/null || true)
-fi
-
-# 3. If not found, find the git repo that owns the installed SKILL.md via inode match
-if [ -z "$FRAMEWORK_REPO" ] && [ -n "$SKILLS_ROOT" ]; then
-  INODE=$(stat -c '%i' "$SKILLS_ROOT/improve-framework/SKILL.md" 2>/dev/null)
-  FRAMEWORK_REPO=$(find ~/app-workspaces ~/workspace ~/projects ~ -maxdepth 3 -name "SKILL.md" 2>/dev/null \
-    | while read f; do
-        [ "$(stat -c '%i' "$f" 2>/dev/null)" = "$INODE" ] && git -C "$(dirname $(dirname $f))" rev-parse --show-toplevel 2>/dev/null && break
-      done)
-fi
-
-# 4. Still not found — prompt the user
-if [ -z "$FRAMEWORK_REPO" ]; then
-  echo "ERROR: Cannot locate svc framework repo. Set FRAMEWORK_REPO manually or run from its directory."
-  exit 1
-fi
-
-echo "Framework repo: $FRAMEWORK_REPO"
-```
-
-Once located, **all subsequent file paths in this skill are relative to `$FRAMEWORK_REPO`**. Read `FRAMEWORK-STATE.md`, write proposals, and commit — all from that directory.
-
-If the framework repo has never been cloned on this machine, clone it before proceeding:
-```bash
-# Only if Step 0 failed to find it
-git clone <framework-remote-url> ~/app-workspaces/seriousvibecoding
-FRAMEWORK_REPO=~/app-workspaces/seriousvibecoding
-```
+See references/step-0-locate-source.md for Step 0 locating the framework source repo.
 
 ## Recursion Guard
 
@@ -202,75 +151,7 @@ Read `FRAMEWORK-STATE.md` first. This tells you:
 Also read `references/knowledge/svc/CAPABILITIES.md` — our own capabilities
 in structured format. This is what you're improving.
 
-### Step 1.5: Check for Pending Proposals
-
-Before gathering new evidence, check for actionable work already planned:
-
-```bash
-# List proposals, but skip any marked BLOCKED
-# (a BLOCKED proposal has "**Status:** BLOCKED" in the first 20 lines)
-for f in proposals/*.md; do
-  [ -f "$f" ] || continue
-  head -20 "$f" | grep -qE "^\*\*Status:\*\*\s*BLOCKED" && continue
-  echo "$f"
-done
-```
-
-Then run the proposal SLA gate before selecting work:
-
-```bash
-bash test-framework/evals/tier-1/validate-proposal-triage-sla.sh
-```
-
-The gate requires every direct `proposals/*.md` file that has reached the
-`proposals/triage.json` `max_open_days` window to carry one disposition:
-`accepted_wi`, `backlog_wi`, `rejected_reason`, or `deferred_until` metadata.
-Use `backlog_wi` plus a reason for an open proposal already owned by a real WI;
-this records unfinished work and never authorizes dispatch or overrides a freeze.
-Do not combine it with another disposition. Use `accepted_wi` only for formal
-promotion with the existing archive, residual-map, and ledger closeout. Metadata may
-live in the proposal body or in `proposals/triage.json`. `proposals/done/` is
-outside the open-proposal SLA because implemented proposals belong there.
-
-Before selecting a `backlog_wi` proposal, read that WI and its dependencies.
-Preserve freezes and explicit do-not-dispatch instructions. A backlog pointer
-is not a new execution authorization; follow the current task scope and priority.
-Do not start an unrelated backlog item merely because its proposal is present.
-
-If applicable pending (non-BLOCKED) proposals exist (blend plans, evolution proposals, improvement records
-not yet implemented), they ARE the evidence — skip Step 2 and Step 3 and route
-directly to Step 5 (Pick Implementation Route).
-
-A pending proposal means a previous skill (blend-external, evolve-framework)
-already did the analysis and diagnosis. Re-diagnosing is wasted work. Implement
-the plan that's already there.
-
-**Proposal lifecycle statuses:**
-- `DRAFT` or no status — actionable, pick up in Step 1.5
-- `BLOCKED` — intentionally held; skip in Step 1.5. A BLOCKED proposal states why it's blocked (open scope question, waiting on user decision, waiting on upstream work) in a "Why BLOCKED" section. It stays in `proposals/` (not moved to `done/`) until unblocked. To unblock: remove the `**Status:** BLOCKED` line.
-- `IMPLEMENTED` — move to `proposals/done/` per Step 6b.
-
-**Placeholder rules audit (lightweight):**
-While scanning pending work, also check for stale placeholder rules:
-
-```bash
-python3 -c "
-import json
-m = json.load(open('skills-manifest.json'))
-for e in m.get('rulesRegistry', {}).get('entries', []):
-    if e.get('source') == 'local' and e.get('last_evaluated') is None:
-        print('Placeholder rule:', e.get('path'))
-"
-```
-
-If any placeholder rules are found, emit a one-line reminder in the output summary. They are not blocking — just visibility.
-
-**If multiple pending proposals exist:** ask the user which to implement, or pick
-the one most recently created.
-
-**If only BLOCKED proposals exist:** treat as if no pending proposals — continue to Step 2.
-
-**If no pending proposals exist:** continue to Step 2.
+See references/step-1-5-pending-proposals.md for Step 1.5 pending proposals.
 
 ### Step 2: Gather Evidence
 
@@ -401,55 +282,7 @@ If it still fails: the fix is incomplete — iterate.
 If the gap was qualitative (not testable by test-framework): require a
 cross-model review or manual verification instead.
 
-### Output Artifact: Improvement Record
-
-Write the proposal artifact to `proposals/<date>-framework-improvement.md` in the **svc framework source repo** (e.g. `seriousvibecoding/`). This is a persistent, git-tracked change to the framework — not a temporary file, not a project artifact.
-
-**You are working in the framework repo, not the current project.** Even when triggered from Example Marketplace or any other project, `improve-framework` makes changes to the framework source. Operate in `seriousvibecoding/` (or whichever repo the skills were installed from). All skill edits, proposals, and `FRAMEWORK-STATE.md` updates go there.
-
-> **The split:**
-> - `seriousvibecoding/proposals/` — framework change records (persistent, git-tracked)
-> - `seriousvibecoding/FRAMEWORK-STATE.md` — framework memory
-> - `seriousvibecoding/<skill-name>/SKILL.md` — the skill files being improved
-> - Current project repo `docs/` — project work items, WIs, specs; no framework content here
-
-**Timing:** For quick-fix and direct SKILL.md edit routes, write this record
-AFTER implementation (it's a post-hoc record, not a pre-approval proposal).
-For normal pipeline routes, write it BEFORE implementation as a plan, then
-update with commits/replay results after.
-
-```markdown
-# Framework Improvement: <title>
-
-## Evidence
-- **Source:** <test-framework result / user report / codex review>
-- **Finding:** <exact gap with file:line>
-- **Severity:** <high / medium / low>
-
-## Diagnosis
-- **Root cause:** <why the gap exists>
-- **Category:** <drift / fragility / inefficiency / missing capability>
-- **Already in FRAMEWORK-STATE.md?** <yes (deferred) / no (new)>
-
-## Implementation
-- **Route:** <quick-fix / create-skill / normal pipeline>
-- **Files changed:** <list>
-- **Commits:** <SHAs>
-
-## Replay Verification
-- **Replay target:** <scenario or check that must pass>
-- **Result:** <PASS / FAIL / PARTIAL>
-- **Evidence:** <test output or review finding>
-
-## FRAMEWORK-STATE.md Mutations
-- **Analysis History:** <what to add>
-- **Known Gaps:** <what to move to fixed>
-- **Decisions:** <any new locked decisions>
-- **Capabilities:** <update svc/CAPABILITIES.md? yes/no>
-```
-
-This artifact is machine-checkable. test-framework can verify it has all
-required sections. Replay target must exist and must pass.
+See references/improvement-record.md for the Improvement Record output artifact.
 
 ### Step 6b: Move Proposal to Done
 
@@ -463,71 +296,7 @@ git add proposals/done/<date>-framework-improvement.md && git commit -m "improve
 
 Proposals live in `proposals/` while pending. Once implemented and verified, they move to `proposals/done/` and are committed. Do NOT leave implemented proposals in `proposals/` — that directory should only contain actionable pending work.
 
-### Step 6c: Sync to Remote — MANDATORY BEFORE DECLARING DONE
-
-Committing locally without pushing creates a silent backlog — future `improve-framework` runs stack on top of unpushed work, and collaborators/other machines never see the change. Push as the final act of the loop.
-
-```bash
-# Run from the framework repo after Step 6b commit.
-# Check unpushed work first so you can report it honestly.
-UNPUSHED=$(git log --oneline @{u}..HEAD 2>/dev/null | wc -l)
-if [ "$UNPUSHED" -gt 1 ]; then
-  echo "NOTE: pushing $UNPUSHED commits (includes $((UNPUSHED-1)) from prior unpushed runs)"
-fi
-git push origin main
-```
-
-**Classify the rejection before giving up.** Not all push failures are equivalent — some have deterministic, safe, in-scope recoveries:
-
-| Failure mode | Allowed autonomous recovery | Forbidden |
-|---|---|---|
-| Non-fast-forward (upstream moved) | `git fetch` + `git pull --rebase origin main` ONCE, retry push. If rebase conflicts, stop and report. | `git push --force`, `git push --force-with-lease` (never without explicit user directive) |
-| Branch protection (main requires PR) | Create branch `skills/improve-framework/<date>-<slug>`, push, open PR with proposal as body | Silently switching default branch, disabling protections |
-| Auth failure (`Repository not found`, 401/403, "authentication required") | `gh auth switch` to the account encoded in the remote URL — see pattern below | Creating new auth, `gh auth login`, prompting user interactively, swapping to an account not already in `gh auth status` |
-
-**Auth-failure recovery (allowed autonomous pattern):**
-
-When `git push` fails with `remote: Repository not found`, `authentication required`, or HTTP 401/403 — the cause is almost always an account mismatch. The active `gh auth` account doesn't own (or can't see) the remote repo. Switching to the account that DOES own it is safe and deterministic: no data loss, no history rewrite, no branch change. Do it before reporting failure.
-
-```bash
-# 1. Extract expected owner from the remote URL (handles https + ssh forms)
-REMOTE_URL=$(git remote get-url origin)
-EXPECTED_OWNER=$(echo "$REMOTE_URL" | sed -E 's|.*github\.com[:/]([^/]+)/.*|\1|')
-
-# 2. Existence check — account must already be in `gh auth status`. Never create new auth.
-gh auth status 2>&1 | grep -q "account $EXPECTED_OWNER" || {
-  echo "AUTH RECOVERY SKIPPED: $EXPECTED_OWNER not in gh auth status — stopping and reporting"
-  exit 1
-}
-
-# 3. Capture current active account so we can restore after push
-PREVIOUS_OWNER=$(gh auth status 2>&1 | grep -B1 "Active account: true" | grep "Logged in" | sed -E 's|.*account ([^ ]+) .*|\1|')
-
-# 4. Switch, retry push ONCE, restore previous account
-gh auth switch --user "$EXPECTED_OWNER" && git push origin main
-PUSH_EXIT=$?
-[ -n "$PREVIOUS_OWNER" ] && gh auth switch --user "$PREVIOUS_OWNER" 2>/dev/null || true
-
-# 5. If push still failed after switch, stop and report both attempts
-[ "$PUSH_EXIT" -eq 0 ] || { echo "AUTH RECOVERY FAILED after switch to $EXPECTED_OWNER"; exit 1; }
-```
-
-**Hard safety rules for auth-switch recovery:**
-
-- **Deterministic match only.** Owner extracted from the remote URL. No guessing, no scanning for "probably correct" accounts.
-- **Existence check first.** `gh auth status` must already show the account. Never run `gh auth login`, never prompt interactively, never create new credentials.
-- **Try once.** If the switch succeeds but the push still fails, stop and report — don't cycle through multiple accounts.
-- **Restore previous account after push.** The terminal must not be left in an unexpected active-account state for subsequent commands.
-- **Report what happened.** Final output must name the account that owned the successful push so the user can audit.
-
-**Fallback:** if the auth-switch recovery also fails (e.g., the expected account exists locally but lacks push permission on the remote), stop the loop and report both the initial failure AND the switch attempt.
-
-**Still forbidden under all conditions:** force-push (any variant) without explicit user directive, silent branch switch, disabling branch protections, creating new accounts, modifying `~/.gitconfig`, changing remote URLs silently, `gh auth login` inside this recovery.
-
-**Other guardrails:**
-
-- If the repo uses PR-only flow (main is protected): create branch `skills/improve-framework/<date>-<slug>`, push, and open a PR with the proposal as the PR body. Do not declare the loop done until the PR is opened (merging remains the user's call).
-- Report the remote SHA + unpushed count in the final output so the user can see what landed. If auth-switch was used, name the account that owned the successful push.
+See references/step-6c-sync-remote.md for Step 6c remote sync.
 
 ### Step 7: Mutate Framework Memory
 

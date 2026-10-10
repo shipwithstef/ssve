@@ -134,109 +134,7 @@ verify-promotion. If running sub-skills in the same session, they share this
 context. If spawning as subagents, pass the file paths explicitly — do NOT let
 each sub-skill independently discover artifacts by scanning `docs/specs/`.
 
-## Restart-Boundary Continuation (WI-552)
-
-Check for a continuation baton before starting ordinary verification:
-
-```bash
-node scripts/resolve-continuation.mjs status --wi "$WI"
-```
-
-**No baton, or no WI declared `requires_fresh_session`:** proceed with
-ordinary verification below. Zero new sessions are launched (AC-552-8).
-
-**Baton exists and is `deploy_stamped` or `blocked` (retryable):** this run
-IS the lifecycle controller. Ask the WI-551 resolver for role
-`verify.restart` and launch EXACTLY ONCE — never twice, never a silent
-Claude/Codex remap of a host the owner policy did not select:
-
-```bash
-node scripts/resolve-continuation.mjs reconcile --wi "$WI"
-```
-
-- If the result is `blocked` with `code: capability_limited`, the target
-  host has no `fresh_session_launch` capability declared in
-  `provision/hosts/<host>.json`. Report the single explicit blocker per the
-  Boundaries in `docs/specs/work-items/WI-552.md` — do not treat owner
-  copy/paste as success and do not substitute a different host.
-- If `launched`, STOP here in this session. The launched child session is
-  the one that continues G7 for this baton; report the launch receipt and
-  exit. Read-only proof needs no mutating lease (AC-552-5).
-
-**This session IS the freshly launched continuation child** (detect via
-`SVC_SESSION_ID` matching the baton's latest `launches[].session_id` from
-`status`): run ONLY the declared verification/closeout tasks. The
-`svc-continuation-phase-guard` PreToolUse hook mechanically denies
-`diagnose-bug`, `plan-changeset`, and `execute-changeset` for this session
-(AC-552-4) — do not attempt to route around it. Produce a structured result
-(never free-text "looks good" or "prompt to send" — AC-552-7) and consume it
-to close the baton:
-
-```bash
-node scripts/resolve-continuation.mjs consume --wi "$WI" --result '{
-  "schema_version": 1, "wi": "<WI>", "session_id": "<this session id>",
-  "started_at": "<ISO timestamp>", "event_status": "success",
-  "proof_query": "<must equal the baton boundary.proof_query>",
-  "ac_mapping": [{"ac": "AC-552-1", "status": "pass"}],
-  "artifacts": ["<evidence path>"], "verdict": "pass"
-}'
-```
-
-`consume` rejects a result whose `session_id` equals the implementation
-session, does not match the exact launched session, or whose `started_at`
-is not strictly after the deploy receipt — these are freshness violations,
-not warnings (AC-552-2). If the parent process died after launch, a fresh
-`reconcile` call resumes from the ledger without spawning again (AC-552-9).
-
-## Verification Escalation Ladder
-
-**Verification is AI-first. User handoff is the LAST option, not a shortcut.**
-
-When a verification claim needs proof, attempt tiers in order. Do not skip to a higher tier without exhausting the lower one. Every skip to a higher tier requires a documented reason in the verification report.
-
-**HARD-GATE — AP-31: behavioral runtime verification is the agent's job, not the user's.** Punting to V3 ("open the app on your phone, tap X, confirm Y") without an explicit V2 exhaustion log citing every V2 mechanism attempted and the specific technical reason each failed is `runtime-verification-user-delegation` HIGH severity per `references/anti-patterns.md` AP-31. Visual aesthetic review IS legitimate V3 scope. Behavioral verification (button registers click, body interactivity restored, navigation flips correctly, deploy markers present) is NEVER the legitimate V3 scope. If you find yourself writing "the final eyeball is yours" or "open the app on your phone" for a behavioral AC, STOP — return to V0/V1/V2 and exhaust them first. The cost asymmetry favors the agent: ~$0.05 to run a Playwright probe vs. erodes-user-trust to punt.
-
-| Tier | What | When | Cost |
-|---|---|---|---|
-| **V0 — Static/structural** | Grep committed diff, confirm deploy state `ready`, check router-context deploy matrix satisfied | Always first. Confirms shipped code matches intent. | ~10s |
-| **V1 — Live DOM** | Navigate to affected URL via `browse` daemon or Playwright MCP. Assert DOM elements exist with correct attributes, CSS classes applied, aria-labels, data-testids, role-account visibility | After V0. Confirms production render. | ~30s |
-| **V2 — Live interaction** | Login via E2E account pool; trigger interaction; observe handler fires via network request or console. For gesture/touch: try (a) Playwright device descriptor with `hasTouch:true`, (b) CDP `Input.dispatchTouchEvent` (trusted events), (c) React fiber direct invocation of the handler prop, (d) existing E2E suite replay, (e) add a testability seam (data-testid + imperative API) and retry | After V1 when behavior is interaction-gated. | ~2min |
-| **V3 — User delegation** | Ask user to verify on real device / paste screenshot / confirm aesthetic quality | LAST RESORT. Only after V2 exhaustion log documents every V2 mechanism attempted and the specific technical reason each failed. | minutes–hours |
-
-### V2 Exhaustion Log (mandatory before V3)
-
-When V2 cannot complete, the verification report MUST include:
-
-```markdown
-## V2 Exhaustion Log
-
-Attempted V2 mechanisms (in order):
-
-1. <mechanism name> — <failure signature> — <technical reason it couldn't complete>
-2. <mechanism name> — <failure signature> — <technical reason>
-3. ...
-
-**V3 handoff justification:** <structural platform constraint OR aesthetic/subjective claim OR named technical limitation>
-```
-
-**"I didn't think to try X" is not a valid V2 exhaustion.** Reference `references/verification-patterns.md` for the catalog of V2 techniques.
-
-### Classification rules
-
-- **Functional claim** (element present, handler fires, class applied, network request made, aria-label exists) → V1 or V2. NEVER V3 by default.
-- **Aesthetic claim** (looks polished, feels native, color is right, spacing feels off) → V3 is valid after V1 confirms the structural primitives are in place.
-- **Structural platform constraint** (Base44 auth domain-scoped pre-deploy; OS-level Chrome overscroll not JS-driven) → V3 is valid; cite the constraint in the exhaustion log.
-
-### AI-first enforcement
-
-`review-gate` G7 FAILs any verification report whose evidence trail ends at "user confirmed" for a functional claim without a V2 exhaustion log. See `references/anti-patterns.md` AP-28 (Premature User Handoff).
-
-**Confidence tiers in the report:**
-
-- `VERIFIED` — V0+V1+V2 all PASS (full AI verification)
-- `VERIFIED-L2` — V0+V1+partial V2 PASS; one V2 mechanism hit a documented technical limit; exhaustion log present
-- `VERIFIED-USER` — V3 handoff with justification (structural constraint or aesthetic claim); V2 exhaustion log present
-- `UNVERIFIED` — no tier passed; cannot declare VERIFIED
+See references/restart-boundary-and-escalation.md for the Restart-Boundary Continuation (WI-552) detail, Verification Escalation Ladder, V2 Exhaustion Log, classification rules, and AI-first enforcement.
 
 ## Multi-PR Campaign Sampling
 
@@ -293,45 +191,7 @@ If the only evidence is bundle-grep/static proof, write `Verification tier: V0`
 and do not use unqualified `VERIFIED` or `complete` wording for browser-visible
 work.
 
-## Verification Report
-
-Compile:
-
-- manifest reference
-- sync-spec-code results
-- AC coverage
-- QA coverage
-- E2E coverage
-- responsive / viewport evidence coverage for browser-visible features
-- multi-PR campaign sample seed, selected items, verification tier per item, and evidence paths when a campaign has three or more shipped items
-- single_lane_summary with `verification_tier`, `sampled`, and evidence paths
-  when the closeout has no PR list
-- findings
-
-## G7 Review
-
-G7 checks:
-
-- no unresolved critical/high drift
-- AC coverage is complete or explicitly justified
-- QA, E2E, and responsive evidence are current
-- spec/journey state reflects what shipped
-
-If G7 passes:
-
-- feature status -> `VERIFIED` with confidence tier:
-  - `VERIFIED-L1`: structural + visual + manual QA (human inspected pages in browser)
-  - `VERIFIED-L2`: structural + visual (screenshots captured at desktop + mobile, visual diff reviewed)
-  - `VERIFIED-L3`: structural assertions only (tests pass, build passes, no visual evidence)
-
-  **For browser-visible features:** L3 is acceptable ONLY when visual verification is blocked by a documented, pre-existing issue (e.g., auth-gated pages untestable). The tier goes in the WI status: `**Status:** VERIFIED-L3 (no visual evidence — auth-gated pages untestable)`. This makes the confidence level transparent to non-technical stakeholders.
-
-If G7 fails:
-
-- route back based on failure type:
-  - behavior bug -> `diagnose-bug` or execution/planning path
-  - spec mismatch -> `write-spec`
-  - journey mismatch -> `write-journeys`
+See references/report-and-g7-review.md for the Verification Report and G7 Review.
 
 ### Auto-Invoke On-Demand Skills
 
@@ -347,28 +207,7 @@ After G7 passes and the WI is marked VERIFIED, check for post-completion signals
 If any on-demand skill is inserted, update `.svc/lane-tasks-<WI>.json` with the new task (or create a new WI if the current one is already VERIFIED). Log the insertion as a `taste` decision in `.svc/pipeline-decisions.jsonl`.
 Validate the milestone refresh trigger with `node scripts/check-journey-refresh-trigger.mjs --state <state.json>` before skipping it.
 
-## Post-Verification: Visual Baseline Promotion
-
-If track-visuals diff report exists for this feature/WI and G7 passed:
-
-1. Read the diff report — identify CHANGED entries marked intentional.
-2. **Staleness check for competing branches:** For each affected screen, check
-   if the golden baseline was updated after this WI's branch point:
-   ```bash
-   git log -1 --format=%ci -- docs/specs/visuals/baseline/<screen>.png
-   ```
-   If the baseline was updated more recently (another WI promoted while this one
-   was in flight), flag those screens for **re-capture before promoting** —
-   the current WI's screenshots may be based on a stale state.
-3. If no staleness conflicts: invoke track-visuals in `update` mode for
-   affected screens.
-4. If staleness conflicts: re-capture ONLY the conflicting screens against
-   current main, then promote.
-5. After promotion: delete screenshot files (`.png/.jpg/.webp`) from
-   `.svc/visuals/<WI>/`. Preserve review reports, manifests, and
-   analysis logs — these are retained for platform improvement.
-
-Skip this step if: no visual changes, or feature has no browser-visible surface.
+See references/visual-baseline-promotion.md for Post-Verification: Visual Baseline Promotion.
 
 ## Post-Verification: Landing-tagged WI handler (WI-139)
 
@@ -399,117 +238,7 @@ landing_visual_receipt:
 
 The tier-1 validator `validate-landing-side-by-side-exists.sh` enforces that any landing/marketing-page-tagged WI in VERIFIED state has at minimum the pre-implementation artifact on disk.
 
-## Post-Verification: Canary Monitoring
-
-If the feature has a live URL (localhost or deployed), run a canary check.
-
-For corrective, regression, deploy-affecting, or acceptance-critical
-verification, also apply `references/pre-post-validation-loop.md`: identify the
-exact command, journey, probe, or visual capture that proves the shipped change,
-cite its pre-change/pre-deploy evidence when reachable, rerun the same proof
-post-promotion, and classify the delta. A broad green suite can support the
-verdict, but it does not replace an unclassified pre/post delta for the
-acceptance-critical path.
-When a machine-readable pre/post evidence file exists, validate it with
-`node scripts/validate-pre-post-validation-evidence.mjs --evidence <path>` and
-cite the result.
-
-### Baseline Capture (BEFORE deploy)
-
-Before any deployment, capture the pre-deploy baseline for every page in the feature's journeys:
-
-1. Screenshot each page at desktop and mobile at minimum
-2. Record console errors (if any pre-existing)
-3. Measure page load time
-4. Store as the comparison baseline
-
-### Active Monitoring Loop
-
-After deploy, monitor every 60 seconds for 5 minutes (5 checks minimum):
-
-1. Open the app in browser (gstack browse)
-2. For each page in the feature's key journeys:
-   - Take a screenshot
-   - Capture console errors
-   - Measure page load time (performance.timing or equivalent)
-   - Check for new 404 responses in network tab
-3. Compare each metric against the pre-deploy baseline
-
-### Alert Severity
-
-| Severity | Condition | Action |
-|----------|-----------|--------|
-| CRITICAL | Page fails to load entirely | Stop monitoring, report immediately |
-| HIGH | New console errors not present in baseline | Flag for investigation |
-| MEDIUM | Page load time >= 2x baseline | Flag as performance regression |
-| LOW | New 404 requests not present in baseline | Note in report |
-
-**Transient tolerance:** only alert on patterns that persist across 2+ consecutive checks.
-A single spike that resolves on the next check is logged but not alerted.
-
-### Health Report
-
-Produce a per-page status table at the end of monitoring:
-
-```
-CANARY HEALTH REPORT
-Page                    | Load Time | Console Errors | Status
------------------------ | --------- | -------------- | -------
-/dashboard              | 1.2s (ok) | 0 new          | HEALTHY
-/dashboard/settings     | 3.8s (2x) | 2 new          | DEGRADED
-/checkout               | TIMEOUT   | N/A            | BROKEN
-```
-
-Final verdict:
-- **HEALTHY** — all pages healthy, no new errors, load times within tolerance
-- **DEGRADED** — non-blocking issues found (MEDIUM/LOW alerts), feature works but needs attention
-- **BROKEN** — any CRITICAL alert fired, or HIGH alerts persisted across all checks
-
-## Post-Verification: Document Sync
-
-After verification passes, reconcile documentation.
-
-### Update Classification
-
-Not all doc updates are equal. Classify each before acting:
-
-- **Auto-update** (apply without asking): factual corrections — version numbers, file paths,
-  command syntax, API signatures that changed in the diff
-- **Ask-user** (present and wait for approval): narrative changes — rewording feature descriptions,
-  changing architecture explanations, modifying onboarding guides, altering project positioning
-
-### Reconciliation Steps
-
-1. Read ONLY project docs that the shipped diff could affect. Check the diff
-   file list (use the manifest's file set, or `git log --format=%H -1 -- docs/plans/` to find the promotion commit, then `git diff <commit>~1..<commit> --name-only`) — if no docs were touched
-   and no public API changed, skip doc reconciliation entirely.
-2. For touched docs: cross-reference the diff — does the doc still match?
-3. Apply auto-updates; queue ask-user updates and present them as a batch
-
-### Cross-Doc Consistency Checks
-
-After updates, verify consistency across documents:
-
-- README feature list matches CLAUDE.md capabilities section
-- CHANGELOG latest version matches VERSION file
-- Any "Getting Started" commands in README still work with current codebase
-- Architecture diagrams reference files/modules that still exist
-
-If any inconsistency is found, fix it (auto-update) or flag it (ask-user).
-
-### TODOS.md Cleanup
-
-1. Read TODOS.md (if it exists)
-2. Mark completed items — cross-reference against the shipped diff to identify which TODOs were addressed
-3. Scan for new TODO/FIXME/HACK comments introduced by the promotion.
-   Use the promotion commit (from manifest or merge commit), not main..HEAD
-   (which is empty after merge):
-   ```bash
-   # Find the promotion merge commit
-   PROMO_COMMIT=$(git log --merges --format=%H -1)
-   git diff "${PROMO_COMMIT}^..${PROMO_COMMIT}" | grep -E '^\+.*\b(TODO|FIXME|HACK)\b'
-   ```
-4. Add any new items to TODOS.md with file location and context
+See references/post-verification-canary-and-doc-sync.md for Canary Monitoring and Document Sync (through TODOS.md Cleanup).
 
 ### VERSION Guard
 
@@ -549,56 +278,7 @@ rather than editing canonical version state during verification.
 
 This closes the loop — documentation matches shipped reality.
 
-## Post-Verification: Log Learnings
-
-Append operational discoveries from this run to `docs/learnings/learnings.jsonl`:
-
-```json
-{"date": "<date>", "skill": "verify-promotion", "feature": "<name>", "learning": "<what was discovered>", "confidence": "high|medium|low", "saves_minutes": <estimate>}
-```
-
-Examples of learnings worth logging:
-- "The Prisma migration script needs `--force` flag in CI"
-- "Auth middleware must be loaded before rate limiter"
-- "The empty state component doesn't render without at least one CSS import"
-
-These compound across sessions — `route-workflow` reads them to make better recommendations.
-
-## Post-Verification: Update Builder Profile
-
-After a successful verification, update the global builder profile
-(`~/.svc/builder-profile.md`) to capture what this project taught us
-about the builder. This is how the pipeline gets smarter across projects.
-
-1. **Add project to history:**
-   ```markdown
-   ### <Project Name> — shipped
-   - **What:** <one sentence>
-   - **When:** <start date> → <ship date>
-   - **Stack:** <what was built with>
-   - **Reached:** shipped / launched / revenue
-   - **Revenue:** <if any>
-   - **Reusable assets:** <code, infra, domain, learnings>
-   ```
-
-2. **Update skills** — did the builder learn a new framework, tool, or pattern?
-3. **Update financial context** — did revenue start? New subscriptions? Entity registered?
-4. **Update social presence** — did they grow followers? Launch on ProductHunt? Start a newsletter?
-5. **Run pattern detection** — compare this project's timeline, decisions, and outcome
-   against past projects. If a pattern emerges or is reinforced, append to Builder Patterns:
-   ```markdown
-   - **[pattern-id] <description>** — confidence: <1-10>, observed: <N> times
-     Source: <which projects>
-     Pipeline action: <what changes>
-   ```
-6. **Run gap analysis** — what blocked them this time? What tool would have saved time?
-7. **Append changelog entry:**
-   ```markdown
-   - <date>: Post-project update from <project name> — <what changed>
-   ```
-
-If the builder profile does not exist at `~/.svc/builder-profile.md`, skip this step
-(the builder has not been profiled yet — `route-workflow` handles initial creation).
+See references/post-verification-learnings-profile.md for Log Learnings and Update Builder Profile.
 
 ## What Not To Do
 
@@ -606,18 +286,7 @@ If the builder profile does not exist at `~/.svc/builder-profile.md`, skip this 
 - Do not skip sync-back into spec/journey state
 - Do not treat passing tests alone as sufficient if drift remains
 
-## Test Quality Audit
-
-After confirming tests pass, audit test QUALITY. A passing test that proves nothing is worse than a missing test — it creates false confidence.
-
-| Check | What to look for | Severity |
-|---|---|---|
-| Disabled/skipped tests | `.skip()`, `@Disabled`, `xit(`, `xdescribe(` on requirement-linked tests | BLOCKER |
-| Circular test patterns | System generates its own expected values (test compares output to output) | BLOCKER |
-| Assertion strength | `toBeDefined()` or `!= null` where value/behavioral assertion is needed | WARNING |
-| Expected value provenance | Expected value came from the system under test, not from the spec or AC | BLOCKER |
-
-**Rule:** Test quality blockers override an otherwise passing verification. A green CI with circular tests is a false green.
+See references/test-quality-audit.md for the Test Quality Audit.
 
 ## Pipeline Continuation
 

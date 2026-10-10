@@ -1,0 +1,1 @@
+{"wi":"WI-BOUNDED-2","lane":"greenfield","change_type":"feature","user_intent":"Prototype a browser game with accounts","delivery_profile":"mvp","planned_files":["src/game.js","src/auth/login.js"],"risk_flags":["user-facing"]}

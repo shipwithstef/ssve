@@ -23,7 +23,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
+import { probe as chaosProbe } from "./chaos-probe.mjs";
+
+const TASKS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "test-framework", "outcome-evals", "tasks");
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "data", "coverage", "dist", "build"]);
 const CODE = /\.(mjs|cjs|js|ts)$/;
@@ -184,8 +188,23 @@ export function mutation(dir, { mutants = 30, timeoutMs = 120000 } = {}) {
   }
 }
 
+// Commit history of the build: how soon the first commit landed and how often the agent
+// committed. startedAt (ms) is when the build began; without it only the cadence is known.
+export function history(dir, startedAt = null) {
+  if (!fs.existsSync(path.join(dir, ".git"))) return { commits: 0, reason: "no git history" };
+  const r = spawnSync("git", ["log", "--format=%ct"], { cwd: dir, encoding: "utf8" });
+  const ts = (r.stdout || "").trim().split("\n").filter(Boolean).map((t) => Number(t) * 1000).sort((a, b) => a - b);
+  if (!ts.length) return { commits: 0, reason: "no commits" };
+  const span = Math.max(1, (ts[ts.length - 1] - (startedAt ?? ts[0])) / 60000);
+  return {
+    commits: ts.length,
+    first_commit_min: startedAt ? Math.round(((ts[0] - startedAt) / 60000) * 10) / 10 : null,
+    commits_per_10_min: Math.round((ts.length / span) * 10 * 10) / 10,
+  };
+}
+
 export function probe(dir, opts = {}) {
-  return { ...sizeAndSlop(dir), tests: testHygiene(dir), mutation: mutation(dir, opts) };
+  return { ...sizeAndSlop(dir), tests: testHygiene(dir), mutation: mutation(dir, opts), history: history(dir, opts.startedAt ?? null) };
 }
 
 async function main(argv) {
@@ -197,7 +216,10 @@ async function main(argv) {
     const data = JSON.parse(fs.readFileSync(results, "utf8"));
     for (const row of data.rows) {
       if (!row.artifact || !fs.existsSync(row.artifact)) continue;
-      row.probes = probe(row.artifact, { mutants });
+      row.probes = probe(row.artifact, { mutants, startedAt: row.started_at ? Date.parse(row.started_at) : null });
+      // A task that names its steady state gets the chaos pass too.
+      const chaosSpec = path.join(TASKS_DIR, row.task, "chaos.json");
+      if (fs.existsSync(chaosSpec)) row.probes.chaos = await chaosProbe(row.artifact, JSON.parse(fs.readFileSync(chaosSpec, "utf8")));
       process.stderr.write(`${row.task}/${row.arm}#${row.rep}: mutation ${row.probes.mutation.score ?? row.probes.mutation.reason}, ${row.probes.size.source_loc} src loc\n`);
     }
     fs.writeFileSync(results, JSON.stringify(data, null, 2) + "\n");

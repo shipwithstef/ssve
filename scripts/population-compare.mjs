@@ -12,8 +12,11 @@ import { appendJsonlLine } from "./state-io.mjs";
 
 const projectDir = process.env.SVC_PROJECT_DIR || ".";
 
+// An outcome check outranks every metadata field: when a worker result carries
+// oracle_score (0..1, from the check that decides the question, as probe-loop.mjs
+// records it), it dominates; the contract fields only break ties.
 function scoreFromContractFields(r) {
-  let score = 0;
+  let score = Number.isFinite(r.oracle_score) ? 1000 * r.oracle_score : 0;
   if (r.status === "success") score += 40;
   if (r.clean_worktree) score += 20;
   if (r.validation_evidence) score += 20;

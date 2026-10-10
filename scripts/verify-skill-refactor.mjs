@@ -43,8 +43,11 @@ if (!skillName) {
   process.exit(2);
 }
 
-const skillDir = skillName;
+// Resolve the skill from the repository root so the check works from any directory.
+const repoRoot = execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
+const skillDir = path.join(repoRoot, "skills", skillName);
 const skillFile = path.join(skillDir, "SKILL.md");
+const skillGitPath = `skills/${skillName}/SKILL.md`;
 const refDir = path.join(skillDir, "references");
 
 if (!fs.existsSync(skillFile)) {
@@ -55,7 +58,7 @@ if (!fs.existsSync(skillFile)) {
 // 1. Get the old SKILL.md content at oldRef
 let oldContent;
 try {
-  oldContent = execSync(`git show ${oldRef}:${skillFile}`, { encoding: "utf8" });
+  oldContent = execSync(`git show ${oldRef}:${skillGitPath}`, { encoding: "utf8", cwd: repoRoot });
 } catch (e) {
   console.error(`ERROR: cannot read ${skillFile} at ${oldRef}: ${e.message.split("\n")[0]}`);
   process.exit(2);

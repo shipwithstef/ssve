@@ -90,31 +90,7 @@ Skip condition: skills that produce no visible artifact (internal config, server
 
 Origin: 2026-04-30 Example Marketplace logo session shipped a logo-swap to prod that bundle-grep + build all PASSED while the live page rendered raw JSX text. Only live capture caught it. Generalized to all visual-output skills.
 
-## MANDATORY checklist for terminal/report skills
-
-If the new skill is terminal by nature — it produces a final report, answer, or decision artifact and should not automatically push the user into a downstream lane — the SKILL.md frontmatter MUST include `chain.terminal: true`. Route-producing pre-lane skills may still name a recommended next lane in their output, but the router treats backlog dispatch after the skill as advisory unless the user explicitly continues.
-
-At a high level, the process of creating a skill goes like this:
-
-- Decide what you want the skill to do and roughly how it should do it
-- Write a draft of the skill
-- Create a few test prompts and run claude-with-access-to-the-skill on them
-- Help the user evaluate the results both qualitatively and quantitatively
-  - While the runs happen in the background, draft some quantitative evals if there aren't any (if there are some, you can either use as is or modify if you feel something needs to change about them). Then explain them to the user (or if they already existed, explain the ones that already exist)
-  - Use the `eval-viewer/generate_review.py` script to show the user the results for them to look at, and also let them look at the quantitative metrics
-- Rewrite the skill based on feedback from the user's evaluation of the results (and also if there are any glaring flaws that become apparent from the quantitative benchmarks)
-- Repeat until you're satisfied
-- Expand the test set and try again at larger scale
-
-Your job when using this skill is to figure out where the user is in this process and then jump in and help them progress through these stages. So for instance, maybe they're like "I want to make a skill for X". You can help narrow down what they mean, write a draft, write the test cases, figure out how they want to evaluate, run all the prompts, and repeat.
-
-On the other hand, maybe they already have a draft of the skill. In this case you can go straight to the eval/iterate part of the loop.
-
-Of course, you should always be flexible and if the user is like "I don't need to run a bunch of evaluations, just vibe with me", you can do that instead.
-
-Then after the skill is done (but again, the order is flexible), you can also run the skill description improver, which we have a whole separate script for, to optimize the triggering of the skill.
-
-Cool? Cool.
+See references/mandatory-checklist-for-terminal-report-.md for "MANDATORY checklist for terminal/report skills" (full detail moved verbatim).
 
 ## Communicating with the user
 
@@ -146,141 +122,9 @@ Proactively ask questions about edge cases, input/output formats, example files,
 
 Check available MCPs - if useful for research (searching docs, finding similar skills, looking up best practices), research in parallel via subagents if available, otherwise inline. Come prepared with context to reduce burden on the user.
 
-### Write the SKILL.md
+See references/creating-a-skill.md for "Write the SKILL.md" (full detail moved verbatim).
 
-Based on the user interview, fill in these components:
-
-- **name**: Skill identifier (use `verb-noun` convention: write-spec, design-ux, audit-ac)
-- **version**: SKILL.md contract version, a quoted string starting at `"1.0"` (placed immediately after `name`). REQUIRED on every includedSkill. SKILL.md contracts (inputs/outputs/chain) change frequently; the version field lets downstream skills and validators detect breaking contract changes. Bump it when you change inputs/outputs/chain in a backward-incompatible way. Enforced by `test-framework/evals/tier-1/validate-skill-structure.sh`.
-- **description**: When to trigger, what it does. This is the primary triggering mechanism - include both what the skill does AND specific contexts for when to use it. All "when to use" info goes here, not in the body. Note: currently Claude has a tendency to "undertrigger" skills -- to not use them when they'd be useful. To combat this, please make the skill descriptions a little bit "pushy". So for instance, instead of "How to build a simple fast dashboard to display internal Anthropic data.", you might write "How to build a simple fast dashboard to display internal Anthropic data. Make sure to use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'"
-- **compatibility**: Required tools, dependencies (optional, rarely needed)
-
-**svc-specific frontmatter (required for pipeline skills, optional for utility skills):**
-```yaml
-inputs:
-  required:
-    - { path: "docs/specs/vision.md", artifact: vision }
-  optional:
-    - { path: "~/.svc/builder-profile.md", artifact: builder-profile }
-outputs:
-  produces:
-    - { path: "docs/specs/features/*.md", artifact: feature-spec }
-chain:
-  lanes:
-    greenfield: { position: N, prev: <skill>, next: <skill> }
-    brownfield-feature: { position: N, prev: <skill>, next: <skill> }
-  progressive: true    # auto-invoke next skill in lane
-  self_verify: true    # has self-check before declaring done
-  human_checkpoint: true  # stops for user in interactive mode
-```
-
-**svc-specific sections (add after the main process):**
-- **Self-Verify Checklist** — table of PASS/FAIL checks the skill runs before declaring done
-- **Pipeline Continuation** — how the skill chains: `--progressive` flag behavior, `--skip`, `--lane`
-- **Key Principles** — 3-6 bullets capturing design philosophy
-
-**After creating the skill, also:**
-1. Add to `skills-manifest.json` → `includedSkills` (and to `laneDefinitions` if pipeline skill)
-2. Add to `README.md` → appropriate skill table section
-3. Add to `EXTERNAL_ADDONS.md` → core pack list
-4. Create eval at `test-framework/evals/tier-2/scenarios/<name>-eval.md`
-5. Run `node scripts/lint-skills-manifest.mjs` to verify consistency
-6. Check for overlap: `grep -r "<trigger phrases>" --include="SKILL.md"` across existing skills
-7. **MANDATORY — run the installer** to symlink the new skill into every installed host's skills directory. Without this step, the skill exists in the framework repo but is invisible to Claude Code / Codex after session restart:
-
-   ```bash
-   cd $FRAMEWORK_REPO && ./setup --host claude
-   # If Codex is also installed on this machine, also run:
-   [ -d ~/.codex/skills ] && ./setup --host codex
-   # If OpenCode is also installed on this machine, also run:
-   [ -d ~/.config/opencode/skills ] && ./setup --host opencode
-   ```
-
-   The setup script is idempotent — it creates symlinks for any new skills and leaves existing ones untouched. Expected output includes a line like `Skills: 1 installed, N already current`. If that shows `0 installed`, something's wrong — the new skill directory must exist and contain a valid SKILL.md.
-
-8. Commit both the skill AND the manifest/README/EXTERNAL_ADDONS changes in the framework repo so the skill persists across machines.
-
-**Why step 7 matters — read this before skipping it:**
-
-| Thought | Reality |
-|---------|---------|
-| "The skill file exists in the repo, it's done" | The repo is the source; the symlink is what Claude loads. No symlink = skill doesn't exist from Claude's perspective. |
-| "I'll run setup later" | You won't. The user will log out, log back in, and the skill will be missing. Run it now. |
-| "Maybe reload-plugins picks it up automatically" | It doesn't. Reload only refreshes symlinks that already exist. |
-| "This is a one-off, not worth the overhead" | Every skill creation is a one-off. Every one of them needs the symlink. The cost is one bash command. |
-
-**Red flags — if you catch yourself doing any of these, stop and run setup:**
-- Declaring the skill "created" without having run `./setup`
-- Suggesting the user "manually check" if the skill works
-- Telling the user to "restart Claude" without first running the installer
-
-**the rest of the skill :)**
-
-### Skill Writing Guide
-
-#### Anatomy of a Skill
-
-```
-skill-name/
-├── SKILL.md (required)
-│   ├── YAML frontmatter (name, version, description required)
-│   └── Markdown instructions
-└── Bundled Resources (optional)
-    ├── scripts/    - Executable code for deterministic/repetitive tasks
-    ├── references/ - Docs loaded into context as needed
-    └── assets/     - Files used in output (templates, icons, fonts)
-```
-
-#### Progressive Disclosure
-
-Skills use a three-level loading system:
-1. **Metadata** (name + description) - Always in context (~100 words)
-2. **SKILL.md body** - In context whenever skill triggers (<500 lines ideal)
-3. **Bundled resources** - As needed (unlimited, scripts can execute without loading)
-
-These word counts are approximate and you can feel free to go longer if needed.
-
-**Key patterns:**
-- Keep SKILL.md under 500 lines; if you're approaching this limit, add an additional layer of hierarchy along with clear pointers about where the model using the skill should go next to follow up.
-- Reference files clearly from SKILL.md with guidance on when to read them
-- For large reference files (>300 lines), include a table of contents
-
-**Domain organization**: When a skill supports multiple domains/frameworks, organize by variant:
-```
-cloud-deploy/
-├── SKILL.md (workflow + selection)
-└── references/
-    ├── aws.md
-    ├── gcp.md
-    └── azure.md
-```
-Claude reads only the relevant reference file.
-
-#### Principle of Lack of Surprise
-
-This goes without saying, but skills must not contain malware, exploit code, or any content that could compromise system security. A skill's contents should not surprise the user in their intent if described. Don't go along with requests to create misleading skills or skills designed to facilitate unauthorized access, data exfiltration, or other malicious activities. Things like a "roleplay as an XYZ" are OK though.
-
-#### Writing Patterns
-
-Prefer using the imperative form in instructions.
-
-**Defining output formats** - You can do it like this:
-```markdown
-## Report structure
-ALWAYS use this exact template:
-# [Title]
-## Executive summary
-## Key findings
-## Recommendations
-```
-
-**Examples pattern** - It's useful to include examples. You can format them like this (but if "Input" and "Output" are in the examples you might want to deviate a little):
-```markdown
-## Commit message format
-**Example 1:**
-Input: Added user authentication with JWT tokens
-Output: feat(auth): implement JWT-based authentication
-```
+See references/creating-a-skill.md for "Skill Writing Guide" (full detail moved verbatim).
 
 ### Writing Style
 
@@ -314,35 +158,7 @@ This section is one continuous sequence — don't stop partway through. Do NOT u
 
 Put results in `<skill-name>-workspace/` as a sibling to the skill directory. Within the workspace, organize results by iteration (`iteration-1/`, `iteration-2/`, etc.) and within that, each test case gets a directory (`eval-0/`, `eval-1/`, etc.). Don't create all of this upfront — just create directories as you go.
 
-### Step 1: Spawn all runs (with-skill AND baseline) in the same turn
-
-For each test case, spawn two subagents in the same turn — one with the skill, one without. This is important: don't spawn the with-skill runs first and then come back for baselines later. Launch everything at once so it all finishes around the same time.
-
-**With-skill run:**
-
-```
-Execute this task:
-- Skill path: <path-to-skill>
-- Task: <eval prompt>
-- Input files: <eval files if any, or "none">
-- Save outputs to: <workspace>/iteration-<N>/eval-<ID>/with_skill/outputs/
-- Outputs to save: <what the user cares about — e.g., "the .docx file", "the final CSV">
-```
-
-**Baseline run** (same prompt, but the baseline depends on context):
-- **Creating a new skill**: no skill at all. Same prompt, no skill path, save to `without_skill/outputs/`.
-- **Improving an existing skill**: the old version. Before editing, snapshot the skill (`cp -r <skill-path> <workspace>/skill-snapshot/`), then point the baseline subagent at the snapshot. Save to `old_skill/outputs/`.
-
-Write an `eval_metadata.json` for each test case (assertions can be empty for now). Give each eval a descriptive name based on what it's testing — not just "eval-0". Use this name for the directory too. If this iteration uses new or modified eval prompts, create these files for each new eval directory — don't assume they carry over from previous iterations.
-
-```json
-{
-  "eval_id": 0,
-  "eval_name": "descriptive-name-here",
-  "prompt": "The user's task prompt",
-  "assertions": []
-}
-```
+See references/running-and-evaluating-test-cases.md for "Step 1: Spawn all runs (with-skill AND baseline) in the same turn" (full detail moved verbatim).
 
 ### Step 2: While runs are in progress, draft assertions
 
@@ -366,37 +182,7 @@ When each subagent task completes, you receive a notification containing `total_
 
 This is the only opportunity to capture this data — it comes through the task notification and isn't persisted elsewhere. Process each notification as it arrives rather than trying to batch them.
 
-### Step 4: Grade, aggregate, and launch the viewer
-
-Once all runs are done:
-
-1. **Grade each run** — spawn a grader subagent (or grade inline) that reads `agents/grader.md` and evaluates each assertion against the outputs. Save results to `grading.json` in each run directory. The grading.json expectations array must use the fields `text`, `passed`, and `evidence` (not `name`/`met`/`details` or other variants) — the viewer depends on these exact field names. For assertions that can be checked programmatically, write and run a script rather than eyeballing it — scripts are faster, more reliable, and can be reused across iterations.
-
-2. **Aggregate into benchmark** — run the aggregation script from the skill-creator directory:
-   ```bash
-   python -m scripts.aggregate_benchmark <workspace>/iteration-N --skill-name <name>
-   ```
-   This produces `benchmark.json` and `benchmark.md` with pass_rate, time, and tokens for each configuration, with mean ± stddev and the delta. If generating benchmark.json manually, see `references/schemas.md` for the exact schema the viewer expects.
-Put each with_skill version before its baseline counterpart.
-
-3. **Do an analyst pass** — read the benchmark data and surface patterns the aggregate stats might hide. See `agents/analyzer.md` (the "Analyzing Benchmark Results" section) for what to look for — things like assertions that always pass regardless of skill (non-discriminating), high-variance evals (possibly flaky), and time/token tradeoffs.
-
-4. **Launch the viewer** with both qualitative outputs and quantitative data:
-   ```bash
-   nohup python <skill-creator-path>/eval-viewer/generate_review.py \
-     <workspace>/iteration-N \
-     --skill-name "my-skill" \
-     --benchmark <workspace>/iteration-N/benchmark.json \
-     > /dev/null 2>&1 &
-   VIEWER_PID=$!
-   ```
-   For iteration 2+, also pass `--previous-workspace <workspace>/iteration-<N-1>`.
-
-   **Cowork / headless environments:** If `webbrowser.open()` is not available or the environment has no display, use `--static <output_path>` to write a standalone HTML file instead of starting a server. Feedback will be downloaded as a `feedback.json` file when the user clicks "Submit All Reviews". After download, copy `feedback.json` into the workspace directory for the next iteration to pick up.
-
-Note: please use generate_review.py to create the viewer; there's no need to write custom HTML.
-
-5. **Tell the user** something like: "I've opened the results in your browser. There are two tabs — 'Outputs' lets you click through each test case and leave feedback, 'Benchmark' shows the quantitative comparison. When you're done, come back here and let me know."
+See references/running-and-evaluating-test-cases.md for "Step 4: Grade, aggregate, and launch the viewer" (full detail moved verbatim).
 
 ### What the user sees in the viewer
 
@@ -437,38 +223,7 @@ kill $VIEWER_PID 2>/dev/null
 
 ---
 
-## Improving the skill
-
-This is the heart of the loop. You've run the test cases, the user has reviewed the results, and now you need to make the skill better based on their feedback.
-
-### How to think about improvements
-
-1. **Generalize from the feedback.** The big picture thing that's happening here is that we're trying to create skills that can be used a million times (maybe literally, maybe even more who knows) across many different prompts. Here you and the user are iterating on only a few examples over and over again because it helps move faster. The user knows these examples in and out and it's quick for them to assess new outputs. But if the skill you and the user are codeveloping works only for those examples, it's useless. Rather than put in fiddly overfitty changes, or oppressively constrictive MUSTs, if there's some stubborn issue, you might try branching out and using different metaphors, or recommending different patterns of working. It's relatively cheap to try and maybe you'll land on something great.
-
-2. **Keep the prompt lean.** Remove things that aren't pulling their weight. Make sure to read the transcripts, not just the final outputs — if it looks like the skill is making the model waste a bunch of time doing things that are unproductive, you can try getting rid of the parts of the skill that are making it do that and seeing what happens.
-
-3. **Explain the why.** Try hard to explain the **why** behind everything you're asking the model to do. Today's LLMs are *smart*. They have good theory of mind and when given a good harness can go beyond rote instructions and really make things happen. Even if the feedback from the user is terse or frustrated, try to actually understand the task and why the user is writing what they wrote, and what they actually wrote, and then transmit this understanding into the instructions. If you find yourself writing ALWAYS or NEVER in all caps, or using super rigid structures, that's a yellow flag — if possible, reframe and explain the reasoning so that the model understands why the thing you're asking for is important. That's a more humane, powerful, and effective approach.
-
-4. **Look for repeated work across test cases.** Read the transcripts from the test runs and notice if the subagents all independently wrote similar helper scripts or took the same multi-step approach to something. If all 3 test cases resulted in the subagent writing a `create_docx.py` or a `build_chart.py`, that's a strong signal the skill should bundle that script. Write it once, put it in `scripts/`, and tell the skill to use it. This saves every future invocation from reinventing the wheel.
-
-This task is pretty important (we are trying to create billions a year in economic value here!) and your thinking time is not the blocker; take your time and really mull things over. I'd suggest writing a draft revision and then looking at it anew and making improvements. Really do your best to get into the head of the user and understand what they want and need.
-
-### The iteration loop
-
-After improving the skill:
-
-1. Apply your improvements to the skill
-2. Rerun all test cases into a new `iteration-<N+1>/` directory, including baseline runs. If you're creating a new skill, the baseline is always `without_skill` (no skill) — that stays the same across iterations. If you're improving an existing skill, use your judgment on what makes sense as the baseline: the original version the user came in with, or the previous iteration.
-3. Launch the reviewer with `--previous-workspace` pointing at the previous iteration
-4. Wait for the user to review and tell you they're done
-5. Read the new feedback, improve again, repeat
-
-Keep going until:
-- The user says they're happy
-- The feedback is all empty (everything looks good)
-- You're not making meaningful progress
-
----
+See references/improving-the-skill.md for "Improving the skill" (full detail moved verbatim).
 
 ## Advanced: Blind comparison
 
@@ -611,33 +366,7 @@ If you're in Cowork, the main things to know are:
 
 ---
 
-## Reference files
-
-The agents/ directory contains instructions for specialized subagents. Read them when you need to spawn the relevant subagent.
-
-- `agents/grader.md` — How to evaluate assertions against outputs
-- `agents/comparator.md` — How to do blind A/B comparison between two outputs
-- `agents/analyzer.md` — How to analyze why one version beat another
-
-The references/ directory has additional documentation:
-- `references/schemas.md` — JSON structures for evals.json, grading.json, etc.
-
----
-
-Repeating one more time the core loop here for emphasis:
-
-- Figure out what the skill is about
-- Draft or edit the skill
-- Run claude-with-access-to-the-skill on test prompts
-- With the user, evaluate the outputs:
-  - Create benchmark.json and run `eval-viewer/generate_review.py` to help the user review them
-  - Run quantitative evals
-- Repeat until you and the user are satisfied
-- Package the final skill and return it to the user.
-
-Please add steps to your TodoList, if you have such a thing, to make sure you don't forget. If you're in Cowork, please specifically put "Create evals JSON and run `eval-viewer/generate_review.py` so human can review test cases" in your TodoList to make sure it happens.
-
-Good luck!
+See references/reference-files.md for "Reference files" (full detail moved verbatim).
 
 ## Phase Receipt Contract
 
@@ -661,55 +390,7 @@ description optimization, or framework install, still record that phase id with
 command-output evidence explaining the skip. Do not complete the task until all
 required phase ids appear in `skill_receipt.phases_executed`.
 
-## Structural Bulletproofing (for discipline-enforcing skills)
-
-When creating skills that enforce discipline (TDD, debugging protocols, scope
-prohibition, verification requirements), add two structural elements that
-empirically double compliance (Meincke et al. 2025, N=28,000: 33% → 72%).
-
-### Rationalization Table
-
-A table where each row names a specific thought the agent might have and
-provides a rebuttal. This preemptively shuts down the exact rationalizations
-that lead to skipping the skill's rules.
-
-```markdown
-| Thought | Reality |
-|---------|---------|
-| "This is too simple for TDD" | Simple things become complex. The test takes 30 seconds. |
-| "I already know this works" | Knowing ≠ proving. Write the test. |
-| "I'll add the test after" | After never comes. Every "after" is a lie. |
-```
-
-The key: name the SPECIFIC thought, not a general category. "Agent skips the
-rule" is too vague. "Agent thinks 'this is a one-line fix, TDD is overkill'"
-is specific enough to rebut.
-
-### Red Flags List
-
-Observable behaviors that indicate the rule was broken, each mapped to a
-corrective action:
-
-```markdown
-**Red Flags:**
-- You wrote implementation code before a test exists → Delete the code, write the test first
-- You "adapted" existing code instead of starting from the test → Delete and start over
-- You ran the test and it passed on the first try → The test is not testing real behavior
-```
-
-### When to use
-
-- **Discipline skills** (TDD, debugging, verification, scope control): always
-- **Guidance skills** (knowledge protocol, context budget): never — these don't
-  need behavioral compliance enforcement
-- **Routing skills** (route-workflow): rarely — only if there's a specific
-  skip-justification pattern observed
-
-The technique: "implementation intentions" — specific "When you think X, do Y"
-rules beat general "always do Y" rules. The rationalization table IS
-implementation intentions.
-
-Source: superpowers writing-skills, test-driven-development, systematic-debugging
+See references/structural-bulletproofing-for-discipline.md for "Structural Bulletproofing (for discipline-enforcing skills)" (full detail moved verbatim).
 
 ## Self-Verify
 

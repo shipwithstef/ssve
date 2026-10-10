@@ -113,6 +113,26 @@ them from source.
   sufficient per task. One holistic review of the full diff after ALL tasks.
 - If a task reveals a spec, UX, UI, or tech-design defect, loop back before continuing.
 
+## Bounded mode (graph `planning.mode: bounded`)
+
+Build from the brief, not a changeset. The loop:
+1. **Skeleton first:** a runnable shell, the contract file and the brief's checks. Commit as soon as it runs.
+2. **Settle open questions** with `node scripts/probe-loop.mjs run --spec <spec>`:
+   - cheap workers (haiku) try variants in parallel copies;
+   - the question's check scores them;
+   - apply the winner with `probe-loop.mjs apply`;
+   - append the result and the losers' notes to the brief's decision log.
+3. **Fill** by owned paths:
+   - each worker gets its owned paths and the contract only;
+   - a write outside them fails the attempt;
+   - commit after every passing check, keeping commits small and frequent.
+4. **Harden:**
+   - run `scripts/chaos-probe.mjs` against the brief's steady state;
+   - run `scripts/quality-probes.mjs` for test strength;
+   - before handing to review, delete scratch and QA files nothing references.
+
+Two failed checks on the same question, or a boundary that must move, sends you back to the brief (an amendment), not round after round of patching. Irreversible zones get full review depth automatically.
+
 ## Execution Architecture
 
 Model assignment per profile; task-graph execution order from the manifest; parallel groups via the partition fence; each mutating child receives its own inner worktree and a generation-bound, path-scoped delegation. Each subagent gets SCOPED context (manifest task, style contract, blueprint, validation command — never the full tree). Full detail incl. capability acceptance, completion receipts, sequential merge-back, and Adaptive Context Enrichment for 1M models: `references/subagent-dispatch.md`.

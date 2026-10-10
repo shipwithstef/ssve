@@ -127,6 +127,18 @@ cp "$TMP/omitted-step.json" "$TMP/chain-blanket-skip.json"
 mutate chain-blanket-skip 'graph.delivery_graph.skipped_skills.push({ skill: "review-plan", skip_condition_id: "review-plan:registry-skip", reason: "blanket", evidence: "none" });'
 expect_fail chain-blanket-skip "a mandatory-chain skill cannot be skipped with a blanket registry-skip id"
 
+compile bounded bounded-prototype.json
+expect_pass bounded "bounded prototype graph keeps the chain with light review depth"
+mutate bounded 'if (graph.delivery_graph.planning.mode !== "bounded" || graph.tasks.some((t) => ["write-spec", "design-ux", "design-ui"].includes(t.metadata.skill))) throw new Error("not bounded");'
+compile bounded-auth bounded-auth.json
+expect_pass bounded-auth "bounded graph touching auth is valid at full review depth"
+cp "$TMP/bounded-auth.json" "$TMP/bounded-auth-light.json"
+mutate bounded-auth-light 'for (const t of graph.tasks) if (t.metadata.review_depth) t.metadata.review_depth = "single-lens";'
+expect_fail bounded-auth-light "bounded graph touching auth fails when review is not at full depth"
+cp "$TMP/bounded-auth.json" "$TMP/bounded-auth-hidden.json"
+mutate bounded-auth-hidden 'graph.delivery_graph.planning.irreversible_zones = []; for (const t of graph.tasks) if (t.metadata.review_depth) t.metadata.review_depth = "single-pass";'
+expect_fail bounded-auth-hidden "removing the zone list from the graph does not lower review depth"
+
 cat > "$TMP/legacy-pre-wi.json" <<'JSON'
 {
   "wi": "WI-LEGACY",

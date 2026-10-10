@@ -58,3 +58,10 @@ test("missing populations are unsuccessful reports, not false successful runs", 
   const dir = fixture(t); const result = cli(script, [path.join(dir, "absent")], dir);
   assert.equal(result.status, 1); assert.match(JSON.parse(result.stdout).error, /not found/); assert.equal(fs.existsSync(path.join(dir, ".svc")), false);
 });
+test("an outcome check score outranks every metadata field", (t) => {
+  const { out } = compare(t, {
+    "tidy.result.json": { status: "success", clean_worktree: true, validation_evidence: "log", changed_files: [], oracle_score: 0.4 },
+    "works.result.json": { status: "success", oracle_score: 1 },
+  });
+  assert.equal(out.winner, "works.result.json");
+});
