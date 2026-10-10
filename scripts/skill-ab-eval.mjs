@@ -19,11 +19,20 @@
  *   node scripts/skill-ab-eval.mjs --tasks FILE [--runner "CMD ARGS"]
  *        [--repeat 3] [--margin 0.15] [--only skill,skill] [--json] [--out FILE]
  *
+ * Every run executes in its own empty sandbox directory (or the shared --cwd),
+ * so neither arm picks up this repo's CLAUDE.md/AGENTS.md and no run sees
+ * another run's files. Skills that produce artifacts are graded on what they
+ * actually wrote: files left in the sandbox are collected and, per the task's
+ * grader `on` field ("answer" | "artifacts" | "either", default "either"),
+ * graded instead of or alongside the chat answer. A run that only CLAIMS to
+ * have written a file fails an artifacts grader.
+ *
  * The default runner is `claude -p --output-format json`, which spends paid
  * tokens: it requires EVALS=1 (same contract as tier 1.5/2/3). An explicit
  * --runner (for example the hermetic fixture runner) needs no flag.
  */
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -32,12 +41,12 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_RUNNER = "claude -p --output-format json";
 
 export function parseArgs(argv, env = process.env) {
-  const o = { repeat: 3, margin: 0.15, runner: null, only: null, json: false, out: null, tasks: null };
+  const o = { repeat: 3, margin: 0.15, runner: null, only: null, json: false, out: null, tasks: null, cwd: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--json") { o.json = true; continue; }
     if (a === "--help" || a === "-h") { o.help = true; continue; }
-    if (!["--tasks", "--runner", "--repeat", "--margin", "--only", "--out"].includes(a)) throw new Error(`unknown option: ${a}`);
+    if (!["--tasks", "--runner", "--repeat", "--margin", "--only", "--out", "--cwd"].includes(a)) throw new Error(`unknown option: ${a}`);
     const v = argv[++i];
     if (v === undefined || v.startsWith("--")) throw new Error(`${a} requires a value`);
     o[a.slice(2)] = ["--repeat", "--margin"].includes(a) ? Number(v) : v;
@@ -92,9 +101,41 @@ export function parseRunnerOutput(stdout) {
   } catch { return { answer: text, tokens: null, cost_usd: null }; }
 }
 
-export function grade(grader, answer, cwd = ROOT) {
+/** Markdown emphasis and code ticks are presentation, not content: `**Status:** Draft` must match `Status: DRAFT`. */
+export function normalizeAnswer(text) { return String(text).replace(/[*_`]+/g, ""); }
+
+/** Text files a run left in its sandbox (host config dirs excluded), capped for safety. */
+export function collectArtifacts(dir, limit = 1024 * 1024) {
+  const out = [];
+  const walk = (d, rel) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      if (e.name === ".claude" || e.name === ".git" || e.name === "node_modules") continue;
+      const abs = path.join(d, e.name), r = rel ? `${rel}/${e.name}` : e.name;
+      if (e.isDirectory()) walk(abs, r);
+      else if (e.isFile() && fs.statSync(abs).size <= limit) {
+        const text = fs.readFileSync(abs, "utf8"); if (!text.includes("\u0000")) out.push({ path: r, text });
+      }
+    }
+  };
+  if (fs.existsSync(dir)) walk(dir, "");
+  return out.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+/** What a grader reads: the answer, the artifacts, or both. */
+export function gradedText(grader, answer, artifacts = []) {
+  const files = artifacts.map((a) => `\n--- ${a.path} ---\n${a.text}`).join("");
+  const on = grader.on || "either";
+  if (on === "answer") return answer;
+  if (on === "artifacts") return files;
+  if (on === "either") return `${answer}\n${files}`;
+  throw new Error(`grader.on must be answer | artifacts | either (got ${on})`);
+}
+
+export function grade(grader, answer, cwd = ROOT, artifacts = []) {
   if (!grader || !grader.type) throw new Error("task grader missing");
+  answer = gradedText(grader, answer, artifacts);
   if (grader.type === "regex") {
+    answer = normalizeAnswer(answer);
     const all = [].concat(grader.pattern);
     return all.every((p) => new RegExp(p, grader.flags ?? "im").test(answer)) &&
       ![].concat(grader.forbid || []).some((p) => new RegExp(p, grader.flags ?? "im").test(answer));
@@ -135,12 +176,16 @@ export function run(o) {
   for (const task of tasks) {
     for (const arm of ["bare", "with-skill"]) {
       for (let i = 0; i < o.repeat; i++) {
-        const r = spawnSync(bin, args, { input: buildPrompt(task, arm), cwd: ROOT, encoding: "utf8",
+        const cwd = o.cwd ? path.resolve(o.cwd) : fs.mkdtempSync(path.join(os.tmpdir(), "svc-ab-run-"));
+        const r = spawnSync(bin, args, { input: buildPrompt(task, arm), cwd, encoding: "utf8",
           timeout: (spec.timeout_seconds || 600) * 1000, maxBuffer: 64 * 1024 * 1024,
           env: { ...process.env, SVC_AB_ARM: arm, SVC_AB_TASK: task.id } });
         const parsed = r.status === 0 ? parseRunnerOutput(r.stdout) : { answer: "", tokens: null, cost_usd: null };
-        runs.push({ task: task.id, skill: task.skill, arm, i, exit: r.status, pass: r.status === 0 && grade(task.grader, parsed.answer),
-          tokens: parsed.tokens, cost_usd: parsed.cost_usd, answer_chars: parsed.answer.length });
+        const artifacts = collectArtifacts(cwd);
+        if (!o.cwd) fs.rmSync(cwd, { recursive: true, force: true });
+        runs.push({ task: task.id, skill: task.skill, arm, i, exit: r.status, pass: r.status === 0 && grade(task.grader, parsed.answer, ROOT, artifacts),
+          tokens: parsed.tokens, cost_usd: parsed.cost_usd, answer_chars: parsed.answer.length, answer: parsed.answer,
+          artifacts: artifacts.map((a) => ({ path: a.path, chars: a.text.length, text: a.text.slice(0, 20000) })) });
       }
     }
   }

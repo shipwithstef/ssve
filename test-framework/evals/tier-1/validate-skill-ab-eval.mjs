@@ -57,6 +57,7 @@ test("helpers: argv split, output parsing, graders, verdict margins", () => {
   assert.equal(parseRunnerOutput("plain").answer, "plain");
   assert.equal(grade({ type: "regex", pattern: ["a", "b"] }, "a b"), true);
   assert.equal(grade({ type: "regex", pattern: "a", forbid: "b" }, "a b"), false);
+  assert.equal(grade({ type: "regex", pattern: "Status:\\s*DRAFT" }, "**Status:** Draft"), true, "markdown emphasis is not content");
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "svc-ab-"));
   try {
     const g = path.join(tmp, "g.mjs"); fs.writeFileSync(g, "process.exit(require('fs').readFileSync(0,'utf8').includes('ok')?0:1)".replace("require('fs')", "(await import('node:fs'))"));
@@ -73,4 +74,41 @@ test("bad arguments are usage errors", () => {
   for (const args of [[], ["--tasks"], ["--tasks", tasks, "--runner", fake, "--repeat", "0"], ["--nope"]]) {
     assert.equal(cli(args).status, 2, args.join(" "));
   }
+});
+
+test("runs execute outside the repo so the bare arm cannot load CLAUDE.md", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "svc-ab-cwd-"));
+  try {
+    const runner = path.join(tmp, "where.mjs");
+    fs.writeFileSync(runner, "import fs from 'node:fs'; fs.readFileSync(0); process.stdout.write(JSON.stringify({ result: fs.existsSync('CLAUDE.md') || fs.existsSync('AGENTS.md') ? 'contaminated' : 'clean' }));");
+    const t = path.join(tmp, "t.json");
+    fs.writeFileSync(t, JSON.stringify({ tasks: [{ id: "cwd", skill: "decide", prompt: "x", grader: { type: "regex", pattern: "^clean$" } }] }));
+    const r = cli(["--tasks", t, "--runner", `node ${runner}`, "--repeat", "1", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    const row = JSON.parse(r.stdout).tasks[0];
+    assert.equal(row.bare.pass_rate, 1); assert.equal(row.with_skill.pass_rate, 1);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test("artifact graders read what the run wrote; a claimed file fails; runs are isolated", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "svc-ab-art-"));
+  try {
+    // with-skill writes the brief; bare only claims to have written it and checks for a leaked file
+    const runner = path.join(tmp, "writer.mjs");
+    fs.writeFileSync(runner, `import fs from 'node:fs';
+const p = fs.readFileSync(0, 'utf8');
+const leaked = fs.existsSync('docs/brief.md');
+if (p.startsWith('Follow this skill')) { fs.mkdirSync('docs', { recursive: true }); fs.writeFileSync('docs/brief.md', '## Symptom\\nx\\n'); }
+process.stdout.write(JSON.stringify({ result: leaked ? 'LEAKED' : 'I wrote the brief to docs/brief.md' }));`);
+    const t = path.join(tmp, "t.json");
+    fs.writeFileSync(t, JSON.stringify({ tasks: [{ id: "art", skill: "diagnose-bug", prompt: "x",
+      grader: { type: "regex", on: "artifacts", pattern: "^#+\\s*Symptom", forbid: "LEAKED" } }] }));
+    const r = cli(["--tasks", t, "--runner", `node ${runner}`, "--repeat", "2", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout); const row = out.tasks[0];
+    assert.equal(row.bare.pass_rate, 0, "a claim without a file fails");
+    assert.equal(row.with_skill.pass_rate, 1);
+    assert.ok(out.runs.every((x) => x.answer !== "LEAKED"), "no run sees another run's files");
+    assert.deepEqual(out.runs.find((x) => x.arm === "with-skill").artifacts.map((a) => a.path), ["docs/brief.md"]);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
