@@ -1,0 +1,8 @@
+[
+  {"claim": "C1", "status": "matches", "evidence": "src/accounts.mjs:5-8 scryptSync with a random 16-byte salt per hash"},
+  {"claim": "C2", "status": "drifted", "evidence": "src/accounts.mjs:3 SESSION_TTL_MS is 24 hours, not 8"},
+  {"claim": "C3", "status": "matches", "evidence": "src/bookings.mjs:1,6 upcoming < 3"},
+  {"claim": "C4", "status": "drifted", "evidence": "src/bookings.mjs:2 the no-refund window is 2 hours, not 12"},
+  {"claim": "C5", "status": "matches", "evidence": "src/webhooks.mjs:4 seen event ids are skipped"},
+  {"claim": "C6", "status": "drifted", "evidence": "src/bookings.mjs:14 prices are dollars with fractions (18.5)"}
+]

@@ -1,0 +1,7 @@
+{
+  "pillar": "bugfix",
+  "max_turns": 40,
+  "timeout_min": 12,
+  "instruction": "spec.md is a bug report for the code in this directory (src/, with tests in test/). Fix the bug. `node --test` runs the tests.",
+  "svc": ["skills/diagnose-bug/SKILL.md"]
+}

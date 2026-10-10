@@ -1,0 +1,7 @@
+[
+  {"ac": "AC1", "status": "met", "evidence": "src/giftcards.mjs:5-11, 12 hex chars, unique loop"},
+  {"ac": "AC2", "status": "met", "evidence": "src/giftcards.mjs:17-20; test 'redeem keeps the remainder'"},
+  {"ac": "AC3", "status": "not-met", "evidence": "redeem never reads issuedAt; the test turns any outcome into a rejection"},
+  {"ac": "AC4", "status": "not-met", "evidence": "the await between reading and writing the balance lets two redemptions each spend 1500 of 2000; the test asserts true"},
+  {"ac": "AC5", "status": "met", "evidence": "src/giftcards.mjs:15"}
+]

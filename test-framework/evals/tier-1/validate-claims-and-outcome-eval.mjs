@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { judge, pick } from "../../../scripts/verify-claims.mjs";
-import { parseTap, summarize, ARMS, listTasks, parseJudge, failureReasons, compareSamples, promotionDecision } from "../../../scripts/outcome-eval.mjs";
+import { parseTap, summarize, ARMS, listTasks, parseJudge, failureReasons, compareSamples, promotionDecision, armPrompts, taskConfig, PILLAR_ARMS } from "../../../scripts/outcome-eval.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -68,4 +68,30 @@ test("promotion decisions re-derived from the recorded results", () => {
   assert.equal(promotionDecision(rows("haiku-vague", "haiku-vague-r2"), "lean", "plain").promote, false);
   assert.equal(promotionDecision([{ arm: "a", solved: true, cost_usd: 1 }, { arm: "b", solved: true, cost_usd: 2 }], "a", "b").promote, true, "same results, cheaper: promote");
   assert.equal(promotionDecision([{ arm: "a", solved: true }], "a", "missing").promote, false);
+});
+
+test("pillar tasks: bare gets the instruction alone, svc adds the shipped framework files verbatim, steps run in order", () => {
+  const pillars = listTasks().filter((t) => taskConfig(t).pillar);
+  assert.ok(pillars.length >= 5, "at least five pillar tasks");
+  for (const t of pillars) {
+    const { steps } = taskConfig(t);
+    const bare = armPrompts(t, "bare"), svc = armPrompts(t, "svc");
+    assert.equal(bare.length, steps.length, t);
+    assert.equal(svc.length, steps.length, t);
+    steps.forEach((s, i) => {
+      assert.equal(bare[i], s.instruction, `${t} step ${i + 1}: bare is the instruction only`);
+      assert.ok(svc[i].startsWith(s.instruction), `${t} step ${i + 1}: svc starts with the same instruction`);
+      for (const f of s.svc || []) {
+        const body = fs.readFileSync(path.join(root, f), "utf8").replace(/^---\n[\s\S]*?\n---\n/, "").trim();
+        assert.ok(svc[i].includes(body), `${t}: ${f} is included verbatim`);
+      }
+    });
+    // Framework text added to a prompt must not carry the task's answer (a leaked example
+    // once made a candidate prompt look better than it was).
+    const { leak_terms = [] } = JSON.parse(fs.readFileSync(path.join(root, "test-framework/outcome-evals/tasks", t, "task.json"), "utf8"));
+    svc.forEach((p, i) => { for (const term of leak_terms) assert.ok(!p.slice(steps[i].instruction.length).includes(term), `${t} step ${i + 1}: framework text leaks "${term}"`); });
+    for (const d of ["ref", "ref-wrong"]) assert.ok(fs.existsSync(path.join(root, "test-framework/outcome-evals/tasks", t, d)), `${t}/${d} lets check prove the grader`);
+  }
+  assert.deepEqual(PILLAR_ARMS, ["bare", "svc"]);
+  assert.throws(() => armPrompts("duration", "svc"), /not a pillar task/);
 });

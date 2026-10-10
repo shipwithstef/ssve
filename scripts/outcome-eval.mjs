@@ -67,10 +67,42 @@ export const ARMS = {
 };
 
 // Optional per-task settings: tasks/<id>/task.json { max_turns, timeout_min, judge_model }.
+// Pillar tasks (one svc stage or checkpoint each) also set `pillar`, and either
+// `instruction` plus `svc` (framework files) or `steps: [{ instruction, svc }]` for a
+// multi-session scenario; `copy_spec: false` keeps spec.md out of the agent's directory.
 export function taskConfig(task) {
   const f = path.join(TASKS, task, "task.json");
   const c = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : {};
-  return { max_turns: c.max_turns ?? 40, timeout_ms: (c.timeout_min ?? 15) * 60000, judge_model: c.judge_model ?? null };
+  return { max_turns: c.max_turns ?? 40, timeout_ms: (c.timeout_min ?? 15) * 60000, judge_model: c.judge_model ?? null, pillar: c.pillar ?? null, variants: c.variants ?? null, steps: c.steps ?? (c.instruction ? [{ instruction: c.instruction, svc: c.svc ?? [] }] : null), copy_spec: c.copy_spec ?? true };
+}
+
+// Pillar arms: `bare` gets the task's instruction only; `svc` gets the same instruction
+// followed by the framework's own stage files, verbatim (frontmatter removed), so the
+// eval measures what the shipped prompts do, not a paraphrase of them. `svc:<variant>`
+// swaps in a candidate file set from task.json `variants` (one list per step), so a
+// proposed prompt change is measured against the shipped one before it is adopted.
+export const PILLAR_ARMS = ["bare", "svc"];
+const isPillarArm = (arm) => PILLAR_ARMS.includes(arm) || arm.startsWith("svc:");
+const stripFrontmatter = (t) => t.replace(/^---\n[\s\S]*?\n---\n/, "");
+export function armPrompts(task, arm) {
+  const { steps } = taskConfig(task);
+  if (!isPillarArm(arm)) {
+    if (!ARMS[arm]) throw new Error(`unknown arm ${arm}`);
+    return [ARMS[arm]];
+  }
+  if (!steps) throw new Error(`${task} is not a pillar task (no instruction or steps in task.json)`);
+  const variant = arm.startsWith("svc:") ? taskConfig(task).variants?.[arm.slice(4)] : null;
+  if (arm.startsWith("svc:") && !variant) throw new Error(`${task} has no variant ${arm.slice(4)}`);
+  return steps.map((step, i) => {
+    const s = variant ? { ...step, svc: variant[i] || [] } : step;
+    return arm === "bare" || !(s.svc || []).length ? s.instruction : [
+    s.instruction,
+    "",
+    "Work by the framework procedure below. Paths, scripts and receipts it mentions belong to the framework repository and do not exist here; apply its method and checks to this directory, and write your output where the instruction above says.",
+    "",
+    ...(s.svc || []).map((f) => `<procedure file="${f}">\n${stripFrontmatter(fs.readFileSync(path.join(ROOT, f), "utf8")).trim()}\n</procedure>`),
+    ].join("\n");
+  });
 }
 
 export function listTasks() {
@@ -117,7 +149,7 @@ export function grade(dir, task) {
   return { hidden_pass: t.pass, hidden_total: total, score: total ? t.pass / total : 0, solved: t.fail === 0 && t.pass > 0, ...(t.fail ? { hidden_failures: failureReasons(out) } : {}) };
 }
 
-export const promptSha = (arm) => crypto.createHash("sha256").update(ARMS[arm]).digest("hex").slice(0, 12);
+export const promptSha = (arm, task) => crypto.createHash("sha256").update(task && isPillarArm(arm) ? armPrompts(task, arm).join("\n\0\n") : ARMS[arm]).digest("hex").slice(0, 12);
 
 // A task is either greenfield (ref.mjs is the reference solution.mjs) or brownfield
 // (repo/ is the starting codebase and ref/ overlays the reference change on it).
@@ -125,7 +157,8 @@ function prepare(task) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), `oe-${task}-`));
   const repo = path.join(TASKS, task, "repo");
   if (fs.existsSync(repo)) fs.cpSync(repo, dir, { recursive: true });
-  for (const f of ["spec.md", "visible.test.mjs"]) if (fs.existsSync(path.join(TASKS, task, f))) fs.copyFileSync(path.join(TASKS, task, f), path.join(dir, f));
+  const files = taskConfig(task).copy_spec ? ["spec.md", "visible.test.mjs"] : ["visible.test.mjs"];
+  for (const f of files) if (fs.existsSync(path.join(TASKS, task, f))) fs.copyFileSync(path.join(TASKS, task, f), path.join(dir, f));
   fs.writeFileSync(path.join(dir, "package.json"), '{"type":"module"}\n');
   return dir;
 }
@@ -249,6 +282,13 @@ export function check() {
       const own = spawnSync(process.execPath, ["--test"], { cwd: plain, encoding: "utf8", timeout: 120000, env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry() } });
       if (own.status !== 0) problems.push(`${task}: reference breaks the repository's own tests`);
       fs.rmSync(plain, { recursive: true, force: true });
+      // A plausible but wrong answer (ref-wrong/ overlay) must fail too.
+      if (fs.existsSync(path.join(base, "ref-wrong"))) {
+        const wrong = prepare(task);
+        fs.cpSync(path.join(base, "ref-wrong"), wrong, { recursive: true });
+        if (grade(wrong, task).solved) problems.push(`${task}: grader passes the plausible wrong answer in ref-wrong/`);
+        fs.rmSync(wrong, { recursive: true, force: true });
+      }
       continue;
     }
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), `oe-check-${task}-`));
@@ -344,8 +384,18 @@ async function main(argv) {
     const dir = prepare(job.task);
     const t = Date.now();
     const cfg = taskConfig(job.task);
-    const agent = await runAgent(dir, ARMS[job.arm], model, cfg.timeout_ms, undefined, cfg.max_turns);
-    const row = { ...job, model, prompt_sha: promptSha(job.arm), wall_ms: Date.now() - t, ...agent };
+    // Multi-step scenarios run each step as a fresh session in the same directory: only
+    // what an earlier session left on disk carries over, as between real sessions.
+    let agent = { cost_usd: 0, turns: 0, duration_ms: 0, steps: 0 };
+    const replies = [];
+    for (const prompt of armPrompts(job.task, job.arm)) {
+      const step = await runAgent(dir, prompt, model, cfg.timeout_ms, undefined, cfg.max_turns);
+      replies.push(String(step.text || "").slice(-400));
+      if (step.error) { agent = { ...agent, error: `step ${agent.steps + 1}: ${step.error}` }; break; }
+      agent = { ...step, cost_usd: (agent.cost_usd || 0) + (step.cost_usd || 0), turns: (agent.turns || 0) + (step.turns || 0), duration_ms: (agent.duration_ms || 0) + (step.duration_ms || 0), steps: agent.steps + 1 };
+    }
+    // The end of each step's final reply, so a run that wrote nothing still says why.
+    const row = { ...job, model, pillar: cfg.pillar, prompt_sha: promptSha(job.arm, job.task), wall_ms: Date.now() - t, ...agent, step_replies: replies };
     // A run that ended (even at its turn limit) is graded: hitting the limit is a failure to
     // count, not an error to hide. Only a crash or timeout with no result is an error.
     if (!agent.error) Object.assign(row, grade(dir, job.task), await judge(dir, job.task, judgeModel));

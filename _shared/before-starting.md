@@ -13,6 +13,15 @@ Every svc skill SHOULD begin its work by checking what the project already knows
 | 5 | `docs/specs/domain-profile.md` when present | What industry / framework / convention pack applies? What constraints does the domain impose? |
 | 6 | Relevant specs, work items, journeys, reviews, validators, and decision logs | What behavior contract, dependencies, acceptance criteria, and known findings govern this change? |
 
+## Standing rules: owner decisions that outlive the session
+
+A rule the owner states for future work (money units, refund or pricing policy, limits, naming, "never do X") must reach every later session, including a fresh one that never saw this conversation.
+
+1. **Record it now.** In the same session, add the rule to the project's `CLAUDE.md` under `## Standing rules`, with its exact numbers and boundaries (for example "an unpaid cart holds stock for 15 minutes, then releases it" or "invoices show prices excluding VAT, rounded half up"). Mirror the section in `AGENTS.md` when the project has one. Claude Code loads `CLAUDE.md` at the start of every session; a rule kept only in chat, in a code comment or in a docs file nobody opens is lost.
+2. **Read before acting.** Before changing code, read `## Standing rules` and follow it. A rule there outranks your defaults.
+3. **Never invent a missing rule.** If the work needs a rule that is not recorded, ask the owner. Do not ship an assumed policy for money, refunds, security or legal terms.
+
+
 ## Relevance-closure rule
 
 A skill MUST resolve a bounded context plan before acting:

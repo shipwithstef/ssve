@@ -1,0 +1,8 @@
+[
+  {"file": "src/bookings.mjs", "line": 15, "severity": "HIGH", "issue": "paid > capacity lets one booking too many in"},
+  {"file": "src/receipts.mjs", "line": 8, "severity": "HIGH", "issue": "path traversal via receiptId"},
+  {"file": "src/auth.mjs", "line": 5, "severity": "MEDIUM", "issue": "hard-coded default secret"},
+  {"file": "src/bookings.mjs", "line": 7, "severity": "LOW", "issue": "validation message is vague"},
+  {"file": "src/bookings.mjs", "line": 3, "severity": "LOW", "issue": "ids are predictable"},
+  {"file": "src/receipts.mjs", "line": 12, "severity": "LOW", "issue": "synchronous read blocks the event loop"}
+]

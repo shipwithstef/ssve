@@ -1,5 +1,7 @@
 # Outcome evals
 
+This file covers the product-build eval. Each svc stage (review-exec, review-plan, security, audit, bugfix, drift, multi-session continuity) is measured separately against the bare model in [`PILLARS.md`](PILLARS.md).
+
 These evals test whether the svc method changes what a model actually delivers, not whether a skill was followed.
 
 **Runner:** `scripts/outcome-eval.mjs`.

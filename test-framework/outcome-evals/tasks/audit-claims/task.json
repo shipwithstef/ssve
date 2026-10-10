@@ -1,0 +1,7 @@
+{
+  "pillar": "audit-implementation",
+  "max_turns": 30,
+  "timeout_min": 10,
+  "instruction": "Audit the implementation of WI-42 (spec.md explains the setup): for each acceptance criterion in WORK-ITEM.md, decide from the code and tests, not from EXEC-RECORD.md's claims, whether it is really met. Do not modify src/ or test/; you may run code. Write AUDIT.json in this directory: a JSON array with one object per criterion, {\"ac\": \"AC1\", \"status\": \"met\" or \"not-met\", \"evidence\": \"<file:line, test or command output>\"}.",
+  "svc": ["skills/audit-implementation/SKILL.md"]
+}

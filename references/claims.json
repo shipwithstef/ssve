@@ -153,6 +153,60 @@
       ],
       "json": "brief_judge_vs_plain.p",
       "min": 0.05
+    },
+    {
+      "id": "continuity-before",
+      "claim": "Before the standing-rules section, a fresh session followed the owner rules from an earlier session in at most 60% of runs with the shipped svc prompt",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-continuity.json",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-continuity-r2.json"
+      ],
+      "json": "svc_solve_rate",
+      "max": 0.6
+    },
+    {
+      "id": "continuity-bare",
+      "claim": "Without the framework, a fresh session followed the owner rules from an earlier session in at most 60% of runs",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-continuity.json",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-continuity-r2.json"
+      ],
+      "json": "bare_solve_rate",
+      "max": 0.6
+    },
+    {
+      "id": "continuity-shipped",
+      "claim": "With the standing-rules section in _shared/before-starting.md, a fresh session follows the earlier session's owner rules in at least 90% of runs",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-continuity-shipped.json"
+      ],
+      "json": "svc_solve_rate",
+      "min": 0.9
+    },
+    {
+      "id": "review-ceiling",
+      "claim": "Bare Haiku 5.5 already finds every planted fault in the multi-file review task: the review pillars sit at the model's ceiling",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-review-large.json"
+      ],
+      "json": "bare_solve_rate",
+      "min": 1
     }
   ]
 }

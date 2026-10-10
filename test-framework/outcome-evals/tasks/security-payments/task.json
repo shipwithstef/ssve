@@ -1,0 +1,7 @@
+{
+  "pillar": "review-security",
+  "max_turns": 30,
+  "timeout_min": 10,
+  "instruction": "Security-review the payment code in src/ (spec.md explains the context) before it ships. Do not modify src/. Write SECURITY.json in this directory: a JSON array with one object per exploitable defect, each {\"file\": \"src/<name>.mjs\", \"line\": <line number>, \"severity\": \"CRITICAL|HIGH|MEDIUM|LOW\", \"issue\": \"<the attack and its impact>\"}. Report only defects you can justify; write [] if there are none.",
+  "svc": ["skills/review-security/SKILL.md"]
+}

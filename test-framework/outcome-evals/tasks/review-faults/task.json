@@ -1,0 +1,7 @@
+{
+  "pillar": "review-exec",
+  "max_turns": 30,
+  "timeout_min": 10,
+  "instruction": "Review the change described in spec.md (the code in src/, tests in test/) against its acceptance criteria. Do not modify any file in src/ or test/. Write REVIEW.json in this directory: a JSON array with one object per real defect, each {\"file\": \"src/<name>.mjs\", \"line\": <line number of the defect>, \"severity\": \"CRITICAL|HIGH|MEDIUM|LOW\", \"issue\": \"<what breaks and how>\"}. Report only defects you can justify; write [] if there are none.",
+  "svc": ["agents/svc-lens-correctness.md", "agents/svc-lens-security.md"]
+}

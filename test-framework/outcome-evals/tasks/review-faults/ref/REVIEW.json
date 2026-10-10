@@ -1,0 +1,6 @@
+[
+  {"file": "src/bookings.mjs", "line": 15, "severity": "HIGH", "issue": "paid > capacity admits a booking when paid equals capacity, so a class can overbook by one; use >="},
+  {"file": "src/bookings.mjs", "line": 26, "severity": "CRITICAL", "issue": "status is checked before the awaited refund and set after it, so two concurrent refund requests both pass the check and refund twice; mark the booking refunding before awaiting"},
+  {"file": "src/auth.mjs", "line": 25, "severity": "CRITICAL", "issue": "the catch returns true: a malformed, forged or expired token grants owner access (fail-open)"},
+  {"file": "src/receipts.mjs", "line": 8, "severity": "HIGH", "issue": "receiptId and userId are joined without validation, so ../ path traversal reads any file outside the receipts directory"}
+]
