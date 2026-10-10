@@ -43,10 +43,10 @@ phases:
   - { id: P9-SelfVerifyContinuation, required_for_completion: true, evidence: "self-verify complete and task graph continuation handled" }
 
 chain:
-  # Pre-lane skill. Operates ABOVE the 7-lane model. Output DECISION.md names the
-  # downstream lane + skill to invoke next. Pre-lane positioning is documented in
-  # intent-routing.md + lane-model.md; not expressed as a frontmatter flag.
-  lanes: {}
+  # Decision step of Lane 13 (general outcome) and callable as a pre-lane step from
+  # any lane. Output DECISION.md names the downstream lane + skill to invoke next.
+  lanes:
+    general: { position: 1, prev: route-workflow, next: null }
   progressive: false
   self_verify: true
   human_checkpoint: true
@@ -67,6 +67,15 @@ an unchanged question is not a new decision round.
 
 Systematic N-way decision analysis with constraint-profile awareness, funnel-adjusted
 cost modeling, elimination gates, and adversarial review.
+
+**Division of labour.** You build the decision model and its evidence: options, the
+variables that drive their value with sourced ranges, correlations, HARD gates and
+profiles, all in `MODEL.json` (format: `schemas/decision-model.schema.json`, guide:
+`docs/decision-engine.md`). `scripts/decision-engine.mjs` computes everything numeric:
+correlated Monte Carlo, gate elimination, EV per option, P(best), value of information,
+break-even, and the winner per profile. Never hand-compute EV cells, sensitivity or
+break-even values in prose; the only in-repo run that did (2026-06-29) was rejected by
+its own reviewer at process fidelity 1/10.
 
 ## When to use this skill
 
@@ -134,8 +143,11 @@ Skip this phase if the question is clearly scoped.
 
 ### 0a. Elicit constraints
 
-Present the 4 canonical profiles from `_shared/constraint-profiles.md` + let caller pick
-one with optional overrides. DO NOT silently default.
+Encode the 4 canonical profiles from `_shared/constraint-profiles.md` as `profiles` in
+`MODEL.json` (overrides of budget/threshold variables). If the caller declared a profile,
+use it. If not, do not interrogate: the engine evaluates every profile in one run, and
+you ask the caller to pick only when the winner flips between profiles. DO NOT silently
+default to one profile.
 
 Format the elicitation like this:
 
@@ -182,10 +194,11 @@ This decision is valid ONLY for this profile. A different profile may flip the r
 see MULTI-PROFILE-DELTA.md if comparison mode was run.
 ```
 
-### 0d. Stop-gate
+### 0d. Profile gate
 
-If caller refuses to declare anything, STOP. Do not assume — wrong profile produces
-wrong decision silently.
+If the caller declares nothing, run all profiles. If the winner flips by profile, present
+the flip table and ask which profile applies; if it does not flip, the profile is not a
+decision input and needs no question.
 
 ## Phase 1 — Research (meta-research + layered research)
 
@@ -327,6 +340,12 @@ ELIMINATED — Foursquare Places — Budget — $450/mo at Y2 Base exceeds $100/
 Standard gate families (full list in elimination-gate-protocol.md): Legal/TOS, Budget,
 Coverage, Effort, Role, Reversibility, Constitutional.
 
+Encode each HARD gate as an expression in `MODEL.json` (`gates[].expr`, with `family` and a
+`tolerance`, default 0.05). The engine eliminates an option when its probability of
+violating a gate exceeds the tolerance, so an option that only fits the budget in the
+optimistic case is eliminated by evidence, not by a guess. Copy the engine's
+elimination lines into SURVIVORS.md.
+
 Write SURVIVORS.md with two sections:
 1. Survivors table (options + gates cleared)
 2. Eliminated appendix (one line per eliminated option with evidence)
@@ -342,7 +361,8 @@ Write QUESTIONNAIRE.md for compatibility, with substantive per-survivor comparis
 
 ## Phase 5 — Funnel-adjusted EV model
 
-For each survivor, compute expected value per action, NOT just unit infra cost:
+Express each survivor's value as an expression in `MODEL.json` and let the engine compute it.
+Model expected value per action, NOT just unit infra cost:
 
 ```
 EV_per_action = P(action_completes_given_friction) × LTV_per_completed_action − Cost_per_attempt
@@ -353,11 +373,26 @@ Required inputs:
 - Completion rate per option (from Phase 1b research / industry benchmarks)
 - LTV per completed action (from business spec / builder projections)
 
-Required outputs per survivor:
-- EV per action at Y1 / Y2 / Y3
-- Under Low / Base / High growth scenarios (9 cells per option)
-- Break-even math: at what completion rate does this go net-negative?
-- Sensitivity tornado: rank inputs by EV impact
+Encode the inputs as `variables` with ranges and their `source` (Phase 1b evidence), the
+growth scenarios as a `discrete` variable or as profiles, and known dependencies (for
+example completion rate and retention) as `correlations`. Then run:
+
+```bash
+node scripts/decision-engine.mjs evaluate docs/specs/decisions/<slug>/MODEL.json --markdown > docs/specs/decisions/<slug>/EV-MODEL.md
+node scripts/decision-engine.mjs evaluate docs/specs/decisions/<slug>/MODEL.json --json > docs/specs/decisions/<slug>/EV-RESULT.json
+```
+
+The engine outputs per survivor: the EV distribution (mean, p10/p50/p90), P(best) and
+expected regret. For each variable it gives the value of information (EVPPI) and the
+break-even value where the winner flips, which replaces the sensitivity tornado. It also
+gives the winner per profile. Act on its `verdict`:
+
+| verdict | meaning | next |
+|---|---|---|
+| `ask-first` | One answerable unknown is worth more than the threshold | Ask exactly `next_question` (owner-facing: through `decide`), pin the answer as a `const`, re-run |
+| `clear` | Perfect information on everything is worth less than the threshold | Proceed to Phase 6; ask nothing |
+| `decide-and-monitor` | Uncertainty matters jointly; no single question pays | Proceed; the break-evens become revisit triggers |
+| `no-survivor` | Every option fails a HARD gate | Report the gates; relax one deliberately or add options |
 
 ### manage-finops invocation policy (optional helper, NOT required)
 
@@ -405,7 +440,7 @@ Invoke `agents/strategic-reviewer` with input manifest:
 
 | Host | Mechanism |
 |---|---|
-| Claude Code | `scripts/dispatch-worker.sh --agent strategic-reviewer --input-paths <manifest>` → runtime enforces tool allowlist + fresh context |
+| Claude Code | Agent tool with `subagent_type: strategic-reviewer` and the manifest paths in the prompt → runtime enforces tool allowlist + fresh context |
 | Kimi CLI | same script; Kimi's runtime enforces agent YAML |
 | Codex CLI | inline load of `agents/strategic-reviewer.md` append content; no runtime enforcement — prompt-level discipline + eval regression catches violations |
 | Gemini CLI | same as Codex |
@@ -424,13 +459,13 @@ Agent emits YAML findings (see `agents/strategic-reviewer.md` output format). Pa
 
 ### 7a. Reconciliation rule between Phase 4 (qualitative) and Phase 5 (quantitative)
 
-The decision is driven by EV (Phase 5) PRIMARILY, with Phase 4 as tiebreaker and disqualifier:
+The decision is driven by the engine's result (Phase 5) PRIMARILY, with Phase 4 as tiebreaker and disqualifier:
 
-1. Rank survivors by EV.
+1. Take the engine's ranking (EV-RESULT.json `options`).
 2. Take top 3.
 3. For each, check Phase 4 for any SEVERE finding in Risk, Reversibility, or Persona Fit.
-4. Drop options with SEVERE findings. Highest-EV surviving option wins.
-5. If all top 3 have SEVERE findings, return to Phase 4 with stricter gates — survivor set too loose.
+4. Encode a SEVERE finding as a HARD gate in MODEL.json and re-run, so the veto is recorded in the model rather than in prose. The engine's new winner wins.
+5. If all top 3 have SEVERE findings, return to Phase 3 with stricter gates — survivor set too loose.
 
 Avoids two failure modes:
 - **Quantitative-only:** cheapest option even if architectural nightmare
@@ -472,7 +507,10 @@ DIMENSIONS.md Local Evidence Scan rows and any external gap-targeted fetches.>
 - Runner 2: <name> — <cited reason>
 - Runner 3: <name> — <cited reason>
 
-## Revisit Triggers (MANDATORY — ≥2 rows)
+## Outcome metrics
+<1–3 metrics with target and date; these are what decision-ledger observes>
+
+## Revisit Triggers (MANDATORY — ≥2 rows; start from the engine's computed break-evens)
 Revisit this decision if any of:
 - <numeric threshold> — e.g., "monthly bill > $500 for 2 consecutive months"
 - <qualitative condition> — e.g., "provider loses > 20% of target region"
@@ -501,7 +539,11 @@ node scripts/pipeline-log.mjs append \
   --reasoning "<short summary citing DECISION.md>" \
   --decided-by P0 \
   --overrideable true
+node scripts/decision-ledger.mjs record --model docs/specs/decisions/<slug>/MODEL.json --result docs/specs/decisions/<slug>/EV-RESULT.json --id <slug>
 ```
+
+The ledger row is what later observations are checked against. Record outcomes with
+`decision-ledger.mjs observe --id <slug>` as they arrive.
 
 ## Self-Verify
 
@@ -514,12 +556,14 @@ node scripts/pipeline-log.mjs append \
 | 5 | Escape-hatch section present | grep "Escape Hatch Analysis" in DIMENSIONS.md | |
 | 6 | Elimination gates applied before questionnaire | SURVIVORS.md exists; fewer rows than OPTIONS.md | |
 | 7 | Every survivor has substantive shared-contract evidence + Validity header + Adoption Timing footer | inspect per-survivor evidence and unresolved consequential decisions in QUESTIONNAIRE.md | |
-| 8 | Funnel-impact cost in EV model | EV-MODEL.md contains `P(complete) × LTV` term, not just unit cost | |
+| 8 | Funnel-impact cost in EV model, computed not narrated | MODEL.json option values include the completion-rate × LTV term (`P(complete) × LTV`), `decision-engine.mjs validate` passes, and EV-MODEL.md is the engine's output (has `**Verdict:**` and "What would change the decision") | |
 | 9 | Adversarial review via strategic-reviewer agent (not plan-reviewer, not review-gate) | REVIEW.md exists; YAML cites `reviewer: strategic-reviewer` | |
 | 10 | Revisit triggers concrete (≥2 rows) | DECISION.md §Revisit Triggers has ≥2 rows with numeric or qualitative conditions | |
 | 11 | Pipeline decision log updated with canonical type | `.svc/pipeline-decisions.jsonl` has new entry with `"type": "taste"` | |
 | 12 | Comparison-mode artifacts (if comparison mode ran) | if Phase 0b ran in comparison mode, DECISION-<profile>.md + EV-MODEL-<profile>.md + MULTI-PROFILE-DELTA.md all exist | |
 | 13 | DECISION.md names downstream lane + skill | grep "Next skill to invoke" in DECISION.md | |
+| 14 | Questions asked only on an `ask-first` verdict | every owner question in this run is the engine's `next_question`, or the profile pick after a profile flip | |
+| 15 | Decision recorded in the ledger | `.svc/decision-ledger.jsonl` has a `prediction` row with `id: <slug>` | |
 
 ## Phase Receipt Contract
 

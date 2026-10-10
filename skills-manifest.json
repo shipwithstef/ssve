@@ -645,6 +645,13 @@
       "defaultSkips": [],
       "notes": "Framework evidence and implementation loop for known gaps. Broken framework behavior may start in diagnose-bug, and new framework capabilities route through the normal svc product pipeline on this repo per route-workflow's svc-on-svc policy.",
       "mandatoryChainEnforcement": "Framework changes are enforced through L1+L2+L3 (git hook dispatcher + svc-reconcile), not via skills-manifest lane listing. Each skill in this lane operates within the broader chain enforced by the hooks."
+    },
+    "general": {
+      "skills": [
+        "strategic-decision"
+      ],
+      "defaultSkips": [],
+      "notes": "Lane 13 (general outcome): any work whose deliverable is not a code change in this repo (business, research, content, operations, personal or company decisions) and the fallback when no other lane fits. Flow: frame outcome metrics -> strategic-decision computes the choice with scripts/decision-engine.mjs -> compose steps from existing skills, with a host dynamic workflow for uncovered steps -> execute (outward/irreversible actions need owner confirmation) -> verify the metric and record it with scripts/decision-ledger.mjs. Not a code delivery graph: code work it produces hands off to the matching code lane. See skills/route-workflow/references/general-lane.md."
     }
   },
   "rulesRegistry": {

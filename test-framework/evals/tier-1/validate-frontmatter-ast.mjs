@@ -229,7 +229,7 @@ function extractFrontmatter(content) {
 
 const VALID_LANES = [
   'greenfield', 'brownfield-conversion', 'brownfield-feature',
-  'bugfix', 'drift', 'refactor', 'framework'
+  'bugfix', 'drift', 'refactor', 'framework', 'general'
 ];
 
 for (const skill of MANIFEST.includedSkills) {
