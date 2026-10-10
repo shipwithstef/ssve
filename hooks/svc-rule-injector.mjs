@@ -21,7 +21,7 @@
 import { firstSessionFinding, findingSession } from "./lib/session-findings.mjs";
 import { isShellTool } from "./lib/shell-tools.mjs";
 import { evaluatePreToolObservation } from "./lib/pretool-decision-engine.mjs";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 // G2 PLAN-002: the established payload normalizer (conf-10 stdin-first learning)
@@ -80,6 +80,23 @@ function loadConcernBridge(paths) {
   } catch { return new Set(); }
 }
 
+// Stack-specific rules may declare signals.repo_markers: the rule fires only
+// when the governed repo carries at least one marker. "<path>" = exists under
+// the repo root; "<file>:<substring>" = that file contains the substring.
+// Without markers a base44 rule fired on any public/, dist/ or functions/ path.
+function repoHasMarker(root, markers) {
+  if (!Array.isArray(markers) || markers.length === 0) return true;
+  for (const m of markers) {
+    const s = String(m || "");
+    const i = s.indexOf(":");
+    try {
+      if (i > 0) { if (readFileSync(path.join(root, s.slice(0, i)), "utf8").includes(s.slice(i + 1))) return true; }
+      else if (s && existsSync(path.join(root, s))) return true;
+    } catch { /* unreadable marker file = no marker */ }
+  }
+  return false;
+}
+
 function main() {
   const call = readHookPayload();              // {toolName, toolInput, sessionId, cwd, raw} (PLAN-002)
   if (!call) process.exit(0);
@@ -117,8 +134,14 @@ function main() {
   const bridgeRules = paths.length ? loadConcernBridge(paths) : new Set();
 
   const matched = [];
+  const markerMemo = new Map();
   for (const e of entries) {
     const sig = e.signals || {};
+    if (sig.repo_markers) {
+      const key = JSON.stringify(sig.repo_markers);
+      if (!markerMemo.has(key)) markerMemo.set(key, repoHasMarker(cwd, sig.repo_markers));
+      if (!markerMemo.get(key)) continue;
+    }
     let hit = false;
     for (const rx of sig.paths || []) {
       let re; try { re = new RegExp(rx); } catch { continue; }
