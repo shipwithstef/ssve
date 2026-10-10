@@ -11,7 +11,7 @@ substitution, or reordering fails lane validation.
 
 ### Pre-lane skills (operate ABOVE the 7-lane model)
 
-Certain svc skills operate BEFORE lane classification. Their output recommends which lane + skill to invoke next. Do not try to classify these into an existing lane.
+Certain svc skills operate BEFORE lane classification. Their output recommends which lane + skill to invoke next. Do not try to classify these into an existing lane. `strategic-decision` is also the decision step of Lane 13 (general outcome, below), where its choice is computed by `scripts/decision-engine.mjs`.
 
 | Skill | Role | Output |
 |---|---|---|
@@ -599,6 +599,16 @@ These 5 lanes catch infra-class work — Terraform, Kubernetes, CI/CD, IAM, obse
 **Trigger signals:** Cost report / budget alert / explicit FinOps request. User says "we're spending too much", "rightsize", "kill unused", "FinOps".
 
 **Phase chain:** Same as Lane 9 (Infra Feature) but with `review-security --mode=cost-impact` elevated to primary gate (not secondary). FinOps dimension is the load-bearing concern; Security and Scalability are guardrails.
+
+### Lane 13: General Outcome (any work, including non-code)
+
+**When:** the deliverable is not a code change in this repo (business, product strategy, research, content, company operations, personal or financial decisions, creative work), or no other lane fits. Full flow: `references/general-lane.md`.
+
+**Phase chain:** frame outcome metrics → `strategic-decision` (computed by `scripts/decision-engine.mjs`; asks only the engine's `next_question`) → compose steps from existing skills, with a host dynamic workflow for uncovered steps → execute (outward or irreversible actions need owner confirmation) → verify metrics with `scripts/decision-ledger.mjs observe` + `review` → `calibration`.
+
+**Skip / NA:** skip the decision step with `SKIP: no real choice because <reason>` when there is one viable option and no consequential parameter. Skip execution when the requested deliverable is the decision itself.
+
+**Hand-off:** software the decision calls for goes to the matching code lane with `DECISION.md` as input. This lane has no code delivery graph (`compile-delivery-graph.mjs` refuses it).
 
 ### Continuous drift watch
 

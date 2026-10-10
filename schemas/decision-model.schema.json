@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "svc-decision-model/1",
+  "title": "svc decision model",
+  "description": "Input to scripts/decision-engine.mjs. The model supplies structure and evidence; the engine computes. Semantic checks (ranges, expression names, correlation consistency) are enforced by `decision-engine.mjs validate`.",
+  "type": "object",
+  "required": ["schema", "question", "variables", "options"],
+  "properties": {
+    "schema": { "const": "svc-decision-model/1" },
+    "question": { "type": "string", "minLength": 1 },
+    "objective": {
+      "type": "object",
+      "properties": {
+        "metric": { "type": "string" },
+        "unit": { "type": "string" },
+        "direction": { "enum": ["max", "min"] },
+        "voi_threshold": { "type": "number", "minimum": 0, "description": "absolute value-of-information worth asking for; default 1% of the winner's stake" }
+      }
+    },
+    "samples": { "type": "integer", "minimum": 200, "maximum": 2000000 },
+    "seed": { "type": "integer" },
+    "variables": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["dist"],
+        "properties": {
+          "dist": { "enum": ["const", "uniform", "triangular", "normal", "lognormal", "discrete"] },
+          "value": { "type": "number" },
+          "low": { "type": "number" }, "mode": { "type": "number" }, "high": { "type": "number" },
+          "mean": { "type": "number" }, "sd": { "type": "number", "minimum": 0 },
+          "p10": { "type": "number" }, "p90": { "type": "number" },
+          "values": { "type": "array", "items": { "type": "number" } },
+          "weights": { "type": "array", "items": { "type": "number", "minimum": 0 } },
+          "source": { "type": "string", "description": "file:line or URL the range comes from" },
+          "question": { "type": "string", "description": "how to ask for this value if it is worth asking" },
+          "askable": { "type": "boolean", "description": "false when nobody can answer it before deciding" }
+        }
+      }
+    },
+    "derived": { "type": "object", "additionalProperties": { "type": ["string", "number"] } },
+    "correlations": {
+      "type": "array",
+      "items": { "type": "object", "required": ["a", "b", "rho"],
+        "properties": { "a": { "type": "string" }, "b": { "type": "string" }, "rho": { "type": "number", "exclusiveMinimum": -1, "exclusiveMaximum": 1 }, "note": { "type": "string" } } }
+    },
+    "gates": { "$ref": "#/$defs/gates" },
+    "options": {
+      "type": "array", "minItems": 2,
+      "items": { "type": "object", "required": ["id", "value"],
+        "properties": { "id": { "type": "string" }, "label": { "type": "string" }, "value": { "type": ["string", "number"] },
+          "params": { "type": "object", "additionalProperties": { "type": "number" } }, "gates": { "$ref": "#/$defs/gates" } } }
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": { "type": "object", "properties": { "variables": { "type": "object" } } }
+    }
+  },
+  "$defs": {
+    "gates": {
+      "type": "array",
+      "items": { "type": "object", "required": ["expr"],
+        "properties": { "expr": { "type": ["string", "number"] }, "label": { "type": "string" }, "family": { "type": "string" },
+          "tolerance": { "type": "number", "minimum": 0, "exclusiveMaximum": 1 } } }
+    }
+  }
+}

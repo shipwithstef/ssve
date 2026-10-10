@@ -555,6 +555,7 @@ export function compileDeliveryGraph(input) {
   const wi = requireString(input.wi, "wi");
   const lane = requireString(input.lane, "lane");
   const changeType = requireString(input.change_type, "change_type");
+  if (lane === "general") throw new Error("Lane 'general' has no code delivery graph: compose its steps per skills/route-workflow/references/general-lane.md, and hand any code change it produces to a code lane");
   if (!LANE_BASE_SKILLS[lane]) throw new Error(`Unsupported lane: ${lane}`);
 
   const laneSkills = injectMandatoryDeliveryChain(LANE_BASE_SKILLS[lane]);

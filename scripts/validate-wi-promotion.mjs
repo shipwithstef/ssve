@@ -111,7 +111,7 @@ const PROPOSAL_PATH_RE = /^proposals\/.+\.md$/;
 const CONCERN_PATH_RE = /^concerns\/.+\.md$/;
 
 const DECISION_ENUM = ["accepted", "refused", "bound-to-proposal", "grandfathered"];
-const LANE_ENUM = ["greenfield", "brownfield-conversion", "brownfield-feature", "bugfix", "drift", "refactor", "framework"];
+const LANE_ENUM = ["greenfield", "brownfield-conversion", "brownfield-feature", "bugfix", "drift", "refactor", "framework", "general"];
 const PLAN_CHANGESET_CLASS_ENUM = ["contract-change", "hot-path", "refactor", "additive", "docs", "n/a"];
 const CONCRETE_CONTRACT_ENUM = ["pass", "warn", "fail", "n/a"];
 const SEVERITY_RATED_ENUM = ["critical", "high", "medium", "low", "n/a"];

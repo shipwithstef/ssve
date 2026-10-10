@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "compiled_from": {
-    "manifest_sha256": "3c9a65ce9815a56397098d7ed093637b7c8c9b8952c566314ea68fcd756066b7",
+    "manifest_sha256": "1e024cf599e60e748b913727c79763c1224cea6a9c9740844cb531174a29d57e",
     "overrides_sha256": "14fa674603c6a84ddf5b2673fe072778aa69cfd415d3d58e55adf4486a685249",
     "concern_registry_sha256": "6c336c8832c4907ee78413a2b7d377b790bb55bba180783d2164892a130ea507"
   },
@@ -1636,7 +1636,7 @@
     {
       "skill": "route-workflow",
       "path": "skills/route-workflow/SKILL.md",
-      "content_hash": "534ced35480f537f00832018d39c6698dcdaab24b303ba4e47d23df491f0fe86",
+      "content_hash": "1710622f922d59850b3d9fa80bee5d7e765f769681689150aec5b5afa0fa1970",
       "description": "Universal entry point for any work. Routes freeform intent to the right svc skill based on repo state, change type, and current project artifacts. Handles: \"do this\", \"build this\", \"I want to\", \"help me with\", \"make me a\", \"ship this\", \"fix this\", or ANY freeform description of work; also handles explicit routing questions like \"what should I do next\", \"which skill do I run\", \"what's the right order\", and \"what lane is this\". Here \"what should I do next\" means only which skill and lane to run in this repo.",
       "aliases": [
         "what should I do next",
@@ -1703,7 +1703,7 @@
     {
       "skill": "strategic-decision",
       "path": "skills/strategic-decision/SKILL.md",
-      "content_hash": "698d5485f5614c0bde8a3efc143d751c3d60dfc435145943ee26d2cfc10eb918",
+      "content_hash": "e39c8fb0ca99d069a280b9668e88d6a1977f027c7d59ff8bd9011b00c96e77d0",
       "description": "N-way strategic trade study spanning features, vendors, or years — build-vs-buy, framework/database/hosting/AI-model/payment-provider selection, pricing model, strategic pivot. Use when: \"which X should I use\", \"compare providers\", \"trade study\", \"strategic decision\". NOT for within-feature architecture (design-tech owns that). Also: \"N-way decision\", \"pick vendor\", \"compare options before committing\".",
       "aliases": [
         "trade study",
