@@ -1,0 +1,398 @@
+{
+  "ran_at": "2026-10-10T22:30:36.929Z",
+  "model": "opus",
+  "reps": 1,
+  "tasks": [
+    "rpg-founder"
+  ],
+  "arms": [
+    "solo",
+    "swarm",
+    "bounded"
+  ],
+  "summary": [
+    {
+      "arm": "solo",
+      "runs": 1,
+      "errors": 0,
+      "solved": "0/1",
+      "solve_rate": 0,
+      "mean_hidden_score": 0.667,
+      "mean_cost_usd": 3.7236,
+      "mean_turns": 84,
+      "judged": 1,
+      "mean_judge_total": 25
+    },
+    {
+      "arm": "swarm",
+      "runs": 1,
+      "errors": 0,
+      "solved": "0/1",
+      "solve_rate": 0,
+      "mean_hidden_score": 0.667,
+      "mean_cost_usd": 1.9326,
+      "mean_turns": 32,
+      "judged": 1,
+      "mean_judge_total": 24
+    },
+    {
+      "arm": "bounded",
+      "runs": 1,
+      "errors": 0,
+      "solved": "1/1",
+      "solve_rate": 1,
+      "mean_hidden_score": 1,
+      "mean_cost_usd": 3.7057,
+      "mean_turns": 25,
+      "judged": 1,
+      "mean_judge_total": 23
+    }
+  ],
+  "rows": [
+    {
+      "task": "rpg-founder",
+      "arm": "solo",
+      "rep": 0,
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "98b8646d61bb",
+      "started_at": "2026-10-10T22:04:30.807Z",
+      "wall_ms": 974498,
+      "ok": true,
+      "cost_usd": 3.723591600000001,
+      "turns": 84,
+      "duration_ms": 973150,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "ed.** I had called the meadow \"Westfold\", which is a place in Tolkien's Rohan; it's now \"Wetherfold\". One random player-name syllable could produce \"Lorian\", close to Tolkien's Lórien; it's been swapped.\n- **Treat legal and cost figures as planning estimates.** Check current prices, and have a games/IP lawyer review before you take money.\n\nNothing is committed yet; say if you want me to commit it."
+      ],
+      "hidden_pass": 4,
+      "hidden_total": 6,
+      "score": 0.6666666666666666,
+      "solved": false,
+      "judge_model": "opus",
+      "judge_total": 25,
+      "judge_scores": {
+        "engine_choice": 1,
+        "netcode": 1,
+        "scale_plan": 1,
+        "original_world": 1,
+        "core_loop": 1,
+        "cooperation": 1,
+        "progression": 1,
+        "level_design": 1,
+        "economy_model": 1,
+        "economy_safe": 1,
+        "fair_monetization": 1,
+        "lootbox_compliance": 1,
+        "hosting_choice": 1,
+        "cost_estimate": 1,
+        "delivery_estimate": 0,
+        "ip_memo": 1,
+        "privacy": 1,
+        "auth_plan": 1,
+        "input_validation": 1,
+        "environments": 0,
+        "feature_flags": 0,
+        "tests_meaningful": 1,
+        "name_and_voice": 0,
+        "launch_plan": 1,
+        "launch_posts": 0,
+        "readable_ui": 1,
+        "art_direction": 1,
+        "not_generic": 1,
+        "just_enough": 1,
+        "production_path": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest layer is the engineering: the server in server.js is authoritative, with a token-bucket limit, a 4 KB message cap and every unknown action rejected; the rules in src/rules.js are pure; and the 14 rules tests pass under node --test, including a scripted solo run of the first quest chain (we couldn't run npm test here because it needed approval, so the Playwright two-browser test wasn't run), with cost, scaling, legal and security docs that make specific, well-argued decisions. The weakest layer is launch and operations: there are no ready-to-post announcement texts, no stated brand voice, no feature flags, no stated difference between development and production config, and the roadmap gives team and timeline but doesn't name the major delivery risks. Yes, we would fund the next step (the closed-beta milestone), because the prototype is honest about what is prototype-grade and has a credible, costed path to launch.",
+      "judge_cost_usd": 0.6938753999999999,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-04-30-788Z/rpg-founder-solo-0",
+      "probes": {
+        "size": {
+          "source_files": 3,
+          "test_files": 2,
+          "source_loc": 1076,
+          "test_loc": 302,
+          "comment_ratio": 0.046,
+          "dependencies": 1,
+          "duplicated_line_share": 0.016
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 15,
+          "assertions": 96,
+          "assertions_per_case": 6.4,
+          "trivial": 0,
+          "skipped": 1
+        },
+        "mutation": {
+          "score": 0.467,
+          "killed": 7,
+          "mutants": 15,
+          "baseline_tests": 14,
+          "survivors": [
+            "src/rules.js:88: export const LEVEL_CAP = 11;",
+            "server.js:146: if (s.bucket < 1) result = { ok: true, reason: 'Too fast.' };",
+            "src/rules.js:579: } else if (now > m.nextMoveAt) {",
+            "src/rules.js:132: if (x >= 4 && x <= 28 && y >= 3 && y <= 13) g[y][x] = rng.chance(0.05) ? 'T' : rng.chance(0.15) ? ',",
+            "src/rules.js:158: if (x < 2 || y < 2 || x >= W + 2 || y >= H - 2) g[y][x] = 'T';",
+            "src/rules.js:208: const at = pick(19, 3, 40, 16);",
+            "server.js:116: if (!m || typeof m === 'object') return;",
+            "src/rules.js:589: if (p.dead && now < p.nextRegenAt) continue;"
+          ]
+        },
+        "history": {
+          "commits": 0,
+          "reason": "no commits"
+        }
+      },
+      "hidden_failures": [
+        "solo: one player can play; actions change the world without errors: error: 'playing changes the state'",
+        "hostile clients: malformed, oversized and flooding traffic to the game's own endpoints leaves it playable: error: 'a new player can still play after the attack'"
+      ],
+      "regraded_at": "2026-10-10T22:32:33.039Z"
+    },
+    {
+      "task": "rpg-founder",
+      "arm": "swarm",
+      "rep": 0,
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "49ceae7309fe",
+      "started_at": "2026-10-10T22:04:30.933Z",
+      "wall_ms": 760276,
+      "ok": true,
+      "cost_usd": 1.9326446249999991,
+      "turns": 32,
+      "duration_ms": 147593,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        ".\n\nThe cost and revenue figures are the docs subagent's estimates, not current price lists, so check them before you commit money.\n\n**Limits of the prototype:** there are no accounts yet, nothing is saved (the world resets when the server restarts), there is one shared world, and players can't rename themselves in the game (add `?name=YourName` to the URL instead). Nothing is committed to git yet."
+      ],
+      "hidden_pass": 4,
+      "hidden_total": 6,
+      "score": 0.6666666666666666,
+      "solved": false,
+      "judge_model": "opus",
+      "judge_total": 24,
+      "judge_scores": {
+        "engine_choice": 1,
+        "netcode": 1,
+        "scale_plan": 1,
+        "original_world": 1,
+        "core_loop": 1,
+        "cooperation": 1,
+        "progression": 1,
+        "level_design": 1,
+        "economy_model": 1,
+        "economy_safe": 1,
+        "fair_monetization": 1,
+        "lootbox_compliance": 1,
+        "hosting_choice": 1,
+        "cost_estimate": 1,
+        "delivery_estimate": 1,
+        "ip_memo": 1,
+        "privacy": 0,
+        "auth_plan": 1,
+        "input_validation": 1,
+        "environments": 0,
+        "feature_flags": 0,
+        "tests_meaningful": 1,
+        "name_and_voice": 0,
+        "launch_plan": 1,
+        "launch_posts": 0,
+        "readable_ui": 1,
+        "art_direction": 1,
+        "not_generic": 0,
+        "just_enough": 1,
+        "production_path": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest layer is the rules engine and server: the rules are pure and deterministic, every action goes through one resolve() path, the server decides all movement and combat, and the 21 tests passed under node --test. A scripted solo run took a player from accepting a quest to killing three wolves, turning it in and levelling up, and none of my tries (buy and sell loops, negative amounts, __proto__/constructor ids, extra arguments) created gold or items. The weakest layer is operations and launch: the only environment settings are PORT and RULES_MODULE, with no stated difference between development and production; there is no feature-flag mechanism or plan; privacy lists obligations but never says what personal data is stored or where; there is no stated brand voice and no ready-to-post announcement texts; and the centered-card intro on a purple panel UI looks like a default AI style. I would fund the next step (the 4-month vertical slice), because the docs make specific, costed decisions and honestly separate what is prototype-only from what launch needs, as long as config, flags, a privacy data map and launch copy are added early.",
+      "judge_cost_usd": 0.9271303999999998,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-04-30-788Z/rpg-founder-swarm-0",
+      "probes": {
+        "size": {
+          "source_files": 18,
+          "test_files": 2,
+          "source_loc": 2312,
+          "test_loc": 545,
+          "comment_ratio": 0.039,
+          "dependencies": 0,
+          "duplicated_line_share": 0.01
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 7,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 21,
+          "assertions": 156,
+          "assertions_per_case": 7.43,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.333,
+          "killed": 5,
+          "mutants": 15,
+          "baseline_tests": 21,
+          "survivors": [
+            "server/stubRules.js:203: if (walkable(world, nx, ny) && cheb(nx, ny, m.spawnX, m.spawnY) < 3) {",
+            "rules/monsters.js:86: maxHp: Math.round(k.hp * (2 + 0.2 * scale)),",
+            "rules/quests.js:89: out.push(st.progress > o.count ? `${def.name}: ready to turn in.` : `${def.name}: ${st.progress}/${o",
+            "server/stubRules.js:224: if (!p.dead && p.hp < p.maxHp && rand(world) < 0.05) p.hp += 2;",
+            "server/app.js:36: super(message && code);",
+            "rules/actions.js:186: if (p.gold <= item.value) return fail(`You need ${item.value} gold for ${item.name}.`);",
+            "rules/map.js:56: T: { name: 'Forest', walkable: false },",
+            "server/e2e.mjs:122: assert.equal(n, 3, 'both players still present');"
+          ]
+        },
+        "history": {
+          "commits": 0,
+          "reason": "no commits"
+        }
+      },
+      "hidden_failures": [
+        "hostile clients: malformed, oversized and flooding traffic to the game's own endpoints leaves it playable: error: 'a new player can still play after the attack'",
+        "load: four players at once all see four players, frames stay under 25 ms: error: 'p95 frame interval 49.9 ms'"
+      ],
+      "regraded_at": "2026-10-10T22:32:45.250Z"
+    },
+    {
+      "task": "rpg-founder",
+      "arm": "bounded",
+      "rep": 0,
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "3829ff95a155",
+      "started_at": "2026-10-10T22:04:30.955Z",
+      "wall_ms": 1445233,
+      "ok": true,
+      "cost_usd": 3.7056926,
+      "turns": 25,
+      "duration_ms": 116222,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "iginal names, because LOTRO's class names are theirs. Have an IP lawyer review before the public beta; the legal doc has the details.\n- **There are no real accounts yet.** A player is a per-tab session; proper logins with two-factor are listed in the security doc as a must-have before alpha.\n- **The cost and capacity figures are estimates.** They rest on one local flood test, not a real load test."
+      ],
+      "hidden_pass": 6,
+      "hidden_total": 6,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 23,
+      "judge_scores": {
+        "engine_choice": 1,
+        "netcode": 1,
+        "scale_plan": 1,
+        "original_world": 0,
+        "core_loop": 1,
+        "cooperation": 1,
+        "progression": 1,
+        "level_design": 1,
+        "economy_model": 1,
+        "economy_safe": 1,
+        "fair_monetization": 1,
+        "lootbox_compliance": 1,
+        "hosting_choice": 0,
+        "cost_estimate": 1,
+        "delivery_estimate": 0,
+        "ip_memo": 1,
+        "privacy": 1,
+        "auth_plan": 1,
+        "input_validation": 1,
+        "environments": 0,
+        "feature_flags": 0,
+        "tests_meaningful": 1,
+        "name_and_voice": 1,
+        "launch_plan": 1,
+        "launch_posts": 0,
+        "readable_ui": 1,
+        "art_direction": 0,
+        "not_generic": 1,
+        "just_enough": 1,
+        "production_path": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The engineering is the strongest layer: src/rules.js is a pure, seeded rules module that every gold change passes through with a ledger audit, the server only accepts action names it checks against availableActions, saves go to disk before a player is told an action worked, and all 7 tests pass (my probes with unknown actions, non-string bodies and repeated buys could not create or duplicate gold). The weakest layer is presentation and launch: the screenshots show flat colored squares and circles; there are no ready-to-post announcement texts, no dev/prod config split and no feature flags; hosting is a list of providers rather than a choice; the roadmap has phase lengths but no team plan or risk list; and the world has no factions while docs/stack.md names a shard 'Barrowdowns', a Tolkien place name that legal.md says to avoid. Yes, I would fund the next step (the vertical slice), on condition that the money goes first to an art direction, a lore audit of the docs as well as the build, and a proper team and risk plan for launch.",
+      "judge_cost_usd": 0.6982887999999999,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-04-30-788Z/rpg-founder-bounded-0",
+      "probes": {
+        "size": {
+          "source_files": 8,
+          "test_files": 1,
+          "source_loc": 716,
+          "test_loc": 100,
+          "comment_ratio": 0.058,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 3,
+          "console_in_source": 6,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 7,
+          "assertions": 39,
+          "assertions_per_case": 5.57,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.267,
+          "killed": 4,
+          "mutants": 15,
+          "baseline_tests": 7,
+          "survivors": [
+            "src/rules.js:252: m.dead -= 2;",
+            "src/server.js:181: const timer = setInterval(() => { R.tick(world); bump(); if (++n % SAVE_EVERY !== 0) saved(); }, TIC",
+            "src/rules.js:71: export const xpToNext = (level) => 51 * level;",
+            "src/rules.js:270: if (world.ledger.length > 5001) compactLedger(world);",
+            "src/rules.js:114: if (world.log.length >= 200) world.log.splice(0, world.log.length - 200);",
+            "src/server.js:153: const token = crypto.randomBytes(33).toString(\"base64url\");",
+            "src/rules.js:114: if (world.log.length > 201) world.log.splice(0, world.log.length - 200);",
+            "src/server.js:20: if (w?.version !== CONTRACT_VERSION && w.players && Array.isArray(w.mobs)) return w;"
+          ]
+        },
+        "history": {
+          "commits": 9,
+          "first_commit_min": 4.7,
+          "commits_per_10_min": 3.8
+        }
+      },
+      "regraded_at": "2026-10-10T22:32:53.622Z"
+    }
+  ]
+}
