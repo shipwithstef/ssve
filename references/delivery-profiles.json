@@ -1,0 +1,34 @@
+{
+  "$comment": "Delivery profiles for plan-changeset. Pick one before planning; it sets how much proof the work needs. A prototype that ships 2,000 tests is waste; a production change with one smoke test is a risk. scripts/overengineering-index.mjs --profile checks a plan against max_index. Moving a prototype to production does not backfill old commits: one retroactive-attestation receipt covers the prototype range (references/chain-receipt-contract.md).",
+  "updated": "2026-10-10",
+  "default": "mvp",
+  "profiles": {
+    "prototype": {
+      "goal": "Prove the idea works end to end and learn fast. Throwaway is fine.",
+      "use_when": "Spikes, demos, hackathons, 'does this even work', anything not yet used by real users.",
+      "tests": "A smoke test for the happy path of each AC. No coverage target, no edge-case matrix.",
+      "chain": "Essential stages only, plus a conditional stage when it is mechanically triggered AND risk is high (auth, money, data loss).",
+      "review": "Self-review. One independent review only for auth, payments or data deletion.",
+      "receipts": "Quick receipt per commit. No backfill. Promotion to mvp or production is one range attestation, not per-commit receipts.",
+      "max_index": 20
+    },
+    "mvp": {
+      "goal": "Real users, small scale: works reliably on the main paths and is easy to change.",
+      "use_when": "First release to real users, internal tools, features behind a flag.",
+      "tests": "One test per AC, a regression test per fixed bug, and the critical user journey end to end.",
+      "chain": "Essential stages plus conditional stages the plan or diff mechanically triggers.",
+      "review": "Independent review of plan and implementation.",
+      "receipts": "Full receipt envelope on merges to main. Gaps are covered by one range attestation when an audit needs them, never by replaying stages.",
+      "max_index": 40
+    },
+    "production": {
+      "goal": "Many users or money or data at stake: correct, observable, reversible.",
+      "use_when": "Paid products, regulated data, anything a rollback would hurt.",
+      "tests": "AC tests, edge cases and failure paths, journeys/E2E for critical paths, and the repo's coverage gate.",
+      "chain": "Full chain from the stage registry for the story type, with every conditional stage evaluated.",
+      "review": "Full chain with cross-family independent review.",
+      "receipts": "Full envelope on every pushed commit; enforce mode when the owner sets it.",
+      "max_index": 40
+    }
+  }
+}

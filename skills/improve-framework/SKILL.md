@@ -160,6 +160,17 @@ improve-framework for fixes. To prevent infinite loops:
   through improve-framework. It reports them in the replay output only.
   Pass `--no-self-improve` context to the replay invocation.
 
+## Self-correction inputs
+
+These keep svc tuned as models and harnesses change. Run them weekly (a scheduled routine is the natural fit) and at every model or harness release:
+
+- `node scripts/harness-drift.mjs check`: release notes since the version svc was tuned on, as **adopt** (a new capability svc could use) and **check** (a change svc must verify) proposals, each naming the svc files it touches. After acting, `harness-drift.mjs mark-tuned --version <v>`.
+- `node scripts/harness-playbook.mjs verify`: installed CLIs still accept every flag svc passes them.
+- `node scripts/mirror-ledger.mjs advise`: skills the current model has **caught up** with (slim or retire), skills that now **regress** (review first), and skills never measured.
+- `node scripts/route-model.mjs stats`: where recorded outcomes disagree with the routing priors.
+
+Each finding becomes one WI through `route-workflow`. Nothing edits a skill directly from these reports.
+
 ## The Loop
 
 ```

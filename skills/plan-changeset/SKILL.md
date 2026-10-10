@@ -125,6 +125,12 @@ Before writing anything, read and hold in context:
 
 `docs/plans/<YYYY-MM-DD>-<feature-name>/manifest.md` — single source of truth. On the **dispatch** path (a zero-context executor builds it) it carries exact code payloads (CREATE = full contents; MODIFY = before/after context diffs, ≥3 lines each side). On the **inline** path (the orchestrator executes with full context already loaded) the Changeset Blueprint is skipped — see §3a.
 
+## Delivery Profile, Chain and Over-engineering Check
+
+1. **Pick the delivery profile first** from `references/delivery-profiles.json`: `prototype`, `mvp` (default) or `production`. It sets the test budget, chain depth, review depth and receipt level. A prototype needs a smoke test per AC, not an edge-case matrix; production needs edge cases and journeys. Moving a prototype up is one range attestation, never per-commit backfill. Record the profile and why in `decision_trace`.
+2. **Derive the chain from the plan, not from habit:** `node scripts/stage-activation.mjs --manifest <plan-body.json>` evaluates conditional stages against the planned files and blueprints before any code exists. Essential stages always run; conditional stages run when triggered and the profile allows them.
+3. **Score over-engineering before review:** `node scripts/overengineering-index.mjs <plan-body.json> --chain <activation.json> --profile <profile>`. Over the profile's limit means cut the listed items or justify each against an AC in `decision_trace`; review-plan treats an unjustified over-limit plan as a finding.
+
 ## Execution Mode (resolve BEFORE planning — WI-386)
 
 Before authoring the manifest, resolve and record the execution mode, because it decides whether §3a (Changeset Blueprint) is authored at all:

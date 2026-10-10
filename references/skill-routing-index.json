@@ -27,7 +27,7 @@
     {
       "skill": "addon-gateway",
       "path": "skills/addon-gateway/SKILL.md",
-      "content_hash": "ec5c28e16c85eff9decf29f79f640d295bcc6644e1c5c5a3b8c5400de40fee4a",
+      "content_hash": "cc182ae8b16af68bb0b0b8a8055a94929dc5186be6c66779d7a2e5cf3b46b8eb",
       "description": "Run one playbook from an installed add-on pack (coreyhaines marketing: CRO, copy, SEO, ads, email, launch, pricing, prospecting, churn…) without listing every add-on skill. Use for a named add-on skill or marketing execution work. Not svc's own marketing context (analyze-marketing).",
       "aliases": [],
       "positive_triggers": [],
@@ -567,7 +567,7 @@
     {
       "skill": "design-sync",
       "path": "skills/design-sync/SKILL.md",
-      "content_hash": "b67be84155b1acdacdb064ec8129359d4926c17621e6f40c6a0fc50573736d70",
+      "content_hash": "0d928cf365c6fbb8569b56cb2b7e2852c44ed1fdb6f9cae48f12badbe4b5bf80",
       "description": "Import a product's existing design from code into Claude Design (design system + canvas), record why it looks the way it does, propose improvements as side-by-side artboards, and sync the chosen ones back to code. Also storyboards ad-video motion before rendering. Use for \"import our design\", \"put this in Claude Design\", \"improve our UI\", \"storyboard this ad\".",
       "aliases": [],
       "positive_triggers": [],
@@ -999,7 +999,7 @@
     {
       "skill": "improve-framework",
       "path": "skills/improve-framework/SKILL.md",
-      "content_hash": "50df9c10189c3bd3f7cd5d6ae540bb49ad277f116df23d1d97a57005e8fe4341",
+      "content_hash": "c4203de454e97001afc01ff26c9e2337185351919f1885bef5426c9cf7f74a12",
       "description": "Fix or improve the svc framework itself: close gaps, apply pending proposals, act on test-framework failures or drift. Use for \"improve the framework\", \"run self- improvement\", \"close framework gaps\". To find gaps first use evolve-framework.",
       "aliases": [],
       "positive_triggers": [],
@@ -1302,7 +1302,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "b44f2c6aabbd6e8b3fe9f7ae79abca090ae4ab66b1eb1c81d28123402db118ea",
+      "content_hash": "72f7b2a593c95bc06fbc307685019ff57b3b9afb55a6fe185692f5d6ab877c2d",
       "description": "Turn a baselined feature spec with technical design into an implementation plan for branch-first execution: task graph, file set, validation plan, checkpoints, AC-to-test mapping. Use before execute-changeset.",
       "aliases": [],
       "positive_triggers": [],
