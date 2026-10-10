@@ -139,7 +139,9 @@ function main() {
     const sig = e.signals || {};
     if (sig.repo_markers) {
       const key = JSON.stringify(sig.repo_markers);
-      if (!markerMemo.has(key)) markerMemo.set(key, repoHasMarker(cwd, sig.repo_markers));
+      // Markers live at the governed repo root (the dir holding .svc), not the
+      // session cwd: a session started in src/ must still see package.json.
+      if (!markerMemo.has(key)) markerMemo.set(key, repoHasMarker(path.dirname(svcDir), sig.repo_markers));
       if (!markerMemo.get(key)) continue;
     }
     let hit = false;

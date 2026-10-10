@@ -36,11 +36,14 @@ test("fake runner A/B: contract gain earns keep, ties are no-gain, tokens are me
   for (const t of out.tasks) assert.ok(t.token_delta > 0, "with-skill arm must pay the skill's context cost");
 });
 
-test("a failing runner counts as a failed run, not a pass", () => {
+test("a runner that never completes yields an error verdict and a non-zero exit, not 'no-gain'", () => {
   const r = cli(["--tasks", tasks, "--runner", fake, "--repeat", "1", "--only", "decide", "--json"], { FAKE_RUNNER_FAIL: "decide-db-choice" });
-  assert.equal(r.status, 0, r.stderr);
-  const t = JSON.parse(r.stdout).tasks[0];
-  assert.equal(t.bare.pass_rate, 0); assert.equal(t.with_skill.pass_rate, 0);
+  assert.equal(r.status, 1); assert.match(r.stderr, /runner failed for decide-db-choice/);
+  const out = JSON.parse(r.stdout); const t = out.tasks[0];
+  assert.equal(t.verdict, "error"); assert.equal(t.bare.pass_rate, 0); assert.equal(t.with_skill.pass_rate, 0);
+  const missing = cli(["--tasks", tasks, "--runner", "definitely-not-a-binary-xyz", "--repeat", "1", "--only", "decide", "--json"]);
+  assert.equal(missing.status, 1);
+  assert.equal(JSON.parse(missing.stdout).runs[0].error, "ENOENT");
 });
 
 test("the paid default runner is refused without EVALS=1", () => {
@@ -64,7 +67,7 @@ test("helpers: argv split, output parsing, graders, verdict margins", () => {
     assert.equal(grade({ type: "command", argv: [process.execPath, g] }, "ok"), true);
     assert.equal(grade({ type: "command", argv: [process.execPath, g] }, "no"), false);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
-  const mk = (arm, pass) => ({ task: "t", skill: "s", arm, pass, tokens: null, answer_chars: 1 });
+  const mk = (arm, pass) => ({ task: "t", skill: "s", arm, pass, exit: 0, tokens: null, answer_chars: 1 });
   assert.equal(summarize([mk("bare", false), mk("with-skill", true)], 0.15)[0].verdict, "earns-keep");
   assert.equal(summarize([mk("bare", true), mk("with-skill", false)], 0.15)[0].verdict, "regresses");
   assert.equal(summarize([mk("bare", true), mk("with-skill", true)], 0.15)[0].verdict, "no-gain");

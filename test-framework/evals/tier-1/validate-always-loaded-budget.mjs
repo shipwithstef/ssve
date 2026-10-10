@@ -72,7 +72,11 @@ test("repo_markers gate a signal rule on path existence or file substring", () =
       for (const [f, b] of Object.entries(files)) fs.writeFileSync(path.join(d, f), b); return d; };
     assert.equal(inject(mk("plain", { "package.json": "{\"dependencies\":{\"react\":\"1\"}}" }), "m1"), "");
     assert.match(inject(mk("bypath", { "acme.config": "" }), "m2"), /MARKER RULE BODY/);
-    assert.match(inject(mk("bysub", { "package.json": "{\"dependencies\":{\"@acme/sdk\":\"1\"}}" }), "m3"), /MARKER RULE BODY/);
+    const sub = mk("bysub", { "package.json": "{\"dependencies\":{\"@acme/sdk\":\"1\"}}" });
+    assert.match(inject(sub, "m3"), /MARKER RULE BODY/);
+    // a session whose cwd is a subdirectory still resolves markers at the repo root
+    fs.mkdirSync(path.join(sub, "src", "deep"), { recursive: true });
+    assert.match(inject(path.join(sub, "src", "deep"), "m4"), /MARKER RULE BODY/);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
 

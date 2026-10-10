@@ -160,7 +160,10 @@ export function summarize(runs, margin) {
     };
     const bare = arm(t.bare); const withSkill = arm(t["with-skill"]);
     const delta = withSkill.pass_rate - bare.pass_rate;
-    const verdict = delta > margin ? "earns-keep" : delta < -margin ? "regresses" : "no-gain";
+    // An arm whose runner never completed is a broken run, not evidence: it
+    // must not read as "no-gain" (which would argue for retiring the skill).
+    const ran = (xs) => xs.some((x) => x.exit === 0);
+    const verdict = !ran(t.bare) || !ran(t["with-skill"]) ? "error" : delta > margin ? "earns-keep" : delta < -margin ? "regresses" : "no-gain";
     tasks.push({ task: id, skill: t.skill, bare, with_skill: withSkill, pass_delta: Number(delta.toFixed(3)),
       token_delta: bare.mean_tokens !== null && withSkill.mean_tokens !== null ? withSkill.mean_tokens - bare.mean_tokens : null, verdict });
   }
@@ -183,7 +186,7 @@ export function run(o) {
         const parsed = r.status === 0 ? parseRunnerOutput(r.stdout) : { answer: "", tokens: null, cost_usd: null };
         const artifacts = collectArtifacts(cwd);
         if (!o.cwd) fs.rmSync(cwd, { recursive: true, force: true });
-        runs.push({ task: task.id, skill: task.skill, arm, i, exit: r.status, pass: r.status === 0 && grade(task.grader, parsed.answer, ROOT, artifacts),
+        runs.push({ task: task.id, skill: task.skill, arm, i, exit: r.status, error: r.error?.code ?? null, signal: r.signal ?? null, pass: r.status === 0 && grade(task.grader, parsed.answer, ROOT, artifacts),
           tokens: parsed.tokens, cost_usd: parsed.cost_usd, answer_chars: parsed.answer.length, answer: parsed.answer,
           artifacts: artifacts.map((a) => ({ path: a.path, chars: a.text.length, text: a.text.slice(0, 20000) })) });
       }
@@ -199,6 +202,8 @@ if (path.resolve(process.argv[1] || "") === fileURLToPath(import.meta.url)) {
   try {
     const report = run(o);
     if (o.out) fs.writeFileSync(o.out, JSON.stringify(report, null, 2) + "\n");
+    const broken = report.tasks.filter((t) => t.verdict === "error");
+    if (broken.length) { process.exitCode = 1; const r0 = report.runs.find((x) => x.exit !== 0); console.error(`skill-ab-eval: runner failed for ${broken.map((t) => t.task).join(", ")} (first failure: exit ${r0?.exit} ${r0?.error || r0?.signal || ""}); no verdict for those tasks`); }
     if (o.json) console.log(JSON.stringify(report, null, 2));
     else for (const t of report.tasks) {
       console.log(`${t.verdict.padEnd(10)} ${t.skill.padEnd(22)} ${t.task}: pass ${t.bare.pass_rate.toFixed(2)} -> ${t.with_skill.pass_rate.toFixed(2)}` +
