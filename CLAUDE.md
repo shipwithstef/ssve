@@ -69,7 +69,7 @@ Never use both simultaneously. Product work reads project-state. Framework work 
 ### Seven Lanes
 
 Product: greenfield, brownfield-conversion, brownfield-feature, bugfix, drift, refactor. Framework: framework (self-improvement).
-Prototype and MVP work plans **bounded**: expert terms first, a one-page brief that grows, cheap variants settled by `scripts/probe-loop.mjs` against a check, chaos checks (`scripts/chaos-probe.mjs`); full review depth only on auth, money, data, deploys and secrets. Production and framework work keep the full changeset (`docs/decisions/2026-10-10-bounded-delivery.md`).
+Prototype and MVP work plans **bounded**: expert terms and a first question with a default (taught alongside, never waited on), a one-page brief that grows, cheap variants settled by `scripts/probe-loop.mjs` against a check, chaos checks (`scripts/chaos-probe.mjs`); full review depth only on auth, money, data, deploys and secrets. Production and framework work keep the full changeset (`docs/decisions/2026-10-10-bounded-delivery.md`).
 
 ### Commit Rules
 

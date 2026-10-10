@@ -232,3 +232,19 @@ This is the owner's addition. The most common failure is a person outside a fiel
 - **Hooks:** `hook-bench.mjs` before and after, per profile. Safety-guard tests still pass under the worker profile.
 - **Skills:** `verify-skill-refactor.mjs` passes for every slimmed skill; `measure-always-loaded.mjs` before and after.
 - **Ledger:** every ask has a row, a status and evidence; rows 1 and 35 are corrected.
+
+## Result: terms first (Phase B0), 2026-10-10
+
+`scripts/ambiguity-eval.mjs` ran 6 ambiguous requests × 6 reps per arm (Haiku builder and owner, blind Sonnet judge):
+
+| | Direct | Terms first, blocking |
+|---|---|---|
+| Hidden-intent claims met | 81% | 87% |
+| Owner rounds | 1.0 | 1.7 |
+| Cost | $0.013 | $0.016 |
+
+- **Claims met:** +7 pts, CI [-2, 15], p = 0.15. Not established.
+- **Owner rounds:** +0.72, p < 0.001.
+- **Cost:** +22%.
+
+**Decision:** terms first is never a blocking gate. The terms and the first question are written with the default being built on; the build proceeds at once. `teach-project` domain mode teaches alongside the build, and an answer that arrives later is an amendment in the decision log. This keeps the teaching at zero cost in owner rounds.

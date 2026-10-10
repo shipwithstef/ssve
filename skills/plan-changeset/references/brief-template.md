@@ -3,7 +3,7 @@
 A brief is the plan for a prototype or MVP. It is one page, it is written before any code, and it grows: discoveries are appended to its decision log. It replaces the full changeset for those profiles (`docs/decisions/2026-10-10-bounded-delivery.md`). Save it as `docs/plans/<YYYY-MM-DD>-<name>/brief.md`.
 
 ## 0. Words and the first question
-The 10 expert terms from analyze-domain. For each term, one line on what it means and one on how it changes what we build. Then the question settled first, and what its answer decided.
+The 10 expert terms from analyze-domain. For each term, one line on what it means and one on how it changes what we build. Then the question to settle first, what it decides, and the default being built on. The build does not wait for the owner's answer; a later answer is an amendment in the decision log.
 
 ## 1. Done when
 The outcome in one or two sentences, then the checks that prove it. Every check is a command that exits 0 on success.

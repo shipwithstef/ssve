@@ -79,7 +79,7 @@ export const ARMS = {
   swarm: "Build what spec.md asks for. You lead a team: split the work into independent parts and delegate them to parallel subagents (the Agent tool, model haiku), each owning its own folder. Integrate and verify their work yourself.",
   bounded: [
     "Build what spec.md asks for, fast and reliably. Commit early and often (git is set up here).",
-    "1. Words first: write BRIEF.md section 0 with 10 terms an expert in this field would use (one line on what each means, one on how it changes what to build) and the one question to settle first, with the answer you will assume.",
+    "1. Words first: write BRIEF.md section 0 with 10 terms an expert in this field would use (one line on what each means, one on how it changes what to build) and the one question to settle first, with the answer you will assume. Do not wait for anyone to answer; build on that assumption.",
     "2. BRIEF.md, one page: done-when checks (each a command that exits 0), boundaries (owned paths, a versioned contract file for interfaces, irreversible zones such as auth and money), open questions each with the check that decides it, and a decision log you append to as you learn.",
     "3. Skeleton: a runnable shell, the contract and the checks. Commit as soon as it runs.",
     `4. Settle each open question by trying variants against its check: write a spec JSON and run \`node ${ROOT}/scripts/probe-loop.mjs run --spec <spec.json> --out <result.json>\` (fields: question, base, prompt, owned, check, variants, model haiku), then \`node ${ROOT}/scripts/probe-loop.mjs apply --result <result.json> --to .\`. Record the winner and what the others taught you in the decision log.`,

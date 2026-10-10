@@ -91,9 +91,9 @@ People outside a field cannot yet say precisely what they want, so the work goes
 1. Name **10 terms** an expert in this field would use for what is being built. For each term, write one line on what it means and one line on how it changes what the owner should ask for.
 2. Name **the one question to settle first** and what its answer decides. For a chess web app, "who plays whom" decides whether a server is needed at all.
 3. Ground the terms in `references/knowledge/` and the stack packs, not memory alone. Mark any term that comes from memory.
-4. Write the terms to section 0 of the brief. Write the first question to the cockpit steering box, with a stated default. If the owner does not answer, the default goes into the decision log as an assumption and the build proceeds.
+4. Write the terms to section 0 of the brief. Put the first question in the cockpit steering box and the teaching page, **with the default you will build on**, and proceed on that default straight away: never wait for the answer. The default goes into the decision log as an assumption; an answer that arrives later is an amendment.
 
-This step is kept only while the ambiguity eval shows it cuts rounds (ledger row 62).
+Why non-blocking: as a blocking question, terms-first added 0.72 owner rounds per request (p < 0.001) for a claim-match gain that was not established (+7 pts, CI [-2, 15], n = 36 per arm; `test-framework/outcome-evals/results/2026-10-10-ambiguity-terms-first.json`). Asked alongside the build, it costs the owner no rounds.
 
 ### Identify Mode (default — no existing domain-profile.md)
 
