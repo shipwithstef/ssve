@@ -133,15 +133,15 @@ These repo files are the source of truth. External trackers are projections.
 
 ## Project State File
 
-See references/project-state-and-work-items.md for the full "Project State File" section (moved verbatim).
+**Project State File** — Write `docs/specs/project-state.md` (repo mode `convert`, conversion status, active lanes, current focus, subsystem map, compatibility notes, work-item summary, coverage gaps), `docs/specs/router-context.md` (required skills by intent, precedence repo override > project-local platform rule > generic platform heuristic > global fallback, forbidden flows, code-style authority, deployment contract, detected host and wired rules) and `docs/specs/agent-topology.md` (delegation allowed or not, roles, ownership, shared write surfaces, when to stay single-agent). The foundational artifact status MUST come from `audit-coverage` (the full catalog in `docs/specs/coverage-audit.md`): link or summarize it, never hand-list a subset, which hides gaps. Details: `references/project-state-and-work-items.md`.
 
 ## Work Item Types
 
-See references/project-state-and-work-items.md for the full "Work Item Types" section (moved verbatim).
+**Work Item Types** — Use only these types: `conversion`, `feature`, `bugfix`, `regression`, `refactor`, `drift`, `chore`; statuses `identified`, `mapped`, `triaged`, `planned`, `in_progress`, `blocked`, `resolved`, `verified`, `deferred`; severities `critical`, `high`, `medium`, `low`. Details: `references/project-state-and-work-items.md`.
 
 ## Work Item Template
 
-See references/project-state-and-work-items.md for the full "Work Item Template" section (moved verbatim).
+**Work Item Template** — Each file in `docs/specs/work-items/` follows the canonical schema in `references/work-item-schema.md`: title `# WI-NNN`, then Type, Status, Severity, Filed, Source (`onboard-repo`), Lane, Repo Mode (`convert`), Source Artifact and GitHub Issue fields, followed by Problem, Evidence, Route Recommendation and Notes sections (triage detail only, not implementation). Details: `references/project-state-and-work-items.md`.
 
 ## Process
 
@@ -188,7 +188,7 @@ conversion map.
 
 ### 2.4 Detect core-mechanic features (per WI-140 ONB-01..04)
 
-See references/process-detail.md for the full "2.4 Detect core-mechanic features (per WI-140 ONB-01..04)" section (moved verbatim).
+**2.4 Detect core-mechanic features** — Run a day-1 competitive sweep. Pass 1 (MANDATORY, universal): enumerate source directories and entry points and group them into feature areas (auth, billing, onboarding, rewards, admin), checking `references/knowledge/competitors/` for each. Pass 2 (supplementary): grep domain-specific core-mechanic patterns derived from the domain profile. For each detected mechanic, run `analyze-competitors` scoped to that mechanic only (not the full 20-competitor analysis) and write `docs/specs/brownfield-competitive-flags.md` per `references/templates/brownfield-competitive-flags.md` with code evidence, competitor match and severity: HIGH (0 of N competitors match) auto-creates a backlog WI tagged `competitive-strategy-review`, MEDIUM (1-2 of N) is flagged in the onboard report with no WI, LOW (3+ of N) is no concern. Details: `references/process-detail.md`.
 
 ### 2.5 Coverage Audit (mandatory)
 
@@ -276,7 +276,7 @@ That is the stopping rule. No endless audit loop.
 
 ### 5. Wire steering rules into project context file
 
-See references/process-detail.md for the full "5. Wire steering rules into project context file" section (moved verbatim).
+**5. Wire steering rules into project context file** — After triage, detect the host (`bash scripts/detect-host.sh`; default `CLAUDE.md`, also `KIMI.md`, `AGENTS.md`, `ANTIGRAVITY.md`) and ensure the target context file contains the svc baseline line ("This repo is svc-onboarded: respect the local AGENTS.md/CLAUDE.md deployment, test, and route-workflow rules for this exact worktree; post-deploy/production validation requests require live post-deploy evidence, not local pre-deploy substitutes."), appended once if missing. Detect stacks (react-native, react, golang, rust, python, web, typescript) and, for each, wire `rulesRegistry` entries with `type: steering` and matching `stack` by `@`-import on Claude Code or an explicit read-list on Antigravity (plus `node ~/.gemini/antigravity/skills/scripts/sync-antigravity-ki.mjs`). Skip universal rules, undetected stacks, empty placeholder rules and rules already present, and record the host, stacks and wired rules in `router-context.md`. Details: `references/process-detail.md`.
 
 Baseline contract line (stays inline because validators assert it; also in the reference):
 
