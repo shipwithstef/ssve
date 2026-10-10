@@ -2,7 +2,7 @@
 
 **Question.** svc was built to force behaviour that weaker models skipped. The main workforce is now Claude Opus 5.5, with Codex gpt-6.x (Sol/Astra) and Grok as workers. Which parts still add value beyond what these models do by default? Which parts only cost tokens, ceremony and latency?
 
-**Answer in one line.** The evidence, receipt, contract and orchestration layers still earn their place. The always-loaded surface did not: it was about 67K chars per turn, half of it restated defaults or one project's data, and it could re-bloat because its budget gate was broken. This PR cuts it to about 34K chars (−49%) and repairs the gate. Every behaviour backed by a recorded failure is kept.
+**Answer in one line.** The evidence, receipt, contract and orchestration layers still earn their place. The always-loaded surface did not: it was about 67K chars per turn, half of it restated defaults or one project's data, and it could re-bloat because its budget gate was broken. This PR cuts it to about 34.5K chars (−49%) and repairs the gate. Every behaviour backed by a recorded failure is kept.
 
 ## 1. Per-turn cost, measured
 
@@ -10,10 +10,10 @@ Measured with `node scripts/measure-always-loaded.mjs --compare <main-report>` (
 
 | Paid every turn | main | this PR | saved |
 |---|---:|---:|---:|
-| Skill descriptions (98 model-invocable of 106) | 41,812 | 22,906 | 18,906 |
+| Skill descriptions (98 model-invocable of 106) | 41,812 | 22,934 | 18,878 |
 | Agent descriptions (28 agents, Agent tool listing) | 13,953 | 8,531 | 5,422 |
 | Always-on rules (Claude `~/.claude/rules`) | 11,447 (5) | 3,053 (4) | 8,394 |
-| **Total** | **67,212 ≈ 16.8K tok** | **34,490 ≈ 8.6K tok** | **32,722 ≈ 8.2K tok/turn** |
+| **Total** | **67,212 ≈ 16.8K tok** | **34,518 ≈ 8.6K tok** | **32,694 ≈ 8.2K tok/turn** |
 
 | Paid once per session per rule (20-event corpus, fresh session each) | main | this PR |
 |---|---:|---:|
@@ -45,7 +45,7 @@ Several anti-ceremony moves already existed on main before this audit: research 
 ## 3. Changes in this PR (top 10)
 
 1. **Context-budget gate repaired** (`validate-context-budget.sh`). It now resolves `skills/<name>/SKILL.md` and fails when any skill is unreadable. Ceilings tightened: catalog 42000 → 28500, always-on rules 14000 → 4000 bytes.
-2. **All 106 skill descriptions slimmed** to "what it does + phrases users say + any not-for boundary" (41.8K → 22.9K active chars). Receipt paths, phase ids and WI numbers moved out. The routing index was recompiled and the router corpus still passes 100%.
+2. **105 of 106 skill descriptions slimmed** (`execute-changeset` stays byte-identical: a retained Two-Box executor key is bound to its exact bytes) to "what it does + phrases users say + any not-for boundary" (41.8K → 22.9K active chars). Receipt paths, phase ids and WI numbers moved out. The routing index was recompiled and the router corpus still passes 100%.
 3. **route-workflow no longer claims every request.** It routes svc work and says that questions, explanations and read-only lookups do not need it. This removes the largest ceremony-on-trivial-task trigger. The body is unchanged: 33 validators pin its phrasing.
 4. **Always-on rules 11.5K → 3.1K chars.** Each keeps its load-bearing lines. `tool-selection` goes always → lazy. The verify-state incident narrative and the per-program canonical-ref map move to `references/rule-details/` (no information lost).
 5. **Rule injection gated by `signals.repo_markers`.** Base44 rules no longer fire on `public/`, `dist/`, `functions/`, `rls` or `otp` paths in non-Base44 repos. `plan-changeset-trigger` now fires only in the framework repo. `web/performance` fires only on web file types. Provider-fidelity fires only on provider/AI test files.
@@ -145,7 +145,7 @@ KEEP 38 · SLIM 56 · MERGE 8 · RETIRE 4 (all pending owner; `disable-model-inv
 | `dispatch-waves` | KEEP | Cross-model/parallel orchestration with disjoint-file fences, transport selection and merge-back validation; tied to S5 policy and scripts/lib/disjoint-scopes.mjs. Not something a model enforces by default across workers (Codex/G… | CLAUDE.md S5 policy: 'disjoint-file pre-dispatch fence (scripts/lib/disjoint-scopes.mjs)'; callers: route-workflow, review-exec, analyze-domain; manifest corePackForRout… | description slimmed |
 | `evaluate-rule` | KEEP | Exactly the gate this audit needs: decides whether a rule earns its per-turn token cost vs model default before registering in rulesRegistry. Called by blend-external, land-changeset, manage-learnings. | skills/evaluate-rule/SKILL.md frontmatter 'Always use before registering a rule in rulesRegistry'; callers: blend-external, land-changeset, manage-learnings | description slimmed |
 | `evolve-framework` | KEEP | Framework-lane discovery step that produces gap proposals distinct from improve-framework's fixes; the separation is backed by a learning. Tied to FRAMEWORK-STATE.md and the framework lane. | framework-learnings.jsonl:16 evolve-improve-must-have-separate-artifacts (2026-04-24); manifest core + framework lane; 14 callers | description slimmed |
-| `execute-changeset` | KEEP | Core chain stage: executes plan-changeset task graph and emits exec-record receipts required by the mandatory 5-receipt envelope; 12 learnings cite it (hook stdin, exit 2, counter-file flakiness). 32 callers. | framework-learnings.jsonl:3 hook-scripts-must-read-stdin-not-argv (2026-04-24); framework-learnings.jsonl:4 hook-hard-block-use-exit-2-not-exit-1 | description slimmed |
+| `execute-changeset` | KEEP | Core chain stage: executes plan-changeset task graph and emits exec-record receipts required by the mandatory 5-receipt envelope; 12 learnings cite it (hook stdin, exit 2, counter-file flakiness). 32 callers. | framework-learnings.jsonl:3 hook-scripts-must-read-stdin-not-argv (2026-04-24); framework-learnings.jsonl:4 hook-hard-block-use-exit-2-not-exit-1 | kept byte-identical (two-box-executor-scorer binds a retained live key to its exact bytes) |
 | `explore-solutions` | SLIM | Adversarial alternative-paradigm check after design-tech for hard-to-reverse choices; 12 callers. Comparing options is default model behaviour; 554 lines / 27KB, and it overlaps design-tech's Solution Confidence Mode and decide's… | skills/design-tech/SKILL.md:113 '## Solution Confidence Mode' (overlap); callers: design-tech, define-code-style, improve-framework, extract-bootstrap | description slimmed |
 | `explore-ux` | SLIM | Live competitive UX exploration using competitor knowledge base and sector reference bank (project data the model lacks); boundary with propose-ux-improvements is explicit. 361 lines and a 593-char description. | skills/propose-ux-improvements/SKILL.md:7 'For a whole-flow competitive teardown use explore-ux'; manifest corePackForRouting; routing-rules.md:83 | description slimmed |
 | `extract-bootstrap` | RETIRE (pending owner) | Meant to produce reusable bootstrap templates under references/bootstraps/, but that directory holds only README.md; no bootstrap was ever produced. Not in any lane; only caller is explore-solutions' skip clause. Pattern extracti… | ls references/bootstraps -> README.md only; manifest: no lane/core entry; caller only skills/explore-solutions/SKILL.md | description slimmed; disable-model-invocation |
