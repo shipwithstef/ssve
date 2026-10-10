@@ -1,0 +1,132 @@
+{
+  "ran_at": "2026-10-10T14:32:56.818Z",
+  "model": "haiku",
+  "reps": 3,
+  "tasks": [
+    "yoga-studio"
+  ],
+  "arms": [
+    "lean"
+  ],
+  "summary": [
+    {
+      "arm": "lean",
+      "runs": 3,
+      "errors": 0,
+      "solved": "3/3",
+      "solve_rate": 1,
+      "mean_hidden_score": 1,
+      "mean_cost_usd": 0.1444,
+      "mean_turns": 33,
+      "judged": 3,
+      "mean_judge_total": 7
+    }
+  ],
+  "rows": [
+    {
+      "task": "yoga-studio",
+      "arm": "lean",
+      "rep": 0,
+      "model": "haiku",
+      "prompt_sha": "1db40608db44",
+      "wall_ms": 271304,
+      "ok": true,
+      "cost_usd": 0.15990928,
+      "turns": 48,
+      "duration_ms": 269127,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "hidden_pass": 2,
+      "hidden_total": 2,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 6,
+      "judge_scores": {
+        "spec_depth": 0,
+        "journeys_verified": 1,
+        "payments": 1,
+        "auth_security": 1,
+        "data_integrity": 1,
+        "architecture": 1,
+        "ux_sellable": 1,
+        "ops_ready": 0
+      },
+      "judge_verified_journeys": 0,
+      "judge_money_pump": false,
+      "judge_notes": "The biggest gap is that nothing written supports it: spec.md is only the one-sentence request, with no roles, journeys or acceptance criteria; the README is one line; and there is no health endpoint. On payments, the server takes in raw card numbers and sends them to a simulated gateway, with no real provider, webhooks or idempotency keys, and a crash during a charge leaves a 'pending' booking holding a seat for good. The strongest part is the booking and refund logic: the server sets the price, holds the seat synchronously before charging, applies a 12-hour full or no refund rule, refunds in full when the owner cancels, and covers all of this in 27 HTTP tests that pass, with scrypt password hashing, httpOnly SameSite cookies, JSON-only CSRF protection and DOM-built XSS-safe output. Sellable: no, because it needs a real payment provider integration, login rate-limiting, a written spec, ops documentation and recovery of stale pending bookings first.",
+      "judge_cost_usd": 0.4238874,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T14-27-14-426Z/yoga-studio-lean-0"
+    },
+    {
+      "task": "yoga-studio",
+      "arm": "lean",
+      "rep": 1,
+      "model": "haiku",
+      "prompt_sha": "1db40608db44",
+      "wall_ms": 281183,
+      "ok": true,
+      "cost_usd": 0.13791503,
+      "turns": 25,
+      "duration_ms": 279201,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "hidden_pass": 2,
+      "hidden_total": 2,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 8,
+      "judge_scores": {
+        "spec_depth": 0,
+        "journeys_verified": 1,
+        "payments": 1,
+        "auth_security": 1,
+        "data_integrity": 2,
+        "architecture": 2,
+        "ux_sellable": 1,
+        "ops_ready": 0
+      },
+      "judge_verified_journeys": 0,
+      "judge_money_pump": false,
+      "judge_notes": "The biggest gap is that there is no written spec at all: spec.md is still the one-sentence request with no roles, journeys or acceptance criteria, and the README is one line with no health endpoint. Payments are also a synchronous mock with no webhooks or signature verification, and there is no brute-force limit on login. The strongest part is the clean domain layer in lib/service.mjs, which has a server-side price, a 15-minute seat hold, a 12-hour refund rule, no double booking, capacity checks inside the single Node process (so concurrent requests cannot overbook) and atomic write-then-rename saves, all covered by 23 passing HTTP and browser tests. It is not sellable yet, because it cannot take real money and has no documentation or operational support.",
+      "judge_cost_usd": 0.4000804,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T14-27-14-426Z/yoga-studio-lean-1"
+    },
+    {
+      "task": "yoga-studio",
+      "arm": "lean",
+      "rep": 2,
+      "model": "haiku",
+      "prompt_sha": "1db40608db44",
+      "wall_ms": 290442,
+      "ok": true,
+      "cost_usd": 0.13533511,
+      "turns": 26,
+      "duration_ms": 288148,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "hidden_pass": 2,
+      "hidden_total": 2,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 7,
+      "judge_scores": {
+        "spec_depth": 0,
+        "journeys_verified": 1,
+        "payments": 1,
+        "auth_security": 1,
+        "data_integrity": 1,
+        "architecture": 1,
+        "ux_sellable": 2,
+        "ops_ready": 0
+      },
+      "judge_verified_journeys": 0,
+      "judge_money_pump": true,
+      "judge_notes": "The biggest gap is that sending cancellation requests at the same time refunds one payment several times: in a direct probe, two customer cancels plus an owner class-cancel sent three full $20 refunds against one $20 charge. Around that, the spec.md is still the one-sentence request with no journeys, payments go only to a simulated card provider with no webhooks, there is no login rate limiting, the README is a placeholder, and there is no health endpoint. The strongest part is the clean domain service: it keeps the price on the server, holds seats for 15 minutes, blocks overbooking, hashes passwords with scrypt, sets HttpOnly SameSite cookies, escapes output and sends a strict CSP, and all 23 HTTP and Playwright tests pass under node --test. It is not sellable yet.",
+      "judge_cost_usd": 0.4339232,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T14-27-14-426Z/yoga-studio-lean-2"
+    }
+  ]
+}

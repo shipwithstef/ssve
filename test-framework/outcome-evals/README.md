@@ -128,6 +128,18 @@ With the corrected grader, both builds pass the browser smoke check.
 | production | 14.71 / 16 | 12–19 | $0.79 |
 | plain | 7.14 / 16 | none | $0.09 |
 
+#### Which part of the method causes the gain (yoga-studio, lean arm)
+
+The production instruction combines two things: deciding what "production" means (a spec with journeys, payments, security and operations) and a verify loop. The cited work (LLM-Modulo, Reflexion, AlphaCodium) credits the verifier. To separate the two, the lean arm ran alone on the same request: implement, then run every test and fix until green.
+
+| Arm | Builds | Mean judge score | Verified journeys | Mean cost |
+|---|---|---|---|---|
+| plain | 7 | 7.14 / 16 | 0 | $0.09 |
+| lean (verify loop only) | 3 | 7.00 / 16 | 0 | $0.14 |
+| production (spec + layers + verify) | 7 | 14.71 / 16 | 12–19 | $0.79 |
+
+Lean minus plain is −0.14 (95% CI −1.43 to 1.14, p = 1): no effect. The whole gain comes from specifying what "done" means before building. A verifier can only check against a spec, and with a one-line request there is nothing to verify against until the spec exists. That matches LLM-Modulo's requirement for external critics grounded in a model of the task. It also refines the simpler reading that verification loops alone drive quality.
+
 ### What this changes
 
 1. **The written ceremony buys no correctness on spec-complete work.** RULES.md and one test per rule cost 3.3× more on matched tasks (2.36–4.19× per task) and solved nothing extra, across 33 blueprint runs. The framework therefore stops asking for it on such work; the gate is in `references/delivery-profiles.json` under `method`.
