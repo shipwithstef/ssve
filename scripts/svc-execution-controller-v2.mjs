@@ -6,6 +6,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validate } from "./lib/json-schema-validator.mjs";
 import { sameGenerationBindings, validateGenerationBindings } from "./lib/generation-bindings-v2.mjs";
+import { maxParallel as planMaxParallel } from "./lib/parallelism.mjs";
+
+// Wave width: an explicit --max-parallel wins; otherwise the subscription plan decides
+// (SVC_PLAN, references/plan-limits.json), and with no plan set the historical 4 stands.
+export function defaultMaxParallel(env = process.env) {
+  return env.SVC_PLAN ? planMaxParallel({ plan: env.SVC_PLAN, override: env.SVC_MAX_PARALLEL }).max_parallel : 4;
+}
 
 const SCHEMA_PATH = fileURLToPath(new URL("../schemas/execution-task-capsule-v2.schema.json", import.meta.url));
 const CAPSULE_SCHEMA = JSON.parse(fs.readFileSync(SCHEMA_PATH, "utf8"));
@@ -1281,12 +1288,12 @@ async function main() {
       result = projectExecutionStatus(readJson(args.capsules, "capsules"), readJson(args.events, "events"));
     } else if (command === "schedule-wave") {
       result = scheduleExecutionWave(readJson(args.capsules, "capsules"), readJson(args.events, "events"), {
-        max_parallel: args["max-parallel"] ? Number(args["max-parallel"]) : 4,
+        max_parallel: args["max-parallel"] ? Number(args["max-parallel"]) : defaultMaxParallel(),
         global_active_budget_seconds: args["global-active-budget-seconds"] ? Number(args["global-active-budget-seconds"]) : 3600
       });
     } else if (command === "plan-waves") {
       result = planExecutionWaves(readJson(args.capsules, "capsules"), {
-        max_parallel: args["max-parallel"] ? Number(args["max-parallel"]) : 4,
+        max_parallel: args["max-parallel"] ? Number(args["max-parallel"]) : defaultMaxParallel(),
         global_active_budget_seconds: args["global-active-budget-seconds"] ? Number(args["global-active-budget-seconds"]) : 3600
       });
     } else {

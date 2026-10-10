@@ -47,7 +47,7 @@ Status values:
 | 23 | Input box for steering that controls the rest cheaply; voice later | partial | Steering box live; the orchestrator reads it at checkpoints. Voice not started |
 | 24 | Goal cards: what, why, expected outcome, progress, "why this happened" expansions, grounded in market, business and internal knowledge | open | |
 | 25 | Drill down as deep as the user wants; boxes that teach why something was decided; challenge any box, which triggers analysis and re-planning | partial | Cards open into why / decided because / teach / technical / sub-tasks; a challenge is analysed on the page and re-planned at the next checkpoint |
-| 26 | Knows usage and limits; parallelises as far as the subscription allows (sequential on a $20 plan) | open | Subscription profile in the cockpit model; `route-model` supplies cost |
+| 26 | Knows usage and limits; parallelises as far as the subscription allows (sequential on a $20 plan) | partial | `scripts/lib/parallelism.mjs` with `references/plan-limits.json`: a pro plan runs 1 lane, usage at 85% or more of the limit drops to 1, and `SVC_MAX_PARALLEL` can only lower the width. It sets the execution controller's default wave width when `SVC_PLAN` is set, and the cockpit shows it. Tested in `validate-cockpit-and-hook-bench.mjs`. Missing: live usage numbers (the plan limit is not readable from the CLI) |
 | 27 | Pitch-deck-quality explanation of product, spec and journeys, grounded in business | open | |
 | 28 | Metrics portal: audits sessions, measures spend per harness, suggests different approaches, self-amends mid-task | partial | `route-model stats` and the mirror ledger supply the data; no portal yet |
 | 29 | Onboarding: suggest agents, reviews and CI setup for a repo | open | |

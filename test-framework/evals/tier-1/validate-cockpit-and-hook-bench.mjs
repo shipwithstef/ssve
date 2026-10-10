@@ -7,6 +7,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ifMatches } from "../../../scripts/hook-bench.mjs";
 import { ledgerCounts, gauges } from "../../../scripts/cockpit.mjs";
+import { maxParallel, loadPlanLimits } from "../../../scripts/lib/parallelism.mjs";
+import { defaultMaxParallel } from "../../../scripts/svc-execution-controller-v2.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -41,4 +43,23 @@ test("cockpit gauges count ledger rows by status and never invent missing source
   const g = gauges({ ledger: "/nonexistent.md" }).gauges.map((x) => x.label);
   assert.ok(!g.includes("Requirements"));
   assert.ok(g.includes("Hook mode"));
+});
+
+test("parallelism follows the plan, drops to one lane near the limit, and an override only lowers", () => {
+  assert.equal(maxParallel({ plan: "pro" }).max_parallel, 1, "a small plan runs in sequence");
+  assert.equal(maxParallel({ plan: "max20x" }).max_parallel, loadPlanLimits().plans.max20x.max_parallel);
+  assert.equal(maxParallel({ plan: "max20x", used: 90, limit: 100 }).max_parallel, 1, "near the limit: one lane");
+  assert.equal(maxParallel({ plan: "max20x", used: 50, limit: 100 }).max_parallel, 6);
+  assert.equal(maxParallel({ plan: "max5x", override: "2" }).max_parallel, 2);
+  assert.equal(maxParallel({ plan: "pro", override: "9" }).max_parallel, 1, "an override cannot raise the cap");
+  assert.equal(maxParallel({ plan: "unknown" }).plan, loadPlanLimits().default_plan);
+  assert.equal(maxParallel({ plan: "max5x", used: 10, limit: 0 }).max_parallel, 3, "a zero limit is ignored, not divided by");
+  assert.ok(gauges({}).gauges.some((g) => g.label === "Parallel lanes"));
+});
+
+test("the execution controller's wave width follows SVC_PLAN and keeps 4 when no plan is set", () => {
+  assert.equal(defaultMaxParallel({}), 4, "no plan: unchanged historical default");
+  assert.equal(defaultMaxParallel({ SVC_PLAN: "pro" }), 1, "a $20-class plan runs one lane");
+  assert.equal(defaultMaxParallel({ SVC_PLAN: "max20x" }), loadPlanLimits().plans.max20x.max_parallel);
+  assert.equal(defaultMaxParallel({ SVC_PLAN: "max20x", SVC_MAX_PARALLEL: "2" }), 2);
 });

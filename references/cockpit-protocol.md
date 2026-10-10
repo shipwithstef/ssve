@@ -50,7 +50,7 @@ Use one `batch` write per checkpoint, pinned to the versions you read.
 
 ## Parallelism and usage
 
-Set `meta.parallelism` from the founder's subscription and current usage:
+Set `meta.parallelism` from `scripts/lib/parallelism.mjs` (`maxParallel({plan, used, limit})`, data in `references/plan-limits.json`). It uses the founder's subscription (`SVC_PLAN`) and current usage:
 - On a small plan, lanes run in sequence and the cockpit says so.
 - `route-model` supplies the per-dispatch cost.
 

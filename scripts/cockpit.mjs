@@ -14,6 +14,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
 import { resolveHookMode } from "../hooks/lib/hook-policy.mjs";
+import { maxParallel } from "./lib/parallelism.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -37,6 +38,8 @@ export function gauges({ ledger } = {}) {
   const head = git("log", "-1", "--format=%h %cr");
   if (branch) out.push({ label: "Branch", value: branch, note: head });
   out.push({ label: "Hook mode", value: resolveHookMode().mode });
+  const lanes = maxParallel({ plan: process.env.SVC_PLAN, override: process.env.SVC_MAX_PARALLEL });
+  out.push({ label: "Parallel lanes", value: String(lanes.max_parallel), note: `${lanes.plan}: ${lanes.why}` });
   if (ledger && fs.existsSync(ledger)) {
     const c = ledgerCounts(fs.readFileSync(ledger, "utf8"));
     const total = Object.values(c).reduce((a, b) => a + b, 0);
