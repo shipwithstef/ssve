@@ -248,3 +248,43 @@ This is the owner's addition. The most common failure is a person outside a fiel
 - **Cost:** +22%.
 
 **Decision:** terms first is never a blocking gate. The terms and the first question are written with the default being built on; the build proceeds at once. `teach-project` domain mode teaches alongside the build, and an answer that arrives later is an amendment in the decision log. This keeps the teaching at zero cost in owner rounds.
+
+## Result: RPG founder pilot (Phase E), 2026-10-10
+
+Setup:
+- The same founder request ("an online fantasy RPG I can play solo and with friends… tell me everything I need to take it to launch").
+- Opus 5.5 builder, one run per arm.
+- Hidden checks: solo play, multiplayer, hostile clients, 4-player load, IP gate, founder docs.
+- A blind Opus judge on 30 founder claims.
+- Results: `test-framework/outcome-evals/results/2026-10-10-rpg-pilot.json`.
+
+| Arm | Hidden checks | Judge (of 30) | Cost | Wall time | Turns | Mutation score | Source lines | Commits |
+|---|---|---|---|---|---|---|---|---|
+| Opus alone | 6/6 | 25 | $3.72 | 16 min | 84 | 0.47 | 1,076 | 0 |
+| Opus + Haiku swarm | 5/6 (load p95 ~50 ms vs 25 ms) | 24 | $1.93 | 13 min | 32 | 0.33 | 2,312 | 0 |
+| Bounded (this method) | 6/6 | 23 | $3.71 | 24 min | 25 | 0.27 | 716 | 9 (first at 4.7 min) |
+
+Hidden-check verdicts are from the fixed grader, identical across three regrades. The pilot found two grader defects, both fixed and proven before regrading:
+- **IP gate:** it flagged internal notes that name the inspiration in order to avoid it.
+- **Movement check:** moves that cancel out failed a game that clearly moved, and world ticks alone could pass a dead game.
+
+What the bounded arm did:
+- Settled two real questions with `probe-loop`: live sync (long-poll) and durable persistence (group-commit snapshot).
+- Its own chaos pass held through all 7 faults.
+- Committed in small steps.
+- Shipped the smallest codebase.
+
+**Verdict: not established, and not better on this run.**
+- One run per arm cannot separate the arms.
+- The bounded arm tied Opus alone on hidden checks.
+- It scored 2 judge points lower.
+- It had the weakest tests by mutation score.
+- It took the longest.
+
+The method's process goals happened (early runnable commit, probed decisions, chaos pass). The quality goals did not show.
+
+**Next:**
+- Raise its test-strength step: the mutation probe must pass a floor, not just run.
+- Run 3+ runs per arm before any claim.
+
+The swarm was cheapest and fastest but the only arm to miss a hidden check (frame-time budget under four players).

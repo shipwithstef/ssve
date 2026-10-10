@@ -307,6 +307,18 @@
       ],
       "json": "score_terms_minus_direct.ci95.0",
       "max": 0
+    },
+    {
+      "id": "rpg-pilot-bounded-not-better",
+      "claim": "In the one-run RPG pilot, the bounded method did not beat Opus alone on the blind founder judge (23 vs 25 of 30)",
+      "source": "docs/decisions/2026-10-10-bounded-delivery.md",
+      "command": [
+        "node",
+        "-e",
+        "const r=require('./test-framework/outcome-evals/results/2026-10-10-rpg-pilot.json');const j=(a)=>{const x=r.rows.find(y=>y.arm===a);return x.judge_total??x.judge.total};console.log(JSON.stringify({bounded_minus_solo:j('bounded')-j('solo')}))"
+      ],
+      "json": "bounded_minus_solo",
+      "max": 0
     }
   ]
 }
