@@ -139,3 +139,25 @@ test("CLI: example model evaluates; bad input is a usage error", () => {
     }
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
+
+test("a variable no option depends on is never asked about (EVPPI noise floor removed)", () => {
+  const m = { schema: SCHEMA, question: "near tie", samples: 20000, seed: 21,
+    variables: { a: { dist: "normal", mean: 0, sd: 1 }, b: { dist: "normal", mean: 0.01, sd: 1 }, unused: { dist: "uniform", low: 0, high: 1, question: "irrelevant?" } },
+    options: [{ id: "A", value: "a" }, { id: "B", value: "b" }] };
+  for (const seed of [1, 2, 3, 4, 5]) {
+    const r = evaluate({ ...m, seed });
+    const u = r.value_of_information.find((v) => v.variable === "unused");
+    assert.ok(u.evppi <= r.voi_threshold, `seed ${seed}: unused evppi ${u.evppi} > threshold ${r.voi_threshold}`);
+    assert.notEqual(r.next_question?.variable, "unused", `seed ${seed}`);
+    assert.equal(u.break_even, null, `seed ${seed}: no break-even printed for noise`);
+  }
+});
+
+test("profile overrides are validated like base variables", () => {
+  const errs = validateModel(coin({ profiles: { p: { variables: { x: { dist: "uniform", low: 5 } } } } })).join("\n");
+  assert.ok(errs.includes("profile 'p' variable 'x': uniform needs numeric high"), errs);
+});
+
+test("Object prototype members are not functions", () => {
+  for (const f of ["toString", "valueOf", "constructor", "hasOwnProperty"]) assert.throws(() => compile(`${f}(1)`, new Set()), /unknown function/);
+});

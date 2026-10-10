@@ -69,3 +69,28 @@ test("usage errors: duplicate record, unknown id, malformed --var, empty observe
   }
   assert.equal(w.rows().length, 1, "failed commands append nothing");
 });
+
+test("review pins observations over profile overrides and drops their correlations", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "svc-ledger-corr-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const m = { schema: SCHEMA, question: "budget or not", samples: 5000, seed: 2,
+    variables: { budget: { dist: "uniform", low: 0, high: 10 }, gain: { dist: "uniform", low: 0, high: 10 } },
+    correlations: [{ a: "budget", b: "gain", rho: 0.5 }],
+    options: [{ id: "spend", value: "gain - budget / 2" }, { id: "hold", value: 3 }],
+    profiles: { tight: { variables: { budget: { dist: "const", value: 0 } } } } };
+  fs.writeFileSync(path.join(dir, "m.json"), JSON.stringify(m));
+  const res = evaluate(m, { profile: "tight" });
+  const rows = [predictionRow(m, res, { id: "c1", modelPath: "m.json", profile: "tight" }),
+    { type: "observation", id: "c1", variables: { budget: 10, gain: 4 } }];
+  const r = review(rows, "c1", { root: dir });
+  // observed budget 10 must win over the profile's 0: spend = 4 - 5 = -1 < hold 3
+  assert.equal(r.hindsight.winner, "hold");
+});
+
+test("review says the model file is missing instead of 'no observations'", (t) => {
+  const w = workspace(t);
+  assert.equal(w.run("record", "--model", "m.json", "--id", "d1").status, 0);
+  assert.equal(w.run("observe", "--id", "d1", "--var", "x=0.2").status, 0);
+  fs.rmSync(path.join(w.dir, "m.json"));
+  assert.match(w.run("review", "--id", "d1").stdout, /model file not found at/);
+});

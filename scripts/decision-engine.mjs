@@ -102,6 +102,18 @@ export function cholesky(m) {
 
 // ── model validation ─────────────────────────────────────────────────────────
 const num = (x) => typeof x === "number" && Number.isFinite(x);
+function checkVariable(k, d, errs, where) {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(k)) errs.push(`${where}variable '${k}': name must be an identifier`);
+    if (!d || !DISTS.has(d.dist)) { errs.push(`${where}variable '${k}': dist must be one of ${[...DISTS].join(", ")}`); return; }
+    const need = { const: ["value"], uniform: ["low", "high"], triangular: ["low", "mode", "high"], normal: ["mean", "sd"], lognormal: ["p10", "p90"] }[d.dist] || [];
+    for (const f of need) if (!num(d[f])) errs.push(`${where}variable '${k}': ${d.dist} needs numeric ${f}`);
+    if (d.dist === "uniform" && d.low > d.high) errs.push(`${where}variable '${k}': low > high`);
+    if (d.dist === "triangular" && !(d.low <= d.mode && d.mode <= d.high)) errs.push(`${where}variable '${k}': need low <= mode <= high`);
+    if (d.dist === "normal" && d.sd < 0) errs.push(`${where}variable '${k}': sd < 0`);
+    if (d.dist === "lognormal" && !(d.p10 > 0 && d.p90 > d.p10)) errs.push(`${where}variable '${k}': need 0 < p10 < p90`);
+    if (d.dist === "discrete" && (!Array.isArray(d.values) || !Array.isArray(d.weights) || d.values.length === 0 || d.values.length !== d.weights.length || !d.values.every(num) || !d.weights.every((w) => num(w) && w >= 0) || d.weights.every((w) => w === 0))) errs.push(`${where}variable '${k}': discrete needs equal-length numeric values[] and non-negative weights[]`);
+  }
+
 export function validateModel(m) {
   const errs = [];
   if (!m || typeof m !== "object") return ["model must be a JSON object"];
@@ -109,17 +121,7 @@ export function validateModel(m) {
   if (!m.question || typeof m.question !== "string") errs.push("question is required");
   const vars = m.variables || {};
   if (typeof vars !== "object" || Array.isArray(vars)) errs.push("variables must be an object");
-  for (const [k, d] of Object.entries(vars)) {
-    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(k)) errs.push(`variable '${k}': name must be an identifier`);
-    if (!d || !DISTS.has(d.dist)) { errs.push(`variable '${k}': dist must be one of ${[...DISTS].join(", ")}`); continue; }
-    const need = { const: ["value"], uniform: ["low", "high"], triangular: ["low", "mode", "high"], normal: ["mean", "sd"], lognormal: ["p10", "p90"] }[d.dist] || [];
-    for (const f of need) if (!num(d[f])) errs.push(`variable '${k}': ${d.dist} needs numeric ${f}`);
-    if (d.dist === "uniform" && d.low > d.high) errs.push(`variable '${k}': low > high`);
-    if (d.dist === "triangular" && !(d.low <= d.mode && d.mode <= d.high)) errs.push(`variable '${k}': need low <= mode <= high`);
-    if (d.dist === "normal" && d.sd < 0) errs.push(`variable '${k}': sd < 0`);
-    if (d.dist === "lognormal" && !(d.p10 > 0 && d.p90 > d.p10)) errs.push(`variable '${k}': need 0 < p10 < p90`);
-    if (d.dist === "discrete" && (!Array.isArray(d.values) || !Array.isArray(d.weights) || d.values.length === 0 || d.values.length !== d.weights.length || !d.values.every(num) || !d.weights.every((w) => num(w) && w >= 0) || d.weights.every((w) => w === 0))) errs.push(`variable '${k}': discrete needs equal-length numeric values[] and non-negative weights[]`);
-  }
+  for (const [k, d] of Object.entries(vars)) checkVariable(k, d, errs, "");
   const derived = m.derived || {};
   for (const k of Object.keys(derived)) { if (vars[k]) errs.push(`derived '${k}' shadows a variable`); if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(k)) errs.push(`derived '${k}': name must be an identifier`); }
   if (!Array.isArray(m.options) || m.options.length < 2) errs.push("options must list at least 2 options");
@@ -135,7 +137,10 @@ export function validateModel(m) {
     if (!num(c.rho) || c.rho <= -1 || c.rho >= 1) errs.push(`correlation ${c.a}~${c.b}: rho must be in (-1, 1)`);
     if (c.a === c.b) errs.push(`correlation ${c.a}~${c.b}: a variable cannot correlate with itself`);
   }
-  for (const [p, prof] of Object.entries(m.profiles || {})) for (const k of Object.keys((prof && prof.variables) || {})) if (!vars[k]) errs.push(`profile '${p}' overrides undeclared variable '${k}'`);
+  for (const [p, prof] of Object.entries(m.profiles || {})) for (const [k, d] of Object.entries((prof && prof.variables) || {})) {
+    if (!vars[k]) errs.push(`profile '${p}' overrides undeclared variable '${k}'`);
+    else checkVariable(k, d, errs, `profile '${p}' `);
+  }
   if (errs.length) return errs;
   // expression compile check (names resolve; derived may use variables + earlier derived)
   const scope = new Set(Object.keys(vars));
@@ -164,7 +169,7 @@ const spearman = (x, y) => pearson(ranks(x), ranks(y));
 const round = (x, d = 4) => (Number.isFinite(x) ? Number(x.toPrecision(d)) : x);
 
 // ── evaluation ───────────────────────────────────────────────────────────────
-function applyProfile(model, profileName) {
+export function applyProfile(model, profileName) {
   if (!profileName) return model;
   const prof = (model.profiles || {})[profileName];
   if (!prof) throw new Error(`unknown profile '${profileName}'`);
@@ -262,6 +267,22 @@ export function evaluate(rawModel, opts = {}) {
   // value of information per uncertain variable (EVPPI, quantile-binning estimator)
   const bins = Math.max(5, Math.min(50, Math.floor(n / 400)));
   const margin = runner === undefined ? null : Array.from({ length: n }, (_, s) => U(wIdx, s) - U(runner, s));
+  // The binned estimator is biased upward: it takes a max over noisy bin means,
+  // so even a variable no option depends on scores > 0. Measure that noise floor
+  // by binning a random permutation (information-free) and subtract it.
+  const binGain = (order) => {
+    let acc = 0;
+    for (let b = 0; b < bins; b++) {
+      const lo = Math.floor((b * n) / bins), hi = Math.floor(((b + 1) * n) / bins); if (hi <= lo) continue;
+      let bestU = -Infinity; for (const oi of alive) { let s2 = 0; for (let j = lo; j < hi; j++) s2 += U(oi, order[j]); bestU = Math.max(bestU, s2 / (hi - lo)); }
+      let wU = 0; for (let j = lo; j < hi; j++) wU += U(wIdx, order[j]); acc += bestU * (hi - lo) - wU;
+    }
+    return acc / n;
+  };
+  const shuffleRng = mulberry32(seed ^ 0x9e3779b9);
+  const perm = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(shuffleRng() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
+  const noiseFloor = binGain(perm);
   const voi = random.map((k) => {
     const order = Array.from(cols[k].keys()).sort((a, b) => cols[k][a] - cols[k][b]);
     let acc = 0; const flips = [];
@@ -275,9 +296,14 @@ export function evaluate(rawModel, opts = {}) {
     }
     // break-even: first bin boundary where the conditional best changes away from / back to the winner
     let breakEven = null;
-    for (let b = 1; b < flips.length; b++) if (flips[b].best !== flips[b - 1].best) { breakEven = { at: round((flips[b - 1].to + flips[b].from) / 2), below: rows[flips[b - 1].best].id, above: rows[flips[b].best].id }; break; }
+    if (acc / n - noiseFloor > 0) for (let b = 1; b < flips.length; b++) if (flips[b].best !== flips[b - 1].best) { breakEven = { at: round((flips[b - 1].to + flips[b].from) / 2), below: rows[flips[b - 1].best].id, above: rows[flips[b].best].id }; break; }
     const d = model.variables[k];
-    return { variable: k, evppi: acc / n, sensitivity: margin ? spearman(Array.from(cols[k]), Array.from(margin)) : 0, break_even: breakEven,
+    const raw = acc / n;
+    const sens = margin ? spearman(Array.from(cols[k]), margin) : 0;
+    // A break-even is a revisit trigger only if the variable actually moves the
+    // winning margin; otherwise the "flip" is bin noise.
+    if (Math.abs(sens) < 0.05) breakEven = null;
+    return { variable: k, evppi: Math.max(0, raw - noiseFloor), sensitivity: sens, break_even: breakEven,
       askable: d.askable !== false, question: d.question || null, source: d.source || null, base: baseValue(d) };
   }).sort((a, b) => b.evppi - a.evppi);
   const stake = Math.max(Math.abs(rows[wIdx].mean), Math.abs(rows[wIdx].p90 - rows[wIdx].p10), 1e-9);
@@ -288,7 +314,7 @@ export function evaluate(rawModel, opts = {}) {
   // clear: even perfect information about everything is worth less than it.
   // decide-and-monitor: uncertainty matters jointly, but no single question pays.
   const verdict = next ? "ask-first" : evpi <= threshold ? "clear" : "decide-and-monitor";
-  return { ...out, verdict, evpi: round(evpi), voi_threshold: round(threshold),
+  return { ...out, verdict, evpi: round(evpi), voi_threshold: round(threshold), voi_noise_floor: round(noiseFloor),
     winner: { id: rows[wIdx].id, label: rows[wIdx].label, p_best: round(pBest), mean: round(rows[wIdx].mean), runner_up: runner === undefined ? null : rows[runner].id },
     next_question: next ? { variable: next.variable, question: next.question || `What is the real value of ${next.variable}?`, evppi: round(next.evppi), break_even: next.break_even, source: next.source } : null,
     options: ranked.concat(rows.map((_, i) => i).filter((i) => !alive.includes(i))).map((i) => fmtRow(rows[i])),

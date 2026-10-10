@@ -29,7 +29,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { evaluate, rangeOf } from "./decision-engine.mjs";
+import { evaluate, rangeOf, applyProfile } from "./decision-engine.mjs";
 import { appendJsonlLine } from "./state-io.mjs";
 
 const DEFAULT_LEDGER = ".svc/decision-ledger.jsonl";
@@ -74,12 +74,18 @@ export function review(rows, id, { root = process.cwd() } = {}) {
       ((t.below === pred.winner && known[t.variable] > t.at) || (t.above === pred.winner && known[t.variable] < t.at))).map((t) => t.variable) };
   if (pred.model_path && Object.keys(known).length) {
     const file = path.resolve(root, pred.model_path);
-    if (fs.existsSync(file)) {
+    if (!fs.existsSync(file)) out.model_missing = file;
+    else {
       const model = JSON.parse(fs.readFileSync(file, "utf8"));
       if (digest(model) !== pred.model_digest) out.model_changed_since_record = true;
-      const pinned = { ...model, variables: { ...model.variables } };
-      for (const [k, v] of Object.entries(known)) if (pinned.variables[k]) pinned.variables[k] = { ...pinned.variables[k], dist: "const", value: v };
-      const r = evaluate(pinned, { profile: pred.profile || undefined });
+      // Profile first, then pin observations on top, so a profile override can
+      // never overwrite what was actually observed. Pinned variables are
+      // constants, so their correlations no longer apply.
+      const base = applyProfile(model, pred.profile || undefined);
+      const pinned = { ...base, variables: { ...base.variables }, profiles: undefined };
+      for (const [k, v] of Object.entries(known)) if (pinned.variables[k]) pinned.variables[k] = { dist: "const", value: v };
+      pinned.correlations = (base.correlations || []).filter((c) => !(c.a in known) && !(c.b in known));
+      const r = evaluate(pinned);
       out.hindsight = { winner: r.winner?.id ?? null, verdict: r.verdict, still_right: r.winner?.id === pred.winner, next_question: r.next_question?.variable ?? null };
     }
   }
@@ -144,7 +150,7 @@ if (path.resolve(process.argv[1] || "") === fileURLToPath(import.meta.url)) {
       if (!o.id) throw usage("review needs --id");
       const r = review(rows, o.id);
       if (o.json) console.log(JSON.stringify(r, null, 2));
-      else console.log(`${r.question}\nchose ${r.chose}; ${r.hindsight ? (r.hindsight.still_right ? "still the right choice" : `with what is known now, ${r.hindsight.winner} would win`) : "no observed variables to re-run with"}` +
+      else console.log(`${r.question}\nchose ${r.chose}; ${r.hindsight ? (r.hindsight.still_right ? "still the right choice" : `with what is known now, ${r.hindsight.winner} would win`) : r.model_missing ? `model file not found at ${r.model_missing} (run review from the directory it was recorded in)` : "no observed variables to re-run with"}` +
         `${r.triggers_fired.length ? `; revisit triggers fired: ${r.triggers_fired.join(", ")}` : ""}${r.metric_in_predicted_range === false ? "; outcome landed outside the predicted p10–p90" : ""}`);
     } else {
       const c = calibration(rows);

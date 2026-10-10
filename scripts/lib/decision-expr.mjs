@@ -53,7 +53,7 @@ export function compile(src, allowed) {
     if (tk.t === "id") {
       p++;
       if (isOp("(")) {
-        p++; const f = FUNCS[tk.v]; if (!f) throw new Error(`unknown function '${tk.v}' in "${src}"`);
+        p++; const f = Object.hasOwn(FUNCS, tk.v) ? FUNCS[tk.v] : null; if (!f) throw new Error(`unknown function '${tk.v}' in "${src}"`);
         const args = []; if (!isOp(")")) { do { args.push(expr()); } while (isOp(",") && ++p); } expect(")");
         return (e) => f(...args.map((a) => a(e)));
       }
