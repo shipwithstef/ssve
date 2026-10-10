@@ -5,7 +5,7 @@ model: sonnet
 cognitive_label: "[REVIEW]"
 host_resolution: |
   bash scripts/resolve-model.sh REVIEW
-  On Claude Code → claude-sonnet-5
+  On Claude Code → claude-sonnet-5-5 (via the `sonnet` alias)
   On Kimi CLI → kimi-for-coding (thinking ON)
   On Gemini CLI → gemini-2.5-pro
   On Codex CLI → codex

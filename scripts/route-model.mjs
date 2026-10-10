@@ -268,11 +268,13 @@ function main(argv) {
       process.stderr.write(`route-model record: need --task-type <known> --model <${Object.keys(intel.models.models).join("|")}> --effort <level> --outcome pass|fail [--failure-kind ${Object.keys(intel.priors.failure_kinds).join("|")}]\n`);
       return 2;
     }
+    const written = [];
     for (const f of files) {
-      try { appendJsonlLine(f, row); }
+      try { appendJsonlLine(f, row); written.push(f); }
       catch (e) { process.stderr.write(`route-model record: could not write ${f}: ${e.message}\n`); }
     }
-    process.stdout.write(`recorded to ${files.join(" and ")}\n`);
+    if (!written.length) { process.stderr.write("route-model record: nothing was recorded\n"); return 1; }
+    process.stdout.write(`recorded to ${written.join(" and ")}\n`);
     return 0;
   }
   const outcomes = readOutcomes(files);

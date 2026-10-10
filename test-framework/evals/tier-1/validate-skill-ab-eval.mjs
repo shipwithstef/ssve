@@ -131,3 +131,21 @@ test("--regrade re-scores stored answers with the current graders, without calli
     assert.equal(row.bare.pass_rate, 1); assert.equal(row.with_skill.pass_rate, 1); assert.equal(row.verdict, "no-gain");
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
+
+test("--regrade never grades a truncated artifact prefix: such a run keeps its grade and says why", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "svc-ab-regrade-cut-"));
+  try {
+    const report = path.join(tmp, "r.json");
+    const first = cli(["--tasks", tasks, "--runner", fake, "--repeat", "1", "--only", "write-spec", "--out", report, "--json"]);
+    assert.equal(first.status, 0, first.stderr);
+    const rep = JSON.parse(fs.readFileSync(report, "utf8"));
+    const before = rep.runs.map((x) => x.pass);
+    for (const run of rep.runs) run.artifacts = [{ path: "docs/brief.md", chars: 30000, text: "prefix only" }];
+    fs.writeFileSync(report, JSON.stringify(rep));
+    const r = cli(["--tasks", tasks, "--regrade", report, "--json"], { EVALS: "0" });
+    assert.equal(r.status, 0, r.stderr);
+    const runs = JSON.parse(r.stdout).runs;
+    assert.deepEqual(runs.map((x) => x.pass), before);
+    for (const x of runs) assert.match(x.regrade_skipped, /truncated: docs\/brief\.md/);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});

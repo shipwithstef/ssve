@@ -6,7 +6,7 @@ cognitive_label: "[EXEC]"
 lock_class: executor
 host_resolution: |
   Resolve dynamically via: bash scripts/resolve-model.sh EXEC
-  On Claude Code → claude-sonnet-5
+  On Claude Code → claude-sonnet-5-5 (via the `sonnet` alias)
 fallback: |
   Serial prose chain inline when stage dispatch is unavailable
   (SVC_STAGE_ISOLATION=off or agent missing). The chain never depends on this.

@@ -101,3 +101,15 @@ test("apply refuses a stale result instead of overwriting newer work (review #12
   assert.throws(() => apply(r, dir), /stale result/);
   assert.match(fs.readFileSync(path.join(dir, "src", "drop.mjs"), "utf8"), /owner's newer change/, "nothing was written");
 });
+
+test("a command worker's home is private: writes to ~ stay out of the real home (review #127)", async () => {
+  const marker = `probe-home-${process.pid}-${Date.now()}.txt`;
+  const r = await run({ question: "q", base: base(), prompt: "p", owned: ["src"], check: "true", variants: 1, worker_cmd: `echo x > ~/${marker}` }, { lanes: { max_parallel: 1, why: "t" } });
+  assert.equal(fs.existsSync(path.join(os.homedir(), marker)), false);
+  assert.equal(r.variants[0].status, "pass");
+});
+
+test("sandbox_cmd wraps the worker command", async () => {
+  const r = await run({ question: "q", base: base(), prompt: "p", owned: ["src"], check: "test -f src/wrapped", variants: 1, worker_cmd: "true", sandbox_cmd: "touch src/wrapped &&" }, { lanes: { max_parallel: 1, why: "t" } });
+  assert.equal(r.variants[0].status, "pass");
+});

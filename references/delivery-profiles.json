@@ -7,14 +7,12 @@
       "goal": "Prove the idea works end to end and learn fast. Throwaway is fine.",
       "use_when": "Spikes, demos, hackathons, 'does this even work', anything not yet used by real users.",
       "tests": "A smoke test for the happy path of each AC. No coverage target, no edge-case matrix.",
-      "chain": "Essential stages only, plus a conditional stage when it is mechanically triggered AND risk is high (auth, money, data loss).",
+      "chain": "Essential stages only, plus a conditional stage when it is mechanically triggered AND risk is high (auth, money, data loss). Of the conditional stages scripts/stage-activation.mjs evaluates, only pricing (money) is kept; auth, data and secrets are irreversible zones that restore full review depth in bounded planning.",
       "review": "Self-review. One independent review only for auth, payments or data deletion.",
       "receipts": "Quick receipt per commit. No backfill. Promotion to mvp or production is one range attestation, not per-commit receipts.",
       "max_index": 20,
       "conditional_stages": [
-        "pricing",
-        "security",
-        "compliance"
+        "pricing"
       ],
       "planning": "bounded: terms first, a one-page brief that grows, the probe loop; full review depth only on irreversible zones"
     },

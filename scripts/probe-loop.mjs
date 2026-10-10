@@ -29,6 +29,17 @@
  *   budget_usd stop starting new variants once spent cost reaches this
  *   worker_cmd optional shell command instead of the Claude worker (another harness, or
  *              a test double); it runs in the variant directory with PROBE_VARIANT set
+ *              and HOME pointed at a private, throwaway home
+ *   sandbox_cmd optional prefix that wraps worker_cmd in an OS sandbox whose writable root
+ *              is the variant, e.g. "bwrap --ro-bind / / --bind \"$PROBE_DIR\" \"$PROBE_DIR\" --"
+ *
+ * Containment. Each variant is a copy with real files (no links back to the source), a
+ * new link pointing outside the copy fails the variant, and the original project is
+ * fingerprinted before and after: any change aborts the run. Without sandbox_cmd this is
+ * containment by permissions, not an OS sandbox: Claude workers run headless, where Edit
+ * and Write stay inside the working directory, but a command they run could still write
+ * elsewhere on disk. For untrusted work, give sandbox_cmd or run probe-loop in a
+ * container.
  */
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -125,7 +136,9 @@ async function runVariant(spec, i, root, spent) {
   const t0 = Date.now();
   let worker;
   if (spec.worker_cmd) {
-    const r = spawnSync("sh", ["-c", spec.worker_cmd], { cwd: dir, encoding: "utf8", timeout: (spec.timeout_s ?? 600) * 1000, env: { ...process.env, PROBE_VARIANT: String(i + 1) } });
+    const home = fs.mkdtempSync(path.join(root, `home${i + 1}-`));
+    const cmd = spec.sandbox_cmd ? `${spec.sandbox_cmd} sh -c ${JSON.stringify(spec.worker_cmd)}` : spec.worker_cmd;
+    const r = spawnSync("sh", ["-c", cmd], { cwd: dir, encoding: "utf8", timeout: (spec.timeout_s ?? 600) * 1000, env: { ...process.env, PROBE_VARIANT: String(i + 1), PROBE_DIR: dir, HOME: home } });
     worker = { ok: r.status === 0, cost_usd: 0, text: (r.stdout || "").slice(-400) };
   } else {
     // A worker edits a throwaway copy with no .git; the ownership fence is checked after

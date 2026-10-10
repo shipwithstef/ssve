@@ -4,7 +4,7 @@
 // (dispatch-waves: wi, status, worker_summary, changed_files, validation_evidence,
 //  clean_worktree, parent_graph_mutation) and transfers winning patterns to
 // .svc/population-patterns.jsonl. Standalone reader/appender (no subagent spawn here).
-// Usage: node scripts/population-compare.mjs <population-dir-with-*.result.json>
+// Usage: node scripts/population-compare.mjs <population-dir-with-*.result.json | probe-loop result.json>
 
 import fs from "node:fs";
 import path from "node:path";
@@ -34,15 +34,33 @@ function inferFromSummary(summary) {
   return f;
 }
 
+// A probe-loop.mjs result ({variants: [...]}) is a population too. Each variant maps onto
+// the worker-result contract: a passing check is success, the check's score is the
+// oracle score, and the variant is named <file>#<n>.
+function fromProbeLoop(result, file) {
+  return result.variants.map((v) => ({
+    wi: result.question,
+    status: v.status === "pass" ? "success" : v.status,
+    oracle_score: Number.isFinite(v.score) ? v.score : 0,
+    worker_summary: v.note,
+    changed_files: v.changed,
+    validation_evidence: v.check_tail,
+    clean_worktree: v.status !== "out_of_bounds",
+    file: `${file}#${v.variant}`,
+  }));
+}
+
 function comparePopulations(populationDir) {
   if (!fs.existsSync(populationDir)) {
     return { error: `population dir not found: ${populationDir}`, winner: null, patterns: 0, total: 0 };
   }
-  const files = fs.readdirSync(populationDir).filter((f) => f.endsWith(".result.json"));
-  const results = files.map((file) => ({
-    ...JSON.parse(fs.readFileSync(path.join(populationDir, file), "utf8")),
-    file,
-  }));
+  const single = fs.statSync(populationDir).isFile();
+  const files = single ? [path.basename(populationDir)] : fs.readdirSync(populationDir).filter((f) => f.endsWith(".result.json"));
+  const dir = single ? path.dirname(populationDir) : populationDir;
+  const results = files.flatMap((file) => {
+    const r = JSON.parse(fs.readFileSync(path.join(dir, file), "utf8"));
+    return Array.isArray(r.variants) ? fromProbeLoop(r, file) : [{ ...r, file }];
+  });
   const scored = results
     .filter((r) => r.status === "success")
     .map((r) => ({ ...r, score: scoreFromContractFields(r) }))

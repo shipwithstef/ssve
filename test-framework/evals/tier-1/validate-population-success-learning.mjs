@@ -65,3 +65,16 @@ test("an outcome check score outranks every metadata field", (t) => {
   });
   assert.equal(out.winner, "works.result.json");
 });
+test("a probe-loop result is read as a population: a passing check wins, failing and out-of-bounds variants are not learned from (review #127)", (t) => {
+  const probe = { question: "which jump?", variants: [
+    { variant: 1, status: "fail", score: 0.9, changed: ["a.js"], note: "fast but wrong" },
+    { variant: 2, status: "pass", score: 0.7, changed: ["a.js"], note: "minimal fix", check_tail: "ok" },
+    { variant: 3, status: "out_of_bounds", score: 0, changed: ["../x"], note: "escaped" },
+    { variant: 4, status: "pass", score: 1, changed: ["a.js"], note: "best", check_tail: "ok" },
+  ] };
+  const { dir, out } = compare(t, { "probe.result.json": probe });
+  assert.equal(out.winner, "probe.result.json#4"); assert.equal(out.total, 4); assert.equal(out.eligible, 2);
+  const saved = fs.readFileSync(path.join(dir, ".svc/population-patterns.jsonl"), "utf8"); assert.doesNotMatch(saved, /fast but wrong|escaped/);
+  const file = path.join(dir, "population", "probe.result.json");
+  assert.equal(json(cli(script, [file], dir)).winner, "probe.result.json#4", "a single result file works too");
+});

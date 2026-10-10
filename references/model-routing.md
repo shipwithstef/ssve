@@ -18,7 +18,7 @@ A profile defines which harness handles each cognitive label. The framework ship
 
 | Profile | Orchestrator | EXEC Harness | SENSE Harness | Best For |
 |---------|-------------|--------------|---------------|----------|
-| **`svc-default`** | Any | **Claude Sonnet 5** (effort:high declared) | **MiMo-V2.5-Pro** (key-gated) | Production. Opus strategy/plan + Sonnet 5 execution/review; effort:high declared in the registry, consumer-applied (WI-470) |
+| **`svc-default`** | Any | **Claude Sonnet 5.5** (effort:high declared) | **MiMo-V2.5-Pro** (key-gated) | Production. Opus 5.5 strategy/plan + Sonnet 5.5 execution/review; effort:high declared in the registry, consumer-applied (WI-470; 5.5 refresh 2026-10-10) |
 | **`kimi-native`** | Kimi | **Kimi** | **Kimi** | Pure Kimi. Everything inside Kimi CLI |
 | **`claude-native`** | Claude | **Claude Sonnet** | **Claude Opus** | Pure Claude. No MiMo delegation |
 | **`codex-native`** | Codex CLI / app | **GPT-5.5** | **GPT-5.5** | Pure Codex. Best for Windows Codex app + WSL2 |
@@ -77,8 +77,8 @@ This is the **production profile**. It mixes models across harnesses for optimal
 |-------|---------|-------|-----------|
 | 🧠 **[STRAT]** | Claude | Opus 5.5 | Highest reasoning depth for strategy |
 | 📐 **[PLAN]** | Claude | Opus 5.5 | Deterministic blueprinting |
-| ⚙️ **[EXEC]** | Claude | Sonnet 5.5 | Sonnet 5 execution; effort:high declared (WI-470); MiMo EXEC via keyed profiles |
-| 🛡️ **[REVIEW]** | Claude | Sonnet 5.5 | WI-470 2026-06-30: REVIEW runs on Sonnet 5 (subagents pinned) against the Opus blueprint; effort:high declared here, consumer-applied via the Agent dispatch effort param |
+| ⚙️ **[EXEC]** | Claude | Sonnet 5.5 | Sonnet 5.5 execution (2026-10-10 refresh; Sonnet 5 since WI-470); effort:high declared; MiMo EXEC via keyed profiles |
+| 🛡️ **[REVIEW]** | Claude | Sonnet 5.5 | 2026-10-10: REVIEW runs on Sonnet 5.5 (subagents use the sonnet alias; WI-470 moved it to Sonnet 5) against the Opus blueprint; effort:high declared here, consumer-applied via the Agent dispatch effort param |
 | 👁️ **[SENSE]** | **MiMo** | **MiMo-V2.5-Pro** | Multimodal sensory QA (requires MIMO_API_KEY) |
 | 🌐 **[DISC]** | Native | web_search | Live docs via native search |
 | 🔁 **[PASS]** | Claude | Haiku 5.5 | Cheapest pass-through extraction |

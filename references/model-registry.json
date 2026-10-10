@@ -244,6 +244,7 @@
      "displayName": "Opus 4.8"
     },
     "sonnet": {
+     "note": "Pinned API entry kept for historical profiles. Not the Claude Code `sonnet` alias, which agents/*.md use and which resolves to the current Sonnet (5.5 as of 2026-10-10); svc-default routes through sonnet-5-5.",
      "id": "claude-sonnet-4-6",
      "contextWindow": 200000,
      "invocation": "claude -p --model claude-sonnet-4-6",
@@ -458,13 +459,13 @@
      "model": "sonnet-5-5",
      "effort": "high",
      "rationale": "WI-470 2026-06-30: EXEC runs on Sonnet 5 (subagents pinned). effort:high is DECLARED here (output_config.effort:high, claude-api-verified, adaptive thinking) and surfaced via resolve-model EXEC --effort; consumers apply it via the Agent dispatch effort param (this is the routing source, not the applier). Supersedes WI-357 EXEC=Sonnet4.6; MiMo EXEC via opencode-mimo/kimi profiles",
-     "displayRationale": "Sonnet 5 execution; effort:high declared (WI-470); MiMo EXEC via keyed profiles"
+     "displayRationale": "Sonnet 5.5 execution (2026-10-10 refresh; Sonnet 5 since WI-470); effort:high declared; MiMo EXEC via keyed profiles"
     },
     "REVIEW": {
      "harness": "claude",
      "model": "sonnet-5-5",
      "effort": "high",
-     "rationale": "WI-470 2026-06-30: REVIEW runs on Sonnet 5 (subagents pinned) against the Opus blueprint; effort:high declared here, consumer-applied via the Agent dispatch effort param"
+     "rationale": "2026-10-10: REVIEW runs on Sonnet 5.5 (subagents use the sonnet alias; WI-470 moved it to Sonnet 5) against the Opus blueprint; effort:high declared here, consumer-applied via the Agent dispatch effort param"
     },
     "SENSE": {
      "harness": "mimo",

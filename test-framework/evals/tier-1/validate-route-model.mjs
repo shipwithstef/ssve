@@ -153,3 +153,17 @@ test("an outcome mirrored to the project log and the global log counts once (rev
   fsm.writeFileSync(global, [...rows, legacy, JSON.stringify({ id: "e4", task_type: "exec", model: "haiku", effort: "low", outcome: "pass" })].join("\n") + "\n");
   assert.equal(readOutcomes([local, global]).length, 5, "three mirrored + one mirrored legacy row + one distinct trial");
 });
+
+test("record fails when nothing could be written, and names only the files it wrote", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rm-fail-"));
+  const blocked = path.join(dir, "blocked");
+  fs.writeFileSync(blocked, "a file, so nothing can be created under it");
+  const script = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../../scripts/route-model.mjs");
+  const args = [script, "record", "--task-type", "exec", "--model", "haiku", "--effort", "low", "--outcome", "pass"];
+  const none = spawnSync(process.execPath, args, { encoding: "utf8", env: { ...process.env, SVC_MODEL_OUTCOMES: path.join(blocked, "x.jsonl") } });
+  assert.equal(none.status, 1, none.stdout + none.stderr);
+  const good = path.join(dir, "ok.jsonl");
+  const some = spawnSync(process.execPath, args, { encoding: "utf8", env: { ...process.env, SVC_MODEL_OUTCOMES: `${good}:${path.join(blocked, "x.jsonl")}` } });
+  assert.equal(some.status, 0, some.stderr);
+  assert.ok(some.stdout.includes(good) && !some.stdout.includes("blocked"));
+});

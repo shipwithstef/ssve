@@ -85,3 +85,17 @@ test("CLI: --profile exits 1 when over, reads SVC_PLAN_BODY markdown, and stage 
   const both = spawnSync(process.execPath, [path.join(root, "scripts/stage-activation.mjs"), "--manifest", "x.json", "--staged"], { cwd: root, encoding: "utf8" });
   assert.equal(both.status, 2);
 });
+
+test("stage activation: --profile works from any directory, and every profile keeps only stages it can see (review #127)", () => {
+  const dir = tmp();
+  fs.writeFileSync(path.join(dir, "lean.json"), JSON.stringify(lean));
+  const r = spawnSync(process.execPath, [path.join(root, "scripts/stage-activation.mjs"), "--manifest", path.join(dir, "lean.json"), "--profile", "prototype"], { cwd: dir, encoding: "utf8" });
+  assert.equal(r.status, 0, `runs outside the framework root: ${r.stderr}`);
+  const p = JSON.parse(fs.readFileSync(path.join(root, "references/delivery-profiles.json"), "utf8"));
+  const src = fs.readFileSync(path.join(root, "scripts/stage-activation.mjs"), "utf8");
+  const known = [...src.slice(src.indexOf("const DEFAULT_CONDITIONS"), src.indexOf("};", src.indexOf("const DEFAULT_CONDITIONS"))).matchAll(/^ {2}"?([a-z-]+)"?: \{/gm)].map((m) => m[1]);
+  for (const [name, prof] of Object.entries(p.profiles)) {
+    if (prof.conditional_stages === "all") continue;
+    for (const s of prof.conditional_stages) assert.ok(known.includes(s), `${name} keeps ${s}, which stage-activation never emits (known: ${known.join(", ")})`);
+  }
+});

@@ -15,6 +15,8 @@
 //      stages the delivery profile does not keep as "deferred")
 
 import { execFileSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { existsSync, readFileSync } from "node:fs";
 import { loadStageRegistry as loadCanonicalStageRegistry } from "./lib/stage-registry.mjs";
 import { loadPlan } from "./overengineering-index.mjs";
@@ -26,7 +28,8 @@ import { loadPlan } from "./overengineering-index.mjs";
 // entries, in registry order), never duplicated here. A missing/invalid
 // registry is a hard exit 2 (no embedded fallback — same rule as
 // scripts/audit-story-receipts.mjs, for the same reason).
-const DEFAULT_REGISTRY_PATH = "references/stage-registry.json";
+const FRAMEWORK_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+const DEFAULT_REGISTRY_PATH = path.join(FRAMEWORK_ROOT, "references", "stage-registry.json");
 
 // Quote-derived verbatim from proposals/2026-08-02-one-lane-framework.md §2
 // "Conditions, deliberately mechanical:" table. The regex/glob PATTERNS below
@@ -99,11 +102,19 @@ function manifestInput(file) {
   return { files, text };
 }
 
-function profileKeeps(name) {
-  const profiles = JSON.parse(readFileSync("references/delivery-profiles.json", "utf8")).profiles;
+// Resolved from this script, so --profile works from any directory or host.
+const PROFILES = path.join(FRAMEWORK_ROOT, "references", "delivery-profiles.json");
+
+// A keep-list names condition keys this script emits; an unknown name would never match
+// and would silently defer a stage the profile meant to keep, so it fails instead.
+function profileKeeps(name, knownStages) {
+  const profiles = JSON.parse(readFileSync(PROFILES, "utf8")).profiles;
   const profile = profiles[name];
   if (!profile) fail(`--profile must be one of ${Object.keys(profiles).join(", ")}`, 2);
-  return profile.conditional_stages === "all" ? null : new Set(profile.conditional_stages);
+  if (profile.conditional_stages === "all") return null;
+  const unknown = profile.conditional_stages.filter((s) => !knownStages.includes(s));
+  if (unknown.length) fail(`delivery profile ${name} keeps unknown conditional stages: ${unknown.join(", ")} (known: ${knownStages.join(", ")})`, 2);
+  return new Set(profile.conditional_stages);
 }
 
 function changedFiles(args) {
@@ -117,7 +128,7 @@ function diffText(args) {
 }
 
 function loadCapabilityNames() {
-  const capabilitiesPath = "references/knowledge/svc/CAPABILITIES.md";
+  const capabilitiesPath = path.join(FRAMEWORK_ROOT, "references", "knowledge", "svc", "CAPABILITIES.md");
   if (!existsSync(capabilitiesPath)) return [];
   const text = readFileSync(capabilitiesPath, "utf8");
   // Mechanical heading scan (## <Capability Name>) — the denominator IS len().
@@ -237,7 +248,7 @@ const output = [
   })),
   ...Object.entries(conditions).map(([name, def]) => evaluateCondition(name, def, files, text)),
 ];
-const keeps = args.profile ? profileKeeps(args.profile) : null;
+const keeps = args.profile ? profileKeeps(args.profile, Object.keys(conditions)) : null;
 if (keeps) {
   for (const row of output) {
     if (row.result === "active" && !ESSENTIAL_STAGES.includes(row.stage) && !keeps.has(row.stage)) {

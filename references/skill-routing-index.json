@@ -789,7 +789,7 @@
     {
       "skill": "execute-changeset",
       "path": "skills/execute-changeset/SKILL.md",
-      "content_hash": "1c28cfe8d4a61b2617e1471a1c8bdf0b5d69004892aa9a8e8db72b9a245c7db3",
+      "content_hash": "284e9a7f713a24a6549791e5a5903b75c1e0e17a634fbb840c036cb7d23664d1",
       "description": "Use after plan-changeset has produced a manifest and task graph. Triggers on \"execute the plan\", \"implement the changeset\", \"run the tasks\", \"start building\", or when a plan-changeset manifest exists and is ready for execution.",
       "aliases": [],
       "positive_triggers": [],

@@ -69,3 +69,13 @@ test("the command line honours --delivery-profile", () => {
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual(JSON.parse(r.stdout).delivery_graph.planning.mode, "bounded");
 });
+
+test("bounded: e2e and journeys run inside execution before review-gate, and nothing follows verify-promotion", () => {
+  const g = compileDeliveryGraph(input);
+  const order = g.tasks.map((t) => t.metadata.skill);
+  assert.equal(order.at(-1), "verify-promotion");
+  for (const s of ["write-e2e", "test-journeys"]) assert.equal(order.includes(s), false, `${s} is not a separate stage after the chain`);
+  const steps = bySkill(g, "execute-changeset")[0].metadata.required_process_steps;
+  assert.deepEqual(steps.map((p) => [p.skill, p.before]), [["write-e2e", "review-gate"], ["test-journeys", "review-gate"]]);
+  assert.ok(order.indexOf("execute-changeset") < order.indexOf("review-gate"));
+});

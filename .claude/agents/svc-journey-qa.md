@@ -12,7 +12,7 @@ maxTurns: 80
      lock_class: executor
      host_resolution: |
        Resolve dynamically via: bash scripts/resolve-model.sh REVIEW
-       On Claude Code → claude-sonnet-5
+       On Claude Code → claude-sonnet-5-5 (via the `sonnet` alias)
      fallback: |
        Inline test-journeys by the orchestrator when agent dispatch is unavailable.
      harness: claude

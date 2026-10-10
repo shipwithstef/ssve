@@ -6,7 +6,7 @@ cognitive_label: "[REVIEW]"
 lock_class: reviewer
 host_resolution: |
   Resolve dynamically via: bash scripts/resolve-model.sh REVIEW
-  On Claude Code → claude-sonnet-5
+  On Claude Code → claude-sonnet-5-5 (via the `sonnet` alias)
 fallback: |
   Serial review-cross-model G6 when the station is unavailable.
 tools: [Read, Grep, Glob]

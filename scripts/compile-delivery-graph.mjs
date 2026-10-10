@@ -667,6 +667,17 @@ export function compileDeliveryGraph(input) {
     const i = requiredSteps.findIndex((step) => step.skill === "build-personas");
     const plan = requiredSteps.findIndex((step) => step.skill === "plan-changeset");
     if (i > plan && plan !== -1) requiredSteps.splice(plan, 0, ...requiredSteps.splice(i, 1));
+    // Without the design skills as anchors, e2e and journey proof would trail the chain
+    // and run after promotion. The chain must stay contiguous, so they become required,
+    // evidence-backed process steps of execute-changeset that run before review-gate
+    // (the same shape as the visual diff).
+    const execute = requiredSteps.find((step) => step.skill === "execute-changeset");
+    if (execute) for (const skill of ["write-e2e", "test-journeys"]) {
+      const k = requiredSteps.findIndex((step) => step.skill === skill);
+      if (k === -1) continue;
+      const [entry] = requiredSteps.splice(k, 1);
+      execute.required_process_steps = [...(execute.required_process_steps || []), { skill, before: "review-gate", evidence_required: true, signal: entry.signal }];
+    }
   }
   const chainValidation = validateMandatoryDeliveryChain(requiredSteps.map((step) => step.skill));
   if (!chainValidation.pass) {

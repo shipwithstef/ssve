@@ -181,6 +181,10 @@ export function regrade(o) {
   const runs = report.runs.map((r) => {
     const t = byId.get(r.task); if (!t) throw new Error(`report task '${r.task}' is not in ${o.tasks}`);
     if (typeof r.answer !== "string") throw new Error("report has no stored answers (made before answers were kept)");
+    // Older reports kept only a prefix of each artifact. Grading a prefix could flip the
+    // verdict, so such a run keeps its original grade and says why.
+    const cut = (r.artifacts || []).filter((a) => Number.isFinite(a.chars) && a.text.length < a.chars).map((a) => a.path);
+    if (cut.length) return { ...r, regrade_skipped: `artifact stored truncated: ${cut.join(", ")}` };
     return { ...r, pass: r.exit === 0 && grade(t.grader, r.answer, ROOT, (r.artifacts || []).map((a) => ({ path: a.path, text: a.text }))) };
   });
   return { ...report, regraded_from: o.regrade, margin: o.margin, tasks: summarize(runs, o.margin), runs };
@@ -204,7 +208,7 @@ export function run(o) {
         if (!o.cwd) fs.rmSync(cwd, { recursive: true, force: true });
         runs.push({ task: task.id, skill: task.skill, arm, i, exit: r.status, error: r.error?.code ?? null, signal: r.signal ?? null, pass: r.status === 0 && grade(task.grader, parsed.answer, ROOT, artifacts),
           tokens: parsed.tokens, cost_usd: parsed.cost_usd, answer_chars: parsed.answer.length, answer: parsed.answer,
-          artifacts: artifacts.map((a) => ({ path: a.path, chars: a.text.length, text: a.text.slice(0, 20000) })) });
+          artifacts: artifacts.map((a) => ({ path: a.path, chars: a.text.length, text: a.text })) });
       }
     }
   }
