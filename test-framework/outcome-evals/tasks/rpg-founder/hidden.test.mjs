@@ -15,9 +15,12 @@ const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
 test.before(async () => {
   const hasDeps = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies }).length > 0;
   if (hasDeps && !fs.existsSync("node_modules")) spawnSync("npm", ["install", "--no-audit", "--no-fund"], { stdio: "ignore", timeout: 300000 });
-  server = spawn("npm", ["start"], { env: { ...process.env, PORT: String(port) }, stdio: "ignore", detached: true });
-  for (let i = 0; i < 300; i++) { try { if ((await fetch(base + "/")).ok) return; } catch {} await new Promise((r) => setTimeout(r, 200)); }
-  throw new Error("npm start did not serve / on PORT within 60 s");
+  server = spawn("npm", ["start"], { env: { ...process.env, PORT: String(port) }, stdio: ["ignore", "pipe", "pipe"], detached: true });
+  let log = "";
+  server.stdout.on("data", (c) => { log = (log + c).slice(-2000); });
+  server.stderr.on("data", (c) => { log = (log + c).slice(-2000); });
+  for (let i = 0; i < 600; i++) { try { if ((await fetch(base + "/")).ok) return; } catch {} await new Promise((r) => setTimeout(r, 200)); }
+  throw new Error(`npm start did not serve / on PORT within 120 s; server output: ${log.trim().slice(-600) || "(none)"}`);
 });
 test.after(() => { try { process.kill(-server.pid, "SIGKILL"); } catch {} });
 
