@@ -160,8 +160,8 @@
       "mechanism": "decision",
       "status": "structural-only",
       "evidence": [],
-      "next_eval": "Harness-agnostic transport, Claude Code first, then open vs contract vs Two-Box arms built and graded (plan Phase 3.1)",
-      "note": "No live verdict has ever been recorded."
+      "next_eval": "Harder brownfield task where bare builds fail; then authority-grade transports if it shows value",
+      "note": "First live Two-Box run on Claude Code (harness-agnostic runner, isolation probe passed, 6 calls, $0.47 on Sonnet). Measurement on waitlist-feature in progress."
     },
     {
       "id": "skill:build-personas",
@@ -821,8 +821,11 @@
       "source": "skills/route-workflow/SKILL.md",
       "mechanism": "decision",
       "status": "structural-only",
-      "evidence": [],
-      "next_eval": "Routing pillar: old vs slimmed descriptions on a labeled request corpus (plan Phase 2)"
+      "evidence": [
+        "test-framework/outcome-evals/results/2026-10-10-routing-descriptions.json"
+      ],
+      "next_eval": "Routing pillar: old vs slimmed descriptions on a labeled request corpus (plan Phase 2)",
+      "note": "Description slim (9af8136) measured: routing accuracy 0.86 -> 0.89 (Haiku) and 0.88 -> 0.92 (Sonnet) on 50 labeled requests, no established difference, at 40% fewer listing characters."
     },
     {
       "id": "skill:security-ops",
@@ -1023,6 +1026,478 @@
       "status": "unmeasured",
       "evidence": [],
       "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "rule:rules/base44/auth-refresh.md",
+      "kind": "rule",
+      "source": "rules/base44/auth-refresh.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/base44/rls-policy.md",
+      "kind": "rule",
+      "source": "rules/base44/rls-policy.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/base44/schema.md",
+      "kind": "rule",
+      "source": "rules/base44/schema.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/bash-hygiene.md",
+      "kind": "rule",
+      "source": "rules/bash-hygiene.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/code-review.md",
+      "kind": "rule",
+      "source": "rules/common/code-review.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/port-parity-baseline.md",
+      "kind": "rule",
+      "source": "rules/common/port-parity-baseline.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/gh-workflow-validation.md",
+      "kind": "rule",
+      "source": "rules/common/gh-workflow-validation.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/git-pre-commit-hygiene.md",
+      "kind": "rule",
+      "source": "rules/common/git-pre-commit-hygiene.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/model-selection.md",
+      "kind": "rule",
+      "source": "rules/common/model-selection.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/neversay-fix-if-needed.md",
+      "kind": "rule",
+      "source": "rules/common/neversay-fix-if-needed.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/research-before-build.md",
+      "kind": "rule",
+      "source": "rules/common/research-before-build.md",
+      "load": "always",
+      "status": "no-gain-measured",
+      "evidence": [
+        "test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules.json"
+      ],
+      "next_eval": "Apply always -> signal, then re-probe",
+      "value": {
+        "state": "caught-up",
+        "per_model": {
+          "haiku": "caught-up (1.0 without it, n = 5)",
+          "sonnet": "caught-up (1.0 without it, n = 5)"
+        },
+        "recommendation": "Load on signal instead of always; researchDecision() already enforces the gate in code"
+      }
+    },
+    {
+      "id": "rule:rules/common/question-fatigue.md",
+      "kind": "rule",
+      "source": "rules/common/question-fatigue.md",
+      "load": "always",
+      "status": "gain-measured",
+      "evidence": [
+        "test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules.json",
+        "test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules-r2.json"
+      ],
+      "next_eval": "Re-probe on each model release (value-audit)",
+      "value": {
+        "state": "keep",
+        "per_model": {
+          "haiku": "keep (0.27 -> 0.93, p = 0.0007, n = 15)",
+          "sonnet": "caught-up (1.0 without it)"
+        }
+      }
+    },
+    {
+      "id": "rule:rules/common/regex-identifier-conventions.md",
+      "kind": "rule",
+      "source": "rules/common/regex-identifier-conventions.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/skill-output-visibility.md",
+      "kind": "rule",
+      "source": "rules/common/skill-output-visibility.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/visualize-decisions.md",
+      "kind": "rule",
+      "source": "rules/common/visualize-decisions.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/destructive-git-ops.md",
+      "kind": "rule",
+      "source": "rules/destructive-git-ops.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/docker-local-dev.md",
+      "kind": "rule",
+      "source": "rules/docker-local-dev.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/github-projects.md",
+      "kind": "rule",
+      "source": "rules/github-projects.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/golang/patterns.md",
+      "kind": "rule",
+      "source": "rules/golang/patterns.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/helper-app-query-parity.md",
+      "kind": "rule",
+      "source": "rules/helper-app-query-parity.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/host-capability-research.md",
+      "kind": "rule",
+      "source": "rules/host-capability-research.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/learning-preload.md",
+      "kind": "rule",
+      "source": "rules/learning-preload.md",
+      "load": "always",
+      "status": "no-gain-measured",
+      "evidence": [
+        "test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules.json"
+      ],
+      "next_eval": "Unbiased scenario, then apply always -> signal",
+      "value": {
+        "state": "caught-up",
+        "per_model": {
+          "haiku": "caught-up",
+          "sonnet": "caught-up"
+        },
+        "recommendation": "Load on signal; the learning hooks already inject matching entries. The probe named the file, so re-test with a scenario that does not"
+      }
+    },
+    {
+      "id": "rule:rules/long-output-to-file.md",
+      "kind": "rule",
+      "source": "rules/long-output-to-file.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/plan-changeset-trigger.md",
+      "kind": "rule",
+      "source": "rules/plan-changeset-trigger.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/provider-fidelity-test-contract.md",
+      "kind": "rule",
+      "source": "rules/provider-fidelity-test-contract.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/tier-1-promotion.md",
+      "kind": "rule",
+      "source": "rules/tier-1-promotion.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/post-fix-evidence-before-next-fix.md",
+      "kind": "rule",
+      "source": "rules/post-fix-evidence-before-next-fix.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/mobile-ui-verification-gate.md",
+      "kind": "rule",
+      "source": "rules/mobile-ui-verification-gate.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/python/patterns.md",
+      "kind": "rule",
+      "source": "rules/python/patterns.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/react/coding-style.md",
+      "kind": "rule",
+      "source": "rules/react/coding-style.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/research-must-use-agy-cli.md",
+      "kind": "rule",
+      "source": "rules/research-must-use-agy-cli.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/rust/patterns.md",
+      "kind": "rule",
+      "source": "rules/rust/patterns.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/tenant-scoped-test-seeding.md",
+      "kind": "rule",
+      "source": "rules/tenant-scoped-test-seeding.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/tool-selection.md",
+      "kind": "rule",
+      "source": "rules/tool-selection.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/transient-ui-assertion-pattern.md",
+      "kind": "rule",
+      "source": "rules/transient-ui-assertion-pattern.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/verify-state-before-context.md",
+      "kind": "rule",
+      "source": "rules/verify-state-before-context.md",
+      "load": "always",
+      "status": "gain-measured",
+      "evidence": [
+        "test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules.json",
+        "test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules-r2.json"
+      ],
+      "next_eval": "Re-probe on each model release (value-audit)",
+      "value": {
+        "state": "keep",
+        "per_model": {
+          "haiku": "caught-up on both scenarios",
+          "sonnet": "keep for the compaction check (0 -> 1.0, p = 0.008); caught-up on the deployed-ref check"
+        }
+      }
+    },
+    {
+      "id": "rule:rules/web/design-quality.md",
+      "kind": "rule",
+      "source": "rules/web/design-quality.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/web/performance.md",
+      "kind": "rule",
+      "source": "rules/web/performance.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/base44/cli-site-deploy-decoupled.md",
+      "kind": "rule",
+      "source": "rules/base44/cli-site-deploy-decoupled.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/base44/function-deploy-404-check-secrets.md",
+      "kind": "rule",
+      "source": "rules/base44/function-deploy-404-check-secrets.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/base44/static-assets-public-dir.md",
+      "kind": "rule",
+      "source": "rules/base44/static-assets-public-dir.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/concern-routing.md",
+      "kind": "rule",
+      "source": "rules/concern-routing.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/distribution-vs-launch-blocker.md",
+      "kind": "rule",
+      "source": "rules/distribution-vs-launch-blocker.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/base44/e2e-otp-connector.md",
+      "kind": "rule",
+      "source": "rules/base44/e2e-otp-connector.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/cross-ref-workflow-dispatch-coherence.md",
+      "kind": "rule",
+      "source": "rules/cross-ref-workflow-dispatch-coherence.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/build-and-ship-alignment.md",
+      "kind": "rule",
+      "source": "rules/build-and-ship-alignment.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/no-fabrication.md",
+      "kind": "rule",
+      "source": "rules/no-fabrication.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/runtime-discriminator-first-debugging.md",
+      "kind": "rule",
+      "source": "rules/runtime-discriminator-first-debugging.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
     },
     {
       "id": "agent:README",
@@ -2088,6 +2563,15 @@
       ]
     },
     {
+      "id": "engine:scripts/routing-eval.mjs",
+      "kind": "engine",
+      "source": "scripts/routing-eval.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-value-audit-and-routing.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/run-external-review.mjs",
       "kind": "engine",
       "source": "scripts/run-external-review.mjs",
@@ -2522,6 +3006,15 @@
       ]
     },
     {
+      "id": "engine:scripts/two-box-eval.mjs",
+      "kind": "engine",
+      "source": "scripts/two-box-eval.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-two-box-eval.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/two-box-plan.mjs",
       "kind": "engine",
       "source": "scripts/two-box-plan.mjs",
@@ -2685,6 +3178,15 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-wi-promotion-receipts.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/value-audit.mjs",
+      "kind": "engine",
+      "source": "scripts/value-audit.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-value-audit-and-routing.mjs"
       ]
     },
     {

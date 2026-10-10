@@ -168,7 +168,7 @@ export const promptSha = (arm, task) => crypto.createHash("sha256").update(task 
 
 // A task is either greenfield (ref.mjs is the reference solution.mjs) or brownfield
 // (repo/ is the starting codebase and ref/ overlays the reference change on it).
-function prepare(task) {
+export function prepare(task) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), `oe-${task}-`));
   const repo = path.join(TASKS, task, "repo");
   if (fs.existsSync(repo)) fs.cpSync(repo, dir, { recursive: true });
@@ -178,7 +178,7 @@ function prepare(task) {
   return dir;
 }
 
-function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40, effort = null) {
+export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40, effort = null) {
   return new Promise((resolve) => {
     // The model guides tell you to sweep effort on your own evals rather than assume a level.
     const args = ["-p", "--model", model, "--output-format", "json", "--max-turns", String(maxTurns), ...(effort ? ["--effort", effort] : []), "--allowedTools", tools];

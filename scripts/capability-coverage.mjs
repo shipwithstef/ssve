@@ -13,6 +13,7 @@
  *   agent   every agents/*.md
  *   engine  every scripts/*.mjs and scripts/lib/*.mjs over 5 KB, and scripts/orch/*.mjs
  *   hook    every hook id in hooks/hooks.json
+ *   rule    every rules/ entry in skills-manifest.json rulesRegistry (always, lazy or on signal)
  *   claim   hand-entered: the framework's claims about itself (CAPABILITIES.md, FRAMEWORK-STATE.md)
  * `build` never touches hand-entered fields (mechanism, status, evidence, next_eval, value,
  * note); it only adds rows for new units and removes rows whose unit no longer exists.
@@ -45,6 +46,7 @@ export function discoverUnits(root = ROOT) {
   const r = (p) => fs.readFileSync(path.join(root, p), "utf8");
   const units = [];
   for (const s of JSON.parse(r("skills-manifest.json")).includedSkills) units.push({ id: `skill:${s}`, kind: "skill", source: `skills/${s}/SKILL.md` });
+  for (const e of JSON.parse(r("skills-manifest.json")).rulesRegistry?.entries || []) units.push({ id: `rule:${e.path}`, kind: "rule", source: e.path, load: e.auto_inject });
   for (const f of fs.readdirSync(path.join(root, "agents")).filter((f) => f.endsWith(".md")).sort()) units.push({ id: `agent:${f.replace(/\.md$/, "")}`, kind: "agent", source: `agents/${f}` });
   for (const dir of ["scripts", "scripts/lib", "scripts/orch"]) {
     const abs = path.join(root, dir);
@@ -150,7 +152,7 @@ export function summary(data = load()) {
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 export function html(data = load()) {
   const s = summary(data);
-  const kinds = ["claim", "skill", "agent", "engine", "hook"];
+  const kinds = ["claim", "skill", "rule", "agent", "engine", "hook"];
   const order = ["gain-measured", "no-gain-measured", "ceiling", "structural-only", "unmeasured", "tested", "untested"];
   const rows = [...data.rows].sort((a, b) => kinds.indexOf(a.kind) - kinds.indexOf(b.kind) || order.indexOf(a.status) - order.indexOf(b.status) || a.id.localeCompare(b.id));
   const tr = rows.map((r) => `<tr data-kind="${esc(r.kind)}" data-status="${esc(r.status)}"><td>${esc(r.kind)}</td><td><code>${esc(r.id.replace(/^\w+:/, ""))}</code>${r.claim ? `<div class="claim">${esc(r.claim)}</div>` : ""}</td><td><span class="st ${esc(r.status)}">${esc(r.status)}</span></td><td>${esc(r.mechanism || "")}</td><td>${(r.evidence || []).map((e) => `<div><code>${esc(e)}</code></div>`).join("")}${r.note ? `<div class="note">${esc(r.note)}</div>` : ""}</td><td>${esc(r.next_eval || "")}</td></tr>`).join("\n");

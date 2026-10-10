@@ -151,7 +151,7 @@ function resolveInspect(value) {
   throw new Error("unsupported OFFLINE inspect fixture");
 }
 
-function normalizeRequirements(original) {
+export function normalizeRequirements(original) {
   if (original === undefined || original === null) throw new Error("original requirements required");
   if (typeof original === "string") {
     if (!original.trim()) throw new Error("original requirements required");
@@ -304,7 +304,7 @@ function contextPaths(contractContext) {
   throw new Error("contractContext must name contained spec/design paths");
 }
 
-function readConstraints(cwd, baseSha, contractContext) {
+export function readConstraints(cwd, baseSha, contractContext) {
   const paths = contextPaths(contractContext);
   const files = [];
   for (const relRaw of paths) {
@@ -318,7 +318,7 @@ function readConstraints(cwd, baseSha, contractContext) {
   return { paths: files };
 }
 
-function sourceExposure(snapshot, start) {
+export function sourceExposure(snapshot, start) {
   return {
     declared: true,
     gitCommonDir: snapshot.identity.gitCommonDir,
@@ -338,12 +338,12 @@ function sourceExposure(snapshot, start) {
   };
 }
 
-function openParagraphs(plan) {
+export function openParagraphs(plan) {
   const paras = String(plan).split(/\n\n+/).filter(text => text.trim());
   return paras.map((text, i) => ({ id: `open:P${i + 1}`, text, sha256: sha256Utf8(text) }));
 }
 
-function putJson(value, start) {
+export function putJson(value, start) {
   const stored = putObject(Buffer.from(`${canonicalJson(value)}\n`, "utf8"), { start });
   return objectRef(stored.sha256);
 }
@@ -446,7 +446,7 @@ function throwIfAborted(signal) {
   if (signal?.aborted) throw new Error("aborted");
 }
 
-function assertSourceIds(output, { requirementIds, paragraphs, originalDecisions, revisedDecisions }) {
+export function assertSourceIds(output, { requirementIds, paragraphs, originalDecisions, revisedDecisions }) {
   const allowed = new Set(paragraphs.map((p) => p.id));
   for (const d of originalDecisions) allowed.add(`contract-original:${d.id}`);
   for (const d of revisedDecisions) allowed.add(`contract-revised:${d.id}`);
@@ -486,7 +486,7 @@ function assertSourceIds(output, { requirementIds, paragraphs, originalDecisions
   }
 }
 
-function scoutGapContext(assignments, coverages, outputs) {
+export function scoutGapContext(assignments, coverages, outputs) {
   const scoutFindings = [...(outputs.scout_forward.findings || []), ...(outputs.scout_reverse.findings || [])];
   const gapLists = [
     assignments.scout_forward.known_gaps,
