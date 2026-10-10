@@ -1,7 +1,10 @@
 ---
 name: plan-changeset
 version: "1.0"
-description: Use when you have a BASELINED feature spec with technical design and need to produce the implementation plan for branch-first execution — task graph, file set, validation plan, checkpoints, and AC/test mapping
+description: >
+  Turn a baselined feature spec with technical design into an implementation plan for
+  branch-first execution: task graph, file set, validation plan, checkpoints, AC-to-test
+  mapping. Use before execute-changeset.
 phases:
   - id: P1-ArchetypeClassification
     trigger: always

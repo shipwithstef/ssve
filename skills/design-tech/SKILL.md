@@ -4,7 +4,10 @@ version: "1.0"
 handles_concerns:
   - paid-external-api
   - data-model-mutation
-description: Use when you have a DESIGNED feature spec (after UX and UI design) and need to define architecture, tech choices, and component design before implementation
+description: >
+  Define architecture, tech choices and component design for a feature spec that has
+  finished UX and UI design, before planning. Use for "tech design", "architecture for
+  this feature", "how should we build X".
 phases:
   - id: P1-SpecJourneyDiscussionPreflight
     trigger: always

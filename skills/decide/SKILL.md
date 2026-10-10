@@ -13,14 +13,10 @@ chain:
   progressive: false
   self_verify: true
   human_checkpoint: true
-description: >-
-  Present a decision to the founder so it can actually be decided — story first, real options
-  as outcomes, world practice, grounded confidence per option, and one recommendation. Use when
-  the founder says "give me the decision", "какво решаваме", "дай ми опциите", "trqbva li da",
-  "what should we do about X", "decision matrix", "подреди ги по важност", or whenever an audit,
-  plan or review has produced something a human must choose. Also use before handing any scope
-  to an executor — an unsigned decision is not an instruction. NEVER present a decision menu
-  any other way.
+description: >
+  Present a choice to the founder: story first, real options as outcomes, confidence per
+  option, one recommendation. Use for "give me the decision", "what should we do about X",
+  "какво решаваме", "дай ми опциите", or whenever a human must choose.
 ---
 
 # Decide — put a choice in front of the founder that can be answered

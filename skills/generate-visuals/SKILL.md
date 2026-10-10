@@ -2,14 +2,9 @@
 name: generate-visuals
 version: "1.0"
 description: >
-  Image and visual asset router. Takes one asset brief (class + style + brand
-  context) and routes it across the available image-gen providers (Gemini
-  Nano-Banana Pro / Imagen 4, Google Stitch MCP, Figma Make/Weave MCP, Claude
-  Design Live Canvas, OpenAI gpt-image-2 with gpt-image-1.5 fallback, Storyset, Veo 3 for motion). Returns
-  a ranked candidate set with provenance. Used by landing-page, design-ui,
-  ad-creative, social, lead-magnets, programmatic-seo. Use when "make
-  hero image", "generate UI mockup", "branded illustrations", "I need
-  imagery", or any skill chain that needs visual assets.
+  Route an image or visual asset brief across available image-generation providers and
+  return ranked candidates with provenance. Use for "make a hero image", "generate a UI
+  mockup", "branded illustrations", "I need imagery".
 inputs:
   required:
     - { path: "docs/specs/hero-assets/<slot>/brief.yaml", artifact: asset-brief, note: "asset class, style, count, brand context — see references/brief-format.md" }

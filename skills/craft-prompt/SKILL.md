@@ -5,14 +5,10 @@ self_verify: true
 human_checkpoint: false
 live-evidence: not-applicable (no visible artifact — emits a prompt + a receipt)
 description: >
-  Craft a world-class, output-shaped prompt for a task AND prove it is never worse than a
-  baseline/"sheep" prompt via a cheap best-of-2 floor. Use this whenever the user says
-  "craft me a prompt", "make this prompt better", "write a prompt that...", "beat this viral
-  prompt", or needs a high-leverage prompt for an arbitrary task — even if they don't say the
-  word "prompt-engineer". It unlocks what the model already knows (persona, output-format,
-  few-shot, constraints) via an authoring rubric, then runs a best-of-2 floor so the crafted
-  prompt is never worse than the bare/viral baseline. WARN/shadow, default OFF — opt-in only.
-  Does NOT route svc work (that is route-workflow's Prompt Composer); this CRAFTS a standalone output prompt.
+  Crafts a standalone, output-shaped prompt for a task and checks it beats a bare baseline
+  with a best-of-2 floor. Use for "craft me a prompt", "make this prompt better", "beat
+  this viral prompt". Not for routing svc work. Opt-in, default off.
+disable-model-invocation: true
 inputs:
   required:
     - artifact: task-intent

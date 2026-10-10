@@ -1,14 +1,10 @@
 ---
 name: assess-market-readiness
 version: "1.0"
-description: >-
-  Multi-role readiness judge that reads project artifacts and scores whether the product
-  is ready for its next milestone — launch, hackathon, VC pitch, or product-market-fit.
-  Never asks the user "is it ready?" — the pipeline knows. Produces a 0-100 readiness
-  score with blocking gaps, non-blocking gaps, and a routing decision (GTM vs features).
-  Use when: "is this ready?", "should I launch?", "what's next?" after all WIs close,
-  "hackathon judge", "VC review", "market fit check", "assess readiness", or automatically
-  from route-workflow when no active task graphs remain and no critical WIs exist.
+description: >
+  Scores whether the product is ready for its next milestone (launch, hackathon, VC pitch,
+  PMF) from project artifacts: 0-100 score, blocking gaps and a GTM-vs-features route. Use
+  for "is this ready?", "should I launch?", "market fit check".
 inputs:
   required:
     - { path: "docs/specs/vision.md", artifact: vision }

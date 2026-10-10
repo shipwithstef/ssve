@@ -6,11 +6,9 @@ handles_concerns:
   - pii-handling
   - cryptography-touch
 description: >
-  OWASP Top 10 + STRIDE threat model + supply chain audit of the technical
-  design before implementation. Use when "security review", "check for
-  vulnerabilities", "threat model", "audit security", or when `design-tech`
-  surfaces auth, payments, sensitive data, or external integrations that
-  need a dedicated security pass.
+  Security review of a technical design before implementation: OWASP Top 10, STRIDE,
+  supply chain, secrets. Use for 'security review', 'check for vulnerabilities', 'threat
+  model this design', or when design-tech touches auth, payments, PII or integrations.
 phases:
   - id: P1-SecurityScopeModeGate
     trigger: always

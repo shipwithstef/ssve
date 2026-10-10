@@ -5,15 +5,9 @@ handles_concerns:
   - exec-output-adversarial
   - chain-receipts-completeness
 description: >
-  Mandatory G5-enforcing gate. Self-review + adversarial review of the executed diff
-  before land. Delegates to `review-cross-model` for the second-model
-  invocation through `scripts/run-external-review.mjs`, with the requested
-  owner-configured topology and tuple provenance exposed by
-  `scripts/review-topology-v2.mjs`. Same-family Sol remains advisory; the
-  configured different-family external station owns independent release authority. Emits SHA-keyed receipt at
-  `.svc/receipts/<sha>/review-exec.json` and updates the consolidated git
-  note on `refs/notes/svc-receipts`. Use after `execute-changeset`
-  produces an exec-record receipt, before `land-changeset` opens the PR.
+  Required review gate on an executed diff before landing: self-review plus an independent
+  different-family review via review-cross-model, recorded as a receipt. Use after
+  execute-changeset and before land-changeset.
 phases:
   - id: P1-SelfReview
     trigger: always

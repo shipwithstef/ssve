@@ -1,8 +1,10 @@
 ---
 name: teach-project
 version: "1.0"
-description: >-
-  Teach the builder what was built and how to manage it — socratic diagnostic across technical/product/operational knowledge gaps, taught from this repo's files; updates the builder profile so downstream skills recalibrate. Mode auto generates OWNER-GUIDE.md for autorun chains. Use when: "teach me my project", "owner guide", "explain what was built". Also: "teach me about this project", "onboard me", "quiz me", "test me", "how do I manage this". Also: "check what I know", "I want to learn", "help me grow on this repo".
+description: >
+  Teach the builder what was built and how to run it, from this repo's files; quizzes
+  knowledge gaps and updates the builder profile. Auto mode writes OWNER-GUIDE.md. Use for
+  'teach me my project', 'owner guide', 'onboard me', 'quiz me'.
 phases:
   - id: P1-ModeSelectionAndInputLoad
     trigger: always

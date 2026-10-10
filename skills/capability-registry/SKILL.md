@@ -2,15 +2,9 @@
 name: capability-registry
 version: "1.0"
 description: >
-  Manage the per-builder inventory of paid and free AI/dev resources (GPT
-  Business, Claude Max, Kimi, Gemini, MiMo, Base44, Namecheap, etc.) with
-  separate sub-budgets, quotas, reset cadence, last-verified date, and
-  host mapping. Persistent JSON at `~/.svc/capabilities/registry.json`.
-  Use when: "add a resource to my registry", "list my capabilities",
-  "what AI tools do I have", "update my Claude Max seats", "register a
-  new vendor", or when any other skill needs a machine-readable view of
-  the builder's tool inventory. First WI in the WI-094 meta-orchestrator
-  chain (WI-104 → 105 → 106 → 107 → 108).
+  Manages your inventory of paid and free AI/dev resources (subscriptions, quotas, reset
+  cadence, host mapping) in ~/.svc/capabilities/registry.json. Use for "add a resource to
+  my registry", "list my capabilities", "what AI tools do I have".
 phases:
   - id: P1-RegistryPathSeedResolution
     trigger: always

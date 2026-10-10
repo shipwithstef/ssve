@@ -2,13 +2,9 @@
 name: analyze-domain
 version: "1.0"
 description: >
-  Identify and build domain expertise for the project. Reads vision to determine
-  industry, tech stack, and domain. Loads or creates stack convention packs. In
-  identify mode, produces docs/specs/domain-profile.md. In research mode, resolves
-  domain questions for other skills. Use when: "what domain is this", "domain expertise",
-  "what do I need to know about this space", "industry context", or automatically
-  after write-vision in progressive mode. Also invoked by other skills when they need
-  domain-specific knowledge beyond what training data provides.
+  Identifies the project's industry, stack and domain, loads stack convention packs, and
+  writes docs/specs/domain-profile.md; also answers domain questions for other skills. Use
+  for "what domain is this", "industry context", "domain expertise".
 phases:
   - id: P1-KnowledgeFirstCheck
     trigger: always

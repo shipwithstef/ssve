@@ -2,12 +2,9 @@
 name: dispatch-waves
 version: "1.0"
 description: >
-  Plan and coordinate parallel execution waves for multiple svc work items.
-  Use when the user says "handle these WIs in parallel", "run these work items
-  concurrently", "dispatch these WIs", "parallel WI wave", or when route-workflow
-  receives a list of multiple WI IDs that can be worked independently. Produces
-  a conflict-aware wave plan, selects transport, assigns file ownership, and
-  validates worker merge-back evidence before the parent graph advances.
+  Plan and run parallel waves for several work items with conflict-aware file ownership
+  and merge-back checks. Use for "handle these WIs in parallel", "run these work items
+  concurrently", "dispatch these WIs".
 phases:
   - id: P1-WIListAndScope
     trigger: always

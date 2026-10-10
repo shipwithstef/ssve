@@ -1,8 +1,11 @@
 ---
 name: catalog-domain-capabilities
 version: "1.0"
-description: >-
-  Build a living, queryable Domain Capability Matrix — classified inventory of what the industry does and how fast capabilities converge to table stakes; three-layer Capability→Journey→Spec artifact downstream skills query for gap analysis. Use when: "capability gap analysis", "are we missing industry-standard features", "what should our product do". Also: "industry capability matrix", "what does a complete product in this space look like". Also: "domain feature catalog".
+description: >
+  Builds a queryable Domain Capability Matrix: what the industry does, how fast features
+  become table stakes, mapped Capability to Journey to Spec for gap analysis. Use for
+  "capability gap analysis", "are we missing industry-standard features", "what should our
+  product do".
 phases:
   - id: P1-PriorCatalogLoad
     trigger: always

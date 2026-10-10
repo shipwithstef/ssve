@@ -2,13 +2,9 @@
 name: audit-session-execution
 version: "1.0"
 description: >
-  Use when auditing how a real session, WI, or pipeline run actually unfolded
-  versus how svc expected it to unfold. Triggers on "audit this session",
-  "replay this WI", "compare what happened vs what should have happened",
-  "read the audit log/transcript", "analyze the prompt and why the agent
-  drifted", "session post-mortem", "execution forensics", "why did this run
-  go wrong", "audit the prompt and logs", or when a concrete conversation/log/
-  task-graph should be turned into framework evidence before `evolve-framework`.
+  Audits how a real session, WI or pipeline run unfolded versus what svc expected, turning
+  logs and transcripts into framework evidence for evolve-framework. Use for "audit this
+  session", "replay this WI", "why did this run go wrong", "session post-mortem".
 phases:
   - id: P1-AuditTargetResolution
     trigger: always

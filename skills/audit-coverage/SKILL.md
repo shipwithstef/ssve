@@ -1,8 +1,11 @@
 ---
 name: audit-coverage
 version: "1.0"
-description: >-
-  Audit a project against the svc canonical artifact catalog — classifies each artifact CANONICAL / FOREIGN / MISSING, produces docs/specs/coverage-audit.md plus ordered next-skill recommendations. Standalone or from onboard-repo Step 2.5. Use when: "audit coverage", "what artifacts are missing". Triggers: "audit-coverage", "what svc artifacts are missing", "check brownfield alignment". Contract: log then triage, do not fix as found. Also: "check svc artifact coverage", "coverage gap audit", "are all canonical artifacts in place", "what alignment is needed"; output includes a "Coverage Gaps" section.
+description: >
+  Audits a project against the svc canonical artifact catalog, classifying each artifact
+  CANONICAL, FOREIGN or MISSING into docs/specs/coverage-audit.md with next-skill picks.
+  Use for "audit coverage", "what svc artifacts are missing", "check brownfield
+  alignment". Logs only, no fixes.
 inputs:
   required: []
   optional:

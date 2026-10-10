@@ -2,15 +2,10 @@
 disable-model-invocation: true
 name: grow-social
 version: "1.0"
-description: >-
-  Use on explicit requests to turn a builder's real work, session lesson, draft,
-  or pasted social analytics into useful organic posts and a practical 24-hour
-  attention plan; to learn the builder's writing voice from approved examples
-  and feedback; or to adapt one grounded idea to named social platforms.
-  Includes requests such as "write a post from this session", "help grow my
-  social account", "make this sound like me", and "what should I post tomorrow".
-  For stakeholder communications use comms; for funnel experiments use
-  growth-lead; for paid video scripts use ad-video-script.
+description: >
+  Turn real work, a session lesson, a draft or pasted analytics into organic posts in the
+  builder's voice, plus a 24-hour posting plan. Use for "write a post from this session",
+  "make this sound like me", "what should I post tomorrow". Not stakeholder comms (comms).
 inputs:
   required:
     - { artifact: user-request, note: "Goal, session context, draft, or analytics supplied by the user." }

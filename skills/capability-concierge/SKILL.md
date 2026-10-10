@@ -11,16 +11,10 @@ phases:
   - { id: P5-ReportAndSummaryWrite, required_for_completion: true }
   - { id: P6-SelfVerifyContinuation, required_for_completion: true }
 description: >
-  Standing meta-orchestrator that reads the builder's capability registry
-  (WI-104) and cross-project state snapshot (WI-105) and produces a ranked
-  list of recommendations through three lenses: (1) ship-the-current-project,
-  (2) idle-resource, (3) side-earning. Every recommendation cites the
-  registry entry and snapshot row it came from — no hallucinated
-  capabilities. Use when: "what should I do next", "what's my best move",
-  "route my resources", "what am I under-using", "how do I ship Example Marketplace",
-  or when any session wants a cross-resource + cross-project view of what
-  to deploy where. Here "what should I do next" means only the cited
-  three-lens ranking, not which skill and lane to run.
+  Ranks what to do next across your projects and paid/free resources (ship current
+  project, idle resources, side-earning), citing registry and snapshot rows. Use for
+  "what's my best move", "what am I under-using", "route my resources". Not for picking an
+  svc lane.
 inputs:
   required: []
   optional:

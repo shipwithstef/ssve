@@ -3,14 +3,9 @@ disable-model-invocation: true
 name: svc-advisor
 version: "1.0"
 description: >
-  Answer questions about the svc framework grounded in stored knowledge —
-  not improvised. Use when the user asks "is svc good at X?", "how does
-  svc handle Y?", "what's missing for Z scenario?", "compare svc to
-  gstack/superpowers for X", "is there a skill for X?", "what do you think
-  about this case?", or any question about framework quality, capability,
-  or coverage on a specific scenario. Always invoke this before giving an
-  opinion about the framework — your improvised answer will be weaker than
-  what the analyzed knowledge says.
+  Answer questions about the svc framework from its stored knowledge base instead of
+  improvising. Use for 'is svc good at X', 'how does svc handle Y', 'is there a skill for
+  X', 'compare svc to gstack/superpowers', or any framework capability question.
 phases:
   - id: P1-QuestionClassification
     trigger: always

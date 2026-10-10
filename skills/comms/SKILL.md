@@ -1,8 +1,10 @@
 ---
 name: comms
 version: "1.0"
-description: >-
-  Draft-only communications. Use when: "draft announcement", "stakeholder message", "communications plan", "message review". Never sends or publishes.
+description: >
+  Drafts communications (announcements, stakeholder messages, comms plans) and reviews
+  messages. Use for "draft announcement", "stakeholder message", "communications plan".
+  Draft only; never sends or publishes.
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

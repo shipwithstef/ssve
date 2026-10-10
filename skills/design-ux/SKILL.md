@@ -15,7 +15,10 @@ phases:
   - { id: P4-AccessibilityResponsiveDesign, required_for_completion: true }
   - { id: P5-TraceabilityG2Handoff, required_for_completion: true }
   - { id: P6-SelfVerifyContinuation, required_for_completion: true }
-description: Use when a DRAFT feature spec needs UX design — produces screen flows, state machines, information hierarchy, and interaction patterns before any visual design
+description: >
+  UX design for a draft feature spec: screen flows, state machines, information hierarchy,
+  interaction patterns, before visual design. Use for "design the UX", "user flow",
+  "screen flow", "how should this work for users".
 inputs:
   required:
     - { path: "docs/specs/features/<name>.md", artifact: feature-spec }

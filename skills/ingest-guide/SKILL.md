@@ -1,8 +1,10 @@
 ---
 name: ingest-guide
 version: "1.0"
-description: >-
-  Route pasted long-form content (X threads, LinkedIn posts, blog mirrors) through extraction → catalog cross-check → claim comparison → routing decision: discard, store-as-reference, blend-or-link, or promote-to-skill. Use when: "ingest this thread", "process this post", "what should we do with this guide". Also: "I pasted this guide", "process this LinkedIn article", "evaluate this X thread". Also: "what should we do with this post".
+description: >
+  Process pasted long-form content (X threads, LinkedIn posts, blog guides) against the
+  existing catalog and decide: discard, store as reference, blend, or promote to a skill.
+  Use for "ingest this thread", "process this post", "what should we do with this guide".
 phases:
   - id: P1-SourceLabelExtractionDispatch
     trigger: always

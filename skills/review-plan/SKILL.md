@@ -7,15 +7,9 @@ handles_concerns:
   - auth-surface
   - build-ship-alignment
 description: >
-  Plan-level adversarial review gate. Runs after plan-changeset produces a
-  manifest + task graph and BEFORE any execute-changeset dispatch. Two gates:
-  (1) compiled mechanical/coverage checks — free, in-session; (2) one holistic
-  adversarial review via the canonical external-review launcher with structured
-  findings and a tuple receipt. Corrections recheck only invalidated lenses;
-  disputed product/security authority routes to the owner, not a second model. Iteration loop
-  with justified accept/reject responses — same discipline on both sides.
-  Use when: plan-changeset manifest exists and is about to be promoted.
-  Blocks promotion until all findings have resolutions.
+  Adversarial review of a plan-changeset manifest and task graph before execution:
+  mechanical coverage checks plus one independent external review with receipt. Blocks
+  execute-changeset until every finding is resolved. Use when a plan is ready to promote.
 phases:
   - id: P1-MechanicalPlanValidation
     trigger: always

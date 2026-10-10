@@ -6,19 +6,11 @@ handles_concerns:
   - paid-external-api
   - dependency-audit
 description: >
-  On-demand, lightweight in-flow research when a skill or workflow encounters
-  uncertainty about an API, library, framework version, pattern, or domain concept.
-  Discovers via GitHub + package registries FIRST, then vendor docs, then WebSearch
-  last; tiers source credibility and triangulates load-bearing claims across ≥2
-  independent sources; date-bounds volatile facts; reads/writes per-domain source
-  heuristics; hands off multi-source / high-stakes / contested questions to the
-  external `deep-research` plugin. Logs findings to docs/specs/research-log.md.
-  Use when: the user explicitly asks to "research", "look up", "find out",
-  "how does X work", or "what's the best practice for" a named scope; when
-  researchDecision(question) from scripts/lib/research-decision.mjs returns
-  external_research_required; or for Analysis Mode extraction of a named
-  source. Not for ordinary coding/design uncertainty, local unknowns, or a
-  new dependency/API choice. Also works standalone.
+  In-flow research on an API, library version, pattern or domain fact: registries and
+  vendor docs first, dated and cross-checked, logged to the research log; big questions go
+  to deep-research. Use when the user asks to research, look up or find out a named scope,
+  or researchDecision() returns external_research_required. Not for ordinary coding
+  uncertainty or local unknowns.
 phases:
   - id: P1-InvocationReceiptModeFrame
     trigger: always

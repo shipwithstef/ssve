@@ -2,11 +2,10 @@
 name: landing-page
 version: "1.0"
 description: >
-  Marketing-page design handoff for home/feature/pricing pages.
-  Chains marketing context, captured references, copy and optional assets into
-  an implementation-ready brief; benchmark-landing gates the rendered result after execution. Use when "build a landing", "ship
-  the home page", "redesign hero", "marketing page", "fix the landing", or any
-  WI tagged `landing` / `marketing-page`. Runs after design-ui and before track-visuals/design-tech for marketing-class pages.
+  Build or redesign a marketing page (home, feature, pricing) from marketing context,
+  references and copy into an implementation-ready brief, gated on the rendered result.
+  Use when: build a landing, ship the home page, redesign hero, marketing page, fix the
+  landing.
 inputs:
   required:
     - { path: "docs/specs/marketing-context.md", artifact: marketing-context }

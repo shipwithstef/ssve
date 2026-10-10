@@ -1,8 +1,9 @@
 ---
 name: privacy-dpo
 version: "1.0"
-description: >-
-  Privacy review. Use when: "privacy review", "personal data", "DPIA", "retention policy". Not general security or legal advice.
+description: >
+  Privacy review of personal-data handling. Use when: privacy review, personal data, DPIA,
+  retention policy. Not general security or legal advice.
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

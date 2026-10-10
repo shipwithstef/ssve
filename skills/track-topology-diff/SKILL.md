@@ -2,14 +2,9 @@
 name: track-topology-diff
 version: "1.0"
 description: >
-  Post-apply structural-state snapshot + diff. Captures `terraform state list`
-  / `kubectl get all -A -o json` after each apply and structurally diffs
-  against the prior baseline. Outputs a snapshot JSON + a diff markdown.
-  Replaces track-visuals for infra lanes (track-visuals does image-diffing,
-  this does JSON-graph diffing — different domains). Use when: any infra-*
-  lane reaches phase 15 (after verify-promotion); user mentions "topology
-  drift", "state diff", "what changed", "what's the cluster state". Source:
-  proposals/done/2026-04-30-infra-project-support.md § 6.3.
+  Snapshot infra state after an apply (terraform state, kubectl resources) and diff
+  against the prior baseline, flagging drift not in IaC. Use for 'topology drift', 'state
+  diff', 'what changed in the cluster', or after verify-promotion in infra lanes.
 inputs:
   required: []
   optional:

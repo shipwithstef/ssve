@@ -7,12 +7,10 @@ handles_concerns:
   - auth-surface
   - security-cross-family-review
 description: >
-  Adversarial code review using the canonical deterministic external-review launcher.
-  Uses task card + decided solution + acceptance + diff as an entry point.
-  The reviewer explores connected repository code read-only and returns all
-  proof-bearing findings in one pass; at most two rounds per feature WI. Use when "cross-model review", "second opinion", "codex
-  review", "adversarial review", or when `review-gate` leaves residual risk
-  on changes involving new data models or integrations.
+  Adversarial review by a second model through the canonical external-review launcher:
+  task card, decided solution, acceptance results and diff in, proof-bearing findings out,
+  at most two rounds per feature. Use when: cross-model review, second opinion, codex
+  review, adversarial review.
 phases:
   - id: P1-ReviewPackagePreparation
     trigger: always

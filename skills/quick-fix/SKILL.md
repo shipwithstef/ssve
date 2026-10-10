@@ -2,11 +2,9 @@
 name: quick-fix
 version: "1.0"
 description: >
-  DEPRECATED (retired as a lane) — quick-fix is retired; do not route new
-  requests here. Speed for small/trivial changes now comes from conditional
-  stage activation (`scripts/stage-activation.mjs`) inside the normal chain
-  via route-workflow, not a separate fast lane. See the skill body for the
-  retirement notice and pointer.
+  DEPRECATED (retired as a lane). Do not route here; small changes go through
+  route-workflow, which skips inactive stages automatically.
+disable-model-invocation: true
 phases:
   - id: P1-QuickFixEligibilityGate
     trigger: always

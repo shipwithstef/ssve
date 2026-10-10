@@ -2,11 +2,10 @@
 name: build-personas
 version: "1.0"
 description: >
-  Build user personas from vision, specs, domain, and competitor data. Seven modes:
-  build/refresh, audit, add, expand, interview, discover gaps, tiered auto-discovery.
-  Use when: "build personas", "who are our users", "persona check", "add persona",
-  "persona gaps", "suggest personas", or before any user-facing skill when
-  docs/specs/personas/ is empty.
+  Builds and maintains user personas in docs/specs/personas/ from vision, specs, domain
+  and competitor data; modes for build, audit, add, expand, interview and gap discovery.
+  Use for "build personas", "who are our users", "persona gaps", or when personas are
+  empty.
 phases:
   - id: P1-ModeContextGate
     trigger: always

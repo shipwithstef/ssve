@@ -2,10 +2,9 @@
 name: evolve-framework
 version: "1.0"
 description: >
-  Use when finding improvement opportunities in the svc framework itself.
-  Triggers on "evolve the framework", "improve svc", "what should we fix next",
-  "find gaps", "framework audit", "meta-improvement", or when wanting to make
-  the pipeline better rather than using it on a project.
+  Find improvement opportunities in the svc framework itself and write gap proposals. Use
+  for "evolve the framework", "what should we fix next", "find gaps", "framework audit".
+  To implement fixes use improve-framework.
 phases:
   - id: P1-FrameworkStatePreload
     trigger: always

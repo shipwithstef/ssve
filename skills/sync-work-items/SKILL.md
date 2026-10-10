@@ -2,9 +2,9 @@
 name: sync-work-items
 version: "1.0"
 description: >
-  Manage optional, explicit GitHub Issue tracking for repo-canonical work items.
-  Use after onboard-repo or when a user chooses to configure, pull, publish,
-  preview, list, or close one issue. Local-only is the offline default; no bulk sync.
+  Optional GitHub Issue tracking for repo work items: configure, pull, preview, publish,
+  list or close one issue at a time. Use after onboard-repo or when the user asks to sync
+  a work item with GitHub. Local-only by default; no bulk sync.
 phases:
   - id: P1-RepoWorkItemRead
     trigger: always

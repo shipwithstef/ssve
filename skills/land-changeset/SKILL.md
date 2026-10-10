@@ -1,7 +1,10 @@
 ---
 name: land-changeset
 version: "1.0"
-description: Use when an executed change set has been validated (tests, E2E, review all pass in the worktree) and is ready to land on main — validates manifest coverage, pushes branch, opens PR, merges via squash, cleans up worktree
+description: >
+  Land a validated change set on main: check manifest coverage and receipts, push the
+  branch, open the PR, squash-merge, clean up the worktree. Use when execution and review
+  have passed and the change is ready to land.
 phases:
   - id: P1-WorktreeManifestContext
     trigger: always

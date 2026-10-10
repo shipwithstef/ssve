@@ -1,8 +1,10 @@
 ---
 name: recall-stack-knowledge
 version: "1.0"
-description: >-
-  Knowledge Spine recall gate — reads stack-profile.md and the calling skill's requires_topics[], injects the minimal knowledge slice (domains, specs, learnings, decisions), logs to .svc/knowledge-recall.jsonl; a 0-hit on a declared topic is a knowledge-gap analysis signal, not an automatic research spawn. Use when: "what do I need to know" before touching a known stack/provider.
+description: >
+  Load the minimal stack-specific knowledge slice (domains, specs, learnings, decisions)
+  for a known stack or provider before work starts, and flag gaps. Use when: what do I
+  need to know before touching this stack.
 inputs:
   required: []
   optional:

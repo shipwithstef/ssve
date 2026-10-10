@@ -332,10 +332,10 @@ function assertRulesRegistry(registry) {
     // WI-361: auto_inject classification — identity-pinned (G2 PLAN-006)
     const AUTO_INJECT = new Set(["always", "signal", "lazy"]);
     // WI-393: long-output-to-file demoted always→signal (injects on output-heavy
-    // skill signals instead of riding every session). Allowlist now 5.
+    // skill signals instead of riding every session). 2026-10 audit: tool-selection
+    // demoted always→lazy (host harness carries the same guidance). Allowlist now 4.
     const ALWAYS_ALLOWLIST = new Set([
       "rules/common/question-fatigue.md",
-      "rules/tool-selection.md",
       "rules/verify-state-before-context.md",
       "rules/learning-preload.md",
       "rules/common/research-before-build.md",
@@ -376,7 +376,6 @@ function assertRulesRegistry(registry) {
   {
     const wantAlways = [
       "rules/common/question-fatigue.md",
-      "rules/tool-selection.md",
       "rules/verify-state-before-context.md",
       "rules/learning-preload.md",
       "rules/common/research-before-build.md",

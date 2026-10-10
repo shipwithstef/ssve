@@ -32,9 +32,9 @@ check "injector exists + node syntax" node --check "$INJ"
 check "every entry has auto_inject" python3 -c "
 import json;m=json.load(open('skills-manifest.json'))
 assert all(e.get('auto_inject') in ('always','signal','lazy') for e in m['rulesRegistry']['entries'])"
-check "exactly 5 always entries (WI-393: long-output demoted always->signal)" python3 -c "
+check "exactly 4 always entries (WI-393: long-output demoted always->signal; 2026-10 audit: tool-selection always->lazy)" python3 -c "
 import json;m=json.load(open('skills-manifest.json'))
-assert sum(e['auto_inject']=='always' for e in m['rulesRegistry']['entries'])==5"
+assert sum(e['auto_inject']=='always' for e in m['rulesRegistry']['entries'])==4"
 check "every signal entry has >=1 signal source" python3 -c "
 import json;m=json.load(open('skills-manifest.json'))
 for e in m['rulesRegistry']['entries']:

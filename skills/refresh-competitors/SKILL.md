@@ -2,12 +2,9 @@
 name: refresh-competitors
 version: "1.0"
 description: >
-  Refresh the competitive knowledge base by diffing tracked competitors against
-  their live public state. Triggers on scheduled weekly routine or manual
-  invocation. NOT for adding new competitors — use analyze-competitors for that.
-  Use when the user says "refresh competitors", "update competitive landscape",
-  "what changed this week", "competitor watch", "run competitor diff", or when
-  the scheduled weekly routine fires.
+  Diff tracked competitors against their live public state and write a changelog and
+  weekly digest. Use when: refresh competitors, what changed this week, competitor watch,
+  update competitive landscape. Not for adding competitors; use analyze-competitors.
 phases:
   - id: P1-TrackedSetEnumeration
     trigger: always

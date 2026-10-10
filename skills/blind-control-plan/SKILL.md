@@ -4,13 +4,10 @@ version: "1.0"
 self_verify: true
 human_checkpoint: false
 description: >
-  Canonical Two-Box Planning entry for current substantive work (skill id remains
-  blind-control-plan). Use between plan-changeset and review-plan when live-recomputed
-  staged eligibility is not accepted. Independent Open and Contract boxes, Contract-only
-  exactly two scouts, distinct original and revised Contract, grounded assessor, complete
-  conversion before review-plan, and a separate seal after. Triggers: two-box, two-box
-  planning, blind-control-plan, control-plan v2, runTwoBox. Legacy v1 F>=B floor helpers
-  are historical inspection only and never grant current execution.
+  Two-Box planning: independent Open and Contract boxes, two Contract scouts and a
+  grounded assessor, run between plan-changeset and review-plan. Use for "two-box", "two-
+  box planning", "blind-control-plan", "control-plan v2". Legacy v1 floor helpers are
+  inspection only.
 inputs:
   required:
     - original-requirements (owner intent and constraints)

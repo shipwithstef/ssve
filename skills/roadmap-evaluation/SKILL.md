@@ -1,8 +1,10 @@
 ---
 name: roadmap-evaluation
 version: "1.0"
-description: >-
-  Synthesize project-state, work items, vision, and builder profile into a prioritized milestone roadmap with cost estimates and timeline-to-first-paying-customer. Use when: "what should I build next", "show me the roadmap", "prioritize my backlog", "how long until revenue". Also: "what's next", "where am I", "can I afford this", "timeline to first customer", "evaluate my roadmap". Also: "what's the plan", "budget check". Here "what should I build next" and "what's next" mean that costed milestone sequence only, not the open backlog list.
+description: >
+  Turn project state, work items, vision and builder profile into a prioritized, costed
+  milestone roadmap with time to first paying customer. Use for 'show me the roadmap',
+  'prioritize my backlog', 'how long until revenue', 'can I afford this'.
 inputs:
   required: []
   optional:

@@ -1,8 +1,10 @@
 ---
 name: monetization-architecture
 version: "1.0"
-description: >-
-  Decide which features to hard-paywall, usage-limit, or keep free — produces a Feature-Tier Gating Matrix plus an Enforcement Audit comparing stated pricing policy against actual code guards. Use when: "free vs paid", "paywall strategy", "feature gating", "tier enforcement", "monetization architecture". Also: "premium gating", "pricing enforcement audit", "what goes in which tier". Also: "which features to gate", "what should be free vs paid", "free vs paid features", "feature gating decisions".
+description: >
+  Decide which features are free, usage-limited or paid, and audit whether code guards
+  match the stated pricing. Use when: free vs paid, paywall strategy, feature gating, tier
+  enforcement, what goes in which tier.
 inputs:
   required:
     - { path: "docs/specs/vision.md", artifact: vision }
