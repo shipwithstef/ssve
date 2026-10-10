@@ -88,7 +88,7 @@ export const ARMS = {
 export function taskConfig(task) {
   const f = path.join(TASKS, task, "task.json");
   const c = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : {};
-  return { max_turns: c.max_turns ?? 40, timeout_ms: (c.timeout_min ?? 15) * 60000, judge_model: c.judge_model ?? null, pillar: c.pillar ?? null, variants: c.variants ?? null, steps: c.steps ?? (c.instruction ? [{ instruction: c.instruction, svc: c.svc ?? [] }] : null), copy_spec: c.copy_spec ?? true };
+  return { max_turns: c.max_turns ?? 40, timeout_ms: (c.timeout_min ?? 15) * 60000, judge_model: c.judge_model ?? null, pillar: c.pillar ?? null, variants: c.variants ?? null, steps: c.steps ?? (c.instruction ? [{ instruction: c.instruction, svc: c.svc ?? [] }] : null), copy_spec: c.copy_spec ?? true, tools: c.tools ?? undefined, test_timeout_ms: (c.test_timeout_s ?? 30) * 1000 };
 }
 
 // Pillar arms: `bare` gets the task's instruction only; `svc` gets the same instruction
@@ -157,7 +157,7 @@ export function failureReasons(out) {
 
 export function grade(dir, task) {
   fs.copyFileSync(path.join(TASKS, task, "hidden.test.mjs"), path.join(dir, "__hidden.test.mjs"));
-  const r = spawnSync(process.execPath, ["--test", "--test-reporter=tap", "--test-timeout=30000", "__hidden.test.mjs"], { cwd: dir, encoding: "utf8", timeout: 180000, env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry() } });
+  const r = spawnSync(process.execPath, ["--test", "--test-reporter=tap", `--test-timeout=${taskConfig(task).test_timeout_ms}`, "__hidden.test.mjs"], { cwd: dir, encoding: "utf8", timeout: Math.max(180000, taskConfig(task).test_timeout_ms * 8), env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry() } });
   const out = `${r.stdout}\n${r.stderr}`;
   const t = parseTap(out) || { pass: 0, fail: 1 };
   const total = t.pass + t.fail;
@@ -425,7 +425,7 @@ async function main(argv) {
     const prompts = armPrompts(job.task, job.arm);
     const sha = crypto.createHash("sha256").update(isPillarArm(job.arm) ? prompts.join("\n\0\n") : prompts[0]).digest("hex").slice(0, 12);
     for (const prompt of prompts) {
-      const step = await runAgent(dir, prompt, model, cfg.timeout_ms, undefined, cfg.max_turns, effort);
+      const step = await runAgent(dir, prompt, model, cfg.timeout_ms, cfg.tools, cfg.max_turns, effort);
       replies.push(String(step.text || "").slice(-400));
       if (step.error) { agent = { ...agent, error: `step ${agent.steps + 1}: ${step.error}` }; break; }
       agent = { ...step, cost_usd: (agent.cost_usd || 0) + (step.cost_usd || 0), turns: (agent.turns || 0) + (step.turns || 0), duration_ms: (agent.duration_ms || 0) + (step.duration_ms || 0), steps: agent.steps + 1 };

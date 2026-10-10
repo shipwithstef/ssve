@@ -158,10 +158,12 @@
       "kind": "skill",
       "source": "skills/blind-control-plan/SKILL.md",
       "mechanism": "decision",
-      "status": "structural-only",
-      "evidence": [],
-      "next_eval": "Harder brownfield task where bare builds fail; then authority-grade transports if it shows value",
-      "note": "First live Two-Box run on Claude Code (harness-agnostic runner, isolation probe passed, 6 calls, $0.47 on Sonnet). Measurement on waitlist-feature in progress."
+      "status": "ceiling",
+      "evidence": [
+        "test-framework/outcome-evals/results/2026-10-10-two-box-waitlist.json"
+      ],
+      "next_eval": "The founder RPG benchmark (rpg-founder), where bare builds are not expected to succeed on every layer",
+      "note": "First measurement, on Claude Code via the harness-agnostic runner (waitlist feature, 4 builds per arm, Sonnet planner, Haiku builder): bare, open, contract and Two-Box all solved every build; Two-Box planning cost $0.48 vs $0.013 for a bare build. One of 4 Two-Box runs stopped on an unresolved conflict that named a real unspecified concurrency question, value the graders do not score."
     },
     {
       "id": "skill:build-personas",

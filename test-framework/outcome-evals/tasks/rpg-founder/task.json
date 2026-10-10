@@ -1,0 +1,13 @@
+{
+  "max_turns": 120,
+  "timeout_min": 75,
+  "judge_model": "opus",
+  "tools": "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(npm:*),Bash(npx:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)",
+  "two_box": {
+    "scope": [
+      "README.md"
+    ],
+    "contract_context": []
+  },
+  "test_timeout_s": 120
+}
