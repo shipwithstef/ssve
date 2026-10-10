@@ -113,7 +113,7 @@ test("validation names every problem", () => {
   const errs = validateModel({ schema: SCHEMA, question: "q", variables: { x: { dist: "triangular", low: 2, mode: 1, high: 3 }, y: { dist: "weird" } },
     options: [{ id: "a", value: "x + nope" }], correlations: [{ a: "x", b: "zz", rho: 2 }] });
   const text = errs.join("\n");
-  for (const want of ["low <= mode <= high", "dist must be one of", "at least 2 options", "both must be declared", "rho must be in"]) assert.match(text, new RegExp(want.replace(/[()]/g, "\\$&")));
+  for (const want of ["low <= mode <= high", "dist must be one of", "at least 2 options", "both must be declared", "rho must be in"]) assert.ok(text.includes(want), `missing: ${want}`);
   assert.match(validateModel({ ...coin(), options: [{ id: "a", value: "x + nope" }, { id: "b", value: 1 }] }).join("\n"), /unknown identifier 'nope'/);
 });
 
