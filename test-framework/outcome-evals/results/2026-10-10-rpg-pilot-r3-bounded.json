@@ -1,0 +1,342 @@
+{
+  "ran_at": "2026-10-10T23:41:38.856Z",
+  "model": "opus",
+  "reps": 3,
+  "tasks": [
+    "rpg-founder"
+  ],
+  "arms": [
+    "bounded"
+  ],
+  "summary": [
+    {
+      "arm": "bounded",
+      "runs": 3,
+      "errors": 0,
+      "solved": "3/3",
+      "solve_rate": 1,
+      "mean_hidden_score": 1,
+      "mean_cost_usd": 3.7429,
+      "mean_turns": 94,
+      "judged": 3,
+      "mean_judge_total": 23.33
+    }
+  ],
+  "rows": [
+    {
+      "task": "rpg-founder",
+      "arm": "bounded",
+      "rep": 0,
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "39524e60486c",
+      "started_at": "2026-10-10T23:24:20.317Z",
+      "wall_ms": 905887,
+      "ok": true,
+      "cost_usd": 4.390858199999999,
+      "turns": 88,
+      "duration_ms": 904521,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "er. Proper accounts are the first job in the security plan.\n- **Saves can lose about 2 seconds of progress** if the server crashes, because they're written every 2 seconds.\n- **One server holds a few hundred players at most.** Every player is sent the whole world several times a second.\n\n`npm run check` reruns the main checks. Running the server leaves its save files in `data/`, which git ignores."
+      ],
+      "hidden_pass": 6,
+      "hidden_total": 6,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 24,
+      "judge_scores": {
+        "engine_choice": 1,
+        "netcode": 1,
+        "scale_plan": 1,
+        "original_world": 1,
+        "core_loop": 1,
+        "cooperation": 1,
+        "progression": 1,
+        "level_design": 1,
+        "economy_model": 1,
+        "economy_safe": 1,
+        "fair_monetization": 1,
+        "lootbox_compliance": 1,
+        "hosting_choice": 1,
+        "cost_estimate": 1,
+        "delivery_estimate": 0,
+        "ip_memo": 1,
+        "privacy": 1,
+        "auth_plan": 1,
+        "input_validation": 1,
+        "environments": 0,
+        "feature_flags": 0,
+        "tests_meaningful": 1,
+        "name_and_voice": 0,
+        "launch_plan": 1,
+        "launch_posts": 0,
+        "readable_ui": 1,
+        "art_direction": 0,
+        "not_generic": 1,
+        "just_enough": 1,
+        "production_path": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest layer is the engineering and planning. src/rules.js is a pure rules module where the server decides every outcome and every action is checked against availableActions. All 40 node tests pass, the seeded simulation passes its check, and the cost, scaling, legal and security documents give specific numbers, named jurisdictions, scaling triggers and a phased checklist that marks what is prototype-only. The weakest layer is presentation and operations: the art is flat tiles and coloured circles, no brand voice is ever stated, the two launch texts are not tied to named channels, there are no feature flags or development/production settings, and the plan to launch gives months and a 5-person team but does not list the major risks. Yes, I would fund the next step (WebSockets, Postgres, real accounts and an art pass), on condition that it starts with an art direction and a risk register.",
+      "judge_cost_usd": 0.6621962,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T23-24-20-295Z/rpg-founder-bounded-0",
+      "probes": {
+        "size": {
+          "source_files": 9,
+          "test_files": 2,
+          "source_loc": 776,
+          "test_loc": 652,
+          "comment_ratio": 0.043,
+          "dependencies": 0,
+          "duplicated_line_share": 0.004
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 4,
+          "console_in_source": 12,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 43,
+          "assertions": 275,
+          "assertions_per_case": 6.4,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.933,
+          "killed": 14,
+          "mutants": 15,
+          "baseline_tests": 43,
+          "survivors": [
+            "src/tuning.js:5: attackCooldownMs: 601,"
+          ]
+        },
+        "history": {
+          "commits": 7,
+          "first_commit_min": 4.8,
+          "commits_per_10_min": 4.7
+        }
+      }
+    },
+    {
+      "task": "rpg-founder",
+      "arm": "bounded",
+      "rep": 1,
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "39524e60486c",
+      "started_at": "2026-10-10T23:24:20.438Z",
+      "wall_ms": 785770,
+      "ok": true,
+      "cost_usd": 3.6565306000000004,
+      "turns": 105,
+      "duration_ms": 784460,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "to the browser, so clearing it loses the character.\n- The character token travels in the URL, so it can end up in logs.\n- There is no rate limiting and no HTTPS yet.\n- Live updates are fine for playtests of up to roughly 50 players. Beyond that the server needs WebSocket updates limited to what each player can see.\n\nSeparately, run a trademark search on the name \"Embervale\" before you announce it."
+      ],
+      "hidden_pass": 6,
+      "hidden_total": 6,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 23,
+      "judge_scores": {
+        "engine_choice": 1,
+        "netcode": 1,
+        "scale_plan": 1,
+        "original_world": 1,
+        "core_loop": 1,
+        "cooperation": 0,
+        "progression": 1,
+        "level_design": 1,
+        "economy_model": 1,
+        "economy_safe": 1,
+        "fair_monetization": 1,
+        "lootbox_compliance": 1,
+        "hosting_choice": 1,
+        "cost_estimate": 1,
+        "delivery_estimate": 0,
+        "ip_memo": 1,
+        "privacy": 1,
+        "auth_plan": 1,
+        "input_validation": 1,
+        "environments": 0,
+        "feature_flags": 0,
+        "tests_meaningful": 1,
+        "name_and_voice": 0,
+        "launch_plan": 1,
+        "launch_posts": 0,
+        "readable_ui": 1,
+        "art_direction": 0,
+        "not_generic": 1,
+        "just_enough": 1,
+        "production_path": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest layer is the server-authoritative rules core: every action is whitelisted and re-checked against available(), a mint/sink ledger keeps gold balanced under random play and bot swarms, all 26 tests pass under node --test, and the balance check scores 6/6. The weakest layers are cooperation and launch polish: rewards go only to whoever lands the killing blow (shared credit is still a 'next rule'), and the map is flat tiles with coloured dots. There are also no ready-to-post announcement texts, no feature flags, no stated difference between development and production, and the roadmap lists no major risks. I would fund the next step, a 3-month vertical slice, on the condition that it ships shared group credit and real art first, because the engineering and the documents are sound but the game does not yet show why playing with friends is better.",
+      "judge_cost_usd": 0.7319422,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T23-24-20-295Z/rpg-founder-bounded-1",
+      "probes": {
+        "size": {
+          "source_files": 10,
+          "test_files": 2,
+          "source_loc": 679,
+          "test_loc": 425,
+          "comment_ratio": 0.046,
+          "dependencies": 0,
+          "duplicated_line_share": 0.009
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 10,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 26,
+          "assertions": 142,
+          "assertions_per_case": 5.46,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 1,
+          "killed": 15,
+          "mutants": 15,
+          "baseline_tests": 26,
+          "survivors": []
+        },
+        "history": {
+          "commits": 9,
+          "first_commit_min": 3.8,
+          "commits_per_10_min": 7
+        }
+      }
+    },
+    {
+      "task": "rpg-founder",
+      "arm": "bounded",
+      "rep": 2,
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "39524e60486c",
+      "started_at": "2026-10-10T23:24:20.454Z",
+      "wall_ms": 774726,
+      "ok": true,
+      "cost_usd": 3.1812354,
+      "turns": 89,
+      "duration_ms": 773230,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "s, network delay, a wrong server clock, and 8 simulated play sessions.\n- In a check that plants small bugs in the code, the tests catch 80% of them, above the 60% target. The rest are tiny changes to fixed numbers.\n\nThree things aren't in this version, by design: real accounts (each browser tab is an anonymous character for now), chat, and payments. The documents say what each needs before launch."
+      ],
+      "hidden_pass": 6,
+      "hidden_total": 6,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 23,
+      "judge_scores": {
+        "engine_choice": 1,
+        "netcode": 1,
+        "scale_plan": 1,
+        "original_world": 1,
+        "core_loop": 1,
+        "cooperation": 1,
+        "progression": 1,
+        "level_design": 1,
+        "economy_model": 1,
+        "economy_safe": 1,
+        "fair_monetization": 1,
+        "lootbox_compliance": 1,
+        "hosting_choice": 1,
+        "cost_estimate": 1,
+        "delivery_estimate": 0,
+        "ip_memo": 1,
+        "privacy": 0,
+        "auth_plan": 1,
+        "input_validation": 1,
+        "environments": 0,
+        "feature_flags": 0,
+        "tests_meaningful": 1,
+        "name_and_voice": 0,
+        "launch_plan": 1,
+        "launch_posts": 0,
+        "readable_ui": 1,
+        "art_direction": 0,
+        "not_generic": 1,
+        "just_enough": 1,
+        "production_path": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest layer is the engineering of the rules and server: the server alone decides every move, fight and sale; every gold coin goes through a ledger whose balance the bots check; a vendor guard stops players selling pelts a quest still needs; the 32 tests pass under node --test; and a scripted bot reached level 3 in about 370 actions while bot runs kept the economy balanced. The weakest layer is launch and operations: there are no ready-to-post announcement texts, no stated brand voice, no feature-flag mechanism, no split between development and production settings, no team size or risk list in the roadmap, and the privacy section never says where player data is stored. The art is still coloured squares and dots. Yes, I would fund the next step, a vertical slice: the docs make sound, specific decisions on technology, money, IP and security, and the gaps are cheap to fill before that phase.",
+      "judge_cost_usd": 0.5691518000000001,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T23-24-20-295Z/rpg-founder-bounded-2",
+      "probes": {
+        "size": {
+          "source_files": 13,
+          "test_files": 2,
+          "source_loc": 703,
+          "test_loc": 440,
+          "comment_ratio": 0.05,
+          "dependencies": 0,
+          "duplicated_line_share": 0.004
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 7,
+          "console_in_source": 9,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 32,
+          "assertions": 191,
+          "assertions_per_case": 5.97,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.8,
+          "killed": 12,
+          "mutants": 15,
+          "baseline_tests": 32,
+          "survivors": [
+            "src/rules.js:8: export const ONLINE_MS = 30001;",
+            "server.js:19: export function loadWorld(file, seed = 2) {",
+            "server.js:69: export function createGameServer({ dataFile = path.join(ROOT, \"data\", \"world.json\"), tickMs = 1001, "
+          ]
+        },
+        "history": {
+          "commits": 5,
+          "first_commit_min": 4,
+          "commits_per_10_min": 4
+        }
+      }
+    }
+  ]
+}
