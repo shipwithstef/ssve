@@ -1392,8 +1392,8 @@
     {
       "skill": "quick-fix",
       "path": "skills/quick-fix/SKILL.md",
-      "content_hash": "ab39c3ad9c0460a9b9d22b853b8512a9295e03598b3093e242ee41099a9e2c86",
-      "description": "Retired. Do not route here; small changes go through route-workflow, which skips inactive stages automatically.",
+      "content_hash": "8326c9f1e341797eb75d2786bd015fe7c8c376789db84bfc02612768bad0e55e",
+      "description": "DEPRECATED (retired as a lane). Do not route here; small changes go through route-workflow, which skips inactive stages automatically.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],

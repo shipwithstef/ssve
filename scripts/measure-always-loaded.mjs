@@ -88,12 +88,14 @@ export function alwaysRules(root) {
 /** Fixture repos are created fresh so marker-gated rules see a known repo shape. */
 function makeFixture(base, name, files) {
   const dir = path.join(base, name);
-  fs.mkdirSync(path.join(dir, ".svc"), { recursive: true });
   for (const [rel, body] of Object.entries(files || {})) {
     fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
-    fs.writeFileSync(path.join(dir, rel), body);
+    fs.writeFileSync(path.join(dir, rel), body); // fixture source files only
   }
+  fs.mkdirSync(dir, { recursive: true });
   spawnSync("git", ["init", "-q", dir]);
+  // The injector only acts inside an svc-governed repo (an empty marker dir).
+  fs.mkdirSync(path.join(dir, ".svc"), { recursive: true });
   return dir;
 }
 
@@ -113,7 +115,7 @@ export function ruleInjection(root, corpusFile) {
         session_id: `always-loaded-${process.pid}-${i++}`, cwd };
       const r = spawnSync(process.execPath, [path.join(root, "hooks/svc-rule-injector.mjs")], {
         input: JSON.stringify(payload), encoding: "utf8", cwd, timeout: 15000,
-        env: { PATH: process.env.PATH, HOME: home, XDG_RUNTIME_DIR: home, SVC_HOST: "claude", TMPDIR: tmp },
+        env: { PATH: process.env.PATH, HOME: home, SVC_HOST: "claude", TMPDIR: tmp },
       });
       let ctx = "";
       try { ctx = r.stdout.trim() ? JSON.parse(r.stdout).hookSpecificOutput.additionalContext || "" : ""; } catch { ctx = ""; }
