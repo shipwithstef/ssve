@@ -39,15 +39,15 @@
     }
   },
   "method": {
-    "$comment": "How execution verifies itself, chosen by evidence (test-framework/outcome-evals/README.md, 66 Haiku 5.5 runs on 2026-10-10). Re-measure with scripts/outcome-eval.mjs when models or prompts change.",
+    "$comment": "How execution verifies itself, chosen by evidence (test-framework/outcome-evals/README.md, 66 Haiku 5.5 runs on 2026-10-10). Re-measure with scripts/outcome-eval.mjs when models or prompts change. Variants change only through `node scripts/outcome-eval.mjs promote`: an established judged gain, a higher solve rate, or the same solve rate at lower cost.",
     "spec_complete": {
-      "use": "lean",
-      "why": "Run every test and fix until green. Same correctness as the written blueprint at about a third of its cost; 1.18x a plain run on matched tasks (0.93-1.56x per task)."
+      "use": "plain",
+      "why": "Implement directly; the repository's own tests and CI verify. Measured on 9 spec-complete tasks (Haiku 5.5): plain, lean (verify loop) and the written blueprint all solved 100%; lean cost 1.18x and the blueprint 3.34x for no gain, so `outcome-eval.mjs promote` keeps plain. Re-measure when models or prompts change."
     },
     "underspecified": {
       "use": "production",
       "why": "One-line product request: spec with roles and 10+ journeys, layered build, external services behind interfaces, journey tests, browser verification, README. Measured on a one-sentence paid booking app (Haiku 5.5, blind Opus judge, 7 builds per arm): 14.71/16 vs 7.14/16 for a plain run, at about $0.79 vs $0.09 per build."
     },
-    "never": "Written rules lists and one-test-per-rule ceremony on spec-complete work: 3.3x cost on matched tasks, no measured gain."
+    "never": "A method that costs more without a measured gain: the written rules list (3.3x) and the extra verify-loop instruction (1.18x) on spec-complete work."
   }
 }

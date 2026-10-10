@@ -179,6 +179,29 @@ export function compareSamples(a, b, iterations = 10000) {
   return { diff: +diff.toFixed(2), ci95: [+boots[Math.floor(iterations * 0.025)].toFixed(2), +boots[Math.floor(iterations * 0.975)].toFixed(2)], p: +((extreme + 1) / (iterations + 1)).toFixed(4), n: [a.length, b.length] };
 }
 
+// Promotion rule for a prompt or method variant (candidate) over the current one
+// (baseline), from recorded rows only. Judged tasks: promote when the judge-score gain is
+// established (interval above zero and p < 0.05). Graded tasks: promote when the solve
+// rate is higher, or equal at lower mean cost. Otherwise keep the baseline: a variant
+// that costs more without a measured gain never wins.
+export function promotionDecision(rows, candidate, baseline) {
+  const of = (arm) => rows.filter((r) => r.arm === arm && !r.error);
+  const c = of(candidate), b = of(baseline);
+  if (!c.length || !b.length) return { promote: false, reason: "no runs for one of the arms" };
+  const judged = (xs) => xs.filter((r) => typeof r.judge_total === "number").map((r) => r.judge_total);
+  if (judged(c).length && judged(b).length) {
+    const stats = compareSamples(judged(c), judged(b));
+    const established = stats.ci95[0] > 0 && stats.p < 0.05;
+    return { promote: established, reason: established ? "judge-score gain established" : "no established judge-score gain", stats };
+  }
+  const rate = (xs) => xs.filter((r) => r.solved).length / xs.length;
+  const cost = (xs) => avg(xs.map((r) => r.cost_usd || 0));
+  const [rc, rb, cc, cb] = [rate(c), rate(b), cost(c), cost(b)];
+  if (rc > rb) return { promote: true, reason: `solves more (${rc.toFixed(2)} vs ${rb.toFixed(2)})` };
+  if (rc === rb && cc < cb) return { promote: true, reason: `same solve rate at lower cost ($${cc.toFixed(4)} vs $${cb.toFixed(4)})` };
+  return { promote: false, reason: rc < rb ? "solves less" : `same solve rate at equal or higher cost ($${cc.toFixed(4)} vs $${cb.toFixed(4)})` };
+}
+
 // The judge answers with one JSON object; take the last {...} block in its reply.
 export function parseJudge(text) {
   const m = String(text || "").match(/\{[\s\S]*\}/);
@@ -265,6 +288,15 @@ async function main(argv) {
     }
     data.summary = summarize(data.rows);
     fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
+    return 0;
+  }
+  if (argv[0] === "promote") {
+    // node scripts/outcome-eval.mjs promote --candidate production --baseline plain <results.json...>
+    const rest = argv.slice(1);
+    const files = rest.filter((x, i) => !x.startsWith("--") && !["--candidate", "--baseline"].includes(rest[i - 1]));
+    const rows = files.flatMap((f) => JSON.parse(fs.readFileSync(f, "utf8")).rows);
+    const out = promotionDecision(rows, opt("--candidate"), opt("--baseline", "plain"));
+    process.stdout.write(JSON.stringify(out, null, 2) + "\n");
     return 0;
   }
   if (argv[0] === "summarize") {

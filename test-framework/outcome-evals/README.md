@@ -153,7 +153,7 @@ Lean minus plain is −0.14 (95% CI −1.43 to 1.14, p = 1): no effect. The whol
 ### What this changes
 
 1. **The written ceremony buys no correctness on spec-complete work.** RULES.md and one test per rule cost 3.3× more on matched tasks (2.36–4.19× per task) and solved nothing extra, across 33 blueprint runs. The framework therefore stops asking for it on such work; the gate is in `references/delivery-profiles.json` under `method`.
-2. **The verifier loop is kept as the default execution method.** Lean costs 1.18× plain on matched tasks (0.93–1.56× per task). Its benefit does not show at this difficulty because plain already solves everything. It is kept because the cited work shows the benefit as tasks get harder relative to the model, and a run that skips its tests has no evidence to show.
+2. **Plain is the default for spec-complete work.** Lean (the extra verify-loop instruction) costs 1.18× plain on matched tasks (0.93–1.56× per task) with no measured gain, so `outcome-eval.mjs promote` keeps plain. An earlier version of this README kept lean as "insurance". The promotion rule removed that unmeasured exception: a variant changes only on an established gain, a higher solve rate, or equal results at lower cost.
 3. **The production method is the default for underspecified product requests.** Measured above: 14.71/16 vs 7.14/16 under a blind judge over 7 builds per arm, for under $1 per build on Haiku.
 4. **The spec-complete tasks sit at the model's ceiling, so they cannot separate the arms.** They stay in the suite as a regression floor: a cheaper model or a new prompt must keep solving them.
 

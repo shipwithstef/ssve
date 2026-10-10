@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { judge, pick } from "../../../scripts/verify-claims.mjs";
-import { parseTap, summarize, ARMS, listTasks, parseJudge, failureReasons, compareSamples } from "../../../scripts/outcome-eval.mjs";
+import { parseTap, summarize, ARMS, listTasks, parseJudge, failureReasons, compareSamples, promotionDecision } from "../../../scripts/outcome-eval.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -58,4 +58,14 @@ test("outcome-eval: TAP parsing, error rows excluded from scores, arms differ on
     for (const f of ["spec.md", "hidden.test.mjs"]) assert.ok(fs.existsSync(path.join(dir, f)), `${t}/${f}`);
     assert.ok(fs.existsSync(path.join(dir, "ref.mjs")) || (fs.existsSync(path.join(dir, "repo")) && fs.existsSync(path.join(dir, "ref"))), `${t} has a reference`);
   }
+});
+
+test("promotion decisions re-derived from the recorded results", () => {
+  const rows = (...names) => names.flatMap((n) => JSON.parse(fs.readFileSync(path.join(root, "test-framework/outcome-evals/results", `2026-10-10-${n}.json`), "utf8")).rows);
+  assert.equal(promotionDecision(rows("haiku-production", "haiku-production-v2", "haiku-production-v3"), "production", "plain").promote, true, "the production method earns its cost on a one-line product request");
+  assert.equal(promotionDecision(rows("haiku", "haiku-hard"), "blueprint", "plain").promote, false, "the written blueprint costs more for the same solves");
+  assert.equal(promotionDecision(rows("haiku-hard", "haiku-lean", "haiku-brownfield", "haiku-fullstack"), "lean", "plain").promote, false, "the verify-loop instruction costs more for the same solves");
+  assert.equal(promotionDecision(rows("haiku-vague", "haiku-vague-r2"), "lean", "plain").promote, false);
+  assert.equal(promotionDecision([{ arm: "a", solved: true, cost_usd: 1 }, { arm: "b", solved: true, cost_usd: 2 }], "a", "b").promote, true, "same results, cheaper: promote");
+  assert.equal(promotionDecision([{ arm: "a", solved: true }], "a", "missing").promote, false);
 });
