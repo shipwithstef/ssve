@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { judge, pick } from "../../../scripts/verify-claims.mjs";
-import { parseTap, summarize, ARMS, listTasks } from "../../../scripts/outcome-eval.mjs";
+import { parseTap, summarize, ARMS, listTasks, parseJudge } from "../../../scripts/outcome-eval.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -33,6 +33,7 @@ test("judge checks exit codes and JSON bounds, and fails closed on bad output", 
 test("outcome-eval: TAP parsing, error rows excluded from scores, arms differ only in instruction", () => {
   assert.deepEqual(parseTap("ok 1\n# pass 3\n# fail 1\n"), { pass: 3, fail: 1 });
   assert.equal(parseTap("crashed"), null);
+  assert.deepEqual(parseTap("# pass 1\n# fail 0\n# cancelled 1\n"), { pass: 1, fail: 1 }, "a timed-out test counts as failed");
   const s = summarize([
     { arm: "plain", solved: true, score: 1, cost_usd: 0.01, turns: 4 },
     { arm: "plain", error: "timeout" },
@@ -42,11 +43,13 @@ test("outcome-eval: TAP parsing, error rows excluded from scores, arms differ on
   assert.equal(plain.errors, 1);
   assert.equal(plain.solved, "1/1");
   assert.equal(plain.mean_hidden_score, 1);
-  assert.deepEqual(Object.keys(ARMS).sort(), ["blueprint", "lean", "plain"]);
+  assert.deepEqual(Object.keys(ARMS).sort(), ["blueprint", "brief", "lean", "plain", "production"]);
+  assert.equal(parseJudge('here: {"scores":{"a":2},"total":2,"notes":"x"}').total, 2);
+  assert.equal(parseJudge("no verdict"), null);
   assert.ok(listTasks().length >= 5);
   for (const t of listTasks()) {
     const dir = path.join(root, "test-framework/outcome-evals/tasks", t);
-    for (const f of ["spec.md", "visible.test.mjs", "hidden.test.mjs"]) assert.ok(fs.existsSync(path.join(dir, f)), `${t}/${f}`);
+    for (const f of ["spec.md", "hidden.test.mjs"]) assert.ok(fs.existsSync(path.join(dir, f)), `${t}/${f}`);
     assert.ok(fs.existsSync(path.join(dir, "ref.mjs")) || (fs.existsSync(path.join(dir, "repo")) && fs.existsSync(path.join(dir, "ref"))), `${t} has a reference`);
   }
 });

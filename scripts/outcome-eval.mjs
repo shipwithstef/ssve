@@ -2,7 +2,7 @@
 /**
  * outcome-eval.mjs — measure whether the framework's method changes outcomes, per model.
  *
- *   node scripts/outcome-eval.mjs run [--model haiku] [--reps 3] [--arms plain,blueprint]
+ *   node scripts/outcome-eval.mjs run [--model haiku] [--judge sonnet|none] [--reps 3] [--arms plain,blueprint]
  *                                     [--tasks a,b] [--parallel 4] [--out <results.json>]
  *   node scripts/outcome-eval.mjs check            # graders pass their reference, fail planted bugs
  *
@@ -12,6 +12,8 @@
  * directory; only the instruction differs:
  *   plain      implement the spec.
  *   lean       plain plus the verifier loop: run every test, fix until green.
+ *   production one-line request to a sellable product: spec with journeys, layers, e2e, verify.
+ *   brief      plan-first for underspecified requests: brief, build, test, verify.
  *   blueprint  the svc method: rules → one test per rule → implement → run the tests,
  *              fix until green (a generator with an external verifier in the loop).
  * The score is the share of hidden tests passed and whether all passed. Cost, turns and
@@ -34,6 +36,24 @@ export const ARMS = {
   // The verifier loop alone: the part of the method the literature credits with the gain
   // (generate, then check against tests, then repair), without the written ceremony.
   lean: "Implement the specification in spec.md in this directory. Keep every existing behaviour the spec does not change. Before you finish, run `node --test` (it runs every test file here) and fix whatever fails; finish only when it passes.",
+  // The framework's plan-first method for underspecified requests: decide what "good" means
+  // before building, then build and verify against that.
+  brief: [
+    "Build what spec.md asks for. It is a short request from a founder, so first decide what good looks like, then build it and prove it.",
+    "1. Write BRIEF.md: who plays, the core loop, the rules and numbers (prices, how they change, limits), the ways it could break (exploits, bad input, cheating) and how you prevent each, and 5-10 acceptance checks.",
+    "2. Build it with the game rules in their own module, separate from HTTP and UI.",
+    "3. Write tests with node:test for the rules and for every way-it-could-break from BRIEF.md.",
+    "4. Run `node --test`, start the server with node and exercise the API, and fix whatever fails. Finish only when every acceptance check in BRIEF.md holds.",
+  ].join("\n"),
+  // The full svc method distilled into one instruction: from a one-line request to a product
+  // a customer could pay for, at the lowest sensible cost.
+  production: [
+    "spec.md is a founder's one-line request for a product they will sell. Work like a principal engineer shipping to production at the lowest sensible cost. Choose proven patterns over invention.",
+    "1. Write SPEC.md: users and roles; at least 10 user journeys (customer and owner, including failure paths), each with acceptance criteria; non-functional requirements (security, payments, data integrity, accessibility, operations); the architecture and why.",
+    "2. Build in layers: domain rules, services, HTTP, UI. Configuration comes from the environment. Anything external (such as payments) sits behind an interface with a local implementation for tests.",
+    "3. Tests: unit tests for the domain rules, and end-to-end tests that drive every journey through HTTP.",
+    "4. Verify: run `node --test`, start the server, walk the journeys, and fix until every acceptance criterion holds. Finish with a README covering setup, configuration, running and deploying.",
+  ].join("\n"),
   blueprint: [
     "Implement the specification in spec.md in this directory, following this plan exactly. Do every step; each one has a check.",
     "1. Read spec.md. Write RULES.md: a numbered list with one line per rule in the spec, including every input that must be rejected and every edge case it names. Check: every sentence of the spec maps to at least one rule.",
@@ -44,15 +64,24 @@ export const ARMS = {
   ].join("\n"),
 };
 
+// Optional per-task settings: tasks/<id>/task.json { max_turns, timeout_min, judge_model }.
+export function taskConfig(task) {
+  const f = path.join(TASKS, task, "task.json");
+  const c = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : {};
+  return { max_turns: c.max_turns ?? 40, timeout_ms: (c.timeout_min ?? 15) * 60000, judge_model: c.judge_model ?? null };
+}
+
 export function listTasks() {
   return fs.readdirSync(TASKS).filter((d) => fs.existsSync(path.join(TASKS, d, "hidden.test.mjs"))).sort();
 }
 
 // node --test summary → passed/failed counts of top-level tests.
+// A cancelled test (it timed out) is a failure, not a test that never existed.
 export function parseTap(out) {
   const pass = Number(/^# pass (\d+)/m.exec(out)?.[1] ?? NaN);
   const fail = Number(/^# fail (\d+)/m.exec(out)?.[1] ?? NaN);
-  return Number.isNaN(pass) || Number.isNaN(fail) ? null : { pass, fail };
+  const cancelled = Number(/^# cancelled (\d+)/m.exec(out)?.[1] ?? 0);
+  return Number.isNaN(pass) || Number.isNaN(fail) ? null : { pass, fail: fail + cancelled };
 }
 
 // Browser graders import Playwright from the global install (the container ships one).
@@ -80,15 +109,14 @@ function prepare(task) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), `oe-${task}-`));
   const repo = path.join(TASKS, task, "repo");
   if (fs.existsSync(repo)) fs.cpSync(repo, dir, { recursive: true });
-  for (const f of ["spec.md", "visible.test.mjs"]) fs.copyFileSync(path.join(TASKS, task, f), path.join(dir, f));
+  for (const f of ["spec.md", "visible.test.mjs"]) if (fs.existsSync(path.join(TASKS, task, f))) fs.copyFileSync(path.join(TASKS, task, f), path.join(dir, f));
   fs.writeFileSync(path.join(dir, "package.json"), '{"type":"module"}\n');
   return dir;
 }
 
-function runAgent(dir, prompt, model, timeoutMs) {
+function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40) {
   return new Promise((resolve) => {
-    const args = ["-p", "--model", model, "--output-format", "json", "--max-turns", "40",
-      "--allowedTools", "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*)"];
+    const args = ["-p", "--model", model, "--output-format", "json", "--max-turns", String(maxTurns), "--allowedTools", tools];
     // The prompt goes on stdin: --allowedTools is variadic and would swallow it.
     const child = spawn("claude", args, { cwd: dir, stdio: ["pipe", "pipe", "pipe"] });
     child.stdin.end(prompt);
@@ -98,7 +126,7 @@ function runAgent(dir, prompt, model, timeoutMs) {
     child.on("close", (code) => {
       clearTimeout(timer);
       let j = null; try { j = JSON.parse(out); } catch {}
-      resolve(j ? { ok: !j.is_error, cost_usd: j.total_cost_usd ?? null, turns: j.num_turns ?? null, duration_ms: j.duration_ms ?? null, model_id: Object.keys(j.modelUsage || {})[0] || null, stop: j.subtype || j.terminal_reason || null }
+      resolve(j ? { ok: !j.is_error, cost_usd: j.total_cost_usd ?? null, turns: j.num_turns ?? null, duration_ms: j.duration_ms ?? null, model_id: Object.keys(j.modelUsage || {})[0] || null, stop: j.subtype || j.terminal_reason || null, text: typeof j.result === "string" ? j.result : "" }
         : { ok: false, error: `exit ${code}; no JSON result` });
     });
   });
@@ -110,6 +138,26 @@ async function pool(items, n, fn) {
   return out;
 }
 
+// The judge answers with one JSON object; take the last {...} block in its reply.
+export function parseJudge(text) {
+  const m = String(text || "").match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  try { const j = JSON.parse(m[0]); return typeof j.total === "number" && j.scores ? j : null; } catch { return null; }
+}
+
+// Blind rubric judging for tasks without a full contract (judge.md). The judge sees the
+// product, never the arm or the instruction that produced it.
+async function judge(dir, task, model) {
+  const rubric = path.join(TASKS, task, "judge.md");
+  if (!model || !fs.existsSync(rubric)) return {};
+  fs.rmSync(path.join(dir, "__hidden.test.mjs"), { force: true });
+  for (const f of ["BRIEF.md", "RULES.md"]) if (fs.existsSync(path.join(dir, f))) fs.renameSync(path.join(dir, f), path.join(dir, `NOTES-${f}`));
+  const jm = taskConfig(task).judge_model || model;
+  const r = await runAgent(dir, fs.readFileSync(rubric, "utf8"), jm, 1800000, "Read,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*)", 80);
+  const verdict = parseJudge(r.text);
+  return verdict ? { judge_model: jm, judge_total: verdict.total, judge_scores: verdict.scores, judge_verified_journeys: verdict.verified_journeys ?? null, judge_money_pump: verdict.money_pump_found ?? null, judge_notes: verdict.notes || "", judge_cost_usd: r.cost_usd } : { judge_model: jm, judge_error: r.error || "no JSON verdict" };
+}
+
 export function summarize(rows) {
   const by = {};
   for (const r of rows) {
@@ -117,8 +165,9 @@ export function summarize(rows) {
     const s = by[k]; s.runs++;
     if (r.error) { s.errors++; continue; }
     s.solved += r.solved ? 1 : 0; s.score_sum += r.score; s.cost += r.cost_usd || 0; s.turns += r.turns || 0;
+    if (typeof r.judge_total === "number") { s.judged = (s.judged || 0) + 1; s.judge_sum = (s.judge_sum || 0) + r.judge_total; }
   }
-  return Object.values(by).map((s) => { const n = s.runs - s.errors; return { arm: s.arm, runs: s.runs, errors: s.errors, solved: `${s.solved}/${n}`, solve_rate: n ? +(s.solved / n).toFixed(3) : null, mean_hidden_score: n ? +(s.score_sum / n).toFixed(3) : null, mean_cost_usd: n ? +(s.cost / n).toFixed(4) : null, mean_turns: n ? +(s.turns / n).toFixed(1) : null }; });
+  return Object.values(by).map((s) => { const n = s.runs - s.errors; return { arm: s.arm, runs: s.runs, errors: s.errors, solved: `${s.solved}/${n}`, solve_rate: n ? +(s.solved / n).toFixed(3) : null, mean_hidden_score: n ? +(s.score_sum / n).toFixed(3) : null, mean_cost_usd: n ? +(s.cost / n).toFixed(4) : null, mean_turns: n ? +(s.turns / n).toFixed(1) : null, ...(s.judged ? { judged: s.judged, mean_judge_total: +(s.judge_sum / s.judged).toFixed(2) } : {}) }; });
 }
 
 export function check() {
@@ -182,6 +231,7 @@ async function main(argv) {
   }
   if (argv[0] !== "run") { process.stderr.write("usage: outcome-eval.mjs run [--model haiku] [--reps 3] [--arms plain,blueprint] [--tasks ...] [--parallel 4] [--out file] | check\n"); return 2; }
   const model = opt("--model", "haiku"), reps = Number(opt("--reps", 3));
+  const judgeModel = opt("--judge", "sonnet") === "none" ? null : opt("--judge", "sonnet");
   const arms = opt("--arms", "plain,blueprint").split(",");
   const tasks = opt("--tasks") ? opt("--tasks").split(",") : listTasks();
   const jobs = [];
@@ -190,11 +240,13 @@ async function main(argv) {
   const rows = await pool(jobs, Number(opt("--parallel", 4)), async (job) => {
     const dir = prepare(job.task);
     const t = Date.now();
-    const agent = await runAgent(dir, ARMS[job.arm], model, 900000);
+    const cfg = taskConfig(job.task);
+    const agent = await runAgent(dir, ARMS[job.arm], model, cfg.timeout_ms, undefined, cfg.max_turns);
     const row = { ...job, model, prompt_sha: promptSha(job.arm), wall_ms: Date.now() - t, ...agent };
     // A run that ended (even at its turn limit) is graded: hitting the limit is a failure to
     // count, not an error to hide. Only a crash or timeout with no result is an error.
-    if (!agent.error) Object.assign(row, grade(dir, job.task));
+    if (!agent.error) Object.assign(row, grade(dir, job.task), await judge(dir, job.task, judgeModel));
+    delete row.text;
     fs.rmSync(dir, { recursive: true, force: true });
     process.stderr.write(`${job.task}/${job.arm}#${job.rep}: ${row.error ? "ERROR " + row.error : `${row.hidden_pass}/${row.hidden_total}${row.solved ? " solved" : ""} $${row.cost_usd}`}\n`);
     return row;

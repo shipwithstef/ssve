@@ -56,6 +56,24 @@ Each cell shows hidden-grader solves out of runs, then mean cost per run.
 
 Raw rows are in `results/*.json`.
 
+### Underspecified request (vague-market, 2026-10-10)
+
+The founder-style request was "a market-stall game whose economy can't break", with no API or UI contract. Haiku 5.5 built it. Grading had two parts:
+- A generic smoke check: the server starts, the page loads, and every button is clicked in Chromium with no page errors.
+- A blind Sonnet 5.5 judge with a 12-point rubric: loop, economy (including a money-pump probe), server authority, architecture, tests and UX.
+
+Judge reliability: three judgings of the same artifact gave identical scores (2/12; it found a real interest exploit in the reference).
+
+| Arm | Smoke | Mean judge score | Mean cost |
+|---|---|---|---|
+| plain | 2/3 | 10.67 / 12 | $0.104 |
+| lean | 2/3 | 11.67 / 12 | $0.110 |
+| brief (plan first) | 3/3 | 10.67 / 12 | $0.225 |
+
+No build had a money pump. Lean scored highest at plain cost; the brief arm was the only one to pass every browser check, at twice the cost. With 3 runs per arm these differences are not significant; the next step is more repeats.
+
+**Grader correction:** Node reports a test cancelled by its timeout as `cancelled`, not `fail`. Two runs (plain#0, lean#2) were first scored as passing for that reason. `parseTap` now counts cancellations as failures, and those rows are corrected in the results file with a `regraded` note.
+
 ### What this changes
 
 1. **The written ceremony buys no correctness on spec-complete work.** RULES.md and one test per rule cost 3.3× more on matched tasks (2.36–4.19× per task) and solved nothing extra, across 33 blueprint runs. The framework therefore stops asking for it on such work; the gate is in `references/delivery-profiles.json` under `method`.
