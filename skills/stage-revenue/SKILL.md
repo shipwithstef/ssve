@@ -2,14 +2,9 @@
 name: stage-revenue
 version: "1.0"
 description: >
-  Break a big idea into revenue stages — Stage 1 (fast money in 1-2 weeks),
-  Stage 2 (reinvest), Stage 3 (the real thing). Ensures the builder doesn't
-  burn out building a 3-month project with no income. Use when: builder has a
-  big idea but no capital, or validate-feature shows the idea takes > 2 weeks
-  with no proven revenue model. Also use when the user says "I have an idea but
-  no money", "how do I fund this", "this will take months", "staging plan",
-  "revenue first", or when route-workflow detects a big-idea + no-capital
-  builder profile.
+  Split a big idea into revenue stages: a 1-2 week money-maker, a reinvestment stage, then
+  the real build. Use for 'I have an idea but no money', 'how do I fund this', 'this will
+  take months', 'revenue first', 'staging plan'.
 phases:
   - id: P1-StagingDecisionContext
     trigger: always

@@ -2,13 +2,10 @@
 name: route-workflow
 version: "1.0"
 description: >
-  Universal entry point for any work. Routes freeform intent to the right svc skill
-  based on repo state, change type, and current project artifacts. Handles: "do this",
-  "build this", "I want to", "help me with", "make me a", "ship this", "fix this",
-  or ANY freeform description of work; also handles explicit routing questions like
-  "what should I do next", "which skill do I run", "what's the right order", and
-  "what lane is this". Here "what should I do next" means only which skill and
-  lane to run in this repo.
+  Routes a work request in an svc-onboarded repo to the right lane and next svc skill from
+  repo state and artifacts. Use for 'build this', 'fix this', 'ship this', 'I want to',
+  'which skill do I run', 'what lane is this'. Not needed for questions, explanations or
+  read-only lookups.
 phases:
   - { id: P1-SessionContextLoad, trigger: always, reads: [".svc/session-contract.jsonl", "docs/specs/project-state.md", "~/.svc/builder-profile.md", "docs/specs/domain-profile.md"], writes: [".svc/session-contract.jsonl when needed", ".svc/orchestrator-state.json when initializing"], evidence_kind: command_output, required_for_completion: true }
   - { id: P2-IntentNormalizationAndCorrection, trigger: always, reads: ["user request", "references/intent-normalization.md", "references/intent-classification.md", ".svc/session-contract.jsonl"], writes: [".svc/pipeline-decisions.jsonl when route-relevant"], evidence_kind: command_output, required_for_completion: true }

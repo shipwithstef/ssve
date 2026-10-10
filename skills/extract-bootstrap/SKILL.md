@@ -2,11 +2,10 @@
 name: extract-bootstrap
 version: "1.0"
 description: >
-  Extract production-verified patterns from a real codebase into a reusable
-  bootstrap template. Use when "extract patterns from", "create bootstrap from",
-  "analyze this repo for patterns", "make a template from", or when pointing
-  at a public/local repo to capture its architecture for reuse. Produces a
-  manifest.md + decisions.md under references/bootstraps/.
+  Extract production-proven patterns from a real repo into a reusable bootstrap template.
+  Use for "extract patterns from", "make a template from", "create bootstrap from" this
+  repo.
+disable-model-invocation: true
 phases:
   - id: P1-SourceAccessScope
     trigger: always

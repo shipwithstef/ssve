@@ -2,11 +2,9 @@
 name: mine-builder
 version: "1.0"
 description: >
-  Mine the builder's real-world context — finances, time, skills, team, social
-  presence, tools, entity, goals, project history, failure patterns. Creates or
-  updates ~/.svc/builder-profile.md. Run once per builder, update on subsequent
-  sessions. Use when: first pipeline run, "update my profile", "anything changed",
-  or automatically at session start.
+  Create or update the builder profile (~/.svc/builder-profile.md): finances, time,
+  skills, team, audience, tools, entity, goals, past projects. Use when: first pipeline
+  run, update my profile, anything changed.
 phases:
   - id: P1-ProfileModeDetection
     trigger: always

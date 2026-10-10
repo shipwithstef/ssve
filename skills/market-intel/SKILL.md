@@ -1,8 +1,10 @@
 ---
 name: market-intel
 version: "1.0"
-description: >-
-  Market evidence synthesis. Use when: "market intelligence", "competitor evidence", "category trend", "positioning gap". Not growth execution.
+description: >
+  Market evidence synthesis that separates sourced, dated facts from inference. Use when:
+  market intelligence, competitor evidence, category trend, positioning gap. Not growth
+  execution.
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

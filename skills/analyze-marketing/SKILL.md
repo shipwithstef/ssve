@@ -4,8 +4,10 @@ version: "1.0"
 handles_concerns:
   - paid-analytics-api
   - revenue-attribution
-description: >-
-  Mine feature specs for marketing value and maintain the product marketing context. Use when: "mine features", "marketing context", "positioning", "find our strongest marketing angles", "what should we market", "marketing ammunition". Second mode — marketing-message validation: "persona validation", "does our messaging work", "stress test the copy", "buyer perspective", "who are we actually talking to". Also: "feature mining", "extract marketing value", "update marketing context". Also: "what features should we highlight", "what's worth marketing", "marketing potential", "refresh marketing insights", "set up context", "feature value".
+description: >
+  Mines feature specs for marketing value and maintains docs/specs/marketing-context.md;
+  second mode stress-tests messaging against buyer personas. Use for "mine features",
+  "positioning", "what should we market", "does our messaging work".
 phases:
   - id: P1-RepositoryModeTrackerPreflight
     trigger: always

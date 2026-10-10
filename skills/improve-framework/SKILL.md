@@ -2,11 +2,9 @@
 name: improve-framework
 version: "1.0"
 description: >
-  Use when the svc framework itself needs fixing or improving. Triggers on
-  "improve the framework", "run self-improvement", "close framework gaps",
-  "use the framework to improve itself", after test-framework finds failures,
-  after repeated reviews uncover drift, when a blend source shipped updates,
-  or when pending proposals exist in proposals/.
+  Fix or improve the svc framework itself: close gaps, apply pending proposals, act on
+  test-framework failures or drift. Use for "improve the framework", "run self-
+  improvement", "close framework gaps". To find gaps first use evolve-framework.
 phases:
   - id: P1-FrameworkRepoAndMemoryLoad
     trigger: always

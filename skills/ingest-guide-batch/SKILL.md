@@ -1,8 +1,10 @@
 ---
 name: ingest-guide-batch
 version: "1.0"
-description: >-
-  Parallel orchestrator for ingest-guide — fans a directory of pre-pasted guide files into N independent worktree sessions, aggregates per-guide decisions (discard / store / promote) into one digest with promoted-skill drafts ready for create-skill review. Failure-isolated. Use when: multiple saved guides need triage. Also: "batch ingest", "fan out guides", "process N guides in parallel". Also: "bulk ingestion".
+description: >
+  Triage a directory of saved guides in parallel by running ingest-guide on each and
+  producing one digest of discard/store/promote decisions. Use when: batch ingest, fan out
+  guides, process N guides in parallel, bulk ingestion.
 phases:
   - id: P1-BatchEnumerateLabel
     trigger: always

@@ -5,8 +5,9 @@
     "always_on_rules_note": "The always-on rule SET is derived dynamically by the validator from skills-manifest.json rulesRegistry entries with auto_inject:\"always\" (currently 6) \u2014 NOT a hardcoded list here, so a new always-on rule is automatically counted (Gemini G6 #2).",
     "always_on_rules_bytes_current": 11162,
     "always_on_rules_bytes_max": 14000,
-    "catalog_desc_chars_current": 36291,
-    "catalog_desc_chars_max": 42000
+    "catalog_desc_chars_current": 25574,
+    "catalog_desc_chars_max": 28500,
+    "catalog_desc_note": "2026-10 framework-5.5 audit: descriptions slimmed 45002 -> 25574 (the gate had been reading 0 chars since skills moved under skills/, so it never caught the 36K -> 45K re-bloat). Ceiling ~11% above current."
   },
   "hook_spawn": {
     "source": "hooks/hooks.json",

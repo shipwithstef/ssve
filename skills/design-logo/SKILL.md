@@ -9,15 +9,9 @@ phases:
   - { id: P5-SystemContextLiveEvidence, required_for_completion: true }
   - { id: P6-FinalPackSelfVerify, required_for_completion: true }
 description: >
-  Produce a brand mark + lockup pack as scalable SVG with iterative refinement
-  toward world-class quality (≥65/70 rubric, no designer-handoff exit). Use
-  when creating, redesigning, or polishing a logo. Triggers on "design a
-  logo", "make a logo", "redesign the logo", "logo is bad", "10/10 logo",
-  "world-class logo", "favicon", "wordmark", or when downstream skills need
-  a finalized identity. Outputs the full variant matrix + animation +
-  brand-pattern set + icon-style sheet + app-context mockups. The skill
-  terminates only at ≥65/70 with 5/5 love-test pass; plateaus trigger
-  constraint escalation, never handoff.
+  Design or redesign a logo, wordmark or favicon as a scalable SVG pack with iterative
+  refinement and in-app-context checks. Use for "design a logo", "make a logo", "redesign
+  the logo", "logo is bad", "favicon", "wordmark".
 inputs:
   required:
     - { path: "docs/specs/brand-brief.yaml", artifact: brand-brief, note: "name, audience, voice, palette, anti-references, cross-domain inspiration sources, exemplar_inspiration (≥3 ids from exemplar bank)" }

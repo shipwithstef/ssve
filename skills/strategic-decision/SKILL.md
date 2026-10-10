@@ -5,8 +5,10 @@ handles_concerns:
   - paid-external-api
   - paid-llm-api
   - data-model-mutation
-description: >-
-  N-way strategic trade study spanning features, vendors, or years — build-vs-buy, framework/database/hosting/AI-model/payment-provider selection, pricing model, strategic pivot. Use when: "which X should I use", "compare providers", "trade study", "strategic decision". NOT for within-feature architecture (design-tech owns that). Also: "N-way decision", "pick vendor", "compare options before committing".
+description: >
+  N-way strategic trade study: build vs buy, vendor, framework, database, hosting, AI
+  model, payment provider, pricing or pivot. Use for 'which X should I use', 'compare
+  providers', 'pick a vendor'. Not within-feature architecture (use design-tech).
 inputs:
   required:
     - { path: "~/.svc/builder-profile.md", artifact: builder-profile }

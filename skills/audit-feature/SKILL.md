@@ -14,13 +14,11 @@ chain:
   progressive: false
   self_verify: true
   human_checkpoint: false
-description: >-
-  Run the full drift audit on one feature or journey — the complete machinery built for
-  quiet hours: Pass A (19-layer census, 13 detectors, grounding script) + Pass B (independent
-  verification agents), producing the relation ledger, seeded story-receipts chain, WI drafts
-  and the matrix-first report. Use when the founder says "audit <feature>", "провери
-  <feature/journey>", "drift audit X", "is J07 aligned", "verify journey", or names any
-  feature/journey they want checked before go-live. Findings only — never fixes.
+description: >
+  Runs the full drift audit on one feature or journey (layer census, detectors,
+  independent verifier agents) and writes the relation ledger, receipts chain and WI
+  drafts. Use for "audit <feature>", "drift audit X", "is J07 aligned", "verify journey".
+  Findings only, never fixes.
 ---
 
 # Audit Feature — one-command drift audit

@@ -2,18 +2,9 @@
 name: ad-video-script
 version: "1.0"
 description: >
-  Performance ad-video script writer modeled on a Senior Direct-Response
-  Creative Strategist. Reads the ACTUAL product first (landing page / spec),
-  picks the right ICP + scenario + placement + awareness stage, then writes a
-  modular script AND a render-ready BEAT SHEET (6 × ~10s beats with per-beat
-  first-frame image-prompt, motion-prompt, persistent-character lock, and
-  last-frame seeding) — because no video model renders a coherent 60s clip in
-  one shot (Veo 8s; Runway/Kling/Pika ~10s). Emits one base script, or many
-  variants when ≥2 placements or awareness stages qualify. Hands the beat
-  sheet to `produce-ad-video` (WI-402) to render. Use when "ad video script",
-  "video ad", "UGC script", "promo video script", "60 second ad", "make an ad
-  for <product>", or any WI tagged ad-video / performance-creative. Do not use
-  for remux/I2V/audio-fix of an existing cut — that is `produce-ad-video`.
+  Writes performance ad-video scripts plus a render-ready beat sheet (about 10s beats with
+  frame and motion prompts) for produce-ad-video. Use for "ad video script", "video ad",
+  "UGC script", "60 second ad". Not for editing an existing cut; use produce-ad-video.
 inputs:
   required:
     - { path: "docs/specs/vision.md", artifact: product-source, note: "the REAL product — read the live landing-page URL via curl, or this spec / docs/specs/vision.md. Grounding is mandatory step 1." }

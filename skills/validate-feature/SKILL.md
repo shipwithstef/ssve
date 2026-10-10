@@ -3,8 +3,10 @@ name: validate-feature
 version: "1.0"
 handles_concerns:
   - feature-validation-closeout
-description: >-
-  First stop for any new feature idea — cross-validates against personas, journeys, and specs, resolves consequential business decisions, produces a Feature Ship Brief, and routes to the right downstream skill. Use when: "what if we built X", "I have a feature idea", "should we add", "validate this idea". Also: "new feature", "should we add", "I have a feature idea".
+description: >
+  First stop for a new feature idea: checks it against personas, journeys and specs,
+  settles key business decisions, writes a Feature Ship Brief with a ship/defer/no-ship
+  call, and routes onward. Use for 'I have a feature idea', 'should we add X'.
 phases:
   - id: P1-TaskGraphSetup
     trigger: always

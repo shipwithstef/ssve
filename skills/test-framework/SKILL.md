@@ -1,7 +1,10 @@
 ---
 name: test-framework
 version: "1.0"
-description: Test and benchmark the svc framework end-to-end. Use when you need to verify the pipeline works, prove doctrine claims, measure token efficiency, validate progressive narrowing, or run the autopilot that continuously tests all skills against real scenarios. Triggers on "test the framework", "prove it works", "benchmark svc", "validate the pipeline", "run autopilot", "test all skills", "check for holes", or any request to verify svc's methodology. Also use when comparing svc against obra/gstack/raw approaches.
+description: >
+  Test and benchmark the svc framework itself: tier-1 static evals, scenario runs,
+  doctrine claims, token efficiency. Use for 'test the framework', 'prove it works',
+  'benchmark svc', 'validate the pipeline', 'check for holes'. Not for product app tests.
 phases:
   - id: P1-TestModeSelection
     trigger: always

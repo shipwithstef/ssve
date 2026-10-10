@@ -3,8 +3,11 @@ name: manage-finops
 version: "1.0"
 handles_concerns:
   - paid-external-api
-description: >-
-  FinOps for cloud selection, cost optimization, and solo-dev launch budgets. Use when: hosting recommendations, provider pricing comparisons (Hetzner/AWS/GCP/Vercel/Railway), "what will my monthly cost be", "free tier cliff", "is this API affordable at scale". Also: "how much should I budget for launch", "AWS vs Hetzner", "Vercel vs Netlify pricing". Long forms: "what will my monthly cost be at 10k users", "is Google Places API affordable at scale", "when do we hit the free tier cliff", "AWS vs Hetzner for a Node.js API", "Vercel vs Netlify pricing for my stack".
+description: >
+  Cloud cost and hosting decisions with sourced pricing: provider comparisons, monthly
+  cost at scale, free-tier cliffs, launch budgets. Use when: what will my monthly cost be,
+  AWS vs Hetzner, Vercel vs Netlify pricing, is this API affordable at scale, free tier
+  cliff.
 inputs:
   required:
     - { path: "docs/specs/vision.md", artifact: vision }

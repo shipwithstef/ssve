@@ -7,14 +7,10 @@ handles_concerns:
   - deploy-rollback-plan
   - feature-flag-rollout
 description: >
-  Classify how a project actually runs on a hosted or platform-constrained system,
-  then produce the safe operating model for svc to coexist with it. Use when the
-  user asks how to split local/dev/staging/prod, how svc should work with Base44,
-  Vercel, Replit, Bolt, Firebase, Supabase, or similar platforms, what should stay
-  platform-native vs move into code, how integrations should be wrapped, or what
-  platform-specific opportunities and traps matter for this repo. Also use when a
-  brownfield repo is clearly platform-heavy and `router-context.md` lacks a durable
-  operating model.
+  Work out how a project runs on a hosted platform (Base44, Vercel, Replit, Bolt,
+  Firebase, Supabase) and set the safe operating model: env split, platform-native vs
+  code, integration wrapping. Use when a repo is platform-heavy or asks
+  local/dev/staging/prod.
 inputs:
   required: []
   optional:

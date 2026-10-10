@@ -1,8 +1,10 @@
 ---
 name: counsel
 version: "1.0"
-description: >-
-  Legal issue spotting. Use when: "legal risk", "contract issue", "legal review", "terms question". Not legal advice or signatures.
+description: >
+  Legal issue spotting for contracts, terms and requirements: maps clauses to evidence and
+  flags one-way exposure. Use for "legal risk", "contract issue", "legal review", "terms
+  question". Not legal advice and never signs.
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

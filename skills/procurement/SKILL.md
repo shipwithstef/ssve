@@ -1,8 +1,10 @@
 ---
 name: procurement
 version: "1.0"
-description: >-
-  Vendor diligence. Use when: "procurement", "vendor comparison", "buying decision", "supplier diligence". Never purchases, signs, or contacts vendors.
+description: >
+  Vendor diligence and comparison ahead of a buying decision: requirements, total cost,
+  renewal and exit terms. Use when: procurement, vendor comparison, buying decision,
+  supplier diligence. Never purchases, signs or contacts vendors.
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

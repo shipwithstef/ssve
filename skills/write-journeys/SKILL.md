@@ -2,13 +2,9 @@
 name: write-journeys
 version: "1.0"
 description: >
-  Generate BDD journey docs (.feature.md) with Gherkin scenarios and AC traceability.
-  Nine modes: create, expand, sync, audit, bootstrap, tiered auto-discovery,
-  regression refresh, chrome auto-discovery, and capability auto-scaffolding.
-  Use when: "generate journeys", "journey sync", "define user flows",
-  "journey coverage", "tiered journeys", "discover journeys",
-  "auto-discover chrome", "write-journeys --capability", or when feature specs
-  exist but no docs/specs/journeys/ found.
+  Generate or update BDD journey docs (.feature.md) with Gherkin scenarios traced to spec
+  ACs. Use for 'generate journeys', 'define user flows', 'journey coverage', 'journey
+  sync', 'discover journeys', or when specs exist but docs/specs/journeys/ does not.
 phases:
   - { id: P1-InputAudit, trigger: always, reads: [], writes: [], evidence_kind: command_output, required_for_completion: true }
   - { id: P2-ScenarioGeneration, trigger: always, reads: [], writes: [], evidence_kind: file, required_for_completion: true }

@@ -2,15 +2,9 @@
 name: plan-blast-radius
 version: "1.0"
 description: >
-  Pre-apply impact classifier for infra changes. Reads `terraform plan` JSON
-  / `helm diff` output, classifies each change by destruction risk + cross-
-  resource dependency depth into SEV-1 (destructive) / SEV-2 (in-place
-  mutation of stateful) / SEV-3 (in-place stateless) / SEV-4 (additive).
-  SEV-1 and SEV-2 force `human_checkpoint: true` regardless of autorun.
-  Use when: any infra-* lane reaches phase 8 (between plan-changeset and
-  review-plan); user mentions "blast radius", "what could break", "is this
-  safe to apply", "SEV tier classification". Source:
-  proposals/done/2026-04-30-infra-project-support.md § 6.2.
+  Classify terraform plan or helm diff changes by destruction risk into SEV-1..SEV-4;
+  SEV-1/2 force a human checkpoint. Use when: blast radius, what could break, is this safe
+  to apply, before applying any infra change.
 inputs:
   required:
     - { path: "docs/specs/features/", artifact: feature-spec }

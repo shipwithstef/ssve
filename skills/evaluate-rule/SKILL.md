@@ -2,15 +2,9 @@
 name: evaluate-rule
 version: "1.0"
 description: >
-  Use when deciding whether a candidate rule file (for CLAUDE.md / AGENTS.md
-  injection) earns its per-turn token cost, or whether it merely restates
-  Claude's default behaviour. Triggers on "evaluate this rule", "should we
-  adopt this rule", "is this rule worth it", "check if this rule beats the
-  default", "rule evaluation", "evaluate a rule pack", "audit rules/",
-  "prevent rule inflation", "does this rule change behaviour", "gate a
-  blended rule pack before adoption", or whenever new rule files are being
-  considered for `rules/` or `~/.claude/rules/`. Always use before
-  registering a rule in `rulesRegistry`.
+  Decide whether a candidate rule earns its per-turn token cost or just restates default
+  model behaviour. Use for "evaluate this rule", "is this rule worth it", "audit rules/",
+  and before registering any rule in rulesRegistry.
 inputs:
   required:
     - { path: "rules/**/*.md", artifact: candidate-rule }

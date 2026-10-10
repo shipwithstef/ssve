@@ -2,12 +2,9 @@
 name: benchmark-landing
 version: "1.0"
 description: >
-  Score a landing page against the curated sector reference bank on 8 measurable
-  dimensions. Emits a 1-10 score per dimension + weighted aggregate. Blocks
-  promotion below 7 unless orchestrator provides written override. Runs at every
-  production viewport the page ships at, not only the design canvas. Use when
-  the marketing page has been implemented and rendered after `execute-changeset`,
-  before promotion; deployed conversion-journey proof is a separate required check.
+  Scores a rendered landing page against the curated sector reference bank on 8 dimensions
+  at every shipped viewport; blocks promotion below 7 without written override. Use after
+  a marketing page is implemented, before promotion.
 phases:
   - id: P1-SampleBankPrecondition
     trigger: always

@@ -2,14 +2,10 @@
 name: explore-ux
 version: "1.0"
 description: >
-  Interactive competitive UX exploration on live app surfaces. Browses the app,
-  compares observed UX patterns against competitor knowledge base and sector
-  reference bank, and proposes specific improvements with competitive citations.
-  Use when "how does our UX compare to competitors", "friction audit", "UX
-  benchmark", "competitive flow analysis", "why is our onboarding worse", or
-  when route-workflow detects visual/UX exploratory intent. Also use after
-  test-journeys finds UX gaps that need competitive context, or when
-  benchmark-landing scores are strong but general app UX is suspected weak.
+  Competitive UX teardown of live app flows against the competitor knowledge base and
+  sector reference bank. Use for "how does our UX compare to competitors", "friction
+  audit", "UX benchmark", "why is our onboarding worse". For one region use propose-ux-
+  improvements.
 phases:
   - id: P1-KnowledgeBasePreconditionScope
     trigger: always

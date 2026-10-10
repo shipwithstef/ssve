@@ -2,11 +2,9 @@
 name: discuss-phase
 version: "1.0"
 description: >
-  Resolve bounded gray areas between validation and implementation by producing
-  a durable discussion artifact with decisions, blockers, deferrals, and next-step
-  routing. Use when the user asks to discuss gray areas or unresolved choices, or
-  when routing detects expensive ambiguity that is not primarily a bug/regression
-  and not primarily feature-value validation.
+  Resolve unresolved gray areas between validation and implementation into a durable
+  discussion record (decisions, blockers, deferrals, next step). Use for "discuss the gray
+  areas", "open questions before we build". Not for bugs (diagnose-bug).
 phases:
   - id: P1-TopicScopeRerouteCheck
     trigger: always

@@ -2,14 +2,10 @@
 name: produce-ad-video
 version: "1.0"
 description: >
-  Render and finish an ad/launch/promo video from a beat sheet or an existing
-  picture cut: image-to-video shots, VO + one ducked music bed, ffmpeg assemble,
-  listen/spectrogram QA, and VM delivery. Use when producing or remuxing a
-  video ad, fixing pumping/whistle/too-hot/silent audio, stitching I2V clips,
-  burning captions, or writing masters to ~/delivery. Complements
-  ad-video-script (that skill writes the beat sheet; this one makes the file).
-  Use even if they say "fix the video", "Grok I2V", "remux audio", or
-  "delivery the masters".
+  Render and finish an ad or promo video from a beat sheet or picture cut: image-to-video
+  shots, VO plus ducked music, ffmpeg assembly, audio QA, delivery. Use when: fix the
+  video, remux audio, stitch I2V clips, burn captions, deliver the masters. Script comes
+  from ad-video-script.
 inputs:
   required:
     - { path: "docs/specs/ad-scripts/", artifact: beat-sheet-or-cut, note: "beat sheet from ad-video-script, or an existing picture.mp4 + stems when fixing a cut" }

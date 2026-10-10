@@ -6,7 +6,10 @@ handles_concerns:
   - flaky-test-quarantine
   - test-data-seeding
   - mocking-vs-fixtures
-description: Write E2E tests that behave exactly like a real user in a real browser — click what users click, see what users see, never use shortcuts a user can't use. Use when writing new E2E tests, reviewing test code, fixing flaky tests, or expanding test coverage. Triggers on "write e2e", "add tests", "test this feature", "fix flaky test", "e2e coverage", "playwright test", "acceptance test", or when the user wants automated tests for a feature. This skill does NOT cover demo video recording (use demo-recorder for that).
+description: >
+  Write or fix Playwright E2E tests that act like a real user in a real browser, with no
+  user-impossible shortcuts. Use for 'write e2e', 'playwright test', 'fix flaky test',
+  'e2e coverage', 'acceptance test'. Not demo videos (use demo-recorder).
 phases:
   - id: P1-JourneyACPreflight
     trigger: always

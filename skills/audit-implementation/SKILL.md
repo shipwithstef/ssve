@@ -4,12 +4,9 @@ version: "1.0"
 handles_concerns:
   - build-ship-alignment
 description: >
-  Deep correctness audit of implemented code in the worktree before landing.
-  Runs after execute-changeset and review-gate, verifies the implementation
-  against specs, ACs, and journeys with evidence-graded findings. Use when
-  "audit the implementation", "check correctness", "systems analysis",
-  "is it ready to ship", "pre-landing audit", or automatically in progressive
-  mode for features with new data models, external integrations, or concurrency.
+  Deep pre-landing correctness audit of worktree code against specs, ACs and journeys,
+  with evidence-graded findings; a required receipt in the chain. Use for "audit the
+  implementation", "check correctness", "pre-landing audit", "is it ready to ship".
 phases:
   - id: P1-UpstreamContextScopeConcern
     trigger: always

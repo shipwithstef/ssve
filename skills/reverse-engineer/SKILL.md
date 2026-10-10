@@ -2,14 +2,10 @@
 name: reverse-engineer
 version: "1.0"
 description: >
-  Deconstruct any company, product, tweet, or technique into a buildable spec
-  with a unique twist. Use when: "reverse engineer X", "how does X work",
-  "clone X but better", "deconstruct this", "I saw this tweet, build it",
-  "copy this with a twist", "how would I build X", "X is making money, I want
-  in", "analyze this product", any company/product URL, any tweet URL with a
-  build intent, or when the user points at something and says "I want that".
-  Also triggers on: "tear this apart", "what's their stack", "how do they
-  make money", "reverse this business model".
+  Deconstruct a company, product, tweet or technique into a buildable spec with a unique
+  twist. Use when: reverse engineer X, how would I build X, clone X but better, tear this
+  apart, what's their stack, how do they make money, or a product/tweet URL with build
+  intent.
 phases:
   - id: P1-InputDetectionFamilyFit
     trigger: always

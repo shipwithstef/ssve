@@ -4,10 +4,9 @@ name: suno-architect
 version: "1.0"
 created: 2026-05-16
 description: >
-  Converts Spotify playlists and thematic prompts into highly calibrated Suno AI
-  song recipes or full album concepts, including meta-tags, vocal commands, and
-  multi-language phonetic mappings. Use when the user asks for Suno prompts,
-  albums, track recipes, lyric structure, or credit-efficient song generation.
+  Turn a Spotify playlist or theme into Suno AI song recipes or full album concepts with
+  meta-tags, vocal commands and phonetic lyric mapping. Use when asked for Suno prompts,
+  track recipes, lyric structure or credit-efficient song generation.
 inputs:
   required:
     - { path: "(user prompt)", artifact: song-brief }

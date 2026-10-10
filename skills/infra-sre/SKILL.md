@@ -1,8 +1,10 @@
 ---
 name: infra-sre
 version: "1.0"
-description: >-
-  Reliability review. Use when: "SRE review", "reliability risk", "incident readiness", "SLO", "capacity". Not security analysis or deployment.
+description: >
+  Reliability review proposals: SRE review, SLOs, failure modes, incident readiness,
+  capacity. Proposes reversible controls; never deploys or changes infrastructure. Not
+  security review or deployment.
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

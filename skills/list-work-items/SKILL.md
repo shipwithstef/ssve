@@ -1,7 +1,10 @@
 ---
 name: list-work-items
 version: "1.0"
-description: List local svc work items ordered by dependency and priority. Use when you need to see the backlog, understand what to build next, and see why each item is needed without syncing to GitHub. Here "what to build next" means that ordered local backlog only, not a milestone roadmap.
+description: >
+  List the local svc backlog ordered by dependency and priority, with why each item
+  matters. Use when: show the backlog, what to build next, list work items. Local backlog
+  only, not a milestone roadmap and no GitHub sync.
 phases:
   - id: P1-WorkItemGlobRead
     trigger: always

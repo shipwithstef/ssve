@@ -2,13 +2,10 @@
 name: analyze-competitors
 version: "1.0"
 description: >
-  Systematic product intelligence on top competitors in the project's domain.
-  Finds up to 30 competitors across 4 tiers (direct/adjacent/emerging/macro),
-  analyzes what they do well and poorly, scores moat durability, identifies
-  whitespace and differentiation opportunities. NOT marketing copy — product
-  decisions. Produces docs/specs/analyze-competitors.md. Use when: "competitors",
-  "what else exists", "market analysis", "who are we competing with", "differentiation",
-  or automatically after analyze-domain in progressive greenfield mode.
+  Researches up to 30 competitors across direct, adjacent, emerging and macro tiers,
+  scoring moats and whitespace into docs/specs/analyze-competitors.md. Use for
+  "competitors", "who are we competing with", "differentiation", "market analysis".
+  Product decisions, not marketing copy.
 phases:
   - id: P1-KnowledgeFirstLandscape
     trigger: always

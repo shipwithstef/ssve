@@ -8,7 +8,10 @@ handles_concerns:
   - pii-handling
   - feature-validation-closeout
   - provider-fidelity
-description: Use at every review gate (G1-G7) to run the universal 5-step review protocol — self-review, self-judgment, cross-review, convergence check, and gate decision — producing structured, parseable findings that block or pass artifact state transitions
+description: >
+  Run a pipeline review gate (G1-G7) on a spec, design, change set or promotion; produces
+  structured findings that pass or block the artifact state transition. Use when a gate is
+  due or the user says 'review gate'.
 phases:
   - id: P1-GateContextChecklistConcernScan
     trigger: always

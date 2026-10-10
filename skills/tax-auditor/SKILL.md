@@ -1,8 +1,9 @@
 ---
 name: tax-auditor
 version: "1.0"
-description: >-
-  Tax evidence review. Use when: "tax evidence", "filing readiness", "VAT question", "tax audit checklist". Not tax advice or filing.
+description: >
+  Tax evidence review. Use when: "tax evidence", "filing readiness", "VAT question", "tax
+  audit checklist". Not tax advice or filing.
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

@@ -1,7 +1,10 @@
 ---
 name: base44-environment
 version: "1.0"
-description: Use when working with the Example Marketplace Base44 backend environment, executing API calls, querying database collections, deploying functions, or debugging Base44 integrations.
+description: >
+  Base44 backend operations: auth, secrets, entity schema and function deploys, DB
+  queries, and known deploy and API gotchas. Use when calling Base44 APIs, deploying
+  functions or entities, or debugging Base44 integrations.
 inputs:
   required: []
   optional:

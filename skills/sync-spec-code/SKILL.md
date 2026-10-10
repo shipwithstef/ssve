@@ -1,8 +1,10 @@
 ---
 name: sync-spec-code
 version: "1.0"
-description: >-
-  Audit feature specs against the actual codebase to find drift — PLANNED items now implemented, RESOLVED references pointing at dead files/lines — and update Implementation Notes. Single-feature or all-features mode. Use when: "does the spec reflect the code", "sync-spec-code", "audit spec vs code". Also: "check for spec drift", "check if spec is up to date", "sync spec to code". Single-feature form: "sync-spec-code feature-learning"; also "are the implementation notes current".
+description: >
+  Audit feature specs against the codebase for drift (PLANNED items now built, RESOLVED
+  refs pointing at dead code) and update Implementation Notes. Use for 'does the spec
+  reflect the code', 'check for spec drift', 'sync spec to code'.
 phases:
   - id: P1-ModeSpecSelection
     trigger: always

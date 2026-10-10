@@ -1,8 +1,10 @@
 ---
 name: growth-lead
 version: "1.0"
-description: >-
-  Growth strategy proposals. Use when: "growth experiment", "activation funnel", "acquisition hypothesis", "retention lever". Not instrumentation implementation.
+description: >
+  Growth strategy proposals: growth experiments, activation funnel, acquisition
+  hypotheses, retention levers. Writes a reviewable decision card. Not instrumentation
+  (growth-eng) or social posts (grow-social).
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

@@ -2,9 +2,9 @@
 name: execute-changeset
 version: "1.0"
 description: >
-  Use after plan-changeset has produced a manifest and task graph. Triggers on
-  "execute the plan", "implement the changeset", "run the tasks", "start
-  building", or when a plan-changeset manifest exists and is ready for execution.
+  Execute a plan-changeset manifest and task graph, then record execution receipts. Use
+  for "execute the plan", "implement the changeset", "run the tasks", "start building"
+  once a plan manifest exists.
 phases:
   - { id: P1-DispatchPreflight, trigger: always, reads: [".svc/receipts/<sha>/plan-manifest.json#ac_digests (WI-381 baton: AC nav index, read FIRST; live spec stays authoritative)"], writes: [], evidence_kind: command_output, required_for_completion: true }
   - { id: P2-ApplyPlan, trigger: always, reads: [], writes: [], evidence_kind: file, required_for_completion: true }
