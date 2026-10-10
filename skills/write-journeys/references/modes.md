@@ -73,7 +73,7 @@ This keeps regression work in the correction lane instead of treating it like gr
 
 This mode is the right starting point for new products, major product pivots, or any
 situation where you want a complete discovery pass rather than incremental additions.
-See [references/mode-6.md](references/mode-6.md) for the full Mode 6 instructions.
+See [mode-6.md](mode-6.md) for the full Mode 6 instructions.
 
 ### Mode 8: Chrome Auto-Discovery
 

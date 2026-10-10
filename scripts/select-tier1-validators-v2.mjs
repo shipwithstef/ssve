@@ -68,6 +68,7 @@ const CONTRACTS = [
       "skills/review-gate/SKILL.md",
       "skills/route-workflow/SKILL.md",
       "skills/strategic-decision/SKILL.md",
+      "skills/strategic-decision/references/phases-5-6-ev-and-adversarial.md",
       "skills/svc-advisor/SKILL.md",
       "skills/sync-spec-code/SKILL.md",
       "skills/test-journeys/SKILL.md",

@@ -135,7 +135,7 @@ bash hooks/svc-gemini-context-check.sh
 ```
 Blocks at POOR tier (>4 MB chat JSON). Diagnosis requires holding spec + code + reproduction in attention simultaneously — impossible at POOR tier. On Claude Code this is a no-op. See [references/gemini-context-budget.md](../../references/gemini-context-budget.md). G1 from 2026-04-19 WI-085 audit.
 
-**0. Task Graph Setup — MANDATORY** — MANDATORY before any diagnosis: make sure `.svc/lane-tasks-<WI>.json` holds the task graph for this lane and Task {T} has its `process_tasks`. If the file and process_tasks already exist, skip setup and hydrate; if the file exists without them, add only Task {T}'s process_tasks (never overwrite the file); if there is no file, initialize it with `node scripts/task-graph.mjs init` and populate it. Update the file before the task system on each completion, and do not mark Task {T} completed while process tasks remain open. Details: `references/process.md`.
+**0. Task Graph Setup — MANDATORY** — MANDATORY before any diagnosis: make sure `.svc/lane-tasks-<WI>.json` holds the task graph for this lane and Task {T} has its `process_tasks`. If the file and process_tasks already exist, skip setup and hydrate; if the file exists without them, add only Task {T}'s process_tasks (never overwrite the file); if there is no file, initialize it with `node scripts/task-graph.mjs init` and populate it. Update the file before the task system on each completion, and do not mark Task {T} completed while process tasks remain open. If no task graph exists, create it with `node scripts/task-graph.mjs init .svc/lane-tasks-<WI>.json --wi <WI-###> --lane bugfix`. Details: `references/process.md`.
 
 ### 0.3. Bug-Domain Classification — MANDATORY FIRST HYPOTHESIS GATE
 
@@ -285,6 +285,8 @@ Pattern scan types (pick the ones that match the root cause):
 Document the scan in the work item under **Pattern Scan:**
 
 ```markdown
+**Auto-deploy repos:** **If implementation is authorized and ALL paths auto-deploy from `git push` alone:** do NOT set `--diagnose-only`. Run the normal Lane 4. `execute-changeset` handles the implementation; `git push` IS the deploy.
+
 ## Pattern Scan
 
 **Scope:** <what was grepped — exact patterns, directories, file types>

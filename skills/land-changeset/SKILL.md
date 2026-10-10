@@ -171,9 +171,53 @@ node scripts/check-branch-index.mjs --all
 - No `docs/specs/relations/*.branches.md` tracked yet → prints its own WARN and exits 0; treat as WARN, not as a pass on indexes that don't exist.
 - One or more indexes tracked → every one of them must exit fresh (script exits 0 overall only if ALL are fresh). A non-zero exit is a BLOCK: re-stamp the stale index (shape: `skills/write-spec/references/branch-index-template.md`) before landing.
 
-**Step 2: Ship Preparation** — Prepare the release before pushing. If `schemas/mobile-build-contract.json` exists, you MUST run the canonical mobile release checkpoint first (read store and ledger floors, call `node scripts/mobile-build-identity.mjs allocate-release` exactly once per source and platform, build and inspect via the contract's argv arrays, require exact identity and SHA-256 equality, mark the reservation `built`, then `committed` on land or `failed` on error); otherwise record it as `N/A`. Commit in order: infrastructure, models and tests, controllers and tests, then VERSION + CHANGELOG as one final commit. Bump the 4-digit version (MICRO under 50 changed lines, PATCH 50+, MINOR with feature signals: ASK the user, MAJOR: always ASK; skip if already bumped versus base), write the CHANGELOG from user-visible outcomes so every commit maps to a bullet, and require a full passing test suite at the release boundary (reuse a prior result only if input hashes and environment still match; any failure means STOP and fix in the worktree). Produce the code-path coverage diagram: under 30% covered is a HARD STOP back to `write-e2e`, 30-59% asks the user, 60% or more proceeds. Details: `references/process.md`.
+**Step 2: Ship Preparation** — Prepare the release before pushing. If `schemas/mobile-build-contract.json` exists, you MUST run the canonical mobile release checkpoint first (read store and ledger floors, call `node scripts/mobile-build-identity.mjs allocate-release` exactly once per source and platform, build and inspect via the contract's argv arrays, require exact identity and SHA-256 equality, mark the reservation `built`, then `committed` on land or `failed` on error); otherwise record it as `N/A`. Commit in order: infrastructure, models and tests, controllers and tests, then VERSION + CHANGELOG as one final commit. Bump the 4-digit version (MICRO under 50 changed lines, PATCH 50+, MINOR with feature signals: ASK the user, MAJOR: always ASK; skip if already bumped versus base), write the CHANGELOG from user-visible outcomes so every commit maps to a bullet, and require a full passing test suite at the release boundary (reuse a prior result only if input hashes and environment still match; any failure means STOP and fix in the worktree). Produce the code-path coverage diagram: under 30% covered is a HARD STOP back to `write-e2e`, 30-59% asks the user, 60% or more proceeds. Details: `references/process.md`. Mobile, in short: call `allocate-release` exactly once per source and platform; a failed reservation remains consumed and is never reused.
 
-**Step 3a: Push the branch** — In the worktree, every local commit and every push MUST go through a single-use capability: run `node scripts/svc-owner-recovery.mjs promote-mint ... -- <command>` then `promote-exec` with byte-identical argv. Local land allows only `git commit -m <message>` (`--environment local --operation local-land`); remote promotion allows only `git push origin <head-sha>:refs/heads/<branch>` or `node scripts/merge-pr-with-review-receipt.mjs ...` (`--environment remote --operation remote-promotion`) and needs a fresh capability, because the commit capability is already consumed. NEVER run raw `git push` or `gh pr merge`; flags that widen the staged tree, bypass hooks, rewrite history or change the destination are rejected. Details: `references/process.md`.
+### Step 3a: Push the branch
+
+Before any detached local commit or remote promotion, mint and consume the
+single-use capability at the mutation boundary. The command after `--` is part
+of the capability tuple: mint and exec MUST receive byte-identical argv. Local
+land accepts only `git commit -m <message>`; remote promotion accepts only
+`git push origin <exact-head-sha>:refs/heads/<exact-branch>` or `node scripts/merge-pr-with-review-receipt.mjs --pr <pr-number> --squash --delete-branch --expected-repo <owner/repo> --expected-head <branch> --expected-head-sha <sha>`. Flags that widen the staged tree, bypass hooks, rewrite
+history, or change the destination are rejected before capability consumption.
+
+```bash
+COMMAND=(git commit -m "$COMMIT_MESSAGE")
+MINT="$(node scripts/svc-owner-recovery.mjs promote-mint \
+  --repo "$REPO" --worktree "$WORKTREE" --state-root "$WORKTREE/.svc/runtime" \
+  --wi "$WI" --generation "$GENERATION" --task "$LAND_TASK" \
+  --environment local --operation local-land -- "${COMMAND[@]}")"
+CAPABILITY="$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(x.capability.capability_id)' "$MINT")"
+TOKEN="$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(x.token)' "$MINT")"
+node scripts/svc-owner-recovery.mjs promote-exec \
+  --repo "$REPO" --worktree "$WORKTREE" --state-root "$WORKTREE/.svc/runtime" \
+  --wi "$WI" --generation "$GENERATION" --task "$LAND_TASK" \
+  --environment local --operation local-land --capability "$CAPABILITY" --token "$TOKEN" \
+  -- "${COMMAND[@]}"
+```
+
+The same boundary is mandatory for the exact remote command. Do not run raw
+`git push` or `gh pr merge` after a capability has been minted for another argv.
+
+Still in the worktree, mint and consume a fresh capability for the exact push
+(the local-commit capability is already consumed and cannot authorize this):
+
+```bash
+COMMAND=(git push origin "$HEAD_SHA:refs/heads/$BRANCH")
+MINT="$(node scripts/svc-owner-recovery.mjs promote-mint \
+  --repo "$REPO" --worktree "$WORKTREE" --state-root "$WORKTREE/.svc/runtime" \
+  --wi "$WI" --generation "$GENERATION" --task "$LAND_TASK" \
+  --environment remote --operation remote-promotion -- "${COMMAND[@]}")"
+CAPABILITY="$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(x.capability.capability_id)' "$MINT")"
+TOKEN="$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(x.token)' "$MINT")"
+node scripts/svc-owner-recovery.mjs promote-exec \
+  --repo "$REPO" --worktree "$WORKTREE" --state-root "$WORKTREE/.svc/runtime" \
+  --wi "$WI" --generation "$GENERATION" --task "$LAND_TASK" \
+  --environment remote --operation remote-promotion --capability "$CAPABILITY" --token "$TOKEN" \
+  -- "${COMMAND[@]}"
+```
+
 
 ### Step 3b: Switch to main and open PR
 
@@ -293,21 +337,7 @@ When the PR is approved and merged (by a teammate or CI), resume with Step 5.
 
 ### Decision Logging
 
-After the merge/wait decision is made, log it. The `run_id` comes from the active task graph.
-
-```bash
-# Merge strategy decision (mechanical — determined by repo configuration)
-node scripts/pipeline-log.mjs append \
-  --path .svc/pipeline-decisions.jsonl \
-  --run-id "<WI-ID>" \
-  --skill land-changeset \
-  --phase "<task-id>" \
-  --type mechanical \
-  --decision "<Merged PR #N via squash|PR #N open, waiting for approval>" \
-  --reasoning "<auto-approve: solo contributor, no branch protection|team mode: reviewers assigned>" \
-  --decided-by P0 \
-  --overrideable false
-```
+**Log the merge/wait decision** — after merging or deciding to wait, append one mechanical entry to `.svc/pipeline-decisions.jsonl` with `node scripts/pipeline-log.mjs append` (run id from the task graph, decided-by P0, not overrideable). Details: `references/decision-logging.md`.
 
 ### Restart-Boundary Continuation (WI-552)
 

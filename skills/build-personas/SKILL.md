@@ -181,6 +181,10 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ---
 
+## Decision Logging
+
+**Log the persona selection** — once the persona set is approved (by the owner, or by P0 in auto mode), append one `taste` entry to `.svc/pipeline-decisions.jsonl` with `node scripts/pipeline-log.mjs append`: the tier counts, the option chosen and why, `--decided-by` P0 or user, overrideable. Details: `references/mode-7-tiered-auto-discovery.md`.
+
 ## Important Rules
 
 1. **Qualitative personas are input, not output.** `docs/personas/` contains the raw

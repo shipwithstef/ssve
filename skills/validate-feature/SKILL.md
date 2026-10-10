@@ -158,9 +158,13 @@ digraph feature_discovery {
 
 ---
 
-**0. Task Graph Setup — MANDATORY** — MANDATORY before any validation work: make sure `.svc/lane-tasks-<WI>.json` has a Task {T} with nine `process_tasks` ({T}.1 context-scan through {T}.9 finalize). If the file and process_tasks exist, skip setup and just hydrate; if the file exists without process_tasks, add them to Task {T} only (never overwrite the file); if no file exists, run `node scripts/task-graph.mjs init .svc/lane-tasks-<WI>.json --wi <WI-###> --lane feature` and populate it. Set status with `node scripts/task-graph.mjs set-status`, update the file before the task system on each completion, and never mark Task {T} completed until all nine process tasks are completed or skipped ({T}.3-{T}.7 may be skipped only on the escape-check path). Details: `references/process.md`.
+**0. Task Graph Setup — MANDATORY** — MANDATORY before any validation work: make sure `.svc/lane-tasks-<WI>.json` has a Task {T} with nine `process_tasks` ({T}.1 context-scan through {T}.9 finalize). If the file and process_tasks exist, skip setup and just hydrate; if the file exists without process_tasks, add them to Task {T} only (never overwrite the file); if no file exists, run `node scripts/task-graph.mjs init .svc/lane-tasks-<WI>.json --wi <WI-###> --lane feature` and populate it. Set status with `node scripts/task-graph.mjs set-status .svc/lane-tasks-<WI>.json {T} completed` (and the same for each process task), update the file before the task system on each completion, and never mark Task {T} completed until all nine process tasks are completed or skipped ({T}.3-{T}.7 may be skipped only on the escape-check path). Details: `references/process.md`.
 
 ## Step 0: Context Scan
+
+For concept fragmentation, an existing pipeline break, or a missing journey describing existing functionality, P2 reuses the established expected behavior and skips P3–P5 when no new consequential business uncertainty exists. Route to diagnose-bug, plan-changeset, write-journeys or audit-ac according to the actual gap; retain relevant dependency and spec/code conflict checks.
+
+**Apply the context-scan result to the existing graph:** P2 records whether P3–P5 apply and why. For a bounded authorized change with sufficient current evidence, mark non-applicable process tasks using the existing conditional-skip convention and continue relevant cross-validation and routing. Do not fabricate executed phase receipts or new brief artifacts. A new idea, missing consequential evidence, or a material conflict still requires the applicable business work; authorization alone is not evidence of demand. P6 accepts the existing brief or canonical owner scope as its routing input.
 
 Before asking a single question, scan the project for existing artifacts related to the idea.
 

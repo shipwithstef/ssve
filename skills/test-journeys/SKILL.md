@@ -347,7 +347,7 @@ Each WI file must reference its evidence screenshot under `.svc/visuals/<WI>/`. 
 
 ### Step 5: Save Evidence and Summary
 
-**Step 5: Save Evidence and Summary** — Write evidence under `docs/specs/features/test-evidence/{YYYY-MM-DD}-{env}-{journey-or-feature}/`; SUMMARY.md must include target URL and env, mode, viewport coverage, pass/fail counts, blockers and follow-ups, pre/post evidence and classification when corrective, `provider_visible=true|false` (link `PROVIDER_ANALYTICS_EVIDENCE.md` when true), allowed next skills, and the `node scripts/verify-skill-contract.mjs test-journeys-closeout --summary <SUMMARY.md> --scenarios <scenarios.json> --next <next-skill>` result. Before declaring the run complete, run `node scripts/validate-journey-execution-trace.mjs --summary <run-dir>/SUMMARY.md --scenarios <run-dir>/scenarios.json`. Details: `references/execution-steps.md`.
+**Step 5: Save Evidence and Summary** — Write evidence under `docs/specs/features/test-evidence/{YYYY-MM-DD}-{env}-{journey-or-feature}/`; SUMMARY.md must include target URL and env, mode, viewport coverage, pass/fail counts, blockers and follow-ups, pre/post evidence and classification when corrective, `provider_visible=true|false` (link `PROVIDER_ANALYTICS_EVIDENCE.md` when true), allowed next skills derived from the routing table for this run's findings, and the `node scripts/verify-skill-contract.mjs test-journeys-closeout --summary <SUMMARY.md> --scenarios <scenarios.json> --next <next-skill>` result. Before declaring the run complete, run `node scripts/validate-journey-execution-trace.mjs --summary <run-dir>/SUMMARY.md --scenarios <run-dir>/scenarios.json`. Details: `references/execution-steps.md`.
 
 ### Step 6: Commit Results — MANDATORY BEFORE DECLARING DONE
 
