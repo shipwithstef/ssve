@@ -131,7 +131,7 @@ ls e2e/results/ 2>/dev/null || ls test-results/ 2>/dev/null
 If critical artifacts are missing, that's a finding — not a blocker for
 assessment. Score the missing dimension as 0 and flag it as a blocking gap.
 
-See references/process.md for "Step 2: Score across 8 dimensions" (full detail moved verbatim).
+**Step 2: Score across 8 dimensions** — Score each dimension 0-100 with weights by mode (launch, hackathon, VC, PMF): product completeness, user value clarity, competitive position, visual quality, technical reliability, monetization readiness, distribution readiness and market timing. A missing artifact scores 0 and is flagged as a blocking gap (for example no `analyze-competitors.md`); market timing defaults to 50 with no data. Remember the ceiling: a pre-launch product realistically scores 78-82, launch mode wins at 70+, anything above 85 at launch is probably inflated, and traction-locked dimensions (distribution, competitive position, market timing) improve only after shipping, so do not optimize them pre-launch. Details: `references/process.md`.
 
 ### Step 3: Simulate judge roles
 
@@ -284,7 +284,7 @@ either..." hedging. The pipeline takes a position.
 > competitive position) improve automatically as customers arrive — do not delay
 > launch waiting for them."
 
-See references/process.md for "Step 7: Write assessment" (full detail moved verbatim).
+**Step 7: Write assessment** — Write `docs/specs/readiness-assessment.md` containing: header (date, stage, overall score, verdict GTM first / Fix gaps then GTM / Build more), the dimension score table (score, weight, weighted, key finding), judge verdicts, blocking and non-blocking gaps (each with dimension, score and a specific fix), the ICP simulation if applicable, a score-evolution roadmap (today, after 10 customers, after 100), and a routing decision naming the exact next skill or WI. Missing critical artifacts are findings, not blockers for the assessment itself. Details: `references/process.md`.
 
 ### Step 8: Commit the assessment to git
 

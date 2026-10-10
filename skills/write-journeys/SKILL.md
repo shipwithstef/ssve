@@ -63,7 +63,21 @@ markdown with Gherkin scenarios embedded using `#` headers for keywords and `-` 
 for steps. Files use the `.feature.md` extension. This renders beautifully on GitHub while
 remaining parseable by the Gherkin parser (JS v19.0.0+).
 
-See references/persona-trace-contract.md for "Persona Trace Contract" (full detail moved verbatim).
+## Persona Trace Contract
+
+For user-facing or admin-facing feature work, every generated or refreshed
+journey must preserve concrete persona traceability:
+
+- the journey header names the persona ID/path (`P2`, `docs/specs/personas/P2.md`);
+- each scenario is assigned to a persona path or explicitly marked
+  `N/A - system-only`;
+- Layer 3 findings say which persona is harmed by a missing transition,
+  confusing state, or uncovered AC;
+- `JOURNEY_INDEX.md` keeps the persona-to-journey table current.
+
+Do not use `customer`, `admin`, `all users`, `PASS`, or `satisfied` as a
+standalone persona reference. Those labels are too generic for downstream E2E
+and feature validation ledgers.
 
 ## Repository Mode Gate
 
@@ -120,7 +134,7 @@ Triggered when `MANUAL_TEST_RUNBOOK_*.md` or similar legacy journey docs are det
 Extracts useful flows from legacy docs, generates proper journey files, and archives
 the originals.
 
-See references/modes.md for "Mode 5: Auto (full codebase, no stopping)" (full detail moved verbatim).
+**Mode 5: Auto (full codebase, no stopping)** — On "auto", "full sync", "do everything", `--auto`, or a request not to be interrupted, run the entire pipeline without pausing: read ALL feature specs, identify ALL personas, generate the 3 critical journeys (J01-J03: activation, core loop, conversion), run three-layer analysis on each, generate expansion journeys until every persona has a journey and every spec with user-facing ACs is referenced, run coverage analysis, migrate legacy docs, write `JOURNEY_INDEX.md`, and present the full result to the user ONCE at the end. Auto mode does NOT skip quality steps (deep spec reading, user-language scenarios, Layer 3 reasoning); it only skips mid-run confirmation. It ends with a "JOURNEY SYNC COMPLETE (auto mode)" summary of personas, journeys, AC coverage, Layer 3 findings and migrated docs. Details: `references/modes.md`.
 
 ### Mode 6: Tiered Auto-Discovery (proposal gate, new product or full reset)
 
@@ -134,18 +148,18 @@ journey file, then builds only what was approved. Tier 2 journeys show both the
 current path (what works today) and the enhanced path (what becomes possible with
 1-3 backlog additions). Tier 3 journeys become stub files only.
 
-See references/modes.md for "Mode 7: Regression Refresh" (full detail moved verbatim).
+**Mode 7: Regression Refresh** — For brownfield repos where a known journey is broken or changed (work item typed `regression`, journey-based QA found a broken flow, shipped behavior changed, or verify-promotion reports milestone completion with existing journeys). Do not generate a full new set: find the affected journeys, identify the broken or changed steps, record expected vs actual path, and update the journey or write a work-item note, keeping the work in the correction lane. Details: `references/modes.md`.
 
-See references/modes.md for "Mode 8: Chrome Auto-Discovery" (full detail moved verbatim).
+**Mode 8: Chrome Auto-Discovery** — On "auto-discover chrome", "chrome journey coverage" or `--auto-discover-chrome`, run `node skills/write-journeys/scripts/auto-discover-chrome.mjs --root .` to scan layout, header, sidebar, nav and shell components for interactive controls, cross-reference existing `@chrome-control:<id>` traces, emit one idempotent `Chrome-<role>-<surface>-<label>.feature.md` skeleton per uncovered control, and write `docs/specs/journeys/SUMMARY.md`. Skeletons are minimal, so refine product-specific assertions afterwards. Details: `references/modes.md`.
 
-See references/modes.md for "Mode 9: Capability Auto-Scaffolding" (full detail moved verbatim).
+**Mode 9: Capability Auto-Scaffolding** — When `catalog-domain-capabilities` finds table-stakes capabilities in `docs/specs/capability-catalog.data.json`, or with `--capability <name>`, run `node skills/write-journeys/scripts/capability-journeys.mjs --root . --capability <name>`. It matches `multi-language`, `theme-switching`, `auth-state-recovery`, `multi-locale-payments` and `accessibility`, requires implementation evidence in `src/` (a catalog row alone never fires), and emits idempotent `J-CAP-<capability>.feature.md` files for customer/owner by mobile/desktop. Details: `references/modes.md`.
 
 ## Phase 1: Deep Project Analysis
 
 This is the most important phase. You MUST deeply understand the product before
 generating a single journey. Shallow reading produces generic, disconnected output.
 
-See references/phase-1-deep-project-analysis.md for "1a. Read ALL feature specs — FULLY, not just headers" (full detail moved verbatim).
+**1a. Read ALL feature specs — FULLY, not just headers** — For EACH spec relevant to the journey, read the ENTIRE spec (`ls docs/specs/features/*.md`): full AC tables, UI descriptions, user stories, error states and edge cases. You need what the user sees on each screen, the choices they have, what happens on each choice, the exact AC behavior, and how features hand off to each other. Summarizing ACs makes the journey WRONG ("my profile shows as complete" is useless when the spec defines exactly what complete means). Details: `references/phase-1-deep-project-analysis.md`.
 
 ### 1b. Map the journey BEFORE writing it
 
@@ -211,7 +225,7 @@ Output a summary: "Here's what I understand about this project's feature graph..
 
 ---
 
-See references/phase-2-load-personas-from-build-persona.md for "Phase 2: Load Personas (from build-personas)" (full detail moved verbatim).
+**Phase 2: Load Personas (from build-personas)** — write-journeys does NOT build personas. Read `docs/specs/personas/P*.md` and use each persona's Skill Implications > write-journeys section, Trust Triggers (is this step earning or losing trust?) and Patience Budget (where must the journey be faster?). If no persona files exist, warn the user to run `/build-personas` first and, only if they agree, fall back to shallow persona extraction from feature specs, flagged as to be replaced. Map each persona to activation, core-loop and conversion journeys, and always know which persona a scenario is written for, since the same step feels different to different personas. Details: `references/phase-2-load-personas-from-build-persona.md`.
 
 ## Phase 3: Generate Journeys (Iterative)
 
@@ -240,7 +254,7 @@ For each subsequent iteration:
 Use sequential IDs: J01, J02, J03...
 File names: `J01-descriptive-name.feature.md`
 
-See references/phase-3-generate-journeys-iterative.md for "Journey document format" (full detail moved verbatim).
+**Journey document format** — Journeys must be ABSOLUTE and read like a screenplay, not a checklist: every step states what the user sees (specific screen, labels), decides and why, what happens as a result, and what could go wrong. Each journey doc has the header (`Journey ID`, `Persona`, `Covers`, `Priority`), Why This Journey Matters, User Motivation, a Behavior Specification of Gherkin scenarios tagged with AC IDs (` `@AC-ID` ` above each `# Scenario:`), Alternative Paths, E2E Coverage, and Coverage Gaps. Details and full template: `references/phase-3-generate-journeys-iterative.md`.
 
 ### AC reference syntax
 
@@ -256,7 +270,7 @@ This is:
 - Grep-able: `grep -r '@MT-26' docs/specs/journeys/`
 - Readable on GitHub (rendered as inline code)
 
-See references/phase-3-generate-journeys-iterative.md for "Writing good scenarios" (full detail moved verbatim).
+**Writing good scenarios** — Every scenario must pass the PM test: readable by a PM who has never opened the codebase. NEVER mention file names, database columns, CSS selectors, implementation details or code paths; AC IDs are the ONLY technical element, and only as tags. Write behavior ("When I click Find Match"), not implementation ("When the matchmaking RPC is invoked"), and keep scenarios to 3-7 steps, splitting longer ones within the same journey. Details: `references/phase-3-generate-journeys-iterative.md`.
 
 ### What BDD scenarios MUST capture
 
@@ -306,9 +320,9 @@ mark them so the PM knows what's aspirational vs confirmed:
 This prevents the journey from lying. A PM reading a `[SPEC]` step knows:
 "This is what we designed but I should verify it actually works."
 
-See references/phase-3-5-three-layer-journey-analysis.md for "Layer 3: What's MISSING + What's WRONG (journey reasoning)" (full detail moved verbatim).
+**Layer 3: What's MISSING + What's WRONG (journey reasoning)** — The most valuable layer: reason about the journey as a whole system, since perfect individual specs can still produce a broken flow. Find logical contradictions, sequencing problems, persona mismatches, missing transitions, wrong placement, redundancies, dead ends, missing user expectations, and concept fragmentation (the same entity under two components or names; check entity-level dedup, industry patterns such as producer/consumer/system sides, naming alignment, and full persona lifecycle per entity). For every Background or Given that assumes data exists, ask who creates it and whether a journey covers that creation, tracing entity, producing role, UI, validation, side effects, journey coverage and discoverability; report the step where the chain breaks as an Ungrounded Precondition. Present all findings in a `## Journey Analysis` section (Logical Issues, Ungrounded Preconditions, Missing Transitions, Product Gaps). Each finding must be specific and tied to the persona at that moment; flag only user-facing problems, not tech debt or deliberate design choices; separate "definitely wrong" from "worth considering"; findings are for the PM to evaluate, not demands. Details: `references/phase-3-5-three-layer-journey-analysis.md`.
 
-See references/phase-3-5-three-layer-journey-analysis.md for "Routing Layer 3 findings to other skills" (full detail moved verbatim).
+**Routing Layer 3 findings to other skills** — After presenting findings, recommend the next skill rather than just listing them: ungrounded precondition with no producer journey or UI goes to `/validate-feature`; one where the UI exists but bypasses validation goes to `plan-changeset` (a fix, not a new feature); concept fragmentation goes to `/validate-feature`; a missing persona goes to `/build-personas`; a missing transition goes to `/audit-ac`. Details: `references/phase-3-5-three-layer-journey-analysis.md`.
 
 ### When validate-feature routes BACK to write-journeys
 
@@ -335,7 +349,7 @@ When presenting a journey to the PM:
 
 After generating journeys, produce a coverage report:
 
-See references/phase-4-coverage-analysis.md for "AC Coverage Matrix" (full detail moved verbatim).
+**AC Coverage Matrix** — For each feature spec report total ACs, ACs referenced by at least one journey, ACs in no journey (gaps), ACs with E2E coverage, and ACs referenced by a journey but lacking an E2E test, as a "JOURNEY COVERAGE REPORT" table (feature, total, in journeys, gaps). Details: `references/phase-4-coverage-analysis.md`.
 
 ### E2E Test Mapping
 
@@ -344,7 +358,7 @@ For each E2E test file, show which journey (if any) it validates:
 - Tests NOT mapped to any journey: either standalone feature tests (fine)
   or cross-feature tests missing a journey doc (gap)
 
-See references/phase-4-coverage-analysis.md for "Cross-Journey Dependency Graph (supply-side validation)" (full detail moved verbatim).
+**Cross-Journey Dependency Graph (supply-side validation)** — The highest-value coverage check. For every journey's Background and Given preconditions, list each assumed state, identify the producing role, check whether any journey for that role covers producing it, and check whether a UI path exists. Report a "CROSS-JOURNEY DEPENDENCY REPORT" (consumer journey, assumption, producer, producer journey, UI, validation). Flag as CRITICAL any row where both the producer journey and the UI are missing or partial (the consumer feature cannot work); flag as GAP any row where the UI exists but no journey covers it. Run it systematically for multi-role products. Details: `references/phase-4-coverage-analysis.md`.
 
 ### Missing journey candidates
 
@@ -374,9 +388,9 @@ no longer match the current product).
 
 ---
 
-See references/phase-6-persist-state.md for "Phase 6: Persist State" (full detail moved verbatim).
+**Phase 6: Persist State** — After each iteration, `mkdir -p docs/specs/journeys` and write `docs/specs/journeys/JOURNEY_INDEX.md` (last synced date, persona and journey counts, AC coverage %, a Personas table, a Journeys table with ID, title, persona, priority, features, AC refs and E2E tests, and a Next Iteration checklist from coverage gaps) so the next session can resume. Also add a Journeys section to `docs/specs/INDEX.md` if it exists. Details: `references/phase-6-persist-state.md`.
 
-See references/important-rules.md for "Important Rules" (full detail moved verbatim).
+**Important Rules** — (1) NEVER generate journeys without reading specs first; every step must trace to a real AC ID. (2) Iterate, don't dump: 2-3 journeys per iteration with user approval between, except in auto mode (review once at the end). (3) Critical first: activation, core loop, conversion. (4) Standalone interactions (theme toggle, password change) are feature ACs, not journeys. (5) Scenarios describe user behavior, not system internals. (6) Flag, don't fabricate: flag a missing AC in Coverage Gaps, never invent AC IDs. (7) Legacy migration is opt-in: archive, never delete without explicit approval. (8) Journey docs are the source of truth for E2E scope, so write them clearly enough for an agent to generate tests. (9) Before handing a journey to `write-e2e`, it MUST pass `node scripts/verify-journey-e2e-bridge.mjs <journey-file>` (parseable scenarios, AC/chrome/capability tags, `## E2E Coverage`, specific UI labels, no scenario over 7 steps). (10) Every Background must be grounded: trace who creates the assumed data, whether a journey covers it and whether the UI supports it; flag any gap as an Ungrounded Precondition in the Journey Analysis and never silently assume the producer side exists. Details: `references/important-rules.md`.
 
 ## Mode 6: Tiered Auto-Discovery
 

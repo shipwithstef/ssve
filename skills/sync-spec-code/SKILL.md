@@ -180,9 +180,9 @@ Flag drift as a new annotation:
 
 Don't try to resolve drift — just flag it. The developer decides whether to fix the code or update the spec.
 
-See references/the-audit.md for "Step 4b — Audit Code Against Journey Requirements" (full detail moved verbatim).
+**Step 4b — Audit Code Against Journey Requirements** — Journeys are the source of truth for what the product should do, so for every journey covering this feature (`grep -l "feature-name" docs/specs/journeys/*.feature.md`) read its Background/Given preconditions and Journey Analysis, then check each against the code: the entity or field exists, the UI renders that state, the backend validation actually runs on the UI's code path, and expected side effects fire. Flag each failure as `> - **[PREFIX]-N JOURNEY-GAP YYYY-MM-DD:** Journey J07 assumes ... but code ... - file:line`; JOURNEY-GAP (journey needs X, code lacks it) is different from DRIFT (spec says X, code does Y). Details: `references/the-audit.md`.
 
-See references/the-audit.md for "Step 4c — Write Missing Spec Coverage" (full detail moved verbatim).
+**Step 4c — Write Missing Spec Coverage** — For each JOURNEY-GAP, if the spec has no user story covering the behavior, WRITE it now (specs are safe and reversible to edit, and a hole blocks everything downstream): add a `US-N` section tagged `[SPEC-GENERATED]` with a user story, a narrative, and an AC table of placeholder ACs (`QA=—`, `E2E=🔲`, `Test=—`), annotate the source journey with a `SPEC-GENERATED` note, and route to `audit-ac` to make the ACs testable. If the code just lacks an existing story's behavior, that is a PLANNED item instead. NEVER invent behavior no journey precondition demands. Details: `references/the-audit.md`.
 
 ### Step 5 — Update the spec in place
 
