@@ -1,5 +1,5 @@
 [
-  {"file": "src/webhook.mjs", "line": 17, "severity": "HIGH", "issue": "secret is logged"},
-  {"file": "src/webhook.mjs", "line": 8, "severity": "MEDIUM", "issue": "header length compared before timingSafeEqual leaks length"},
-  {"file": "src/webhook.mjs", "line": 15, "severity": "MEDIUM", "issue": "JSON.parse can throw on bad input"}
+  {"file": "src/webhook.mjs", "line": 16, "severity": "HIGH", "issue": "signing secret is logged"},
+  {"file": "src/webhook.mjs", "line": 7, "severity": "MEDIUM", "issue": "header length compared before timingSafeEqual leaks length"},
+  {"file": "src/webhook.mjs", "line": 14, "severity": "MEDIUM", "issue": "JSON.parse can throw on bad input"}
 ]

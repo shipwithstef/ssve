@@ -38,7 +38,7 @@ Every pillar below was run on Haiku 5.5. Cells show solved runs out of runs, the
 | review-exec, small change | review-faults | 4 faults: off-by-one capacity, refund race, fail-open auth, path traversal | 3/3, $0.013 | 3/3, $0.015 | Ceiling |
 | review-exec, multi-file change | review-faults-large | 4 cross-file faults among correct-looking code (decoys) | 5/5, $0.012 | 5/5, $0.019 | Ceiling |
 | review-plan | plan-defects | Uncovered AC, missing file, bad step order, step without a verification, scope creep | 3/3, $0.008 | 3/3, $0.011 | Ceiling |
-| review-security | security-payments | Client-set price, refund IDOR, unsigned webhook accepted, secret logged | 3/3, $0.008 | 3/3, $0.016 | Ceiling |
+| review-security | security-payments | Client-set price, refund IDOR, unsigned webhook accepted, signing material logged | 3/3, $0.010 | 3/3, $0.014 | Ceiling |
 | audit-implementation | audit-claims | A record claiming all ACs; 2 claims false, 1 test vacuous | 2/3, $0.009 | 3/3, $0.014 | Ceiling (the one bare miss was an ambiguous AC, since fixed) |
 | bugfix (diagnose-bug) | bugfix-rootcause | Reported symptom in one feature; the shared cause breaks an unreported second one; DST | 3/3, $0.007 | 3/3, $0.020 | Ceiling: bare also fixed the root cause |
 | drift (sync-spec-code) | drift-detect | 6 spec claims, 3 drifted | 2/3, $0.006 | 3/3, $0.008 | Ceiling (the bare miss never wrote its file) |
@@ -93,4 +93,4 @@ node scripts/outcome-eval.mjs run --arms svc:<variant> --tasks <task> ...   # a 
 node scripts/outcome-eval.mjs promote --candidate svc:<variant> --baseline svc results/<files>.json
 ```
 
-Raw rows are in `results/2026-10-10-pillars-*.json`. The round-1 plan-defects rows predate a fix to the task: the plan had real defects that were not planted, so thorough reviews broke the noise cap. Only the round-2 rows are counted.
+Raw rows are in `results/2026-10-10-pillars-*.json`. The round-1 plan-defects rows predate a fix to the task: the plan had real defects that were not planted, so thorough reviews broke the noise cap. Only the round-2 rows are counted. security-payments was rerun (`-security-v2.json`) after the planted secret leak was changed to read injected config instead of the environment. GitHub code scanning flags intentionally vulnerable fixtures that read `process.env`, and this repository uses default setup, which has no path exclusions. Both versions scored 3/3 in both arms; the table shows v2.

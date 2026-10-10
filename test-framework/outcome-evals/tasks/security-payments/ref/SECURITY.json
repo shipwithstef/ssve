@@ -1,6 +1,6 @@
 [
   {"file": "src/checkout.mjs", "line": 7, "severity": "CRITICAL", "issue": "the amount comes from the client body, so a customer can pay 1 cent for any class; always use the server price"},
   {"file": "src/checkout.mjs", "line": 14, "severity": "HIGH", "issue": "refundBooking never checks the booking belongs to the user: any customer can refund another customer's booking (IDOR)"},
-  {"file": "src/webhook.mjs", "line": 13, "severity": "CRITICAL", "issue": "a request without the x-signature header skips verification, so anyone can forge a checkout.paid event"},
-  {"file": "src/webhook.mjs", "line": 17, "severity": "HIGH", "issue": "the webhook secret is written to the logs on every event"}
+  {"file": "src/webhook.mjs", "line": 12, "severity": "CRITICAL", "issue": "a request without the x-signature header skips verification, so anyone can forge a checkout.paid event"},
+  {"file": "src/webhook.mjs", "line": 16, "severity": "HIGH", "issue": "the webhook signing material (config.hmac) is written to the logs on every event"}
 ]

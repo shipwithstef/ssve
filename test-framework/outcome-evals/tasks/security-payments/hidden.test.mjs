@@ -7,8 +7,8 @@ import fs from "node:fs";
 const FAULTS = [
   { id: "client sets the price it pays", file: "checkout.mjs", line: 7, words: /amount|price|client|tamper|any (price|amount)|pay (less|nothing|1)|trust/i },
   { id: "any customer can refund anyone's booking", file: "checkout.mjs", line: 14, words: /owner|another|other (user|customer)|idor|authoriz|belong|any booking|any user/i },
-  { id: "a webhook without a signature header is accepted", file: "webhook.mjs", line: 13, words: /missing|absent|without|no signature|omit|unsigned|forg|bypass|optional/i },
-  { id: "the webhook secret is written to the logs", file: "webhook.mjs", line: 17, words: /secret|log|leak|expos/i },
+  { id: "a webhook without a signature header is accepted", file: "webhook.mjs", line: 12, words: /missing|absent|without|no signature|omit|unsigned|forg|bypass|optional/i },
+  { id: "the webhook signing material is written to the logs", file: "webhook.mjs", line: 16, words: /secret|log|leak|expos/i },
 ];
 
 function findings() {

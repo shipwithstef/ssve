@@ -1,0 +1,180 @@
+{
+  "ran_at": "2026-10-10T17:40:14.303Z",
+  "model": "haiku",
+  "reps": 3,
+  "tasks": [
+    "security-payments"
+  ],
+  "arms": [
+    "bare",
+    "svc"
+  ],
+  "summary": [
+    {
+      "arm": "bare",
+      "runs": 3,
+      "errors": 0,
+      "solved": "3/3",
+      "solve_rate": 1,
+      "mean_hidden_score": 1,
+      "mean_cost_usd": 0.0101,
+      "mean_turns": 10.7
+    },
+    {
+      "arm": "svc",
+      "runs": 3,
+      "errors": 0,
+      "solved": "3/3",
+      "solve_rate": 1,
+      "mean_hidden_score": 1,
+      "mean_cost_usd": 0.0136,
+      "mean_turns": 13.3
+    }
+  ],
+  "rows": [
+    {
+      "task": "security-payments",
+      "arm": "bare",
+      "rep": 0,
+      "model": "haiku",
+      "pillar": "review-security",
+      "prompt_sha": "ecde8abed821",
+      "wall_ms": 49240,
+      "ok": true,
+      "cost_usd": 0.011465580000000001,
+      "turns": 12,
+      "duration_ms": 46550,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "is what makes it reachable.\n\n**Not reported:** A non-ASCII `x-signature` header probably makes `timingSafeEqual` throw. That gives an error response but no state change, so I did not count it as an exploitable defect.\n\n**Before shipping:** The two CRITICAL issues are enough to block release. Reject a missing signature, use only the server-side `PRICES` value, and add an ownership check on refunds."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-39-07-402Z/security-payments-bare-0"
+    },
+    {
+      "task": "security-payments",
+      "arm": "bare",
+      "rep": 1,
+      "model": "haiku",
+      "pillar": "review-security",
+      "prompt_sha": "ecde8abed821",
+      "wall_ms": 39421,
+      "ok": true,
+      "cost_usd": 0.00822704,
+      "turns": 8,
+      "duration_ms": 36409,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "ing record is never cleared. A new `checkout.paid` event can reset a refunded booking to paid. This is reachable directly through the unsigned path in the first finding, or through a duplicate provider event with a new ID.\n\nI left out a possible \"booking stuck in `refunding`\" state when the gateway call throws. An attacker cannot exploit it beyond locking their own booking, so I did not report it."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-39-07-402Z/security-payments-bare-1"
+    },
+    {
+      "task": "security-payments",
+      "arm": "bare",
+      "rep": 2,
+      "model": "haiku",
+      "pillar": "review-security",
+      "prompt_sha": "ecde8abed821",
+      "wall_ms": 44698,
+      "ok": true,
+      "cost_usd": 0.01056039,
+      "turns": 12,
+      "duration_ms": 41633,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "rrency looks safe in a single process, because the status is set to `refunding` before the `await`. I also left out the unhandled `event.id` case in deduplication, since I couldn't tie it to an attack.\n\nFindings 1 and 2 should block the ship. Together they let a customer book for free. Fix 3 and 4 before shipping as well. Finding 5 can wait if the provider never resends a paid event with a new id."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-39-07-402Z/security-payments-bare-2"
+    },
+    {
+      "task": "security-payments",
+      "arm": "svc",
+      "rep": 0,
+      "model": "haiku",
+      "pillar": "review-security",
+      "prompt_sha": "a3a1de8e805a",
+      "wall_ms": 54519,
+      "ok": true,
+      "cost_usd": 0.01241425,
+      "turns": 12,
+      "duration_ms": 50775,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        " is an availability issue, not a money issue.\n\nThe review follows the framework's method, adapted to this directory. I did not write the framework's review report, since it has no `docs/specs/` here. I did not run the OWASP/STRIDE passes as separate written tables or the framework's concern-scan and supply-chain steps, because the code has no dependencies and the framework scripts are not present."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-39-07-402Z/security-payments-svc-0"
+    },
+    {
+      "task": "security-payments",
+      "arm": "svc",
+      "rep": 1,
+      "model": "haiku",
+      "pillar": "review-security",
+      "prompt_sha": "a3a1de8e805a",
+      "wall_ms": 54888,
+      "ok": true,
+      "cost_usd": 0.01269609,
+      "turns": 12,
+      "duration_ms": 51469,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "sult, so I left it out.\n- A refund that fails in the gateway leaves the booking stuck in `refunding`. This is an availability problem, not something an attacker can exploit.\n\nThe spec calls for comprehensive review of payment code, so I included findings that I could demonstrate or verify by reading. The file has no per-finding confidence field because the schema you specified doesn't include one."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-39-07-402Z/security-payments-svc-1"
+    },
+    {
+      "task": "security-payments",
+      "arm": "svc",
+      "rep": 2,
+      "model": "haiku",
+      "pillar": "review-security",
+      "prompt_sha": "a3a1de8e805a",
+      "wall_ms": 66566,
+      "ok": true,
+      "cost_usd": 0.0158382,
+      "turns": 16,
+      "duration_ms": 63449,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "gainst the code from a scratch script outside the project, and each finding is confirmed by that run. The framework's helper scripts (concern scan, `npm audit`, the review report) are not in this directory, so I applied its OWASP and STRIDE checks by reading the code. `package.json` declares no dependencies, so there was no supply-chain surface to audit. I found no hardcoded credentials in `src/`."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T17-39-07-402Z/security-payments-svc-2"
+    }
+  ]
+}
