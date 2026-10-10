@@ -228,7 +228,7 @@ and pick the best fit. Present it to the builder with the tier and reasoning.
 
 ---
 
-See references/stage-2-reinvest-month-2-3.md for "Stage 2: Reinvest (Month 2-3)" (full detail moved verbatim).
+**Stage 2: Reinvest (Month 2-3)** — Stage 2 is a reinvestment plan, not a project: Stage 1 revenue funds what Stage 3 needs. Using the builder profile, name specific gaps (entity, payment processor, paid infra tiers, design or marketing contractors, AI tooling, analytics) with action, timing by revenue level and typical cost, then document how the Stage 1 audience (email list, installs, community, domain) transfers to Stage 3 (minimal if Stage 1 was Tier C) and how new skills and tools carry over. Every gap needs what it is, what it costs to close, when to close it, and the risk of skipping it. Details: `references/stage-2-reinvest-month-2-3.md`.
 
 ## Stage 3: The Real Thing (Month 3+)
 
@@ -327,7 +327,7 @@ One question. One time. The builder answers and the pipeline moves.
 
 ---
 
-See references/staging-plan-output-format.md for "Staging Plan Output Format" (full detail moved verbatim).
+**Staging Plan Output Format** — Write the plan to `docs/specs/staging-plan.md` with: header (big idea, builder profile path), Decision (staging Yes/No and the decision-matrix row that triggered it), Stage 1 (project, tier A/B/C, connection to the big idea, MVP, revenue model, price, payment method, free-tier stack, build time, distribution, month-1 target, and the 9-rule First-Project Rules checklist, each PASS/FAIL with notes), Stage 2 (revenue milestone, timeline, ranked reinvestment table, audience transfer plan), Stage 3 (big idea, re-entry at `write-vision`, builder situation, concrete advantages) and an Escape Hatch stating that "build my idea anyway" skips staging and creates no plan. Details: `references/staging-plan-output-format.md`.
 
 ## Self-Verify Checklist
 

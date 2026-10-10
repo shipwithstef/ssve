@@ -90,11 +90,11 @@ For three-way comparison, open THREE worktrees:
 
 Clean up all worktrees when the scenario completes. Never leave orphaned worktrees.
 
-See references/autopilot-mode.md for "The Loop" (full detail moved verbatim).
+**The Loop** — Autopilot repeats a 13-step loop per scenario: pick a scenario, open a worktree from main, run all pipeline skills in order, start the server (up to 3 fix attempts), test live (`sync-spec-code`, `test-journeys`, `write-e2e` against localhost), build the obra and raw comparison worktrees, measure the three-way delta (ACs, edge cases, tokens, coverage, time to running server), find skill gaps, fix them in SKILL.md (max 3 attempts per gap, then flag for a human), commit, suggest the next scenario and close all worktrees. Repeat until completion criteria are met or the token budget is exhausted. Details: `references/autopilot-mode.md`.
 
-See references/autopilot-mode.md for "What "Full Running App" Means" (full detail moved verbatim).
+**What "Full Running App" Means** — The output of a run is a running app, not a spec: `plan-changeset` MUST produce all 8 parts (types, data model, unit tests, services, API routes, components if UI, e2e tests, config) and `land-changeset` writes them into the worktree. Then run `npm install`, start the server and poll the health endpoint; if it does not start, read the error, re-run `plan-changeset` for the failing part only, and retry up to 3 times before logging the failure with full error output. Details: `references/autopilot-mode.md`.
 
-See references/autopilot-mode.md for "Multi-Approach Comparison" (full detail moved verbatim).
+**Multi-Approach Comparison** — Comparison mode MUST run each approach (svc, gstack, obra/superpowers, raw) as a separate FOREGROUND conversation where the operator plays the user, and every skill MUST be invoked through the Skill tool, never approximated inline; background agents skip interactive skills and make the result UNFAIR. Before any approach runs, write a Phase 0 expectations checklist derived only from the user's sentence to `test-framework/results/{date}/phase-0-expectations.md`. If three sequential foreground sessions are impossible, record the comparison as PARTIAL. Afterwards measure each approach, write `methodology-usage-audit.md` with a FAIR / PARTIALLY FAIR / UNFAIR verdict, and report in `comparison.json` and `comparison.md`. Details: `references/autopilot-mode.md`.
 
 ### Self-Improvement Protocol
 
@@ -179,7 +179,7 @@ Every doctrine claim has a concrete test that produces numerical evidence. No cl
 
 **For C7:** Create two worktrees with `bash scripts/worktree.sh create <branch>`. Dispatch parallel agents (one per worktree) using `superpowers:dispatching-parallel-agents`. This is infrastructure the framework already provides -- use it.
 
-See references/test-suites.md for "Test Suites" (full detail moved verbatim).
+**Test Suites** — Suite 1 runs `bash test-framework/scripts/validate-pipeline-integrity.sh <project-root>` (static artifact checks); Suite 2 compares 3 single-prompt agents against 3 full-pipeline agents for variance reduction (output must be running code); Suite 3 measures token efficiency (spec-referenced vs full `src/` load, prescribed vs random artifact order); Suite 4 plants 5 errors in a spec to test review detection; Suite 5 checks AC drift across a 3-task implementation with and without checkpoints (it must compile and run); Suite 6 checks that `write-spec` cascades discover Enabler dependencies as real specs; Suite 7 runs two features in real parallel git worktrees and verifies zero cross-contamination. Details: `references/test-suites.md`.
 
 ## Suite 8: First-Time User Experience
 

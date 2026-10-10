@@ -213,7 +213,7 @@ For each matched concern:
 
 The concern check is in addition to specialist findings — a PR can pass specialist review but fail concern coverage. The audit report's headline summary must list both.
 
-See references/process.md for "Phase 1: Specialist Dispatch (parallel)" (full detail moved verbatim).
+**Phase 1: Specialist Dispatch (parallel)** — Before the main correctness audit, dispatch parallel Agent subagents, each given `git diff main..HEAD`, the feature spec ACs and its checklist: testing (always), security (always, NEVER_GATE), performance (>100 LOC or DB queries touched), data-migration (migration files present, NEVER_GATE), api-contract (routes or response shapes changed) and maintainability (>200 LOC). Security and data-migration always run; the others may be skipped if they consistently find nothing. Merge by deduplicating on file:line, keeping the highest severity and attributing each finding to its specialist; specialist findings become Phase 2 hypotheses. On the Claude host these run as lenses in the review-station wave (`scripts/review-station-merge.mjs`, `references/parallel-review-station.md`). Details: `references/process.md`.
 
 ### Phase 2: Build Coverage Ledger
 
@@ -242,7 +242,7 @@ BEFORE reading the code deeply:
 - "The code might have bugs"
 - "Error handling could be better"
 
-See references/process.md for "Phase 3: Audit One Subsystem At A Time" (full detail moved verbatim).
+**Phase 3: Audit One Subsystem At A Time** — For each subsystem: trace the happy path from entrypoint to response, trace error paths (invalid input, timeout, DB failure), trace cleanup and shutdown for leaks, compare against each AC it claims, walk the journey Gherkin steps against working code, and re-run the manifest's validation commands. For features with a Vibe Contract the auditor MUST re-score against the Aesthetic Scoring Rubric (target 90+) and check the motion schema in `vibe-contract.json`. With subagents, give each one subsystem with a scoped prompt (only its disjoint files, its AC slice, its Phase 2 hypotheses, its validation commands); auditors must not scan the codebase, and cross-subsystem questions go back to the orchestrator for Phase 5 convergence. Details: `references/process.md`.
 
 ### Phase 4: Classify Findings
 
@@ -278,7 +278,7 @@ After all subsystems:
 3. **Sweep for residue**: stale TODO/FIXME, dead code, orphaned imports, temp flags
 4. **List coverage gaps** — which ACs were NOT fully verified and why
 
-See references/process.md for "Output: `docs/specs/audit/<name>-analysis.md`" (full detail moved verbatim).
+**Output: `docs/specs/audit/<name>-analysis.md`** — Write the report to `docs/specs/audit/<name>-analysis.md` with: header (date, branch, spec), Verification Contract (each AC confirmed, likely OK or violated, with finding refs), Coverage Ledger (subsystem, risk, status, findings), Findings (F-1...), Residue (TODO/FIXME, dead code, orphaned imports), Unverified Surfaces (what was not checked and why) and a Verdict: READY TO LAND (no Critical/High), BLOCKED (Critical must be fixed first) or CONDITIONAL (High should be fixed, Medium acceptable). Details: `references/process.md`.
 
 ## Evidence Standard
 
