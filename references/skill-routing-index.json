@@ -27,7 +27,7 @@
     {
       "skill": "addon-gateway",
       "path": "skills/addon-gateway/SKILL.md",
-      "content_hash": "64c3f8eb47cfd2b59bb35e227da79b93f3c5661e63472839da45cb10a5b90337",
+      "content_hash": "ec5c28e16c85eff9decf29f79f640d295bcc6644e1c5c5a3b8c5400de40fee4a",
       "description": "Run one playbook from an installed add-on pack (coreyhaines marketing: CRO, copy, SEO, ads, email, launch, pricing, prospecting, churn…) without listing every add-on skill. Use for a named add-on skill or marketing execution work. Not svc's own marketing context (analyze-marketing).",
       "aliases": [],
       "positive_triggers": [],
@@ -567,7 +567,7 @@
     {
       "skill": "design-sync",
       "path": "skills/design-sync/SKILL.md",
-      "content_hash": "e45c0bfc3c94c1a7763db0df1e70d19f49931835be33b265618db9cb17e81c73",
+      "content_hash": "b67be84155b1acdacdb064ec8129359d4926c17621e6f40c6a0fc50573736d70",
       "description": "Import a product's existing design from code into Claude Design (design system + canvas), record why it looks the way it does, propose improvements as side-by-side artboards, and sync the chosen ones back to code. Also storyboards ad-video motion before rendering. Use for \"import our design\", \"put this in Claude Design\", \"improve our UI\", \"storyboard this ad\".",
       "aliases": [],
       "positive_triggers": [],

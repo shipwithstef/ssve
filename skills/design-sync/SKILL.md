@@ -40,6 +40,10 @@ Claude Design has two artifact types: a **Design System** (tokens, brand-book RE
 2. Publishing to Claude Design needs the Artifact tool. Without it, produce the same files locally (`docs/design/`) and say the publish step is pending.
 3. Find the sources: CSS files with custom properties (`:root`, dark theme blocks, Tailwind v4 `@theme`), font files, logo and icon assets, and a live URL if one exists. List them before reading further.
 
+## Before Starting
+
+Read, in this order and only what the mode needs: the repo's token sources (CSS custom properties, theme files), `docs/design/design-rationale.md` and `docs/design/tokens.json` if they exist, the journeys and personas the screens serve (`docs/specs/`), and for `storyboard` the beat sheet. For an existing Claude Design system or canvas, `read` its `project/README.md`, `project/tokens.json` or `project/canvas.json` first, never its page. Skip product specs unrelated to the screens in scope.
+
 ## import
 
 1. **Extract tokens from code, exactly:**
@@ -95,6 +99,6 @@ Claude Design has two artifact types: a **Design System** (tokens, brand-book RE
 
 ## Pipeline Continuation
 
-Terminal skill. When invoked inside a WI, source of truth: `.svc/lane-tasks-<WI>.json`. Read and update `.svc/lane-tasks-<WI>.json` first; update only this skill's task with the artifact links, the rationale path and the self-verification result. `sync-back` code work continues through `route-workflow`; `storyboard` continues to `produce-ad-video` after approval.
+This is a terminal skill with no automatic downstream lane. When invoked inside a WI, source of truth: `.svc/lane-tasks-<WI>.json`. Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. In Codex, mirror only the active step in `update_plan`; other host task UI is also a mirror. Update only this skill's task with the artifact links, the rationale path and the self-verification result, then stop. `sync-back` code work continues through `route-workflow`; `storyboard` continues to `produce-ad-video` after approval.
 
 Live evidence: required for `improve` and `sync-back` on a deployed product: a screenshot or rendered artboard of the current screen next to the proposal. `import` and `storyboard` cite their source files instead.

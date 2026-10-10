@@ -63,6 +63,6 @@ Read `docs/specs/marketing-context.md` if it exists; it is svc's canonical produ
 
 ## Pipeline Continuation
 
-This is a terminal utility skill with no automatic downstream lane. When invoked inside a WI, source of truth: `.svc/lane-tasks-<WI>.json`. Read and update `.svc/lane-tasks-<WI>.json` first; update only this skill's task with the output path and self-verification result, then stop. Standalone use needs no WI or repository artifact.
+This is a terminal skill with no automatic downstream lane. When invoked inside a WI, source of truth: `.svc/lane-tasks-<WI>.json`. Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. In Codex, mirror only the active step in `update_plan`; other host task UI is also a mirror. Update only this skill's task with the output path and the self-verification result, then stop. Standalone use needs no WI or repository artifact.
 
 Live evidence: not-applicable (no deployed product visual artifact).
