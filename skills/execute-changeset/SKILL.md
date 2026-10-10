@@ -128,7 +128,7 @@ Build from the brief, not a changeset. The loop:
    - commit after every passing check, keeping commits small and frequent.
 4. **Harden:**
    - run `scripts/chaos-probe.mjs` against the brief's steady state;
-   - run `scripts/quality-probes.mjs` for test strength;
+   - run `scripts/quality-probes.mjs` and strengthen the rule tests until the mutation score is at least 0.6 (the RPG pilot's bounded build shipped 0.27 without this floor);
    - before handing to review, delete scratch and QA files nothing references.
 
 Two failed checks on the same question, or a boundary that must move, sends you back to the brief (an amendment), not round after round of patching. Irreversible zones get full review depth automatically.

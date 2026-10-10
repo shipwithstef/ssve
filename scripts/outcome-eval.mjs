@@ -84,7 +84,7 @@ export const ARMS = {
     "3. Skeleton: a runnable shell, the contract and the checks. Commit as soon as it runs.",
     `4. Settle each open question by trying variants against its check: write a spec JSON and run \`node ${ROOT}/scripts/probe-loop.mjs run --spec <spec.json> --out <result.json>\` (fields: question, base, prompt, owned, check, variants, model haiku), then \`node ${ROOT}/scripts/probe-loop.mjs apply --result <result.json> --to .\`. Record the winner and what the others taught you in the decision log.`,
     "5. Fill the rest in small steps, committing after each passing check.",
-    `6. Harden: write chaos.json (start, ready, steady check, endpoints) and run \`node ${ROOT}/scripts/chaos-probe.mjs --dir . --spec chaos.json\`; fix what fails. Delete scratch files nothing uses.`,
+    `6. Harden: write chaos.json (start, ready, steady check, endpoints) and run \`node ${ROOT}/scripts/chaos-probe.mjs --dir . --spec chaos.json\`; fix what fails. Then run \`node ${ROOT}/scripts/quality-probes.mjs . --mutants 20\` and strengthen the tests of the game rules until mutation.score is at least 0.6 (tests that catch real defects, not more tests). Delete scratch files nothing uses.`,
     "7. Stop when every done-when check passes. Do not add systems the build does not use.",
   ].join("\n"),
   blueprint: [
