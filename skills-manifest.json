@@ -1219,10 +1219,10 @@
         "scope": "project",
         "stack": "universal",
         "source": "local",
-        "last_evaluated": "2026-04-13",
+        "last_evaluated": "2026-10-10",
         "source_sha": null,
-        "notes": "Prevents Agent/Explore spawns when target is known. Authored in-repo, not blended.",
-        "auto_inject": "always"
+        "notes": "Prevents Agent/Explore spawns when target is known. Authored in-repo, not blended. 2026-10 framework-5.5 audit: demoted always->lazy; Claude Code's own system prompt and Agent tool description carry the same known-target guidance. twin: host harness tool-selection guidance; consumer: WI-399 dispatch decision tree (CLAUDE.md)",
+        "auto_inject": "lazy"
       },
       {
         "path": "rules/transient-ui-assertion-pattern.md",
