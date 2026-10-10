@@ -1,0 +1,256 @@
+{
+  "_comment": "Fixed event corpus for scripts/measure-always-loaded.mjs. Each event is replayed through the real rule injector in a fresh session; `relevant` lists the rules a reviewer judged useful for that action. Anything else delivered is counted as an irrelevant injection (noise).",
+  "repos": {
+    "web-app": {
+      "package.json": "{\"name\":\"web\",\"dependencies\":{\"react\":\"19.0.0\"}}\n"
+    },
+    "base44-app": {
+      "package.json": "{\"name\":\"b44\",\"dependencies\":{\"@base44/sdk\":\"1.0.0\"}}\n"
+    },
+    "python-svc": {
+      "pyproject.toml": "[project]\nname='svc'\n"
+    },
+    "framework": {
+      "hooks/.keep": "",
+      "scripts/.keep": ""
+    }
+  },
+  "events": [
+    {
+      "id": "web-edit-component",
+      "repo": "web-app",
+      "tool": "Edit",
+      "input": {
+        "file_path": "src/components/Button.tsx",
+        "new_string": "x"
+      },
+      "relevant": [
+        "rules/react/coding-style.md",
+        "rules/web/design-quality.md",
+        "rules/web/performance.md"
+      ]
+    },
+    {
+      "id": "web-edit-public-html",
+      "repo": "web-app",
+      "tool": "Write",
+      "input": {
+        "file_path": "public/index.html",
+        "content": "<html></html>"
+      },
+      "relevant": []
+    },
+    {
+      "id": "web-edit-firebase-function",
+      "repo": "web-app",
+      "tool": "Edit",
+      "input": {
+        "file_path": "functions/api.ts",
+        "new_string": "x"
+      },
+      "relevant": []
+    },
+    {
+      "id": "web-edit-hotpath",
+      "repo": "web-app",
+      "tool": "Edit",
+      "input": {
+        "file_path": "src/lib/hotpath.ts",
+        "new_string": "x"
+      },
+      "relevant": [
+        "rules/web/performance.md"
+      ]
+    },
+    {
+      "id": "web-edit-urls",
+      "repo": "web-app",
+      "tool": "Edit",
+      "input": {
+        "file_path": "src/urls.ts",
+        "new_string": "x"
+      },
+      "relevant": [
+        "rules/web/performance.md"
+      ]
+    },
+    {
+      "id": "web-edit-entities",
+      "repo": "web-app",
+      "tool": "Edit",
+      "input": {
+        "file_path": "src/entities/user.ts",
+        "new_string": "x"
+      },
+      "relevant": [
+        "rules/web/performance.md"
+      ]
+    },
+    {
+      "id": "web-edit-policy-doc",
+      "repo": "web-app",
+      "tool": "Edit",
+      "input": {
+        "file_path": "docs/policies/privacy.md",
+        "new_string": "x"
+      },
+      "relevant": []
+    },
+    {
+      "id": "web-edit-e2e-spec",
+      "repo": "web-app",
+      "tool": "Edit",
+      "input": {
+        "file_path": "e2e/login.spec.ts",
+        "new_string": "x"
+      },
+      "relevant": [
+        "rules/tenant-scoped-test-seeding.md",
+        "rules/transient-ui-assertion-pattern.md"
+      ]
+    },
+    {
+      "id": "web-edit-readme",
+      "repo": "web-app",
+      "tool": "Edit",
+      "input": {
+        "file_path": "README.md",
+        "new_string": "x"
+      },
+      "relevant": []
+    },
+    {
+      "id": "web-bash-docker",
+      "repo": "web-app",
+      "tool": "Bash",
+      "input": {
+        "command": "docker compose up -d"
+      },
+      "relevant": [
+        "rules/docker-local-dev.md"
+      ]
+    },
+    {
+      "id": "web-bash-commit",
+      "repo": "web-app",
+      "tool": "Bash",
+      "input": {
+        "command": "git commit -m 'fix button'"
+      },
+      "relevant": []
+    },
+    {
+      "id": "base44-edit-public-asset",
+      "repo": "base44-app",
+      "tool": "Write",
+      "input": {
+        "file_path": "public/hero.png",
+        "content": "x"
+      },
+      "relevant": [
+        "rules/base44/static-assets-public-dir.md"
+      ]
+    },
+    {
+      "id": "base44-bash-site-deploy",
+      "repo": "base44-app",
+      "tool": "Bash",
+      "input": {
+        "command": "npx base44 site deploy"
+      },
+      "relevant": [
+        "rules/base44/cli-site-deploy-decoupled.md",
+        "rules/base44/function-deploy-404-check-secrets.md",
+        "rules/base44/auth-refresh.md"
+      ]
+    },
+    {
+      "id": "py-edit-model",
+      "repo": "python-svc",
+      "tool": "Edit",
+      "input": {
+        "file_path": "app/models.py",
+        "new_string": "x"
+      },
+      "relevant": [
+        "rules/python/patterns.md"
+      ]
+    },
+    {
+      "id": "py-edit-src-main",
+      "repo": "python-svc",
+      "tool": "Edit",
+      "input": {
+        "file_path": "src/app/main.py",
+        "new_string": "x"
+      },
+      "relevant": [
+        "rules/python/patterns.md"
+      ]
+    },
+    {
+      "id": "web-edit-react-provider",
+      "repo": "web-app",
+      "tool": "Edit",
+      "input": {
+        "file_path": "src/context/AuthProvider.tsx",
+        "new_string": "x"
+      },
+      "relevant": [
+        "rules/react/coding-style.md",
+        "rules/web/design-quality.md",
+        "rules/web/performance.md"
+      ]
+    },
+    {
+      "id": "web-edit-provider-test",
+      "repo": "web-app",
+      "tool": "Edit",
+      "input": {
+        "file_path": "tests/ai-provider.spec.ts",
+        "new_string": "x"
+      },
+      "relevant": [
+        "rules/provider-fidelity-test-contract.md",
+        "rules/tenant-scoped-test-seeding.md",
+        "rules/transient-ui-assertion-pattern.md"
+      ]
+    },
+    {
+      "id": "web-edit-seed-script",
+      "repo": "web-app",
+      "tool": "Edit",
+      "input": {
+        "file_path": "scripts/seed.ts",
+        "new_string": "x"
+      },
+      "relevant": []
+    },
+    {
+      "id": "fw-edit-hook",
+      "repo": "framework",
+      "tool": "Edit",
+      "input": {
+        "file_path": "hooks/svc-foo.mjs",
+        "new_string": "x"
+      },
+      "relevant": [
+        "rules/host-capability-research.md",
+        "rules/plan-changeset-trigger.md"
+      ]
+    },
+    {
+      "id": "fw-edit-workflow",
+      "repo": "framework",
+      "tool": "Edit",
+      "input": {
+        "file_path": ".github/workflows/ci.yml",
+        "new_string": "x"
+      },
+      "relevant": [
+        "rules/common/gh-workflow-validation.md",
+        "rules/cross-ref-workflow-dispatch-coherence.md"
+      ]
+    }
+  ]
+}

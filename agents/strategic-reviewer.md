@@ -1,7 +1,7 @@
 ---
 name: strategic-reviewer
 description: Adversarial reviewer for strategic-decision skill artifacts. Reviews a full decision chain (not code) and emits structured YAML findings covering BOTH process fidelity (did the skill honor its meta-prompt?) and output adversarial attack (does the decision survive stress-test?). Invoked only from strategic-decision Phase 6.
-model: claude-sonnet-5
+model: sonnet
 cognitive_label: "[REVIEW]"
 host_resolution: |
   bash scripts/resolve-model.sh REVIEW

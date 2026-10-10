@@ -1,8 +1,10 @@
 ---
 name: customer-cs
 version: "1.0"
-description: >-
-  Customer-success proposals. Use when: "customer success", "churn risk", "onboarding friction", "support pattern". Not outbound communication.
+description: >
+  Customer-success proposals from customer evidence: churn risk, onboarding friction,
+  support patterns. Writes a reviewable decision card; never contacts customers. Not for
+  outbound messages (use comms).
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

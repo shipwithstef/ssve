@@ -1,7 +1,7 @@
 ---
 name: plan-reviewer
 description: Locked adversarial reviewer for plan-changeset manifests. Produces structured YAML findings with provable analysis + evidence per claim. No rubber-stamp; every finding must survive an accept/reject justification loop.
-model: claude-sonnet-5
+model: sonnet
 tools: [Read, Grep, Glob]
 disallowedTools: [Write, Edit, NotebookEdit, Task, Agent, TodoWrite, WebFetch, WebSearch]
 maxTurns: 12

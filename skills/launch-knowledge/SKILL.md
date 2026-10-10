@@ -9,8 +9,11 @@ handles_concerns:
   - ccpa-do-not-sell
   - soc2-control-touch
   - hipaa-control-touch
-description: >-
-  Launch knowledge base for software founders — legal vehicles by jurisdiction (BG/EE/US-DE first), startup credit programs, hosting/platform bundles, first-100-customers distribution playbooks; layers a per-builder founder profile on top. Use when: "should I incorporate", "startup credits", "register a company", "how do I launch". Also: "Stripe Atlas", "Delaware LLC", "first 100 customers", "free runway", "свободна професия". Also: "БУЛСТАТ", "platform alternative". Also: "register freelancer", "$30/mo bundle".
+description: >
+  Founder launch knowledge: legal entities by jurisdiction (BG, EE, US-DE), startup
+  credits, hosting bundles, first-100-customers playbooks, tuned to the builder profile.
+  Use when: should I incorporate, register a company, startup credits, Stripe Atlas,
+  Delaware LLC, свободна професия, БУЛСТАТ, how do I launch.
 inputs:
   required: []
   optional:

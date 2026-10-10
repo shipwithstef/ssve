@@ -1,0 +1,4545 @@
+{
+  "version": 1,
+  "purpose": "Every unit the framework ships, with how its value is measured. Built by scripts/capability-coverage.mjs; checked by tier-1 validate-capability-coverage.mjs.",
+  "rows": [
+    {
+      "id": "skill:ad-video-script",
+      "kind": "skill",
+      "source": "skills/ad-video-script/SKILL.md",
+      "mechanism": "media",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Judge-graded pillar when next used (asset quality vs bare, blind); low priority"
+    },
+    {
+      "id": "skill:addon-gateway",
+      "kind": "skill",
+      "source": "skills/addon-gateway/SKILL.md",
+      "mechanism": "media",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Judge-graded pillar when next used (asset quality vs bare, blind); low priority"
+    },
+    {
+      "id": "skill:align-feature",
+      "kind": "skill",
+      "source": "skills/align-feature/SKILL.md",
+      "mechanism": "gate",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:analyze-competitors",
+      "kind": "skill",
+      "source": "skills/analyze-competitors/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:analyze-domain",
+      "kind": "skill",
+      "source": "skills/analyze-domain/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:analyze-marketing",
+      "kind": "skill",
+      "source": "skills/analyze-marketing/SKILL.md",
+      "mechanism": "media",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Judge-graded pillar when next used (asset quality vs bare, blind); low priority"
+    },
+    {
+      "id": "skill:assess-market-readiness",
+      "kind": "skill",
+      "source": "skills/assess-market-readiness/SKILL.md",
+      "mechanism": "gate",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:audit-ac",
+      "kind": "skill",
+      "source": "skills/audit-ac/SKILL.md",
+      "mechanism": "gate",
+      "status": "structural-only",
+      "evidence": [
+        "references/benchmark-findings.md"
+      ],
+      "next_eval": "Spec with planted untestable or missing ACs vs bare",
+      "note": "April Test 6 found 5 missing edge cases, with no bare arm."
+    },
+    {
+      "id": "skill:audit-coverage",
+      "kind": "skill",
+      "source": "skills/audit-coverage/SKILL.md",
+      "mechanism": "gate",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:audit-feature",
+      "kind": "skill",
+      "source": "skills/audit-feature/SKILL.md",
+      "mechanism": "gate",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:audit-implementation",
+      "kind": "skill",
+      "source": "skills/audit-implementation/SKILL.md",
+      "mechanism": "gate",
+      "status": "ceiling",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-r2.json"
+      ],
+      "next_eval": "Audit with subtler overclaims (plan Phase 3.2)",
+      "note": "Only the SKILL.md was used; the 6-subagent mode is unmeasured."
+    },
+    {
+      "id": "skill:audit-session-execution",
+      "kind": "skill",
+      "source": "skills/audit-session-execution/SKILL.md",
+      "mechanism": "gate",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Measured through the promotion loop (first case: continuity standing rules); no per-skill eval planned"
+    },
+    {
+      "id": "skill:base44-environment",
+      "kind": "skill",
+      "source": "skills/base44-environment/SKILL.md",
+      "mechanism": "infra",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Utility with no outcome claim; correctness only. No outcome eval planned"
+    },
+    {
+      "id": "skill:benchmark-landing",
+      "kind": "skill",
+      "source": "skills/benchmark-landing/SKILL.md",
+      "mechanism": "gate",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:blend-external",
+      "kind": "skill",
+      "source": "skills/blend-external/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Measured through the promotion loop (first case: continuity standing rules); no per-skill eval planned"
+    },
+    {
+      "id": "skill:blend-private",
+      "kind": "skill",
+      "source": "skills/blend-private/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Measured through the promotion loop (first case: continuity standing rules); no per-skill eval planned"
+    },
+    {
+      "id": "skill:blind-control-plan",
+      "kind": "skill",
+      "source": "skills/blind-control-plan/SKILL.md",
+      "mechanism": "decision",
+      "status": "ceiling",
+      "evidence": [
+        "test-framework/outcome-evals/results/2026-10-10-two-box-waitlist.json"
+      ],
+      "next_eval": "The founder RPG benchmark (rpg-founder), where bare builds are not expected to succeed on every layer",
+      "note": "First measurement, on Claude Code via the harness-agnostic runner (waitlist feature, 4 builds per arm, Sonnet planner, Haiku builder): bare, open, contract and Two-Box all solved every build; Two-Box planning cost $0.48 vs $0.013 for a bare build. One of 4 Two-Box runs stopped on an unresolved conflict that named a real unspecified concurrency question, value the graders do not score."
+    },
+    {
+      "id": "skill:build-personas",
+      "kind": "skill",
+      "source": "skills/build-personas/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:capability-concierge",
+      "kind": "skill",
+      "source": "skills/capability-concierge/SKILL.md",
+      "mechanism": "decision",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:capability-registry",
+      "kind": "skill",
+      "source": "skills/capability-registry/SKILL.md",
+      "mechanism": "infra",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Utility with no outcome claim; correctness only. No outcome eval planned"
+    },
+    {
+      "id": "skill:capture-idea",
+      "kind": "skill",
+      "source": "skills/capture-idea/SKILL.md",
+      "mechanism": "infra",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Utility with no outcome claim; correctness only. No outcome eval planned"
+    },
+    {
+      "id": "skill:catalog-domain-capabilities",
+      "kind": "skill",
+      "source": "skills/catalog-domain-capabilities/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:comms",
+      "kind": "skill",
+      "source": "skills/comms/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:cos",
+      "kind": "skill",
+      "source": "skills/cos/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:counsel",
+      "kind": "skill",
+      "source": "skills/counsel/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:craft-prompt",
+      "kind": "skill",
+      "source": "skills/craft-prompt/SKILL.md",
+      "mechanism": "decision",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Best-of-2 floor vs the promote rule on recorded tasks (plan Phase 3.3)"
+    },
+    {
+      "id": "skill:create-skill",
+      "kind": "skill",
+      "source": "skills/create-skill/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Measured through the promotion loop (first case: continuity standing rules); no per-skill eval planned"
+    },
+    {
+      "id": "skill:customer-cs",
+      "kind": "skill",
+      "source": "skills/customer-cs/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:decide",
+      "kind": "skill",
+      "source": "skills/decide/SKILL.md",
+      "mechanism": "decision",
+      "status": "no-gain-measured",
+      "evidence": [
+        "docs/evals/2026-10-10-skill-ab-opus-5-5.md"
+      ],
+      "next_eval": "A decision with a hidden constraint",
+      "note": "Bare Opus chose the same option with sound reasons."
+    },
+    {
+      "id": "skill:define-code-style",
+      "kind": "skill",
+      "source": "skills/define-code-style/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:design-logo",
+      "kind": "skill",
+      "source": "skills/design-logo/SKILL.md",
+      "mechanism": "media",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Judge-graded pillar when next used (asset quality vs bare, blind); low priority"
+    },
+    {
+      "id": "skill:design-sync",
+      "kind": "skill",
+      "source": "skills/design-sync/SKILL.md",
+      "mechanism": "media",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Judge-graded pillar when next used (asset quality vs bare, blind); low priority"
+    },
+    {
+      "id": "skill:design-tech",
+      "kind": "skill",
+      "source": "skills/design-tech/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:design-ui",
+      "kind": "skill",
+      "source": "skills/design-ui/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:design-ux",
+      "kind": "skill",
+      "source": "skills/design-ux/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:diagnose-bug",
+      "kind": "skill",
+      "source": "skills/diagnose-bug/SKILL.md",
+      "mechanism": "builder",
+      "status": "ceiling",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku.json",
+        "docs/evals/2026-10-10-skill-ab-opus-5-5.md"
+      ],
+      "next_eval": "Bug whose cause spans several modules",
+      "note": "Bare Haiku and bare Opus also found the root cause; the skill transmits its brief shape at up to 12x tokens and once claimed to write a file that did not exist (skill A/B)."
+    },
+    {
+      "id": "skill:discover-skills",
+      "kind": "skill",
+      "source": "skills/discover-skills/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:discuss-phase",
+      "kind": "skill",
+      "source": "skills/discuss-phase/SKILL.md",
+      "mechanism": "decision",
+      "status": "no-gain-measured",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-continuity.json",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-continuity-r2.json",
+        "claim:continuity-before"
+      ],
+      "next_eval": "Re-measure with the standing-rules section in place",
+      "note": "Part of the svc arm that kept owner rules in 11/20 runs vs 10/20 bare; the gain to 19/20 came from _shared/before-starting.md."
+    },
+    {
+      "id": "skill:dispatch-waves",
+      "kind": "skill",
+      "source": "skills/dispatch-waves/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:evaluate-rule",
+      "kind": "skill",
+      "source": "skills/evaluate-rule/SKILL.md",
+      "mechanism": "decision",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Used as the value-audit probe (plan Phase 2); measured by whether its keep/drop calls match A/B results"
+    },
+    {
+      "id": "skill:evolve-framework",
+      "kind": "skill",
+      "source": "skills/evolve-framework/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Measured through the promotion loop (first case: continuity standing rules); no per-skill eval planned"
+    },
+    {
+      "id": "skill:execute-changeset",
+      "kind": "skill",
+      "source": "skills/execute-changeset/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)",
+      "note": "Only stand-ins measured: plain, lean and the written blueprint (claim:blueprint-cost, claim:lean-cost)."
+    },
+    {
+      "id": "skill:explore-solutions",
+      "kind": "skill",
+      "source": "skills/explore-solutions/SKILL.md",
+      "mechanism": "decision",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Same design task with and without the paradigm challenge (plan Phase 3.5)"
+    },
+    {
+      "id": "skill:explore-ux",
+      "kind": "skill",
+      "source": "skills/explore-ux/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:extract-bootstrap",
+      "kind": "skill",
+      "source": "skills/extract-bootstrap/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:fin-analyst",
+      "kind": "skill",
+      "source": "skills/fin-analyst/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:find-opportunity",
+      "kind": "skill",
+      "source": "skills/find-opportunity/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:generate-visuals",
+      "kind": "skill",
+      "source": "skills/generate-visuals/SKILL.md",
+      "mechanism": "media",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Judge-graded pillar when next used (asset quality vs bare, blind); low priority"
+    },
+    {
+      "id": "skill:grow-social",
+      "kind": "skill",
+      "source": "skills/grow-social/SKILL.md",
+      "mechanism": "media",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Judge-graded pillar when next used (asset quality vs bare, blind); low priority"
+    },
+    {
+      "id": "skill:growth-eng",
+      "kind": "skill",
+      "source": "skills/growth-eng/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:growth-lead",
+      "kind": "skill",
+      "source": "skills/growth-lead/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:honest-diagnosis",
+      "kind": "skill",
+      "source": "skills/honest-diagnosis/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:improve-framework",
+      "kind": "skill",
+      "source": "skills/improve-framework/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Measured through the promotion loop (first case: continuity standing rules); no per-skill eval planned"
+    },
+    {
+      "id": "skill:infra-sre",
+      "kind": "skill",
+      "source": "skills/infra-sre/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:ingest-guide",
+      "kind": "skill",
+      "source": "skills/ingest-guide/SKILL.md",
+      "mechanism": "decision",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:ingest-guide-batch",
+      "kind": "skill",
+      "source": "skills/ingest-guide-batch/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:land-changeset",
+      "kind": "skill",
+      "source": "skills/land-changeset/SKILL.md",
+      "mechanism": "gate",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:landing-page",
+      "kind": "skill",
+      "source": "skills/landing-page/SKILL.md",
+      "mechanism": "media",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Judge-graded pillar when next used (asset quality vs bare, blind); low priority"
+    },
+    {
+      "id": "skill:launch-knowledge",
+      "kind": "skill",
+      "source": "skills/launch-knowledge/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:list-work-items",
+      "kind": "skill",
+      "source": "skills/list-work-items/SKILL.md",
+      "mechanism": "infra",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Utility with no outcome claim; correctness only. No outcome eval planned"
+    },
+    {
+      "id": "skill:manage-finops",
+      "kind": "skill",
+      "source": "skills/manage-finops/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:manage-learnings",
+      "kind": "skill",
+      "source": "skills/manage-learnings/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Measured through the promotion loop (first case: continuity standing rules); no per-skill eval planned"
+    },
+    {
+      "id": "skill:market-intel",
+      "kind": "skill",
+      "source": "skills/market-intel/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:mine-builder",
+      "kind": "skill",
+      "source": "skills/mine-builder/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:monetization-architecture",
+      "kind": "skill",
+      "source": "skills/monetization-architecture/SKILL.md",
+      "mechanism": "decision",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:onboard-repo",
+      "kind": "skill",
+      "source": "skills/onboard-repo/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:plan-blast-radius",
+      "kind": "skill",
+      "source": "skills/plan-blast-radius/SKILL.md",
+      "mechanism": "gate",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:plan-capabilities",
+      "kind": "skill",
+      "source": "skills/plan-capabilities/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:plan-changeset",
+      "kind": "skill",
+      "source": "skills/plan-changeset/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:platform-operating-architect",
+      "kind": "skill",
+      "source": "skills/platform-operating-architect/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:privacy-dpo",
+      "kind": "skill",
+      "source": "skills/privacy-dpo/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:procurement",
+      "kind": "skill",
+      "source": "skills/procurement/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:produce-ad-video",
+      "kind": "skill",
+      "source": "skills/produce-ad-video/SKILL.md",
+      "mechanism": "media",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Judge-graded pillar when next used (asset quality vs bare, blind); low priority"
+    },
+    {
+      "id": "skill:product-lead",
+      "kind": "skill",
+      "source": "skills/product-lead/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:quick-fix",
+      "kind": "skill",
+      "source": "skills/quick-fix/SKILL.md",
+      "mechanism": "infra",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Utility with no outcome claim; correctness only. No outcome eval planned"
+    },
+    {
+      "id": "skill:recall-stack-knowledge",
+      "kind": "skill",
+      "source": "skills/recall-stack-knowledge/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:refresh-competitors",
+      "kind": "skill",
+      "source": "skills/refresh-competitors/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:research",
+      "kind": "skill",
+      "source": "skills/research/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:reverse-engineer",
+      "kind": "skill",
+      "source": "skills/reverse-engineer/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:review-cross-model",
+      "kind": "skill",
+      "source": "skills/review-cross-model/SKILL.md",
+      "mechanism": "gate",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Different-family review vs same-family on planted faults (plan Phase 3.2); needs a second harness"
+    },
+    {
+      "id": "skill:review-exec",
+      "kind": "skill",
+      "source": "skills/review-exec/SKILL.md",
+      "mechanism": "gate",
+      "status": "ceiling",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku.json",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-review-large.json",
+        "claim:review-ceiling"
+      ],
+      "next_eval": "Harder review task and mechanism comparison (plan Phase 3.2)",
+      "note": "Measured through its lens agents on planted faults; bare Haiku finds every fault."
+    },
+    {
+      "id": "skill:review-gate",
+      "kind": "skill",
+      "source": "skills/review-gate/SKILL.md",
+      "mechanism": "gate",
+      "status": "no-gain-measured",
+      "evidence": [
+        "references/benchmark-findings.md"
+      ],
+      "next_eval": "A-then-B cross-review vs single review on planted faults (plan Phase 3.2)",
+      "note": "April Test 3: 3/3 planted errors, the same as a single pass, at 5.7x tokens; it found 2 more subtle issues."
+    },
+    {
+      "id": "skill:review-plan",
+      "kind": "skill",
+      "source": "skills/review-plan/SKILL.md",
+      "mechanism": "gate",
+      "status": "ceiling",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-r2.json"
+      ],
+      "next_eval": "Harder plan with hidden requirements (plan Phase 3.2)",
+      "note": "Measured through agents/plan-reviewer.md."
+    },
+    {
+      "id": "skill:review-security",
+      "kind": "skill",
+      "source": "skills/review-security/SKILL.md",
+      "mechanism": "gate",
+      "status": "ceiling",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-security-v2.json"
+      ],
+      "next_eval": "Harder security task (plan Phase 3.2)"
+    },
+    {
+      "id": "skill:revops",
+      "kind": "skill",
+      "source": "skills/revops/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:roadmap-evaluation",
+      "kind": "skill",
+      "source": "skills/roadmap-evaluation/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:route-workflow",
+      "kind": "skill",
+      "source": "skills/route-workflow/SKILL.md",
+      "mechanism": "decision",
+      "status": "structural-only",
+      "evidence": [
+        "test-framework/outcome-evals/results/2026-10-10-routing-descriptions.json"
+      ],
+      "next_eval": "Routing pillar: old vs slimmed descriptions on a labeled request corpus (plan Phase 2)",
+      "note": "Description slim (9af8136) measured: routing accuracy 0.86 -> 0.89 (Haiku) and 0.88 -> 0.92 (Sonnet) on 50 labeled requests, no established difference, at 40% fewer listing characters."
+    },
+    {
+      "id": "skill:security-ops",
+      "kind": "skill",
+      "source": "skills/security-ops/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:stage-revenue",
+      "kind": "skill",
+      "source": "skills/stage-revenue/SKILL.md",
+      "mechanism": "decision",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:strategic-decision",
+      "kind": "skill",
+      "source": "skills/strategic-decision/SKILL.md",
+      "mechanism": "decision",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Trade study with a hidden known-best option"
+    },
+    {
+      "id": "skill:suno-architect",
+      "kind": "skill",
+      "source": "skills/suno-architect/SKILL.md",
+      "mechanism": "media",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Judge-graded pillar when next used (asset quality vs bare, blind); low priority"
+    },
+    {
+      "id": "skill:svc-advisor",
+      "kind": "skill",
+      "source": "skills/svc-advisor/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:sync-spec-code",
+      "kind": "skill",
+      "source": "skills/sync-spec-code/SKILL.md",
+      "mechanism": "gate",
+      "status": "ceiling",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku.json",
+        "references/benchmark-findings.md"
+      ],
+      "next_eval": "Drift across many files",
+      "note": "April Test 7 found 3 genuine drift items (no bare arm)."
+    },
+    {
+      "id": "skill:sync-work-items",
+      "kind": "skill",
+      "source": "skills/sync-work-items/SKILL.md",
+      "mechanism": "infra",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Utility with no outcome claim; correctness only. No outcome eval planned"
+    },
+    {
+      "id": "skill:tax-auditor",
+      "kind": "skill",
+      "source": "skills/tax-auditor/SKILL.md",
+      "mechanism": "company",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "skill:teach-project",
+      "kind": "skill",
+      "source": "skills/teach-project/SKILL.md",
+      "mechanism": "research",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "skill:test-framework",
+      "kind": "skill",
+      "source": "skills/test-framework/SKILL.md",
+      "mechanism": "gate",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Measured through the promotion loop (first case: continuity standing rules); no per-skill eval planned"
+    },
+    {
+      "id": "skill:test-journeys",
+      "kind": "skill",
+      "source": "skills/test-journeys/SKILL.md",
+      "mechanism": "gate",
+      "status": "structural-only",
+      "evidence": [
+        "references/benchmark-findings.md"
+      ],
+      "next_eval": "Journey QA on a build with a planted broken journey vs bare",
+      "note": "April Test 8 found a failing DELETE journey, with no bare arm."
+    },
+    {
+      "id": "skill:track-topology-diff",
+      "kind": "skill",
+      "source": "skills/track-topology-diff/SKILL.md",
+      "mechanism": "gate",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:track-visuals",
+      "kind": "skill",
+      "source": "skills/track-visuals/SKILL.md",
+      "mechanism": "gate",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:validate-feature",
+      "kind": "skill",
+      "source": "skills/validate-feature/SKILL.md",
+      "mechanism": "gate",
+      "status": "structural-only",
+      "evidence": [],
+      "next_eval": "Kill-signal accuracy on labeled feature ideas (plan Phase 3.4)"
+    },
+    {
+      "id": "skill:verify-promotion",
+      "kind": "skill",
+      "source": "skills/verify-promotion/SKILL.md",
+      "mechanism": "gate",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:write-e2e",
+      "kind": "skill",
+      "source": "skills/write-e2e/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:write-journeys",
+      "kind": "skill",
+      "source": "skills/write-journeys/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:write-spec",
+      "kind": "skill",
+      "source": "skills/write-spec/SKILL.md",
+      "mechanism": "builder",
+      "status": "no-gain-measured",
+      "evidence": [
+        "docs/evals/2026-10-10-skill-ab-opus-5-5.md"
+      ],
+      "next_eval": "Hidden-requirement spec task graded on coverage (skill A/B next steps)",
+      "note": "Transmits the artifact contract; no substance gain over bare Opus. The production method's spec-first instruction did gain on yoga (claim:production-quality), which is evidence for writing a spec, not for this skill's text."
+    },
+    {
+      "id": "skill:write-vision",
+      "kind": "skill",
+      "source": "skills/write-vision/SKILL.md",
+      "mechanism": "builder",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "skill:wsl2-audio",
+      "kind": "skill",
+      "source": "skills/wsl2-audio/SKILL.md",
+      "mechanism": "infra",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Utility with no outcome claim; correctness only. No outcome eval planned"
+    },
+    {
+      "id": "skill:propose-ux-improvements",
+      "kind": "skill",
+      "source": "skills/propose-ux-improvements/SKILL.md",
+      "mechanism": "decision",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "rule:rules/base44/auth-refresh.md",
+      "kind": "rule",
+      "source": "rules/base44/auth-refresh.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/base44/rls-policy.md",
+      "kind": "rule",
+      "source": "rules/base44/rls-policy.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/base44/schema.md",
+      "kind": "rule",
+      "source": "rules/base44/schema.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/bash-hygiene.md",
+      "kind": "rule",
+      "source": "rules/bash-hygiene.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/code-review.md",
+      "kind": "rule",
+      "source": "rules/common/code-review.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/port-parity-baseline.md",
+      "kind": "rule",
+      "source": "rules/common/port-parity-baseline.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/gh-workflow-validation.md",
+      "kind": "rule",
+      "source": "rules/common/gh-workflow-validation.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/git-pre-commit-hygiene.md",
+      "kind": "rule",
+      "source": "rules/common/git-pre-commit-hygiene.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/model-selection.md",
+      "kind": "rule",
+      "source": "rules/common/model-selection.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/neversay-fix-if-needed.md",
+      "kind": "rule",
+      "source": "rules/common/neversay-fix-if-needed.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/research-before-build.md",
+      "kind": "rule",
+      "source": "rules/common/research-before-build.md",
+      "load": "always",
+      "status": "no-gain-measured",
+      "evidence": [
+        "test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules.json"
+      ],
+      "next_eval": "Apply always -> signal, then re-probe",
+      "value": {
+        "state": "caught-up",
+        "per_model": {
+          "haiku": "caught-up (1.0 without it, n = 5)",
+          "sonnet": "caught-up (1.0 without it, n = 5)"
+        },
+        "recommendation": "Load on signal instead of always; researchDecision() already enforces the gate in code"
+      }
+    },
+    {
+      "id": "rule:rules/common/question-fatigue.md",
+      "kind": "rule",
+      "source": "rules/common/question-fatigue.md",
+      "load": "always",
+      "status": "gain-measured",
+      "evidence": [
+        "test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules.json",
+        "test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules-r2.json"
+      ],
+      "next_eval": "Re-probe on each model release (value-audit)",
+      "value": {
+        "state": "keep",
+        "per_model": {
+          "haiku": "keep (0.27 -> 0.93, p = 0.0007, n = 15)",
+          "sonnet": "caught-up (1.0 without it)"
+        }
+      }
+    },
+    {
+      "id": "rule:rules/common/regex-identifier-conventions.md",
+      "kind": "rule",
+      "source": "rules/common/regex-identifier-conventions.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/skill-output-visibility.md",
+      "kind": "rule",
+      "source": "rules/common/skill-output-visibility.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/common/visualize-decisions.md",
+      "kind": "rule",
+      "source": "rules/common/visualize-decisions.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/destructive-git-ops.md",
+      "kind": "rule",
+      "source": "rules/destructive-git-ops.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/docker-local-dev.md",
+      "kind": "rule",
+      "source": "rules/docker-local-dev.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/github-projects.md",
+      "kind": "rule",
+      "source": "rules/github-projects.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/golang/patterns.md",
+      "kind": "rule",
+      "source": "rules/golang/patterns.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/helper-app-query-parity.md",
+      "kind": "rule",
+      "source": "rules/helper-app-query-parity.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/host-capability-research.md",
+      "kind": "rule",
+      "source": "rules/host-capability-research.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/learning-preload.md",
+      "kind": "rule",
+      "source": "rules/learning-preload.md",
+      "load": "always",
+      "status": "no-gain-measured",
+      "evidence": [
+        "test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules.json"
+      ],
+      "next_eval": "Unbiased scenario, then apply always -> signal",
+      "value": {
+        "state": "caught-up",
+        "per_model": {
+          "haiku": "caught-up",
+          "sonnet": "caught-up"
+        },
+        "recommendation": "Load on signal; the learning hooks already inject matching entries. The probe named the file, so re-test with a scenario that does not"
+      }
+    },
+    {
+      "id": "rule:rules/long-output-to-file.md",
+      "kind": "rule",
+      "source": "rules/long-output-to-file.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/plan-changeset-trigger.md",
+      "kind": "rule",
+      "source": "rules/plan-changeset-trigger.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/provider-fidelity-test-contract.md",
+      "kind": "rule",
+      "source": "rules/provider-fidelity-test-contract.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/tier-1-promotion.md",
+      "kind": "rule",
+      "source": "rules/tier-1-promotion.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/post-fix-evidence-before-next-fix.md",
+      "kind": "rule",
+      "source": "rules/post-fix-evidence-before-next-fix.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/mobile-ui-verification-gate.md",
+      "kind": "rule",
+      "source": "rules/mobile-ui-verification-gate.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/python/patterns.md",
+      "kind": "rule",
+      "source": "rules/python/patterns.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/react/coding-style.md",
+      "kind": "rule",
+      "source": "rules/react/coding-style.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/research-must-use-agy-cli.md",
+      "kind": "rule",
+      "source": "rules/research-must-use-agy-cli.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/rust/patterns.md",
+      "kind": "rule",
+      "source": "rules/rust/patterns.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/tenant-scoped-test-seeding.md",
+      "kind": "rule",
+      "source": "rules/tenant-scoped-test-seeding.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/tool-selection.md",
+      "kind": "rule",
+      "source": "rules/tool-selection.md",
+      "load": "lazy",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/transient-ui-assertion-pattern.md",
+      "kind": "rule",
+      "source": "rules/transient-ui-assertion-pattern.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/verify-state-before-context.md",
+      "kind": "rule",
+      "source": "rules/verify-state-before-context.md",
+      "load": "always",
+      "status": "gain-measured",
+      "evidence": [
+        "test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules.json",
+        "test-framework/outcome-evals/results/2026-10-10-value-audit-always-rules-r2.json"
+      ],
+      "next_eval": "Re-probe on each model release (value-audit)",
+      "value": {
+        "state": "keep",
+        "per_model": {
+          "haiku": "caught-up on both scenarios",
+          "sonnet": "keep for the compaction check (0 -> 1.0, p = 0.008); caught-up on the deployed-ref check"
+        }
+      }
+    },
+    {
+      "id": "rule:rules/web/design-quality.md",
+      "kind": "rule",
+      "source": "rules/web/design-quality.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/web/performance.md",
+      "kind": "rule",
+      "source": "rules/web/performance.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/base44/cli-site-deploy-decoupled.md",
+      "kind": "rule",
+      "source": "rules/base44/cli-site-deploy-decoupled.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/base44/function-deploy-404-check-secrets.md",
+      "kind": "rule",
+      "source": "rules/base44/function-deploy-404-check-secrets.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/base44/static-assets-public-dir.md",
+      "kind": "rule",
+      "source": "rules/base44/static-assets-public-dir.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/concern-routing.md",
+      "kind": "rule",
+      "source": "rules/concern-routing.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/distribution-vs-launch-blocker.md",
+      "kind": "rule",
+      "source": "rules/distribution-vs-launch-blocker.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/base44/e2e-otp-connector.md",
+      "kind": "rule",
+      "source": "rules/base44/e2e-otp-connector.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/cross-ref-workflow-dispatch-coherence.md",
+      "kind": "rule",
+      "source": "rules/cross-ref-workflow-dispatch-coherence.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/build-and-ship-alignment.md",
+      "kind": "rule",
+      "source": "rules/build-and-ship-alignment.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/no-fabrication.md",
+      "kind": "rule",
+      "source": "rules/no-fabrication.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "rule:rules/runtime-discriminator-first-debugging.md",
+      "kind": "rule",
+      "source": "rules/runtime-discriminator-first-debugging.md",
+      "load": "signal",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Value audit: add a scenario to references/value-units.json and probe default behaviour per model"
+    },
+    {
+      "id": "agent:README",
+      "kind": "agent",
+      "source": "agents/README.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:ad-strategist",
+      "kind": "agent",
+      "source": "agents/ad-strategist.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Judge-graded pillar when next used (asset quality vs bare, blind); low priority"
+    },
+    {
+      "id": "agent:ad-video-producer",
+      "kind": "agent",
+      "source": "agents/ad-video-producer.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Judge-graded pillar when next used (asset quality vs bare, blind); low priority"
+    },
+    {
+      "id": "agent:chief-of-staff",
+      "kind": "agent",
+      "source": "agents/chief-of-staff.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:comms",
+      "kind": "agent",
+      "source": "agents/comms.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:counsel",
+      "kind": "agent",
+      "source": "agents/counsel.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:customer-success",
+      "kind": "agent",
+      "source": "agents/customer-success.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:data-collection",
+      "kind": "agent",
+      "source": "agents/data-collection.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:debate-moderator",
+      "kind": "agent",
+      "source": "agents/debate-moderator.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:financial-analyst",
+      "kind": "agent",
+      "source": "agents/financial-analyst.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:growth-lead",
+      "kind": "agent",
+      "source": "agents/growth-lead.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:market-intel",
+      "kind": "agent",
+      "source": "agents/market-intel.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:people-ops",
+      "kind": "agent",
+      "source": "agents/people-ops.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:plan-reviewer",
+      "kind": "agent",
+      "source": "agents/plan-reviewer.md",
+      "status": "ceiling",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-r2.json"
+      ]
+    },
+    {
+      "id": "agent:product-lead",
+      "kind": "agent",
+      "source": "agents/product-lead.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:researcher",
+      "kind": "agent",
+      "source": "agents/researcher.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Dated fact-recall pillar with a hidden answer set; low priority"
+    },
+    {
+      "id": "agent:revops",
+      "kind": "agent",
+      "source": "agents/revops.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:security-ops",
+      "kind": "agent",
+      "source": "agents/security-ops.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:strategic-reviewer",
+      "kind": "agent",
+      "source": "agents/strategic-reviewer.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:summary-extractor",
+      "kind": "agent",
+      "source": "agents/summary-extractor.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "agent:svc-journey-qa",
+      "kind": "agent",
+      "source": "agents/svc-journey-qa.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "agent:svc-kimi-executor-prompt",
+      "kind": "agent",
+      "source": "agents/svc-kimi-executor-prompt.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:svc-lens-correctness",
+      "kind": "agent",
+      "source": "agents/svc-lens-correctness.md",
+      "status": "ceiling",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-review-large.json"
+      ]
+    },
+    {
+      "id": "agent:svc-lens-perf",
+      "kind": "agent",
+      "source": "agents/svc-lens-perf.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "agent:svc-lens-security",
+      "kind": "agent",
+      "source": "agents/svc-lens-security.md",
+      "status": "ceiling",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-review-large.json"
+      ]
+    },
+    {
+      "id": "agent:svc-lens-spec-fidelity",
+      "kind": "agent",
+      "source": "agents/svc-lens-spec-fidelity.md",
+      "status": "ceiling",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-review-large.json"
+      ]
+    },
+    {
+      "id": "agent:svc-stage-exec",
+      "kind": "agent",
+      "source": "agents/svc-stage-exec.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "agent:svc-stage-land",
+      "kind": "agent",
+      "source": "agents/svc-stage-land.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "agent:svc-stage-plan",
+      "kind": "agent",
+      "source": "agents/svc-stage-plan.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "agent:svc-state-janitor",
+      "kind": "agent",
+      "source": "agents/svc-state-janitor.md",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "engine:scripts/apply-skill-outcome.mjs",
+      "kind": "engine",
+      "source": "scripts/apply-skill-outcome.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-blocking-discovery-halt.sh",
+        "test-framework/evals/tier-1/validate-skill-outcome-mutation.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/audit-base44-entity-rls.mjs",
+      "kind": "engine",
+      "source": "scripts/audit-base44-entity-rls.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-base44-verification-pack.sh",
+        "test-framework/evals/tier-1/validate-workflow-guard.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/audit-framework-docs.mjs",
+      "kind": "engine",
+      "source": "scripts/audit-framework-docs.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-framework-docs-audit.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/audit-repository-privacy.mjs",
+      "kind": "engine",
+      "source": "scripts/audit-repository-privacy.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/audit-story-receipts.mjs",
+      "kind": "engine",
+      "source": "scripts/audit-story-receipts.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-stage-registry-single-source.sh",
+        "test-framework/evals/tier-1/validate-story-receipt-delivery-projection-v2.mjs",
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/blind-floor-check.mjs",
+      "kind": "engine",
+      "source": "scripts/blind-floor-check.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-blind-floor.sh",
+        "test-framework/evals/tier-1/validate-prompt-floor.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/blind-floor-route.mjs",
+      "kind": "engine",
+      "source": "scripts/blind-floor-route.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-blind-floor.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/branch-index-freshness.mjs",
+      "kind": "engine",
+      "source": "scripts/branch-index-freshness.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-branch-index-import-shape.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/browser-verify.mjs",
+      "kind": "engine",
+      "source": "scripts/browser-verify.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-browser-verify.sh",
+        "test-framework/evals/tier-1/validate-mobile-occlusion-gate.sh",
+        "test-framework/evals/tier-1/validate-scroll-position-gate.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/build-bounded-exit-receipt.mjs",
+      "kind": "engine",
+      "source": "scripts/build-bounded-exit-receipt.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-bounded-review-exit.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/build-concern-registry.mjs",
+      "kind": "engine",
+      "source": "scripts/build-concern-registry.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-concern-registry-cross-host.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/build-feature-graph.mjs",
+      "kind": "engine",
+      "source": "scripts/build-feature-graph.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-feature-graph.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/build-spec-index.mjs",
+      "kind": "engine",
+      "source": "scripts/build-spec-index.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-spec-index-hermetic.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/builder-capability-registry.mjs",
+      "kind": "engine",
+      "source": "scripts/builder-capability-registry.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-capability-concierge.sh",
+        "test-framework/evals/tier-1/validate-capability-rediscover.sh",
+        "test-framework/evals/tier-1/validate-capability-registry.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/candidate-harness.mjs",
+      "kind": "engine",
+      "source": "scripts/candidate-harness.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-candidate-harness.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/capability-concierge.mjs",
+      "kind": "engine",
+      "source": "scripts/capability-concierge.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-capability-concierge.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/capability-coverage.mjs",
+      "kind": "engine",
+      "source": "scripts/capability-coverage.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-capability-coverage.mjs"
+      ],
+      "next_eval": "Covered by the new tier-1 validate-capability-coverage.mjs"
+    },
+    {
+      "id": "engine:scripts/capability-rediscover.mjs",
+      "kind": "engine",
+      "source": "scripts/capability-rediscover.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-capability-rediscover.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/capability-registry.mjs",
+      "kind": "engine",
+      "source": "scripts/capability-registry.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-capability-concierge.sh",
+        "test-framework/evals/tier-1/validate-capability-rediscover.sh",
+        "test-framework/evals/tier-1/validate-capability-registry.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/capture-session-learnings.mjs",
+      "kind": "engine",
+      "source": "scripts/capture-session-learnings.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-auto-learning-capture.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/check-chain-receipts.mjs",
+      "kind": "engine",
+      "source": "scripts/check-chain-receipts.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-baton-ac-binding.sh",
+        "test-framework/evals/tier-1/validate-bounded-review-exit.mjs",
+        "test-framework/evals/tier-1/validate-chain-receipts-range-workers.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/check-review-round-cap.mjs",
+      "kind": "engine",
+      "source": "scripts/check-review-round-cap.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+        "test-framework/evals/tier-1/validate-review-round-cap.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/classify-change-risk.mjs",
+      "kind": "engine",
+      "source": "scripts/classify-change-risk.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-envelope-integrity.sh",
+        "test-framework/evals/tier-1/validate-impact-triad.sh",
+        "test-framework/evals/tier-1/validate-quick-fix-carve-out.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/classify-delivery-graph-closeout.mjs",
+      "kind": "engine",
+      "source": "scripts/classify-delivery-graph-closeout.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-delivery-graph-closeout-classification.sh",
+        "test-framework/evals/tier-1/validate-delivery-graph-replay-autorun.sh",
+        "test-framework/evals/tier-1/validate-delivery-tier.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/codex-load-skill.mjs",
+      "kind": "engine",
+      "source": "scripts/codex-load-skill.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+        "test-framework/evals/tier-1/validate-codex-first-task-activation.sh",
+        "test-framework/evals/tier-1/validate-existing-worktree-self-heal.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/company-memory.mjs",
+      "kind": "engine",
+      "source": "scripts/company-memory.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-company-compounding-loop.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/company-state.mjs",
+      "kind": "engine",
+      "source": "scripts/company-state.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-company-compounding-loop.sh",
+        "test-framework/evals/tier-1/validate-company-evidence-gate.sh",
+        "test-framework/evals/tier-1/validate-company-fleet-integration.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/compile-delivery-graph.mjs",
+      "kind": "engine",
+      "source": "scripts/compile-delivery-graph.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-blocking-discovery-halt.sh",
+        "test-framework/evals/tier-1/validate-delivery-graph-closeout-classification.sh",
+        "test-framework/evals/tier-1/validate-delivery-graph-compiler.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/compile-skill-router-index.mjs",
+      "kind": "engine",
+      "source": "scripts/compile-skill-router-index.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-skill-router-arguments.mjs",
+        "test-framework/evals/tier-1/validate-skill-router.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/cross-project-state.mjs",
+      "kind": "engine",
+      "source": "scripts/cross-project-state.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-capability-concierge.sh",
+        "test-framework/evals/tier-1/validate-cross-project-state.sh",
+        "test-framework/evals/tier-1/validate-honest-diagnosis.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/derive-branch-axes.mjs",
+      "kind": "engine",
+      "source": "scripts/derive-branch-axes.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/derive-receipt-tier.mjs",
+      "kind": "engine",
+      "source": "scripts/derive-receipt-tier.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-receipt-tier.sh",
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/design-tokens.mjs",
+      "kind": "engine",
+      "source": "scripts/design-tokens.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
+        "test-framework/evals/tier-1/validate-design-tokens.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/diagnose-capability-blocker.mjs",
+      "kind": "engine",
+      "source": "scripts/diagnose-capability-blocker.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/discussion-artifact.mjs",
+      "kind": "engine",
+      "source": "scripts/discussion-artifact.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-discussion-phase-contracts.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/dispatch-execution-task.mjs",
+      "kind": "engine",
+      "source": "scripts/dispatch-execution-task.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-child-transport-resolver.mjs",
+        "test-framework/evals/tier-1/validate-delegated-execution-authority.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/emit-6b-closure.mjs",
+      "kind": "engine",
+      "source": "scripts/emit-6b-closure.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/emit-receipt.mjs",
+      "kind": "engine",
+      "source": "scripts/emit-receipt.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-atomic-receipt-writes.sh",
+        "test-framework/evals/tier-1/validate-bounded-review-exit.mjs",
+        "test-framework/evals/tier-1/validate-company-fleet-integration.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/eval-gate.mjs",
+      "kind": "engine",
+      "source": "scripts/eval-gate.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-wi-id.sh",
+        "test-framework/evals/tier-1/validate-wire-hooks-variant-dedup.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/expertise.mjs",
+      "kind": "engine",
+      "source": "scripts/expertise.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-expertise-contract.sh",
+        "test-framework/evals/tier-1/validate-expertise-dispatch-promote.sh",
+        "test-framework/evals/tier-1/validate-expertise-registry.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/framework-test-catalog.mjs",
+      "kind": "engine",
+      "source": "scripts/framework-test-catalog.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-install-anchored-resolution.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/generate-manifest-mirrors.mjs",
+      "kind": "engine",
+      "source": "scripts/generate-manifest-mirrors.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-generated-mirrors.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/harness-drift.mjs",
+      "kind": "engine",
+      "source": "scripts/harness-drift.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
+        "test-framework/evals/tier-1/validate-harness-intel.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/honest-diagnosis.mjs",
+      "kind": "engine",
+      "source": "scripts/honest-diagnosis.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-honest-diagnosis.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/hook-bench.mjs",
+      "kind": "engine",
+      "source": "scripts/hook-bench.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cockpit-and-hook-bench.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/init-project-state.mjs",
+      "kind": "engine",
+      "source": "scripts/init-project-state.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-kimi-host.sh",
+        "test-framework/evals/tier-1/validate-project-consumer-surface.sh",
+        "test-framework/evals/tier-1/validate-source-repo-not-worktree.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/install-git-hooks.mjs",
+      "kind": "engine",
+      "source": "scripts/install-git-hooks.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-advisory-git-hooks.mjs",
+        "test-framework/evals/tier-1/validate-impact-triad.sh",
+        "test-framework/evals/tier-1/validate-tier1-pre-push-gate.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/kimi-e2e-test.mjs",
+      "kind": "engine",
+      "source": "scripts/kimi-e2e-test.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-install-anchored-resolution.sh",
+        "test-framework/evals/tier-1/validate-stage-registry-single-source.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/kimi-health-check.mjs",
+      "kind": "engine",
+      "source": "scripts/kimi-health-check.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/learning-lifecycle.mjs",
+      "kind": "engine",
+      "source": "scripts/learning-lifecycle.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-auto-learning-promote-replay.sh",
+        "test-framework/evals/tier-1/validate-bounded-review-exit.mjs",
+        "test-framework/evals/tier-1/validate-learning-lifecycle.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lint-proposal-authorship.mjs",
+      "kind": "engine",
+      "source": "scripts/lint-proposal-authorship.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-prior-art-check.sh",
+        "test-framework/evals/tier-1/validate-state-io-discipline.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lint-skills-manifest.mjs",
+      "kind": "engine",
+      "source": "scripts/lint-skills-manifest.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-free-check-node-selection.mjs",
+        "test-framework/evals/tier-1/validate-manifest-integrity-stamp.sh",
+        "test-framework/evals/tier-1/validate-rule-injection.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/measure-always-loaded.mjs",
+      "kind": "engine",
+      "source": "scripts/measure-always-loaded.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-always-loaded-budget.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/merge-pr-with-review-receipt.mjs",
+      "kind": "engine",
+      "source": "scripts/merge-pr-with-review-receipt.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-merge-gate-permission.sh",
+        "test-framework/evals/tier-1/validate-promotion-authority.sh",
+        "test-framework/evals/tier-1/validate-review-receipt-merge-guard.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/mine-receipts.mjs",
+      "kind": "engine",
+      "source": "scripts/mine-receipts.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-gate-telemetry.sh",
+        "test-framework/evals/tier-1/validate-slot-envelope-mining.sh",
+        "test-framework/tests/delivery-cycle-accounting.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/mirror-ledger.mjs",
+      "kind": "engine",
+      "source": "scripts/mirror-ledger.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
+        "test-framework/evals/tier-1/validate-mirror-ledger.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/mobile-build-identity.mjs",
+      "kind": "engine",
+      "source": "scripts/mobile-build-identity.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-mobile-build-identity.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/no-loss-verify.mjs",
+      "kind": "engine",
+      "source": "scripts/no-loss-verify.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-no-loss-verify.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/orchestrator-state.mjs",
+      "kind": "engine",
+      "source": "scripts/orchestrator-state.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test for the state machine transitions"
+    },
+    {
+      "id": "engine:scripts/outcome-eval.mjs",
+      "kind": "engine",
+      "source": "scripts/outcome-eval.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-claims-and-outcome-eval.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/overengineering-index.mjs",
+      "kind": "engine",
+      "source": "scripts/overengineering-index.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
+        "test-framework/evals/tier-1/validate-planning-signals.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/pipeline-log.mjs",
+      "kind": "engine",
+      "source": "scripts/pipeline-log.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-decision-logging.sh",
+        "test-framework/evals/tier-1/validate-framework-helper-behavior.sh",
+        "test-framework/evals/tier-1/validate-framework-self-management.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/plan-parallel-wi-dispatch.mjs",
+      "kind": "engine",
+      "source": "scripts/plan-parallel-wi-dispatch.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/preflight.mjs",
+      "kind": "engine",
+      "source": "scripts/preflight.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/prepare-plan-handoff.mjs",
+      "kind": "engine",
+      "source": "scripts/prepare-plan-handoff.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/delivery-plan-contract.test.mjs",
+        "test-framework/tests/two-box-receipts.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/project-preferences.mjs",
+      "kind": "engine",
+      "source": "scripts/project-preferences.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-project-preferences.sh",
+        "test-framework/tests/project-preferences.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/promote-auto-learnings.mjs",
+      "kind": "engine",
+      "source": "scripts/promote-auto-learnings.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-auto-learning-promote-replay.sh",
+        "test-framework/evals/tier-1/validate-secret-redaction.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/quality-probes.mjs",
+      "kind": "engine",
+      "source": "scripts/quality-probes.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-quality-probes.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/query-spec-index.mjs",
+      "kind": "engine",
+      "source": "scripts/query-spec-index.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-spec-index-no-raw-read.sh",
+        "test-framework/evals/tier-1/validate-spec-index-wi-boundaries.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/quick-fix-eligibility.mjs",
+      "kind": "engine",
+      "source": "scripts/quick-fix-eligibility.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-atomic-receipt-writes.sh",
+        "test-framework/evals/tier-1/validate-envelope-integrity.sh",
+        "test-framework/evals/tier-1/validate-impact-triad.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/reconcile-receipt-backlog.mjs",
+      "kind": "engine",
+      "source": "scripts/reconcile-receipt-backlog.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-reconcile-backlog-review.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/render-ad-script.mjs",
+      "kind": "engine",
+      "source": "scripts/render-ad-script.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/render-run-summary.mjs",
+      "kind": "engine",
+      "source": "scripts/render-run-summary.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/render-status.mjs",
+      "kind": "engine",
+      "source": "scripts/render-status.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/replay-installed-hooks.mjs",
+      "kind": "engine",
+      "source": "scripts/replay-installed-hooks.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/replay-sample-revenue-activation-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/replay-sample-revenue-activation-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-sample-shadow-replay-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/report-decay-candidates.mjs",
+      "kind": "engine",
+      "source": "scripts/report-decay-candidates.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/resolve-child-transport.mjs",
+      "kind": "engine",
+      "source": "scripts/resolve-child-transport.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-child-transport-resolver.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/resolve-continuation.mjs",
+      "kind": "engine",
+      "source": "scripts/resolve-continuation.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-continuation-lifecycle-wi552.mjs",
+        "test-framework/evals/tier-1/validate-sol-r2-fail-closed.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/resolve-dispatch.mjs",
+      "kind": "engine",
+      "source": "scripts/resolve-dispatch.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-dispatch-resolver-wi551.mjs",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-wi546-cursor-live-acceptance.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/retrofit-skill-frontmatter.mjs",
+      "kind": "engine",
+      "source": "scripts/retrofit-skill-frontmatter.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/review-station-merge.mjs",
+      "kind": "engine",
+      "source": "scripts/review-station-merge.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-review-station-wave.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/review-topology-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/review-topology-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-persistent-review-contract-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/route-model.mjs",
+      "kind": "engine",
+      "source": "scripts/route-model.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
+        "test-framework/evals/tier-1/validate-route-model.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/routing-eval.mjs",
+      "kind": "engine",
+      "source": "scripts/routing-eval.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-value-audit-and-routing.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/run-external-review.mjs",
+      "kind": "engine",
+      "source": "scripts/run-external-review.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+        "test-framework/evals/tier-1/validate-consumer-evidence-root.sh",
+        "test-framework/evals/tier-1/validate-cross-repo-orch-01.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/run-live-model-canary.mjs",
+      "kind": "engine",
+      "source": "scripts/run-live-model-canary.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-agy-launcher.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/run-live-two-box-canary.mjs",
+      "kind": "engine",
+      "source": "scripts/run-live-two-box-canary.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+        "test-framework/evals/tier-1/validate-two-box-transmutation.sh",
+        "test-framework/tests/two-box-executor-scorer.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/sample-hook-replays.mjs",
+      "kind": "engine",
+      "source": "scripts/sample-hook-replays.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/scan-concerns.mjs",
+      "kind": "engine",
+      "source": "scripts/scan-concerns.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-concern-registry-cross-host.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/scan-deprecated-foundations.mjs",
+      "kind": "engine",
+      "source": "scripts/scan-deprecated-foundations.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/scan-verification-delegation.mjs",
+      "kind": "engine",
+      "source": "scripts/scan-verification-delegation.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-bundle-grep-substitution.sh",
+        "test-framework/evals/tier-1/validate-verification-delegation-detection.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/scenario-runner.mjs",
+      "kind": "engine",
+      "source": "scripts/scenario-runner.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-install-anchored-resolution.sh",
+        "test-framework/evals/tier-1/validate-stage-registry-single-source.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/seed-phase2-concerns.mjs",
+      "kind": "engine",
+      "source": "scripts/seed-phase2-concerns.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/select-tier1-validators-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/select-tier1-validators-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-skill-judgment.mjs",
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+        "test-framework/evals/tier-1/validate-ux-graduation.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/skill-ab-eval.mjs",
+      "kind": "engine",
+      "source": "scripts/skill-ab-eval.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-skill-ab-eval.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/skill-router.mjs",
+      "kind": "engine",
+      "source": "scripts/skill-router.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-skill-router-arguments.mjs",
+        "test-framework/evals/tier-1/validate-skill-router.sh",
+        "test-framework/tests/project-skill-profile.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/spine-gap-spawn.mjs",
+      "kind": "engine",
+      "source": "scripts/spine-gap-spawn.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-install-anchored-resolution.sh",
+        "test-framework/tests/research-decision.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/spine-research.mjs",
+      "kind": "engine",
+      "source": "scripts/spine-research.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-agy-launcher.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/stage-activation.mjs",
+      "kind": "engine",
+      "source": "scripts/stage-activation.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-planning-signals.mjs",
+        "test-framework/evals/tier-1/validate-stage-registry-single-source.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/stage-segment.mjs",
+      "kind": "engine",
+      "source": "scripts/stage-segment.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-stage-isolation.sh",
+        "test-framework/evals/tier-1/validate-stage-registry-single-source.sh",
+        "test-framework/tests/two-box-receipts.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/state-io.mjs",
+      "kind": "engine",
+      "source": "scripts/state-io.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-atomic-receipt-writes.sh",
+        "test-framework/evals/tier-1/validate-atomic-state-writes.sh",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/stitch-side-by-side.mjs",
+      "kind": "engine",
+      "source": "scripts/stitch-side-by-side.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/svc-authority.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-authority.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+        "test-framework/evals/tier-1/validate-operation-scope-authority.sh",
+        "test-framework/tests/released-lease-recovery.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-authorized-action.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-authorized-action.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-authorization-envelope.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-auto-drive.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-auto-drive.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-promotion-authority.sh",
+        "test-framework/evals/tier-1/validate-route-workflow-hot-path-size.sh",
+        "test-framework/evals/tier-1/validate-svc-reconcile-consumer-routing.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-concern-compiler-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-concern-compiler-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-concern-compiler-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-contained-exec.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-contained-exec.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-child-transport-resolver.mjs",
+        "test-framework/evals/tier-1/validate-shell-containment-contract.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-control-value-audit-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-control-value-audit-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-control-value-audit-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-ensure-worktree.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-ensure-worktree.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-branch-index-import-shape.mjs",
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+        "test-framework/evals/tier-1/validate-default-checkout-isolation.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-execution-controller-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-execution-controller-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cockpit-and-hook-bench.mjs",
+        "test-framework/evals/tier-1/validate-execution-controller-v2.mjs",
+        "test-framework/evals/tier-1/validate-runtime-golden-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-host-runtime-adapter-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-host-runtime-adapter-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-host-runtime-adapter-v2.mjs",
+        "test-framework/evals/tier-1/validate-runtime-migration-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-json-merge-driver.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-json-merge-driver.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-svc-state-merge-safety.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-layer-inventory-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-layer-inventory-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-layer-inventory-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-migrate-install.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-migrate-install.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/goal-delivery-hooks.test.mjs",
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-all-host-install-migration.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-migrate-task-state.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-migrate-task-state.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-all-host-install-migration.sh",
+        "test-framework/evals/tier-1/validate-runtime-root-portability.sh",
+        "test-framework/evals/tier-1/validate-task-state-compatibility.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-owner-recovery.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-owner-recovery.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-codex-session-rebinding.sh",
+        "test-framework/evals/tier-1/validate-promotion-authority.sh",
+        "test-framework/evals/tier-1/validate-state-io-discipline.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-product-improvement-protocol-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-product-improvement-protocol-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-product-improvement-protocol-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-product-proof-compiler-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-product-proof-compiler-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-product-proof-compiler-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-reconcile.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-reconcile.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-shared-chain-policy.sh",
+        "test-framework/evals/tier-1/validate-svc-reconcile-bounded.sh",
+        "test-framework/evals/tier-1/validate-svc-reconcile-consumer-routing.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-repo.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-repo.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
+        "test-framework/evals/tier-1/validate-svc-repo-switch.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-runtime-migrate-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-runtime-migrate-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-runtime-migration-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-runtime-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-runtime-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-runtime-golden-v2.mjs",
+        "test-framework/evals/tier-1/validate-runtime-migration-v2.mjs",
+        "test-framework/evals/tier-1/validate-runtime-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-settings-write-guard.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-settings-write-guard.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-settings-write-guard.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-swarm.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-swarm.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-swarm-host-parity.sh",
+        "test-framework/evals/tier-1/validate-swarm-protocol.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-wi-promotion-indexer.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-wi-promotion-indexer.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-company-fleet-integration.sh",
+        "test-framework/evals/tier-1/validate-sol-r2-fail-closed.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/sync-github-issues.mjs",
+      "kind": "engine",
+      "source": "scripts/sync-github-issues.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/issue-tracker.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/sync-native-agents.mjs",
+      "kind": "engine",
+      "source": "scripts/sync-native-agents.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-locked-agents.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/task-graph.mjs",
+      "kind": "engine",
+      "source": "scripts/task-graph.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-atomic-receipt-writes.sh",
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+        "test-framework/evals/tier-1/validate-codex-first-task-activation.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/two-box-eval.mjs",
+      "kind": "engine",
+      "source": "scripts/two-box-eval.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-two-box-eval.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/two-box-plan.mjs",
+      "kind": "engine",
+      "source": "scripts/two-box-plan.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-blind-floor.sh",
+        "test-framework/evals/tier-1/validate-branch-index-import-shape.mjs",
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-capability-blocker-ledger.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-capability-blocker-ledger.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh",
+        "test-framework/evals/tier-1/validate-wi-id.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-delivery-graph.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-delivery-graph.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-delivery-graph-replay-autorun.sh",
+        "test-framework/evals/tier-1/validate-delivery-graph.sh",
+        "test-framework/evals/tier-1/validate-delivery-tier.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-execution-merge-back.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-execution-merge-back.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-delegated-execution-authority.sh",
+        "test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-feature-closeout-ledger.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-feature-closeout-ledger.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-feature-closeout-ledger.sh",
+        "test-framework/evals/tier-1/validate-persona-trace-feature-ledger.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-hook-host-residuals.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-hook-host-residuals.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-hook-host-residuals.sh",
+        "test-framework/evals/tier-1/validate-install-anchored-resolution.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-host-authority-capabilities.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-host-authority-capabilities.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-shell-containment-contract.sh",
+        "test-framework/evals/tier-1/validate-two-box-transmutation.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-leftover-disposition.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-leftover-disposition.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-leftover-disposition-closeout.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-parallel-merge-back.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-parallel-merge-back.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-parallel-ground-truth.sh",
+        "test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-plan-contract.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-plan-contract.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+        "test-framework/evals/tier-1/validate-plan-product-safety.sh",
+        "test-framework/evals/tier-1/validate-risk-triggered-contracts.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-pre-post-validation-evidence.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-pre-post-validation-evidence.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-pre-post-validation-loop.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-proposal-promotion-closeout.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-proposal-promotion-closeout.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-proposal-promotion-closeout.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-proposal-residual-map.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-proposal-residual-map.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-proposal-residual-map.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-provider-fidelity-evidence.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-provider-fidelity-evidence.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-provider-fidelity-evidence.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-task-graph-lane.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-task-graph-lane.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-mandatory-delivery-chain.sh",
+        "test-framework/evals/tier-1/validate-risk-triggered-contracts.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-wave-closeout.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-wave-closeout.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-wave-closeout.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/validate-wi-promotion.mjs",
+      "kind": "engine",
+      "source": "scripts/validate-wi-promotion.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-wi-promotion-receipts.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/value-audit.mjs",
+      "kind": "engine",
+      "source": "scripts/value-audit.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-value-audit-and-routing.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/verification-stop-guard.mjs",
+      "kind": "engine",
+      "source": "scripts/verification-stop-guard.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-verification-delegation-detection.sh",
+        "test-framework/evals/tier-1/validate-verification-delegation-guard.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/verify-d1-autoemit-host-payloads.mjs",
+      "kind": "engine",
+      "source": "scripts/verify-d1-autoemit-host-payloads.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/verify-deploy-status.mjs",
+      "kind": "engine",
+      "source": "scripts/verify-deploy-status.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test (deploy-before-verify gate guards production claims)"
+    },
+    {
+      "id": "engine:scripts/verify-skill-contract.mjs",
+      "kind": "engine",
+      "source": "scripts/verify-skill-contract.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-framework-self-management.sh",
+        "test-framework/evals/tier-1/validate-journey-e2e-contract.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/verify-skill-refactor.mjs",
+      "kind": "engine",
+      "source": "scripts/verify-skill-refactor.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Used by the value audit (plan Phase 2); add a tier-1 test then"
+    },
+    {
+      "id": "engine:scripts/verify-wi-closeout.mjs",
+      "kind": "engine",
+      "source": "scripts/verify-wi-closeout.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-wi-closeout-evidence.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/wire-codex-hooks.mjs",
+      "kind": "engine",
+      "source": "scripts/wire-codex-hooks.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
+        "test-framework/evals/tier-1/validate-codex-hook-feature-flag.sh",
+        "test-framework/evals/tier-1/validate-codex-session-rebinding.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/wire-cursor-hooks.mjs",
+      "kind": "engine",
+      "source": "scripts/wire-cursor-hooks.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-advisory-hook-boundary.mjs",
+        "test-framework/evals/tier-1/validate-atomic-receipt-writes.sh",
+        "test-framework/evals/tier-1/validate-catalog-generation.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/wire-gemini-hooks.mjs",
+      "kind": "engine",
+      "source": "scripts/wire-gemini-hooks.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-company-fleet-integration.sh",
+        "test-framework/evals/tier-1/validate-cross-host-hook-conformance.sh",
+        "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/wire-grok-hooks.mjs",
+      "kind": "engine",
+      "source": "scripts/wire-grok-hooks.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-atomic-receipt-writes.sh",
+        "test-framework/evals/tier-1/validate-cross-host-hook-conformance.sh",
+        "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/wire-hooks.mjs",
+      "kind": "engine",
+      "source": "scripts/wire-hooks.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-atomic-receipt-writes.sh",
+        "test-framework/evals/tier-1/validate-auto-learning-capture.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/wire-kimi-hooks.mjs",
+      "kind": "engine",
+      "source": "scripts/wire-kimi-hooks.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cross-host-hook-conformance.sh",
+        "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh",
+        "test-framework/evals/tier-1/validate-kimi-host.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/wire-opencode-hooks.mjs",
+      "kind": "engine",
+      "source": "scripts/wire-opencode-hooks.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cross-host-hook-conformance.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/worktree-topology.mjs",
+      "kind": "engine",
+      "source": "scripts/worktree-topology.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-company-fleet-integration.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/zombie-session-sweep.mjs",
+      "kind": "engine",
+      "source": "scripts/zombie-session-sweep.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-output-discipline-guard.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/bounded-exit.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/bounded-exit.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-bounded-review-exit.mjs",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/chain-policy.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/chain-policy.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-shared-chain-policy.sh",
+        "test-framework/evals/tier-1/validate-svc-reconcile-legacy-binary.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/completed-task-integrity.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/completed-task-integrity.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-lane-tasks-integrity.sh",
+        "test-framework/evals/tier-1/validate-phase-receipt-skip-integrity.sh",
+        "test-framework/evals/tier-1/validate-skip-conditions-registry.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/control-plan-validate.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/control-plan-validate.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+        "test-framework/tests/two-box-plan.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/cross-repo-orch.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/cross-repo-orch.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cross-repo-orch-01.mjs",
+        "test-framework/evals/tier-1/validate-cross-repo-orch-02.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/deprecated-foundations.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/deprecated-foundations.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/external-review-provenance.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/external-review-provenance.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-atomic-receipt-writes.sh",
+        "test-framework/evals/tier-1/validate-bounded-review-exit.mjs",
+        "test-framework/evals/tier-1/validate-clean-main-followup.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/frozen-request-input.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/frozen-request-input.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+        "test-framework/tests/two-box-large-request.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/governed-routing.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/governed-routing.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-all-host-install-migration.sh",
+        "test-framework/evals/tier-1/validate-catalog-generation.sh",
+        "test-framework/evals/tier-1/validate-codex-hook-feature-flag.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/isolated-plan-analysis.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/isolated-plan-analysis.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+        "test-framework/tests/two-box-large-request.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/issue-tracker.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/issue-tracker.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/issue-tracker.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/json-schema-validator.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/json-schema-validator.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-impact-triad.sh",
+        "test-framework/evals/tier-1/validate-runtime-migration-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/learning-candidate-detector.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/learning-candidate-detector.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-auto-learning-capture.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/native-planning-request-capture.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/native-planning-request-capture.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+        "test-framework/tests/two-box-large-request.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/plan-manifest-contract.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/plan-manifest-contract.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+        "test-framework/evals/tier-1/validate-two-box-transmutation.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/plan-reconciliation.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/plan-reconciliation.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/plan-reconciliation.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/project-skill-profile.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/project-skill-profile.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/project-skill-profile.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/publish-receipt-notes.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/publish-receipt-notes.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/receipt-publication-recovery.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/receipt-issuance-epoch.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/receipt-issuance-epoch.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-bounded-review-exit.mjs",
+        "test-framework/evals/tier-1/validate-consumer-evidence-root.sh",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/reconcile-core.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/reconcile-core.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-chain-receipts-range-workers.sh",
+        "test-framework/evals/tier-1/validate-svc-reconcile-bounded.sh",
+        "test-framework/evals/tier-1/validate-svc-reconcile-golden.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/research-decision.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/research-decision.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+        "test-framework/tests/research-decision.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/resolve-named-worktree.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/resolve-named-worktree.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cross-repo-orch-02.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/review-evidence-store.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/review-evidence-store.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-bounded-review-exit.mjs",
+        "test-framework/evals/tier-1/validate-clean-main-followup.mjs",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/review-inputs.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/review-inputs.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+        "test-framework/evals/tier-1/validate-two-box-transmutation.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/review-launch-preflight.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/review-launch-preflight.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+        "test-framework/tests/review-launch-preflight.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/reviewer-evidence.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/reviewer-evidence.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-bounded-review-exit.mjs",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/risk-flags.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/risk-flags.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-review-receipt-merge-guard.sh",
+        "test-framework/evals/tier-1/validate-risk-triggered-contracts.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/runtime-effects-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/runtime-effects-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-runtime-golden-v2.mjs",
+        "test-framework/evals/tier-1/validate-runtime-scheduler-effects-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/runtime-engine-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/runtime-engine-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-runtime-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/runtime-evidence-consumption-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/runtime-evidence-consumption-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-runtime-evidence-consumption-v2.mjs",
+        "test-framework/evals/tier-1/validate-runtime-golden-v2.mjs",
+        "test-framework/evals/tier-1/validate-runtime-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/runtime-release-lifecycle-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/runtime-release-lifecycle-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-release-lifecycle-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/runtime-scheduler-v2.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/runtime-scheduler-v2.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-runtime-golden-v2.mjs",
+        "test-framework/evals/tier-1/validate-runtime-scheduler-effects-v2.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/secret-redaction.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/secret-redaction.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-secret-redaction.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/skill-coverage.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/skill-coverage.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-skill-coverage.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/skill-router.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/skill-router.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-skill-router-arguments.mjs",
+        "test-framework/evals/tier-1/validate-skill-router.sh",
+        "test-framework/tests/project-skill-profile.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/stage-registry.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/stage-registry.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-g1-lane-tasks-edit-guard.sh",
+        "test-framework/evals/tier-1/validate-stage-registry-single-source.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/structured-gate-engine.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/structured-gate-engine.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-no-web-fetch-in-gate.sh",
+        "test-framework/evals/tier-1/validate-read-knowledge-base.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/swarm-command-handler.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/swarm-command-handler.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-swarm-protocol.sh",
+        "test-framework/evals/tier-1/validate-swarm-signatures.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/swarm-conflict-resolver.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/swarm-conflict-resolver.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-swarm-conflicts.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/transmutation-seal.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/transmutation-seal.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+        "test-framework/tests/two-box-receipts.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/two-box-protocol.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/two-box-protocol.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-blind-floor.sh",
+        "test-framework/evals/tier-1/validate-branch-index-import-shape.mjs",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/two-box-role-launch.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/two-box-role-launch.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+        "test-framework/tests/two-box-executor-scorer.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/two-box-scout-assign.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/two-box-scout-assign.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
+        "test-framework/tests/two-box-plan.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/collect.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/collect.mjs",
+      "status": "tested",
+      "evidence": [
+        "scripts/orch/goals.test.mjs",
+        "scripts/orch/orch.test.mjs",
+        "scripts/orch/recovery.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/common.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/common.mjs",
+      "status": "tested",
+      "evidence": [
+        "scripts/orch/goals.test.mjs",
+        "scripts/orch/orch.test.mjs",
+        "scripts/orch/recovery.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/dispatch.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/dispatch.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-dispatch-resolver-wi551.mjs",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/evals/tier-1/validate-parallel-wi-dispatch.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/events.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/events.mjs",
+      "status": "tested",
+      "evidence": [
+        "scripts/orch/sessions.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/goals.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/goals.mjs",
+      "status": "tested",
+      "evidence": [
+        "scripts/orch/goals.test.mjs",
+        "scripts/orch/orch.test.mjs",
+        "scripts/orch/overview.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/interruption.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/interruption.mjs",
+      "status": "tested",
+      "evidence": [
+        "scripts/orch/recovery.test.mjs",
+        "scripts/orch/steering.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/preempt-watch.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/preempt-watch.mjs",
+      "status": "tested",
+      "evidence": [
+        "scripts/orch/orch.test.mjs",
+        "scripts/orch/recovery.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/recover.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/recover.mjs",
+      "status": "tested",
+      "evidence": [
+        "scripts/orch/recovery.test.mjs",
+        "scripts/orch/steering.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/seed-goals.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/seed-goals.mjs",
+      "status": "tested",
+      "evidence": [
+        "scripts/orch/goals.test.mjs",
+        "scripts/orch/overview.test.mjs",
+        "scripts/orch/owner-view.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/serve.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/serve.mjs",
+      "status": "tested",
+      "evidence": [
+        "scripts/orch/orch.test.mjs",
+        "scripts/orch/owner-view.test.mjs",
+        "scripts/orch/recovery.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/sessions.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/sessions.mjs",
+      "status": "tested",
+      "evidence": [
+        "scripts/orch/recovery.test.mjs",
+        "scripts/orch/sessions.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/steering.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/steering.mjs",
+      "status": "tested",
+      "evidence": [
+        "scripts/orch/steering.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/tail.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/tail.mjs",
+      "status": "tested",
+      "evidence": [
+        "scripts/orch/tail.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/orch/updates-config.mjs",
+      "kind": "engine",
+      "source": "scripts/orch/updates-config.mjs",
+      "status": "tested",
+      "evidence": [
+        "scripts/orch/updates-config.test.mjs"
+      ]
+    },
+    {
+      "id": "hook:svc-pretool-decision-engine",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "command": "node hooks/codex/svc-codex-pretool-dispatcher.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/goal-delivery-hooks.test.mjs",
+        "test-framework/evals/tier-1/validate-authorization-envelope.sh",
+        "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-workflow-guard",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "command": "node hooks/svc-workflow-guard.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-advisory-hook-boundary.mjs",
+        "test-framework/evals/tier-1/validate-brownfield-iteration-guard.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-bash-guard",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "command": "node hooks/svc-workflow-guard.mjs --bash-guard",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-advisory-hook-boundary.mjs",
+        "test-framework/evals/tier-1/validate-brownfield-iteration-guard.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-eval-gate-pre",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "command": "node scripts/eval-gate.mjs pre",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-wi-id.sh",
+        "test-framework/evals/tier-1/validate-wire-hooks-variant-dedup.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-preflight-skill",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "command": "node scripts/preflight.mjs --hook --fail-closed",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh",
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-continuation-phase-guard",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "command": "node hooks/svc-continuation-phase-guard.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+    },
+    {
+      "id": "hook:svc-skill-artifact-authenticity",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "command": "node hooks/svc-skill-artifact-authenticity.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-codex-session-rebinding.sh",
+        "test-framework/evals/tier-1/validate-concrete-path-bash-guards.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-session-contract-freshness",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "command": "node hooks/svc-session-contract-freshness.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/goal-delivery-hooks.test.mjs",
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-codex-session-rebinding.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-inertia-check",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "command": "node hooks/svc-inertia-check.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh",
+        "test-framework/evals/tier-1/validate-codex-session-rebinding.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-rule-injector-edit",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "command": "node hooks/svc-rule-injector.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/goal-delivery-hooks.test.mjs",
+        "test-framework/evals/tier-1/validate-always-loaded-budget.mjs",
+        "test-framework/evals/tier-1/validate-output-discipline-guard.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-rule-injector-bash",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "command": "node hooks/svc-rule-injector.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/goal-delivery-hooks.test.mjs",
+        "test-framework/evals/tier-1/validate-always-loaded-budget.mjs",
+        "test-framework/evals/tier-1/validate-output-discipline-guard.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-learning-inject",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "command": "node hooks/svc-learning-inject.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-learning-injection.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-owner-inject",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "command": "node hooks/svc-owner-inject.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-owner-injection.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-posttool-heartbeat",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PostToolUse",
+      "command": "node hooks/codex/svc-codex-posttool-heartbeat.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-tool-call-heartbeat.sh",
+        "test-framework/evals/tier-1/validate-wire-hooks-variant-dedup.sh",
+        "test-framework/tests/cursor-adapter.test.mjs"
+      ]
+    },
+    {
+      "id": "hook:svc-eval-gate-post",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PostToolUse",
+      "command": "node scripts/eval-gate.mjs post",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-wi-id.sh",
+        "test-framework/evals/tier-1/validate-wire-hooks-variant-dedup.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-edit-accumulator",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PostToolUse",
+      "command": "node hooks/svc-stop-quality.js --accumulate",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+    },
+    {
+      "id": "hook:svc-vibe-auditor",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PostToolUse",
+      "command": "node hooks/svc-vibe-auditor.js",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+    },
+    {
+      "id": "hook:svc-lane-tasks-validator",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PostToolUse",
+      "command": "node hooks/svc-lane-tasks-validator.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-g1-lane-tasks-edit-guard.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-wi-pillars-check",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PostToolUse",
+      "command": "bash hooks/svc-wi-pillars-check.sh",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-hook-payload-not-argv.sh",
+        "test-framework/evals/tier-1/validate-wi-pillars-hard-block.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-auto-capture-learnings",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PostToolUse",
+      "command": "node hooks/svc-auto-capture-learnings.mjs --trigger post-tool-use",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-authorization-envelope.sh",
+        "test-framework/evals/tier-1/validate-auto-learning-capture.sh",
+        "test-framework/evals/tier-1/validate-auto-learning-promote-replay.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-spec-index-update",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PostToolUse",
+      "command": "node hooks/svc-spec-index-update.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+    },
+    {
+      "id": "hook:svc-rule-injector-explore",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PostToolUse",
+      "command": "node hooks/svc-rule-injector.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/goal-delivery-hooks.test.mjs",
+        "test-framework/evals/tier-1/validate-always-loaded-budget.mjs",
+        "test-framework/evals/tier-1/validate-output-discipline-guard.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-phase-receipt-autoemit-edit",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PostToolUse",
+      "command": "node hooks/svc-phase-receipt-autoemit.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh",
+        "test-framework/evals/tier-1/validate-phase-receipt-autoemit.sh",
+        "test-framework/evals/tier-1/validate-phase-receipt-migration.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-phase-receipt-autoemit-bash",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PostToolUse",
+      "command": "node hooks/svc-phase-receipt-autoemit.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh",
+        "test-framework/evals/tier-1/validate-phase-receipt-autoemit.sh",
+        "test-framework/evals/tier-1/validate-phase-receipt-migration.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-origin-orchestrator-prompt",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "SessionStart",
+      "command": "node hooks/svc-origin-orchestrator-prompt.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cross-repo-orch-02.mjs"
+      ]
+    },
+    {
+      "id": "hook:svc-session-start-healthcheck",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "SessionStart",
+      "command": "node hooks/svc-session-start-healthcheck.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-advisory-hook-boundary.mjs",
+        "test-framework/evals/tier-1/validate-codex-sessionstart-json.sh",
+        "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-session-end-log",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "SessionEnd",
+      "command": "node hooks/svc-session-end-log.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+    },
+    {
+      "id": "hook:svc-prompt-stale-state",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "UserPromptSubmit",
+      "command": "node hooks/svc-prompt-stale-state.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-active-intent-guard.sh",
+        "test-framework/evals/tier-1/validate-prompt-progress-prereqs.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-pre-compact-snapshot",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "PreCompact",
+      "command": "node hooks/svc-pre-compact-snapshot.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+    },
+    {
+      "id": "hook:svc-notification-surface",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "Notification",
+      "command": "node hooks/svc-notification-surface.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+    },
+    {
+      "id": "hook:svc-stop-quality",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "Stop",
+      "command": "node hooks/svc-stop-quality.js --check",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+    },
+    {
+      "id": "hook:svc-verification-delegation-guard",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "Stop",
+      "command": "bash hooks/svc-verification-delegation-guard.sh",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-verification-delegation-guard.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-task-completion-guard",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "Stop",
+      "command": "bash hooks/svc-task-completion-guard.sh",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
+        "test-framework/evals/tier-1/validate-active-intent-guard.sh",
+        "test-framework/evals/tier-1/validate-all-host-install-migration.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-subagent-start-log",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "SubagentStart",
+      "command": "node hooks/svc-subagent-start.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+    },
+    {
+      "id": "hook:svc-subagent-stop-log",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "SubagentStop",
+      "command": "node hooks/svc-subagent-stop.mjs",
+      "status": "untested",
+      "evidence": [],
+      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+    },
+    {
+      "id": "claim:one-prompt-to-product",
+      "kind": "claim",
+      "claim": "Vision to verified code from one prompt",
+      "status": "no-gain-measured",
+      "evidence": [
+        "test-framework/results/2026-04-04-comparison/comparison.md",
+        "test-framework/outcome-evals/PILLARS.md",
+        "claim:production-quality",
+        "claim:game-no-judged-gain"
+      ],
+      "note": "April 4-way build: svc scored lowest (15/19 vs raw 19/19). Since then the production method (spec-first, one instruction) doubled judged quality on a one-line booking app (14.71 vs 7.14) but not on a one-line game. The shipped 25-skill chain itself has never been re-measured.",
+      "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
+    },
+    {
+      "id": "claim:rejects-bad-ideas",
+      "kind": "claim",
+      "claim": "Rejects bad ideas with evidence (kill signals K1-K7, NO-SHIP)",
+      "status": "unmeasured",
+      "evidence": [],
+      "next_eval": "Kill-signal accuracy on labeled ideas (plan Phase 3.4)"
+    },
+    {
+      "id": "claim:progressive-narrowing",
+      "kind": "claim",
+      "claim": "Progressive narrowing reduces variance",
+      "status": "structural-only",
+      "evidence": [
+        "references/benchmark-findings.md"
+      ],
+      "note": "April verdict SUPPORTED from structure (35 ACs vs 0), not from outcome variance; the evals.json variance suite was never run.",
+      "next_eval": "Variance of built outcomes across repeats, svc chain vs bare"
+    },
+    {
+      "id": "claim:review-protocol",
+      "kind": "claim",
+      "claim": "The review protocol catches more than a single pass",
+      "status": "no-gain-measured",
+      "evidence": [
+        "references/benchmark-findings.md",
+        "test-framework/outcome-evals/PILLARS.md"
+      ],
+      "note": "Planted errors: same as a single pass (April, 5.7x tokens); today's pillars sit at the ceiling.",
+      "next_eval": "Plan Phase 3.2"
+    },
+    {
+      "id": "claim:checkpoints",
+      "kind": "claim",
+      "claim": "Checkpoints prevent drift",
+      "status": "structural-only",
+      "evidence": [
+        "references/benchmark-findings.md"
+      ],
+      "note": "One same-session test, 6/6 vs 5/6.",
+      "next_eval": "Multi-session drift pillar"
+    },
+    {
+      "id": "claim:worktree-isolation",
+      "kind": "claim",
+      "claim": "Worktree isolation (doctrine C7)",
+      "status": "unmeasured",
+      "evidence": [
+        "references/benchmark-findings.md"
+      ],
+      "note": "Marked UNTESTED in April.",
+      "next_eval": "Parallel-lane conflict pillar"
+    },
+    {
+      "id": "claim:continuity",
+      "kind": "claim",
+      "claim": "Owner decisions and state carry across sessions",
+      "status": "gain-measured",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "claim:continuity-shipped",
+        "claim:continuity-bare"
+      ],
+      "note": "Standing-rules section: 19/20 vs 10/20 bare (p = 0.002)."
+    },
+    {
+      "id": "claim:spec-first-product",
+      "kind": "claim",
+      "claim": "Deciding what done means first lifts quality on vague product requests",
+      "status": "gain-measured",
+      "evidence": [
+        "test-framework/outcome-evals/README.md",
+        "claim:production-quality",
+        "claim:plain-product-gap"
+      ],
+      "note": "Yoga: 14.71/16 vs 7.14/16; the verify loop alone adds nothing."
+    },
+    {
+      "id": "claim:test-strength",
+      "kind": "claim",
+      "claim": "The production method yields tests that protect the code",
+      "status": "gain-measured",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "claim:game-test-strength",
+        "claim:game-plain-weak-tests"
+      ],
+      "note": "Game: mutation score 0.55 vs 0.10 (p = 0.028)."
+    },
+    {
+      "id": "claim:skills-transmit-contracts",
+      "kind": "claim",
+      "claim": "Skills make models produce svc's artifacts",
+      "status": "gain-measured",
+      "evidence": [
+        "docs/evals/2026-10-10-skill-ab-opus-5-5.md"
+      ],
+      "note": "Shape only: bare 0/3 vs skill 2-3/3, at 3.5-12x tokens, no substance gain."
+    },
+    {
+      "id": "claim:hooks-fast",
+      "kind": "claim",
+      "claim": "Hooks add near-zero latency",
+      "status": "gain-measured",
+      "evidence": [
+        "references/hook-budgets.json",
+        "claim:hook-budgets",
+        "claim:git-calls"
+      ],
+      "note": "Pre-edit gate 648 -> 335 ms; git calls 68 -> 8."
+    },
+    {
+      "id": "claim:cross-model-review",
+      "kind": "claim",
+      "claim": "Different-family review catches what same-family misses",
+      "status": "unmeasured",
+      "evidence": [],
+      "note": "Called unproven in docs/analysis/2026-09-07-delivery-speed-tradeoffs.md.",
+      "next_eval": "Plan Phase 3.2 (needs a second harness)"
+    },
+    {
+      "id": "claim:byoe-token-savings",
+      "kind": "claim",
+      "claim": "Bring-your-own-execution and cache-prefix loading save tokens",
+      "status": "unmeasured",
+      "evidence": [],
+      "note": "Doctrine C3 measured statically only.",
+      "next_eval": "Token accounting from real runs (outcome-eval cost data per method)"
+    },
+    {
+      "id": "claim:multi-host-parity",
+      "kind": "claim",
+      "claim": "The framework works the same on 9 hosts",
+      "status": "structural-only",
+      "evidence": [],
+      "note": "Installs and skills are checked on all hosts; every outcome eval so far ran on Claude Code.",
+      "next_eval": "Run one pillar per host through the harness-agnostic runner"
+    },
+    {
+      "id": "claim:receipts-improve-outcomes",
+      "kind": "claim",
+      "claim": "Receipts and the mandatory chain catch defects",
+      "status": "structural-only",
+      "evidence": [],
+      "note": "Receipt integrity is checked mechanically; the catch rate is unmeasured (the tier-4 gauntlet is only proposed).",
+      "next_eval": "Planted-fault run of the full chain with and without the gates"
+    },
+    {
+      "id": "claim:anti-slop",
+      "kind": "claim",
+      "claim": "The AI-slop blacklist and anti-patterns improve output",
+      "status": "unmeasured",
+      "evidence": [
+        "scripts/quality-probes.mjs"
+      ],
+      "note": "Probes now measure slop on builds; no with/without comparison of the anti-pattern text yet.",
+      "next_eval": "Value audit A/B of the anti-pattern text (plan Phase 2)"
+    },
+    {
+      "id": "claim:self-improvement",
+      "kind": "claim",
+      "claim": "The framework improves itself from measured experience",
+      "status": "gain-measured",
+      "evidence": [
+        "test-framework/outcome-evals/PILLARS.md",
+        "claim:continuity-shipped"
+      ],
+      "note": "One complete loop so far: failure found, candidate measured, promoted, re-measured after wiring."
+    },
+    {
+      "id": "claim:company-fleet",
+      "kind": "claim",
+      "claim": "The company fleet brains improve company decisions",
+      "status": "unmeasured",
+      "evidence": [
+        "docs/decisions/2026-10-10-speed-and-defaults.md"
+      ],
+      "note": "Decision D2: no outcome data exists.",
+      "next_eval": "No eval until a decision-card outcome ledger exists (docs/decisions/2026-10-10-speed-and-defaults.md D2)"
+    },
+    {
+      "id": "claim:comprehension-evals",
+      "kind": "claim",
+      "claim": "Tier-1.5 comprehension prompts show models understand each skill's rules",
+      "status": "structural-only",
+      "evidence": [
+        "test-framework/results/tier-1.5/20260404-160745"
+      ],
+      "note": "The only stored run (2026-04-04) has 6 result files, none of which parses as JSON; it checks rule recall by substring, not outcomes.",
+      "next_eval": "Re-run once and store parseable results, or archive the tier (value audit)"
+    }
+  ]
+}

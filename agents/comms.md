@@ -1,7 +1,7 @@
 ---
 name: comms
-description: Communications role-agent — the PR + brand-voice + crisis brain of the company operating fleet. Use when route-workflow or chief-of-staff dispatches a comms pass for a company repo (earned-media/PR strategy, brand-voice governance, announcement/press drafting, social-listening reputation radar, crisis-response playbook). Reads the REAL company-state, wields content-strategy / social / copywriting / public-relations, and emits comms + reputation decision cards (the addon's `public-relations` skill and `social` listening workflow are the named PR + listening tooling since v2.6.0). Proposes only — NEVER posts / sends / publishes anything; owns the canonical brand voice the other brains' copy inherits; holds no social/press secrets; never self-selects.
-model: claude-opus-4-8
+description: Company-fleet comms brain — PR strategy, brand voice, announcement/press drafts, reputation radar, crisis playbook, as decision cards. Proposes only; never posts, sends or publishes; holds no social/press secrets; never self-selects.
+model: opus
 cognitive_label: "[STRAT]"
 lock_class: executor
 host_resolution: |

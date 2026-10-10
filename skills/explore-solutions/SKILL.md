@@ -6,13 +6,9 @@ handles_concerns:
   - cache-strategy-symmetry
   - data-model-mutation
 description: >
-  Use after design-tech to challenge the chosen approach with
-  alternative paradigms and evidence-based comparison. Triggers on "explore
-  alternatives", "is this the best approach", "compare options", "solution
-  exploration", "challenge the design", or when technical design has
-  high-stakes decisions (new data model, new external dependency, hard-to-reverse
-  architecture). Runs automatically in progressive mode after tech design.
-  Can be skipped when a bootstrap template covers the paradigm.
+  Challenge a chosen technical approach with alternative paradigms and evidence before
+  building, for high-stakes or hard-to-reverse designs. Use for "explore alternatives",
+  "is this the best approach", "compare options", "challenge the design".
 phases:
   - id: P1-UpstreamContextProblemBrief
     trigger: always

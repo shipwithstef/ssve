@@ -1,7 +1,7 @@
 ---
 name: svc-lens-security
 description: Locked SECURITY lens for the WI-382 parallel review station. Use ONLY inside a review-exec wave over a FROZEN diff. Hunts injection surfaces, bypass paths, secret exposure, trust-boundary violations, NEVER_GATE locations (auth/data-migration). Read-only; returns review-lens-finding entries. Never self-selects.
-model: claude-sonnet-5
+model: sonnet
 tools: [Read, Grep, Glob]
 disallowedTools: [Write, Edit, NotebookEdit, Task, Agent, TodoWrite, WebFetch, WebSearch]
 maxTurns: 12

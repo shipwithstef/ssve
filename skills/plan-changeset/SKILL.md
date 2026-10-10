@@ -1,7 +1,10 @@
 ---
 name: plan-changeset
 version: "1.0"
-description: Use when you have a BASELINED feature spec with technical design and need to produce the implementation plan for branch-first execution — task graph, file set, validation plan, checkpoints, and AC/test mapping
+description: >
+  Turn a baselined feature spec with technical design into an implementation plan for
+  branch-first execution: task graph, file set, validation plan, checkpoints, AC-to-test
+  mapping. Use before execute-changeset.
 phases:
   - id: P1-ArchetypeClassification
     trigger: always
@@ -121,6 +124,12 @@ Before writing anything, read and hold in context:
 ## Output
 
 `docs/plans/<YYYY-MM-DD>-<feature-name>/manifest.md` — single source of truth. On the **dispatch** path (a zero-context executor builds it) it carries exact code payloads (CREATE = full contents; MODIFY = before/after context diffs, ≥3 lines each side). On the **inline** path (the orchestrator executes with full context already loaded) the Changeset Blueprint is skipped — see §3a.
+
+## Delivery Profile, Chain and Over-engineering Check
+
+1. **Pick the delivery profile first** from `references/delivery-profiles.json`: `prototype`, `mvp` (default) or `production`. It sets the test budget, chain depth, review depth and receipt level. A prototype needs a smoke test per AC, not an edge-case matrix; production needs edge cases and journeys. Moving a prototype up is one range attestation, never per-commit backfill. Record the profile and why in `decision_trace`.
+2. **Derive the chain from the plan, not from habit:** `node scripts/stage-activation.mjs --manifest <plan> --profile <profile>` evaluates conditional stages against the planned files and blueprints before any code exists. Essential stages always run; triggered conditional stages the profile does not keep come back `deferred`.
+3. **Score over-engineering before review:** `node scripts/overengineering-index.mjs <plan-body.json> --chain <activation.json> --profile <profile>`. Over the profile's limit means cut the listed items or justify each against an AC in `decision_trace`; review-plan treats an unjustified over-limit plan as a finding.
 
 ## Execution Mode (resolve BEFORE planning — WI-386)
 

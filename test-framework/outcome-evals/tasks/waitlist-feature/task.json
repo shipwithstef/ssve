@@ -1,0 +1,1 @@
+{ "max_turns": 60, "timeout_min": 15, "two_box": { "scope": ["src/bookings.mjs", "src/payments.mjs", "src/server.mjs", "test/bookings.test.mjs"], "contract_context": ["FEATURE.md"] } }

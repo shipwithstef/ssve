@@ -11,7 +11,10 @@ phases:
   - { id: P4-ResponsiveDarkMotionStates, required_for_completion: true }
   - { id: P5-TraceabilityG3LiveEvidenceGate, required_for_completion: true }
   - { id: P6-SelfVerifyContinuation, required_for_completion: true }
-description: Use when a UX-REVIEWED feature spec needs visual design — produces component specifications, design token usage, and responsive layout before technical design
+description: >
+  Visual design for a UX-reviewed feature spec: component specs, design tokens, responsive
+  layout, before tech design. Use for "design the UI", "visual design", "make it look
+  good", "component specs".
 inputs:
   required:
     - { path: "docs/specs/ux/<name>.md", artifact: ux-design }

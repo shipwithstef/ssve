@@ -11,7 +11,10 @@ phases:
   - { id: P4-ScopeReviewDecisionLog, required_for_completion: true }
   - { id: P5-JourneySyncDependencyQueue, required_for_completion: true }
   - { id: P6-SelfVerifyHandoff, required_for_completion: true }
-description: Use when defining a new feature or change — produces a DRAFT feature spec with user stories, ACs, and journeys before any technical design or code. Supports greenfield new-feature work and brownfield delta-spec work for extensions, bugfix behavior, and contract changes.
+description: >
+  Write a DRAFT feature spec with user stories, acceptance criteria and journeys before
+  any design or code; supports new features and brownfield delta specs. Use for 'write a
+  spec', 'spec this feature', 'define this change'.
 inputs:
   required:
     - { path: "docs/specs/vision.md", artifact: vision }

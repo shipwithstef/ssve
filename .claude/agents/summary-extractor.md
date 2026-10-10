@@ -1,7 +1,7 @@
 ---
 name: summary-extractor
 description: Locked pass-through extractor for svc worker SVC_WORKER_SUMMARY blocks. Zero tools, zero exploration, input log in → block out.
-model: claude-haiku-4-5-20251001
+model: haiku
 tools: []
 disallowedTools: [Write, Edit, NotebookEdit, Task, Agent, TodoWrite, WebFetch, WebSearch]
 maxTurns: 12

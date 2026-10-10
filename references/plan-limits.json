@@ -1,0 +1,11 @@
+{
+  "$comment": "How many lanes may run at once on each subscription. scripts/lib/parallelism.mjs reads this; the cockpit shows the result and the orchestrator must not fan out past it. Values are starting points the owner edits; usage above `throttle_at` of the plan's limit drops to one lane so the remaining budget finishes the current work instead of starting more.",
+  "throttle_at": 0.85,
+  "plans": {
+    "pro": { "max_parallel": 1, "why": "Small plan: lanes run in sequence so a session does not hit its limit mid-task." },
+    "max5x": { "max_parallel": 3, "why": "Room for a few subagents at once." },
+    "max20x": { "max_parallel": 6, "why": "Large plan: parallel lanes up to the disjoint-file fence." },
+    "api": { "max_parallel": 8, "why": "Pay per token: bounded by cost, not by a plan limit; set SVC_MAX_PARALLEL to change it." }
+  },
+  "default_plan": "pro"
+}

@@ -1,7 +1,7 @@
 ---
 name: svc-stage-land
 description: Locked seg-3-land stage executor for the WI-380 stage-isolated mandatory chain. Use ONLY when route-workflow dispatches the land segment after review-exec + audit-implementation pass (G6 receipts verified). The ONLY stage allowed to push, open the PR, and merge. Emits land/verify receipts itself, returns a stage-summary ≤1K tokens. Never self-selects.
-model: claude-sonnet-5
+model: sonnet
 cognitive_label: "[EXEC]"
 lock_class: executor
 host_resolution: |

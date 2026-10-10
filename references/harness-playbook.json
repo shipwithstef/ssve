@@ -1,0 +1,341 @@
+{
+  "$comment": "Known-good headless invocations per coding harness, taken from svc scripts that run them today (see each 'source'). Placeholders: {model} {effort} {prompt_file} {cwd} {schema_file} {schema_json} {out_file}. 'probe' lists flags scripts/harness-playbook.mjs verify checks against the installed CLI's --help, so a CLI upgrade that renames a flag is caught before a run. Host install paths and hook quirks live in provision/hosts/<host>.json. Refresh this file when a probe fails or a release note renames a flag; never add a flag that no script or official doc has shown working. A host with 'launcher' runs through that wrapper; its role flags belong to the wrapper. probe.documented_hidden lists flags the official docs show but --help omits; verify does not probe them.",
+  "updated": "2026-10-10",
+  "reference_prompt": {
+    "why": "The shape the external-review launcher sends to every host (scripts/run-external-review.mjs). It works across families because it states role, mode, inputs, the exact output contract and the stop condition, and nothing else.",
+    "template": "You are the {role} for {task}. Work {mode}.\nInputs: {inputs}.\nDone means: {done_condition}.\nReturn exactly one raw JSON object matching this schema, with no markdown or commentary:\n{schema_json}",
+    "rules": [
+      "One role and one task per prompt; put long context in files the agent reads, not in the prompt.",
+      "Say read-only or write-allowed explicitly and pass the matching CLI permission flag; the prompt alone is not a sandbox.",
+      "Give a machine-checkable output contract (JSON schema) and validate it after transport, fail-closed.",
+      "State the stop condition; cap turns or budget with the CLI flag when one exists.",
+      "Never put secrets or session identifiers in argv; pass prompts by stdin or prompt file."
+    ]
+  },
+  "hosts": {
+    "claude": {
+      "name": "Claude Code",
+      "binary": "claude",
+      "family": "anthropic",
+      "prompt_delivery": "stdin",
+      "roles": {
+        "review": [
+          "--print",
+          "--model",
+          "{model}",
+          "--effort",
+          "{effort}",
+          "--safe-mode",
+          "--tools",
+          "Read,Grep,Glob,Bash",
+          "--strict-mcp-config",
+          "--mcp-config",
+          "{\"mcpServers\":{}}",
+          "--permission-mode",
+          "plan",
+          "--no-session-persistence",
+          "--max-turns",
+          "100",
+          "--disable-slash-commands",
+          "--no-chrome",
+          "--json-schema",
+          "{schema_json}",
+          "--output-format",
+          "json",
+          "--max-budget-usd",
+          "1"
+        ]
+      },
+      "probe": {
+        "help": [
+          "--help"
+        ],
+        "flags": [
+          "--print",
+          "--model",
+          "--effort",
+          "--safe-mode",
+          "--tools",
+          "--strict-mcp-config",
+          "--mcp-config",
+          "--permission-mode",
+          "--no-session-persistence",
+          "--disable-slash-commands",
+          "--no-chrome",
+          "--json-schema",
+          "--output-format",
+          "--max-budget-usd"
+        ],
+        "documented_hidden": {
+          "--max-turns": "https://code.claude.com/docs/en/cli-reference (print mode; not listed in --help)"
+        }
+      },
+      "source": "scripts/run-external-review.mjs:1322",
+      "notes": "Inside Claude Code itself prefer native subagents (Agent tool with model/effort) and saved workflows over shelling out; see scripts/route-model.mjs."
+    },
+    "codex": {
+      "name": "OpenAI Codex CLI",
+      "binary": "codex",
+      "family": "openai",
+      "prompt_delivery": "stdin ('-' as last argument)",
+      "roles": {
+        "review": [
+          "exec",
+          "--skip-git-repo-check",
+          "--dangerously-bypass-approvals-and-sandbox",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--strict-config",
+          "--model",
+          "{model}",
+          "-c",
+          "model_reasoning_effort=\"{effort}\"",
+          "--output-schema",
+          "{schema_file}",
+          "--json",
+          "--output-last-message",
+          "{out_file}",
+          "--color",
+          "never",
+          "-"
+        ],
+        "analysis_readonly": [
+          "exec",
+          "--ephemeral",
+          "--sandbox",
+          "read-only",
+          "--ignore-user-config",
+          "--skip-git-repo-check",
+          "--json",
+          "--output-schema",
+          "{schema_file}",
+          "-m",
+          "{model}",
+          "-c",
+          "model_reasoning_effort={effort}"
+        ]
+      },
+      "probe": {
+        "help": [
+          "exec",
+          "--help"
+        ],
+        "flags": [
+          "--config",
+          "--strict-config",
+          "--model",
+          "--dangerously-bypass-approvals-and-sandbox",
+          "--skip-git-repo-check",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--output-schema",
+          "--json",
+          "--output-last-message",
+          "--color",
+          "--sandbox"
+        ]
+      },
+      "source": "scripts/run-external-review.mjs:1311; scripts/lib/isolated-plan-analysis.mjs:9-21",
+      "notes": "Effort is a config override (-c model_reasoning_effort=...), not a flag. Hooks need the hooks feature flag in ~/.codex/config.toml."
+    },
+    "agy": {
+      "name": "Antigravity / Gemini via the agy dispatcher",
+      "binary": "agy",
+      "family": "google",
+      "prompt_delivery": "stdin through skills/research/scripts/dispatch-agy.mjs",
+      "roles": {
+        "review": [
+          "--stdin",
+          "--model",
+          "{model}",
+          "--timeout-seconds",
+          "{timeout_s}",
+          "--artifacts-dir",
+          "{out_dir}"
+        ]
+      },
+      "probe": {
+        "help": [
+          "--help"
+        ],
+        "flags": [
+          "--sandbox",
+          "--mode",
+          "--model",
+          "--effort",
+          "--add-dir",
+          "--json-schema",
+          "--output-format",
+          "--print-timeout",
+          "--print"
+        ]
+      },
+      "source": "scripts/run-external-review.mjs:1312-1316",
+      "notes": "Reviewer transport only: svc refuses agy as orchestrator or PLAN/EXEC host (scripts/resolve-dispatch.mjs:518). The model preset name must encode the effort (scripts/review-topology-v2.mjs:55). The roles are the dispatcher's flags; the probe checks the agy CLI flags the dispatcher relies on.",
+      "launcher": [
+        "node",
+        "skills/research/scripts/dispatch-agy.mjs"
+      ]
+    },
+    "grok": {
+      "name": "Grok Build CLI",
+      "binary": "grok",
+      "family": "xai",
+      "prompt_delivery": "prompt file",
+      "roles": {
+        "review": [
+          "--verbatim",
+          "--prompt-file",
+          "{prompt_file}",
+          "--cwd",
+          "{cwd}",
+          "--model",
+          "{model}",
+          "--reasoning-effort",
+          "{effort}",
+          "--permission-mode",
+          "plan",
+          "--disable-web-search",
+          "--no-subagents",
+          "--max-turns",
+          "{max_turns}",
+          "--json-schema",
+          "{schema_json}",
+          "--output-format",
+          "json"
+        ],
+        "exec": [
+          "--cwd",
+          "{cwd}",
+          "--model",
+          "{model}",
+          "--effort",
+          "{effort}",
+          "--permission-mode",
+          "auto",
+          "--output-format",
+          "json",
+          "--max-turns",
+          "80",
+          "--prompt-file",
+          "{prompt_file}"
+        ]
+      },
+      "probe": {
+        "help": [
+          "--help"
+        ],
+        "flags": [
+          "--verbatim",
+          "--prompt-file",
+          "--cwd",
+          "--model",
+          "--reasoning-effort",
+          "--permission-mode",
+          "--disable-web-search",
+          "--no-subagents",
+          "--max-turns",
+          "--json-schema",
+          "--output-format"
+        ]
+      },
+      "source": "scripts/run-external-review.mjs:1334 (review); scripts/lib/cross-repo-orch.mjs:535-543 (exec)",
+      "conflict": "The exec form passes --effort while the probed review form passes --reasoning-effort. Only --reasoning-effort is verified by a --help probe; check `grok --help` before relying on the exec form."
+    },
+    "cursor": {
+      "name": "Cursor CLI",
+      "binary": "cursor-agent",
+      "family": "multi",
+      "prompt_delivery": "stdin",
+      "roles": {
+        "review": [
+          "--print",
+          "--mode",
+          "ask",
+          "--output-format",
+          "json",
+          "--model",
+          "{model}",
+          "--sandbox",
+          "disabled",
+          "--workspace",
+          "{cwd}",
+          "--trust"
+        ]
+      },
+      "probe": {
+        "help": [
+          "--help"
+        ],
+        "flags": [
+          "--print",
+          "--output-format",
+          "--mode",
+          "--model",
+          "--sandbox",
+          "--workspace",
+          "--trust"
+        ]
+      },
+      "source": "scripts/run-external-review.mjs:1327",
+      "notes": "Hooks block by exit code 2, not JSON; no regex matchers (provision/hosts/cursor.json)."
+    },
+    "kimi": {
+      "name": "Kimi Code CLI",
+      "binary": "kimi",
+      "family": "moonshot",
+      "prompt_delivery": "argument (-p)",
+      "roles": {
+        "exec": [
+          "--print",
+          "--yolo",
+          "--final-message-only",
+          "-p",
+          "{prompt}"
+        ]
+      },
+      "probe": {
+        "help": [
+          "--help"
+        ],
+        "flags": [
+          "--print",
+          "--yolo",
+          "--final-message-only"
+        ]
+      },
+      "source": "scripts/kimi-health-check.mjs:75",
+      "notes": "Not an allowed reviewer (CLAUDE.md reviewer allowlist). Long prompts as an argument hit argv limits; keep them short or use a detached runner (scripts/run-kimi-detached.sh)."
+    },
+    "opencode": {
+      "name": "OpenCode CLI",
+      "binary": "opencode",
+      "family": "multi",
+      "prompt_delivery": "argument",
+      "roles": {
+        "exec": [
+          "run",
+          "--model",
+          "{model}",
+          "--dangerously-skip-permissions",
+          "--pure"
+        ]
+      },
+      "probe": {
+        "help": [
+          "run",
+          "--help"
+        ],
+        "flags": [
+          "--model",
+          "--dangerously-skip-permissions",
+          "--pure"
+        ]
+      },
+      "source": "scripts/dispatch-worker.sh:245",
+      "notes": "Token usage lines vary by version (scripts/dispatch-log.sh:13)."
+    }
+  }
+}

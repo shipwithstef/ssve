@@ -8,8 +8,10 @@ phases:
   - { id: P4-DecisionLogPatternScan, required_for_completion: true }
   - { id: P5-DiagnosisReportWrite, required_for_completion: true }
   - { id: P6-HumanCheckpointContinuation, required_for_completion: true }
-description: >-
-  Evidence-graded answer to "why haven't I shipped a revenue product despite owning this framework?" — names ≥3 concrete blockers from the capability registry, cross-project snapshot, and pipeline-decisions log, each anchored to a file/line/decision entry. No platitudes. Use when: "why am I not shipping", "honest diagnosis". Also: "what's my real blocker", "what's wrong with how I work".
+description: >
+  Evidence-graded answer to why the builder is not shipping revenue products, naming
+  concrete blockers from the capability registry and decision logs. Use for "why am I not
+  shipping", "honest diagnosis", "what's my real blocker".
 inputs:
   required: []
   optional:

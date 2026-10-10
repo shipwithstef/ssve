@@ -4,6 +4,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { isShellTool } from "./shell-tools.mjs";
+import { gitRevParse, gitWorktreeList } from "./git-query.mjs";
 
 export const OPERATION_SCOPE_SCHEMA_VERSION = 1;
 
@@ -84,14 +85,14 @@ export function gitIdentity(candidate, cache = null) {
   if (cache?.has(cacheKey)) return cache.get(cacheKey);
   try {
     if (!fs.statSync(cursor).isDirectory()) cursor = path.dirname(cursor);
-    const worktreeRoot = fs.realpathSync(execFileSync("git", ["-C", cursor, "rev-parse", "--show-toplevel"], {
+    const worktreeRoot = fs.realpathSync(gitRevParse(cursor, "--show-toplevel", {
       encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
     }).trim());
-    const commonText = execFileSync("git", ["-C", worktreeRoot, "rev-parse", "--git-common-dir"], {
+    const commonText = gitRevParse(worktreeRoot, "--git-common-dir", {
       encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
     }).trim();
     const commonGitDir = fs.realpathSync(path.isAbsolute(commonText) ? commonText : path.resolve(worktreeRoot, commonText));
-    const roots = execFileSync("git", ["-C", worktreeRoot, "worktree", "list", "--porcelain"], {
+    const roots = gitWorktreeList(worktreeRoot, {
       encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
     }).split(/\r?\n/).filter((line) => line.startsWith("worktree ")).map((line) => {
       try { return fs.realpathSync(line.slice("worktree ".length)); } catch { return ""; }

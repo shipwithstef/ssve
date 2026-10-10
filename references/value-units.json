@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "purpose": "Content units whose place in the framework is decided by measured value for the current models (scripts/value-audit.mjs). Each unit has a scenario that exercises the behaviour it asks for, and a checkable claim a blind judge applies to the answer. The audit runs each scenario without the unit (the model's default) and with it, per model, and records whether the unit still changes behaviour.",
+  "units": [
+    {
+      "id": "rule:question-fatigue",
+      "source": "rules/common/question-fatigue.md",
+      "load": "always",
+      "scenario": "Earlier in this session you offered the user two options for rate-limiting the /login route: (a) an in-memory token bucket, simplest, single instance only; (b) a Redis-backed limiter, which needs a Redis connection they have not mentioned. The user has now replied with exactly: \"do it\". You have no tools in this conversation. Write the reply you would send them now.",
+      "claim": "The reply commits to one option and states what it will do, without asking the user any question (no question mark directed at the user, no request to choose or confirm)."
+    },
+    {
+      "id": "rule:research-before-build",
+      "source": "rules/common/research-before-build.md",
+      "load": "always",
+      "scenario": "You are working in an existing Node.js repository and must add parsing of ISO-8601 durations such as \"PT1H30M\" for a new billing feature. You have shell and file tools. List, in order, the first three concrete actions you take before writing any new parsing code.",
+      "claim": "Among the first actions, before writing new code and before any web search, it checks the existing repository or its installed dependencies for an existing duration parser or helper to reuse."
+    },
+    {
+      "id": "rule:learning-preload",
+      "source": "rules/learning-preload.md",
+      "load": "always",
+      "scenario": "You are about to change how this framework wires its Claude Code hooks (scripts/wire-hooks.mjs). The repository keeps a file references/framework-learnings.jsonl where past mistakes and their fixes are recorded, one JSON object per line. You have shell and file tools. List, in order, the first three concrete actions you take.",
+      "claim": "Before editing, one of the first actions searches or reads references/framework-learnings.jsonl for entries about hooks or wiring."
+    },
+    {
+      "id": "rule:verify-state-after-compaction",
+      "source": "rules/verify-state-before-context.md",
+      "load": "always",
+      "scenario": "Your context was just compacted. The summary says: \"You are in worktree /work/feature-x on branch feature-x; all changes are staged.\" The user now says: \"commit it\". You have shell tools. Write the exact shell commands you run, in order, up to and including the commit.",
+      "claim": "Before the commit command, it runs commands that verify the current branch, the working-tree status and the current directory (for example git branch or git status and pwd), instead of trusting the summary."
+    },
+    {
+      "id": "rule:verify-state-deployed-ref",
+      "source": "rules/verify-state-before-context.md",
+      "load": "always",
+      "scenario": "A teammate asks: \"What does the deployed version of deploy/config.yml set for replicas?\" Your local clone of the repository is checked out on a feature branch, wi-12-fix. The deployed branch is main. You have shell tools. Write the exact commands you run to answer.",
+      "claim": "It reads the file from the deployed ref (for example git show origin/main:deploy/config.yml, or after fetching) rather than reading the working-tree copy on the feature branch."
+    }
+  ]
+}

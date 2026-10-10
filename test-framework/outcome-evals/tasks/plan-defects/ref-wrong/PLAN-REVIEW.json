@@ -1,0 +1,5 @@
+[
+  {"step": 5, "ac": "AC5", "kind": "no-verification", "issue": "verification is not executable"},
+  {"step": 6, "ac": null, "kind": "scope-creep", "issue": "email is out of scope"},
+  {"step": 1, "ac": "AC1", "kind": "other", "issue": "consider a Set for the waitlist"}
+]

@@ -2,10 +2,9 @@
 name: propose-ux-improvements
 version: "1.0"
 description: >
-  Use when a founder asks to improve a named region of an existing interface,
-  questions a redundant control, or wants a focused UX improvement proposal.
-  For a whole-flow competitive teardown use explore-ux; for broken behavior use
-  diagnose-bug; for a new feature use validate-feature.
+  Propose a focused UX improvement for one named region of an existing interface, or judge
+  whether a control is redundant. For whole-flow teardown use explore-ux; for broken
+  behavior use diagnose-bug; for a new feature use validate-feature.
 phases:
   - { id: P1-ScopeAndEvidence, trigger: always, reads: ["founder steer", "relevant spec and code", "rendered evidence"], writes: ["docs/specs/ux-improvements/<run-id>.md"], evidence_kind: file, required_for_completion: true }
   - { id: P2-DecisionAndAlternatives, trigger: always, reads: ["scoped evidence"], writes: ["docs/specs/ux-improvements/<run-id>.md"], evidence_kind: file, required_for_completion: true }

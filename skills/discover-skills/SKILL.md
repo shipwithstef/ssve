@@ -2,10 +2,9 @@
 name: discover-skills
 version: "1.0"
 description: >
-  Discover and install external skills from the open agent skill ecosystem.
-  Wraps npx skills find/add. Invoked by analyze-domain or research when they
-  encounter a capability gap an external skill could fill. Also works standalone:
-  "find a skill for X", "is there a skill that can", "what skills exist for".
+  Find and install external agent skills from the open skill ecosystem when there is a
+  capability gap. Use for "find a skill for X", "is there a skill that can", "what skills
+  exist for".
 phases:
   - id: P1-CapabilityGapScope
     trigger: always

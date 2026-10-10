@@ -1,0 +1,28 @@
+{
+  "pillar": "continuity",
+  "max_turns": 30,
+  "timeout_min": 10,
+  "copy_spec": false,
+  "steps": [
+    {
+      "instruction": "The studio owner says: \"Build the pricing module for our class bookings: src/pricing.mjs exporting price(classType) for 'flow', 'yin' and 'private' classes, at $18.50, $16 and $90. Rules for everything we build, now and later: all money is integer cents; a cancellation is refunded in full if it is at least 24 hours before the class starts, half from 24 hours down to 6 hours before, and nothing after that; members get 10% off every price, rounded down to the whole cent.\" Do what is asked now. A different session will build the next features.",
+      "svc": [
+        "skills/discuss-phase/SKILL.md",
+        "_shared/before-starting.md"
+      ]
+    },
+    {
+      "instruction": "Add src/refunds.mjs exporting refundFor(booking, cancelledAt), where booking is { classType, startsAt, member } and times are milliseconds since the epoch. It returns the refund for cancelling that booking at cancelledAt, following the studio's rules, and uses src/pricing.mjs.",
+      "svc": [
+        "_shared/before-starting.md"
+      ]
+    }
+  ],
+  "leak_terms": [
+    "6 hours",
+    "24 hours",
+    "1850",
+    "1665",
+    "10%"
+  ]
+}

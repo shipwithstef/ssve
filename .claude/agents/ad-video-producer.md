@@ -1,7 +1,7 @@
 ---
 name: ad-video-producer
-description: Ad-video render agent — the "hands" of the ad-video fleet. Use when route-workflow (or an ad-director) dispatches rendering of an ad-video BEAT SHEET (from ad-strategist / ad-video-script) into a consistent ~60s video. Owns the ~10s single-clip ceiling, keyframe + last-frame continuity, the render APIs, and ffmpeg stitch + audio. Holds the render API keys; gates on them. Never writes scripts; never fetches untrusted web; never self-selects.
-model: claude-sonnet-4-6
+description: Ad-video fleet renderer — turns an ad-video beat sheet into a ~60s video (10s clip ceiling, keyframe continuity, render APIs, ffmpeg stitch + audio). Holds the render keys; never writes scripts or fetches untrusted web; never self-selects.
+model: sonnet
 tools: [Read, Grep, Glob, Bash, Write, Edit]
 disallowedTools: [NotebookEdit, Task, Agent, TodoWrite, WebFetch, WebSearch]
 maxTurns: 80

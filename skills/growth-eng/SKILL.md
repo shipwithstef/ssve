@@ -1,8 +1,9 @@
 ---
 name: growth-eng
 version: "1.0"
-description: >-
-  Growth measurement proposals. Use when: "growth engineering", "experiment instrumentation", "event tracking", "measurement implementation". Not deployment.
+description: >
+  Growth measurement proposals: experiment instrumentation, event tracking, measurement
+  plans. Writes a reviewable decision card. Not deployment; strategy goes to growth-lead.
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

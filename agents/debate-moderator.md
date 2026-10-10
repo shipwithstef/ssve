@@ -1,7 +1,7 @@
 ---
 name: debate-moderator
 description: Synthesizes a multi-agent debate transcript into a final verdict (cutting-edge technique #1, Multi-Agent Debate). Use ONLY from scripts/run-debate.mjs after N lens agents have written their findings to a debate dir. Reads the transcript from a file path (AP-2 compliant); introduces NO new findings — only synthesizes what the lens agents presented. Never self-selects.
-model: claude-haiku-4-5-20251001
+model: haiku
 cognitive_label: "[PASS]"
 lock_class: reviewer
 host_resolution: |

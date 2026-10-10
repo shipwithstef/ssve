@@ -1,0 +1,415 @@
+{
+  "purpose": "Labeled requests for scripts/routing-eval.mjs. accept lists every skill that is a correct choice; 'none' means no skill should be invoked (a plain question). tier-1.5 cases come from test-framework/evals/tier-1.5/prompts/triggering (file name = expected skill); the rest were written on 2026-10-10.",
+  "cases": [
+    {
+      "id": "t15-blend-external",
+      "request": "check if GSD has anything new we should take — blend from gsd-build/get-shit-done",
+      "accept": [
+        "blend-external"
+      ],
+      "source": "tier-1.5"
+    },
+    {
+      "id": "t15-capture-idea-from-proposal",
+      "request": "Promote proposals/done/2026-04-24-framework-cohesion-evolution.md into work items using --from-proposal.\nI've reviewed the proposal — use capture-idea --from-proposal to create WIs for each phase leaf.\nConvert this approved proposal into work items via the from-proposal flag of capture-idea.",
+      "accept": [
+        "capture-idea"
+      ],
+      "source": "tier-1.5"
+    },
+    {
+      "id": "t15-diagnose-bug",
+      "request": "I have a bug in my REST API — the PUT endpoint for updating user profiles returns a 500 error when the email field is missing from the request body. It should return a 400 with a validation error instead. The endpoint is in src/routes/users.ts. Can you help me fix this?",
+      "accept": [
+        "diagnose-bug"
+      ],
+      "source": "tier-1.5"
+    },
+    {
+      "id": "t15-evolve-framework",
+      "request": "analyze gstack's latest capabilities and update our knowledge",
+      "accept": [
+        "evolve-framework"
+      ],
+      "source": "tier-1.5"
+    },
+    {
+      "id": "t15-improve-framework",
+      "request": "improve the framework — there's a gap in how review-gate handles greenfield lanes",
+      "accept": [
+        "improve-framework"
+      ],
+      "source": "tier-1.5"
+    },
+    {
+      "id": "t15-sync-spec-code",
+      "request": "I think our feature specs are out of date — we've shipped several changes since the last spec review. Can you check if the code still matches what the specs say? I want to know where things have drifted.",
+      "accept": [
+        "sync-spec-code"
+      ],
+      "source": "tier-1.5"
+    },
+    {
+      "id": "t15-test-framework",
+      "request": "run the framework tests and prove the pipeline works end to end",
+      "accept": [
+        "test-framework"
+      ],
+      "source": "tier-1.5"
+    },
+    {
+      "id": "t15-validate-feature",
+      "request": "I want to add a tagging system to my todo app so users can categorize their tasks. Users should be able to create tags, assign them to todos, and filter by tag. Before we build it, can you help me figure out if this is the right feature to prioritize and what the scope should be?",
+      "accept": [
+        "validate-feature"
+      ],
+      "source": "tier-1.5"
+    },
+    {
+      "id": "t15-write-journeys",
+      "request": "I need to define the user journeys for our checkout flow. We have a spec with acceptance criteria already, but no journey maps or Gherkin scenarios. Can you create the journey scenarios that cover the happy path and the main error cases?",
+      "accept": [
+        "write-journeys"
+      ],
+      "source": "tier-1.5"
+    },
+    {
+      "id": "t15-write-spec",
+      "request": "I need to define the requirements for a new notifications feature. Users should get in-app notifications when someone comments on their post, when their post gets liked, and when they get a new follower. I have a vision doc and personas already — can you write the spec?",
+      "accept": [
+        "write-spec"
+      ],
+      "source": "tier-1.5"
+    },
+    {
+      "id": "t15-write-vision",
+      "request": "I am starting a brand new project from scratch. It is a personal finance tracker that helps people understand their spending habits. I need to create the product vision document first. It should be mobile-first, work offline, and connect to bank accounts via Plaid.",
+      "accept": [
+        "write-vision"
+      ],
+      "source": "tier-1.5"
+    },
+    {
+      "id": "bug-checkout-total",
+      "request": "Customers are being charged twice when they double-click Pay. Find out why and fix it.",
+      "accept": [
+        "diagnose-bug"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "bug-regression",
+      "request": "After yesterday's merge the dashboard shows zero orders for every store. What broke?",
+      "accept": [
+        "diagnose-bug"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "plan-change",
+      "request": "The spec for team invites is approved. Turn it into an implementation plan with tasks and tests.",
+      "accept": [
+        "plan-changeset"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "review-diff",
+      "request": "Review the changes on this branch before I merge them.",
+      "accept": [
+        "review-exec",
+        "review-gate",
+        "review-cross-model"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "review-plan",
+      "request": "Here's the implementation plan for the billing rewrite. Poke holes in it before we start coding.",
+      "accept": [
+        "review-plan"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "security-review",
+      "request": "Check our payment and auth design for security holes before launch.",
+      "accept": [
+        "review-security"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "design-arch",
+      "request": "Pick the architecture and data model for a multi-tenant booking backend.",
+      "accept": [
+        "design-tech",
+        "explore-solutions"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "compare-vendors",
+      "request": "Should we use Stripe or Paddle for subscriptions? Compare them for a two-person startup.",
+      "accept": [
+        "strategic-decision",
+        "decide",
+        "procurement"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "competitors",
+      "request": "Who are the main competitors for an AI meeting-notes app and where is the gap?",
+      "accept": [
+        "analyze-competitors",
+        "market-intel"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "personas",
+      "request": "Write personas for a yoga studio booking app: owners, instructors and students.",
+      "accept": [
+        "build-personas"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "landing",
+      "request": "Write the landing page for our invoicing tool.",
+      "accept": [
+        "landing-page"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "ux-flows",
+      "request": "Design the screens and states for the onboarding flow, including errors and empty states.",
+      "accept": [
+        "design-ux"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "ui-components",
+      "request": "We need component specs and design tokens for the settings pages.",
+      "accept": [
+        "design-ui"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "e2e",
+      "request": "Write Playwright end-to-end tests for signup and checkout.",
+      "accept": [
+        "write-e2e"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "journey-qa",
+      "request": "Walk through the live staging site like a user and check the checkout journeys work.",
+      "accept": [
+        "test-journeys"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "onboard",
+      "request": "Bring this existing repo under the framework: map it and create work items.",
+      "accept": [
+        "onboard-repo"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "ship",
+      "request": "The PR is reviewed and green. Land it.",
+      "accept": [
+        "land-changeset"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "post-deploy",
+      "request": "We just deployed. Verify production actually does what the spec says.",
+      "accept": [
+        "verify-promotion"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "idea",
+      "request": "Idea: a Chrome extension that summarizes PR diffs. Save it for later.",
+      "accept": [
+        "capture-idea"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "pricing",
+      "request": "How should we price and gate features: free tier, usage limits or paywall?",
+      "accept": [
+        "monetization-architecture"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "launch-ready",
+      "request": "Are we ready to launch, or what is still missing?",
+      "accept": [
+        "assess-market-readiness"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "runway",
+      "request": "How many months of runway do we have if we hire one engineer?",
+      "accept": [
+        "fin-analyst"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "legal-tos",
+      "request": "Review our terms of service and privacy policy for problems.",
+      "accept": [
+        "counsel",
+        "privacy-dpo"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "growth-exp",
+      "request": "Suggest growth experiments to improve trial-to-paid conversion.",
+      "accept": [
+        "growth-lead",
+        "growth-eng"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "brief-company",
+      "request": "Give me this week's company briefing and priorities.",
+      "accept": [
+        "cos"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "research-api",
+      "request": "What is the current rate limit of the GitHub REST API for authenticated users?",
+      "accept": [
+        "research"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "ad-video",
+      "request": "Make a 30-second ad video for the app.",
+      "accept": [
+        "produce-ad-video",
+        "ad-video-script"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "logo",
+      "request": "Design a logo for the company.",
+      "accept": [
+        "design-logo"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "why-not-shipping",
+      "request": "Be honest: why haven't I shipped anything that makes money yet?",
+      "accept": [
+        "honest-diagnosis"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "write-prompt",
+      "request": "Write me a strong system prompt for our support chatbot.",
+      "accept": [
+        "craft-prompt"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "bootstrap-template",
+      "request": "Extract the patterns from this production app into a reusable bootstrap template.",
+      "accept": [
+        "extract-bootstrap"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "social-post",
+      "request": "Turn what we shipped this week into a few posts for X and LinkedIn.",
+      "accept": [
+        "grow-social"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "song",
+      "request": "Make me a Suno song about shipping on Fridays.",
+      "accept": [
+        "suno-architect"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "framework-question",
+      "request": "How does svc decide which lane a request goes to?",
+      "accept": [
+        "svc-advisor",
+        "none"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "wsl-audio",
+      "request": "My microphone doesn't work in WSL2 for voice mode.",
+      "accept": [
+        "wsl2-audio"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "q-plain-1",
+      "request": "What does HTTP status 409 mean?",
+      "accept": [
+        "none"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "q-plain-2",
+      "request": "Explain the difference between a mutex and a semaphore.",
+      "accept": [
+        "none"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "q-plain-3",
+      "request": "Read package.json and tell me which test runner we use.",
+      "accept": [
+        "none"
+      ],
+      "source": "new"
+    },
+    {
+      "id": "q-plain-4",
+      "request": "What time zone is Sydney in during October?",
+      "accept": [
+        "none"
+      ],
+      "source": "new"
+    }
+  ]
+}

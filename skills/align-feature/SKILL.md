@@ -15,14 +15,10 @@ chain:
   progressive: false
   self_verify: true
   human_checkpoint: false
-description: >-
-  Execute the story-receipts chain for one WI until the validator prints STORY ALIGNED —
-  the fixing counterpart of /audit-feature. Walks every required stage in order (personas →
-  validate/intent card → spec → skills/design-ux/ui/device → journeys → ac → implement → e2e →
-  test-run → spec-sync → visuals → qa-companion → ledger → marketing → pricing), each through
-  its owning skill, recording a tracked receipt per stage. Use when the founder says "align
-  <feature>", "оправи <feature> по веригата", "continue the chain for WI-X", "fix it the
-  receipted way", or after /audit-feature produced a receipts file.
+description: >
+  Runs the story-receipts chain for one WI, stage by stage through owning skills, until
+  the validator prints STORY ALIGNED. The fixing counterpart of audit-feature. Use for
+  "align <feature>", "continue the chain for WI-X", "fix it the receipted way".
 ---
 
 # Align Feature — execute the chain until STORY ALIGNED

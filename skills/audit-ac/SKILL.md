@@ -2,11 +2,9 @@
 name: audit-ac
 version: "1.0"
 description: >
-  On-demand audit of feature specs to ensure every User Story has complete, testable acceptance
-  criteria. Rewrites vague ACs and writes missing ones. Two modes: (1) single feature —
-  "audit-ac feature-learning" or "check ACs for matching", (2) all features — "audit-ac" or
-  "audit all specs". Triggers on: "audit-ac", "check the ACs for [feature]", "audit the spec",
-  "are the ACs complete", "make sure all ACs are defined", "prep [feature] for QA".
+  Audits feature specs so every User Story has complete, testable acceptance criteria,
+  rewriting vague ones and adding missing ones, for one feature or all. Use for "audit-
+  ac", "check the ACs for <feature>", "are the ACs complete", "prep <feature> for QA".
 phases:
   - id: P1-ModeSpecSelection
     trigger: always

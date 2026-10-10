@@ -1,0 +1,7 @@
+{
+  "pillar": "review-plan",
+  "max_turns": 30,
+  "timeout_min": 10,
+  "instruction": "Review PLAN.md, the implementation plan for FEATURE.md, before it is executed (spec.md explains the setup; the code is in src/ and test/). Do not change any file except the one you write. Write PLAN-REVIEW.json in this directory: a JSON array with one object per defect that would make the plan fail, miss an acceptance criterion or do unrequested work, each {\"step\": <step number, or null when no step applies>, \"ac\": \"<AC id, or null>\", \"kind\": \"uncovered-ac|missing-file|bad-order|no-verification|scope-creep|other\", \"issue\": \"<what is wrong and the fix>\"}. Write [] if the plan has no defects.",
+  "svc": ["agents/plan-reviewer.md"]
+}

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { gitRevParse, gitWorktreeList } from "./git-query.mjs";
 import {
   authorityStateRoot,
   listControllers,
@@ -16,7 +17,7 @@ function realpathOrEmpty(value) {
 export function worktreeRoots(repo) {
   const rows = [];
   try {
-    const out = execFileSync("git", ["-C", repo, "worktree", "list", "--porcelain"], { encoding: "utf8" });
+    const out = gitWorktreeList(repo, { encoding: "utf8" });
     for (const line of String(out || "").split(/\r?\n/)) {
       if (!line.startsWith("worktree ")) continue;
       const resolved = realpathOrEmpty(line.slice(9));
@@ -47,7 +48,7 @@ export function uniqueLaneWi(worktree) {
 
 export function defaultCheckoutRoot(worktree) {
   try {
-    const common = execFileSync("git", ["-C", worktree, "rev-parse", "--git-common-dir"], { encoding: "utf8" }).trim();
+    const common = gitRevParse(worktree, "--git-common-dir", { encoding: "utf8" }).trim();
     return fs.realpathSync(path.dirname(path.resolve(worktree, common)));
   } catch {
     return "";

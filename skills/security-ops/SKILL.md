@@ -1,8 +1,11 @@
 ---
 name: security-ops
 version: "1.0"
-description: >-
-  Security review. Use when: "security risk", "threat model", "security review", "incident control". Not privacy-law or reliability review.
+description: >
+  Company security-operations brain: assess org security risk, incident controls and
+  exploit paths, then propose one approved decision card. Use for 'security risk',
+  'incident control', 'security posture'. For design or code security review use review-
+  security.
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

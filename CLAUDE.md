@@ -101,9 +101,11 @@ bash scripts/resolve-model.sh EXEC --json
 | **[PASS]** | Claude | Haiku 4.5 |
 <!-- svc:generated:end claude-md-svc-default -->
 
+> Subagents in `agents/` name the Claude Code aliases (`opus`, `sonnet`, `haiku`) since 2026-10-10, so they run on the current model of each family without a refresh; the table shows the registry's API-level IDs, which stay pinned for API callers such as the external-review policy.
+>
 > ⚠️ Model IDs single-sourced from `references/model-registry.json` — refreshed by **WI-357** (2026-06-06; EXEC→Sonnet 4.6) then **WI-470** (2026-06-30; EXEC+REVIEW→Sonnet 5, effort:high declared, claude-api-verified). Table generation pending WI-364 — until then edit the registry first, then sync mirrors.
 
-MiMo is an **execution harness**, not an orchestrator. Since WI-470, svc-default pins the EXEC + REVIEW subagents to **Sonnet 5** — `svc-stage-exec`/`svc-stage-land`, `svc-journey-qa`, and the review agents `svc-lens-correctness`/`-security`/`-spec-fidelity`, `plan-reviewer`, `strategic-reviewer` (the PASS-tier `svc-lens-perf` stays Haiku) — with **high reasoning effort declared in the registry** (`output_config.effort:high`, surfaced via `resolve-model.sh EXEC --effort`). The model pin is what runtime honors today; the effort value is the routing *declaration* — consumers apply it via the Agent dispatch effort param (WI-399). It delegates only video/visual QA (SENSE) to MiMo when `MIMO_API_KEY` is set; MiMo-everything execution remains available via the `opencode-mimo` profile.
+MiMo is an **execution harness**, not an orchestrator. Since WI-470, svc-default runs the EXEC + REVIEW subagents on the **`sonnet` alias** — `svc-stage-exec`/`svc-stage-land`, `svc-journey-qa`, and the review agents `svc-lens-correctness`/`-security`/`-spec-fidelity`, `plan-reviewer`, `strategic-reviewer` (the PASS-tier `svc-lens-perf` stays Haiku) — with **high reasoning effort declared in the registry** (`output_config.effort:high`, surfaced via `resolve-model.sh EXEC --effort`). The model pin is what runtime honors today; the effort value is the routing *declaration* — consumers apply it via the Agent dispatch effort param (WI-399). It delegates only video/visual QA (SENSE) to MiMo when `MIMO_API_KEY` is set; MiMo-everything execution remains available via the `opencode-mimo` profile.
 
 ### Switching Profiles
 
@@ -139,8 +141,9 @@ This repo requires the plan-changeset + review-plan + execute-changeset +
 review-exec + audit-implementation + land-changeset + verify-promotion chain
 for non-quick-fix changes. Its standalone receipt validators and CI checks
 retain their normal failure behavior. Managed host and Git hook decisions are
-advisory by default; set `SVC_HOOK_MODE=enforce` or the owner policy to make
-those hook decisions blocking. See `docs/hook-modes.md` for precedence.
+advisory by default; the owner policy (`~/.svc/hook-policy.json`) or
+`SVC_HOOK_MODE=enforce` makes them blocking, and the environment can never lower
+an owner's enforce. See `docs/hook-modes.md` for precedence.
 
 Key entry points for this host:
 - `scripts/run-external-review.mjs` — sole paid independent-review launcher;

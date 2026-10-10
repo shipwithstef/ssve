@@ -2,12 +2,10 @@
 name: blend-external
 version: "1.0"
 description: >
-  Use when importing patterns from external repos into svc. Triggers on "blend
-  from", "what can we take from X", "integrate patterns from", "re-blend",
-  "check for new stuff in gstack/superpowers/OMCC", "update from external",
-  "add a new source", "blend a new repo", "rethink our blends", "did we blend
-  the right thing", "review past blends", or when pointing at an external repo
-  to pull in useful patterns.
+  Imports useful patterns from an external repo into svc with attribution and blend
+  history; also re-blends and reviews past blends. Use for "blend from <repo>", "what can
+  we take from X", "re-blend", "review past blends". For private sources use blend-
+  private.
 phases:
   - id: P1-SvcCapabilityBaseline
     trigger: always

@@ -1,7 +1,7 @@
 ---
 name: svc-lens-correctness
 description: Locked CORRECTNESS lens for the WI-382 parallel review station. Use ONLY inside a review-exec wave over a FROZEN diff. Hunts logic errors, fail-open/fail-closed inversions, broken invariants, edge-case breakage. Read-only; returns schemas/review-lens-finding.schema.json entries. Never self-selects; one of ≤4 lenses per station run.
-model: claude-sonnet-5
+model: sonnet
 cognitive_label: "[REVIEW]"
 lock_class: reviewer
 host_resolution: |

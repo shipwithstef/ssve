@@ -1,8 +1,10 @@
 ---
 name: capture-idea
 version: "1.0"
-description: >-
-  Zero-friction backlog intake — formats a loose idea as a canonical repo work item without business validation or PRD ceremony. Use when: "store this idea", "just an idea", "remember this for later", "put this in the backlog", "someday maybe". Also: "quick capture", "rough idea", "don't forget", "I was thinking about"; From-Proposal Mode: "I want to build this now", "add this feature".
+description: >
+  Quickly captures a loose idea as a canonical repo work item without validation or PRD
+  ceremony; From-Proposal mode turns a proposal into WIs. Use for "store this idea", "put
+  this in the backlog", "remember this for later", "I want to build this now".
 phases:
   - id: P1-LightContextLoad
     trigger: always

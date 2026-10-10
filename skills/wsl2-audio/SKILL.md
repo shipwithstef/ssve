@@ -3,13 +3,9 @@ disable-model-invocation: true
 name: wsl2-audio
 version: "1.0"
 description: >
-  Set up, diagnose, and fix audio in WSL2 — covers both Claude Code voice mode and
-  general audio (input + output). Use this skill whenever the user mentions: voice mode
-  not working in WSL, can't hear anything in WSL2, mic not working in WSL, Claude Code
-  voice mode setup, audio/sound issues on Windows Subsystem for Linux, WSLg audio
-  problems, PulseAudio in WSL, ALSA in WSL, aplay, arecord, paplay, parecord, or
-  speaker-test in a WSL context. Even if they just say "sound doesn't work" or "voice
-  mode is broken" and you know they're on WSL2, use this skill.
+  Set up, diagnose and fix audio input and output in WSL2, including Claude Code voice
+  mode, WSLg, PulseAudio and ALSA. Use when sound, mic or voice mode does not work on
+  WSL2.
 phases:
   - id: P1-TransportDiagnosis
     trigger: always

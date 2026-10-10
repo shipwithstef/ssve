@@ -1,0 +1,7 @@
+[
+  {"step": null, "ac": "AC3", "kind": "uncovered-ac", "issue": "no step removes a customer whose charge fails and tries the next one; add it to step 2 with a declined-card test"},
+  {"step": 2, "ac": "AC2", "kind": "missing-file", "issue": "src/billing.mjs does not exist; use charge() from the payments gateway in src/payments.mjs, passed in like book() does"},
+  {"step": 4, "ac": "AC5", "kind": "bad-order", "issue": "step 4 calls waitlistView, which step 5 creates; swap steps 4 and 5"},
+  {"step": 5, "ac": "AC5", "kind": "no-verification", "issue": "'check that the output looks right' is not executable; add a node --test case with the expected array"},
+  {"step": 6, "ac": null, "kind": "scope-creep", "issue": "email notifications are not in FEATURE.md; drop the step"}
+]

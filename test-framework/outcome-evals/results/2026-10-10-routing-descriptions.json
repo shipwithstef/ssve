@@ -1,0 +1,4997 @@
+{
+  "ran_at": "2026-10-10T19:27:43.077Z",
+  "refs": [
+    "origin/main",
+    "HEAD"
+  ],
+  "models": [
+    "haiku",
+    "sonnet"
+  ],
+  "reps": 2,
+  "listing_sizes": {
+    "origin/main": 102,
+    "HEAD": 104
+  },
+  "summary": {
+    "origin/main|haiku": {
+      "accuracy": 0.86,
+      "n": 100,
+      "errors": 0,
+      "misses": [
+        "t15-evolve-framework->blend-external",
+        "t15-evolve-framework->blend-external",
+        "post-deploy->test-journeys",
+        "research-api->none",
+        "research-api->none",
+        "write-prompt->none",
+        "write-prompt->none",
+        "social-post->comms",
+        "social-post->analyze-marketing",
+        "song->none",
+        "song->none",
+        "framework-question->route-workflow",
+        "wsl-audio->none",
+        "wsl-audio->none"
+      ]
+    },
+    "origin/main|sonnet": {
+      "accuracy": 0.88,
+      "n": 100,
+      "errors": 0,
+      "misses": [
+        "t15-evolve-framework->blend-external",
+        "t15-evolve-framework->blend-external",
+        "research-api->none",
+        "research-api->none",
+        "social-post->comms",
+        "social-post->comms",
+        "song->none",
+        "song->none",
+        "framework-question->route-workflow",
+        "framework-question->route-workflow",
+        "wsl-audio->none",
+        "wsl-audio->none"
+      ]
+    },
+    "HEAD|haiku": {
+      "accuracy": 0.89,
+      "n": 100,
+      "errors": 0,
+      "misses": [
+        "t15-evolve-framework->research",
+        "t15-evolve-framework->research",
+        "design-arch->strategic-decision",
+        "research-api->none",
+        "research-api->none",
+        "social-post->addon-gateway",
+        "social-post->addon-gateway",
+        "song->none",
+        "song->none",
+        "wsl-audio->none",
+        "wsl-audio->none"
+      ]
+    },
+    "HEAD|sonnet": {
+      "accuracy": 0.92,
+      "n": 100,
+      "errors": 0,
+      "misses": [
+        "t15-evolve-framework->blend-external",
+        "t15-evolve-framework->blend-external",
+        "social-post->addon-gateway",
+        "social-post->comms",
+        "song->none",
+        "song->none",
+        "wsl-audio->none",
+        "wsl-audio->none"
+      ]
+    },
+    "HEAD_vs_origin/main|haiku": {
+      "diff": 0.03,
+      "ci95": [
+        -0.06,
+        0.12
+      ],
+      "p": 0.6646,
+      "n": [
+        100,
+        100
+      ]
+    },
+    "HEAD_vs_origin/main|sonnet": {
+      "diff": 0.04,
+      "ci95": [
+        -0.04,
+        0.12
+      ],
+      "p": 0.4832,
+      "n": [
+        100,
+        100
+      ]
+    }
+  },
+  "rows": [
+    {
+      "case": "t15-blend-external",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "blend-external"
+      ],
+      "skill": "blend-external",
+      "correct": true,
+      "cost_usd": 0.00409043
+    },
+    {
+      "case": "t15-blend-external",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "blend-external"
+      ],
+      "skill": "blend-external",
+      "correct": true,
+      "cost_usd": 0.00038761000000000004
+    },
+    {
+      "case": "t15-blend-external",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "blend-external"
+      ],
+      "skill": "blend-external",
+      "correct": true,
+      "cost_usd": 0.073666
+    },
+    {
+      "case": "t15-blend-external",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "blend-external"
+      ],
+      "skill": "blend-external",
+      "correct": true,
+      "cost_usd": 0.073666
+    },
+    {
+      "case": "t15-blend-external",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "blend-external"
+      ],
+      "skill": "blend-external",
+      "correct": true,
+      "cost_usd": 0.00283904
+    },
+    {
+      "case": "t15-blend-external",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "blend-external"
+      ],
+      "skill": "blend-external",
+      "correct": true,
+      "cost_usd": 0.00049036
+    },
+    {
+      "case": "t15-blend-external",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "blend-external"
+      ],
+      "skill": "blend-external",
+      "correct": true,
+      "cost_usd": 0.049822
+    },
+    {
+      "case": "t15-blend-external",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "blend-external"
+      ],
+      "skill": "blend-external",
+      "correct": true,
+      "cost_usd": 0.049822
+    },
+    {
+      "case": "t15-capture-idea-from-proposal",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.00339012
+    },
+    {
+      "case": "t15-capture-idea-from-proposal",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.00338712
+    },
+    {
+      "case": "t15-capture-idea-from-proposal",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.0669602
+    },
+    {
+      "case": "t15-capture-idea-from-proposal",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.00527
+    },
+    {
+      "case": "t15-capture-idea-from-proposal",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.00219622
+    },
+    {
+      "case": "t15-capture-idea-from-proposal",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.00032288
+    },
+    {
+      "case": "t15-capture-idea-from-proposal",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.0431162
+    },
+    {
+      "case": "t15-capture-idea-from-proposal",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.0431242
+    },
+    {
+      "case": "t15-diagnose-bug",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0034027200000000006
+    },
+    {
+      "case": "t15-diagnose-bug",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0034447200000000005
+    },
+    {
+      "case": "t15-diagnose-bug",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.06689220000000001
+    },
+    {
+      "case": "t15-diagnose-bug",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0669002
+    },
+    {
+      "case": "t15-diagnose-bug",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.00224802
+    },
+    {
+      "case": "t15-diagnose-bug",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.00036268
+    },
+    {
+      "case": "t15-diagnose-bug",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0430562
+    },
+    {
+      "case": "t15-diagnose-bug",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0430482
+    },
+    {
+      "case": "t15-evolve-framework",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "evolve-framework"
+      ],
+      "skill": "blend-external",
+      "correct": false,
+      "cost_usd": 0.0034445200000000004
+    },
+    {
+      "case": "t15-evolve-framework",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "evolve-framework"
+      ],
+      "skill": "blend-external",
+      "correct": false,
+      "cost_usd": 0.00347902
+    },
+    {
+      "case": "t15-evolve-framework",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "evolve-framework"
+      ],
+      "skill": "blend-external",
+      "correct": false,
+      "cost_usd": 0.06659820000000001
+    },
+    {
+      "case": "t15-evolve-framework",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "evolve-framework"
+      ],
+      "skill": "blend-external",
+      "correct": false,
+      "cost_usd": 0.0666062
+    },
+    {
+      "case": "t15-evolve-framework",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "evolve-framework"
+      ],
+      "skill": "research",
+      "correct": false,
+      "cost_usd": 0.00244286
+    },
+    {
+      "case": "t15-evolve-framework",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "evolve-framework"
+      ],
+      "skill": "research",
+      "correct": false,
+      "cost_usd": 0.00042752
+    },
+    {
+      "case": "t15-evolve-framework",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "evolve-framework"
+      ],
+      "skill": "blend-external",
+      "correct": false,
+      "cost_usd": 0.043892200000000006
+    },
+    {
+      "case": "t15-evolve-framework",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "evolve-framework"
+      ],
+      "skill": "blend-external",
+      "correct": false,
+      "cost_usd": 0.0444442
+    },
+    {
+      "case": "t15-improve-framework",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "improve-framework"
+      ],
+      "skill": "improve-framework",
+      "correct": true,
+      "cost_usd": 0.00339782
+    },
+    {
+      "case": "t15-improve-framework",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "improve-framework"
+      ],
+      "skill": "improve-framework",
+      "correct": true,
+      "cost_usd": 0.0033942200000000003
+    },
+    {
+      "case": "t15-improve-framework",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "improve-framework"
+      ],
+      "skill": "improve-framework",
+      "correct": true,
+      "cost_usd": 0.0666482
+    },
+    {
+      "case": "t15-improve-framework",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "improve-framework"
+      ],
+      "skill": "improve-framework",
+      "correct": true,
+      "cost_usd": 0.0666242
+    },
+    {
+      "case": "t15-improve-framework",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "improve-framework"
+      ],
+      "skill": "improve-framework",
+      "correct": true,
+      "cost_usd": 0.0022115200000000002
+    },
+    {
+      "case": "t15-improve-framework",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "improve-framework"
+      ],
+      "skill": "improve-framework",
+      "correct": true,
+      "cost_usd": 0.00052848
+    },
+    {
+      "case": "t15-improve-framework",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "improve-framework"
+      ],
+      "skill": "improve-framework",
+      "correct": true,
+      "cost_usd": 0.0427962
+    },
+    {
+      "case": "t15-improve-framework",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "improve-framework"
+      ],
+      "skill": "improve-framework",
+      "correct": true,
+      "cost_usd": 0.0427882
+    },
+    {
+      "case": "t15-sync-spec-code",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "sync-spec-code"
+      ],
+      "skill": "sync-spec-code",
+      "correct": true,
+      "cost_usd": 0.0034308200000000002
+    },
+    {
+      "case": "t15-sync-spec-code",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "sync-spec-code"
+      ],
+      "skill": "sync-spec-code",
+      "correct": true,
+      "cost_usd": 0.00346332
+    },
+    {
+      "case": "t15-sync-spec-code",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "sync-spec-code"
+      ],
+      "skill": "sync-spec-code",
+      "correct": true,
+      "cost_usd": 0.0667722
+    },
+    {
+      "case": "t15-sync-spec-code",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "sync-spec-code"
+      ],
+      "skill": "sync-spec-code",
+      "correct": true,
+      "cost_usd": 0.0667722
+    },
+    {
+      "case": "t15-sync-spec-code",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "sync-spec-code"
+      ],
+      "skill": "sync-spec-code",
+      "correct": true,
+      "cost_usd": 0.00244572
+    },
+    {
+      "case": "t15-sync-spec-code",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "sync-spec-code"
+      ],
+      "skill": "sync-spec-code",
+      "correct": true,
+      "cost_usd": 0.00046286
+    },
+    {
+      "case": "t15-sync-spec-code",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "sync-spec-code"
+      ],
+      "skill": "sync-spec-code",
+      "correct": true,
+      "cost_usd": 0.0429362
+    },
+    {
+      "case": "t15-sync-spec-code",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "sync-spec-code"
+      ],
+      "skill": "sync-spec-code",
+      "correct": true,
+      "cost_usd": 0.0429282
+    },
+    {
+      "case": "t15-test-framework",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "test-framework"
+      ],
+      "skill": "test-framework",
+      "correct": true,
+      "cost_usd": 0.0033966199999999995
+    },
+    {
+      "case": "t15-test-framework",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "test-framework"
+      ],
+      "skill": "test-framework",
+      "correct": true,
+      "cost_usd": 0.00038271
+    },
+    {
+      "case": "t15-test-framework",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "test-framework"
+      ],
+      "skill": "test-framework",
+      "correct": true,
+      "cost_usd": 0.0665902
+    },
+    {
+      "case": "t15-test-framework",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "test-framework"
+      ],
+      "skill": "test-framework",
+      "correct": true,
+      "cost_usd": 0.06659820000000001
+    },
+    {
+      "case": "t15-test-framework",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "test-framework"
+      ],
+      "skill": "test-framework",
+      "correct": true,
+      "cost_usd": 0.00221092
+    },
+    {
+      "case": "t15-test-framework",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "test-framework"
+      ],
+      "skill": "test-framework",
+      "correct": true,
+      "cost_usd": 0.0003565
+    },
+    {
+      "case": "t15-test-framework",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "test-framework"
+      ],
+      "skill": "test-framework",
+      "correct": true,
+      "cost_usd": 0.0427542
+    },
+    {
+      "case": "t15-test-framework",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "test-framework"
+      ],
+      "skill": "test-framework",
+      "correct": true,
+      "cost_usd": 0.0046551000000000006
+    },
+    {
+      "case": "t15-validate-feature",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "validate-feature"
+      ],
+      "skill": "validate-feature",
+      "correct": true,
+      "cost_usd": 0.00342042
+    },
+    {
+      "case": "t15-validate-feature",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "validate-feature"
+      ],
+      "skill": "validate-feature",
+      "correct": true,
+      "cost_usd": 0.00044534999999999996
+    },
+    {
+      "case": "t15-validate-feature",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "validate-feature"
+      ],
+      "skill": "validate-feature",
+      "correct": true,
+      "cost_usd": 0.0668642
+    },
+    {
+      "case": "t15-validate-feature",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "validate-feature"
+      ],
+      "skill": "validate-feature",
+      "correct": true,
+      "cost_usd": 0.0668562
+    },
+    {
+      "case": "t15-validate-feature",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "validate-feature"
+      ],
+      "skill": "validate-feature",
+      "correct": true,
+      "cost_usd": 0.0022287200000000004
+    },
+    {
+      "case": "t15-validate-feature",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "validate-feature"
+      ],
+      "skill": "validate-feature",
+      "correct": true,
+      "cost_usd": 0.00036313999999999997
+    },
+    {
+      "case": "t15-validate-feature",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "validate-feature"
+      ],
+      "skill": "validate-feature",
+      "correct": true,
+      "cost_usd": 0.0430202
+    },
+    {
+      "case": "t15-validate-feature",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "validate-feature"
+      ],
+      "skill": "validate-feature",
+      "correct": true,
+      "cost_usd": 0.0430202
+    },
+    {
+      "case": "t15-write-journeys",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "write-journeys"
+      ],
+      "skill": "write-journeys",
+      "correct": true,
+      "cost_usd": 0.0034208199999999998
+    },
+    {
+      "case": "t15-write-journeys",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "write-journeys"
+      ],
+      "skill": "write-journeys",
+      "correct": true,
+      "cost_usd": 0.00040167
+    },
+    {
+      "case": "t15-write-journeys",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "write-journeys"
+      ],
+      "skill": "write-journeys",
+      "correct": true,
+      "cost_usd": 0.0668162
+    },
+    {
+      "case": "t15-write-journeys",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "write-journeys"
+      ],
+      "skill": "write-journeys",
+      "correct": true,
+      "cost_usd": 0.0668402
+    },
+    {
+      "case": "t15-write-journeys",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "write-journeys"
+      ],
+      "skill": "write-journeys",
+      "correct": true,
+      "cost_usd": 0.0022256199999999998
+    },
+    {
+      "case": "t15-write-journeys",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "write-journeys"
+      ],
+      "skill": "write-journeys",
+      "correct": true,
+      "cost_usd": 0.00220802
+    },
+    {
+      "case": "t15-write-journeys",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "write-journeys"
+      ],
+      "skill": "write-journeys",
+      "correct": true,
+      "cost_usd": 0.0429882
+    },
+    {
+      "case": "t15-write-journeys",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "write-journeys"
+      ],
+      "skill": "write-journeys",
+      "correct": true,
+      "cost_usd": 0.0429882
+    },
+    {
+      "case": "t15-write-spec",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "write-spec"
+      ],
+      "skill": "write-spec",
+      "correct": true,
+      "cost_usd": 0.00344442
+    },
+    {
+      "case": "t15-write-spec",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "write-spec"
+      ],
+      "skill": "write-spec",
+      "correct": true,
+      "cost_usd": 0.00340412
+    },
+    {
+      "case": "t15-write-spec",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "write-spec"
+      ],
+      "skill": "write-spec",
+      "correct": true,
+      "cost_usd": 0.0668142
+    },
+    {
+      "case": "t15-write-spec",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "write-spec"
+      ],
+      "skill": "write-spec",
+      "correct": true,
+      "cost_usd": 0.0668142
+    },
+    {
+      "case": "t15-write-spec",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "write-spec"
+      ],
+      "skill": "write-spec",
+      "correct": true,
+      "cost_usd": 0.00221332
+    },
+    {
+      "case": "t15-write-spec",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "write-spec"
+      ],
+      "skill": "write-spec",
+      "correct": true,
+      "cost_usd": 0.00034374000000000004
+    },
+    {
+      "case": "t15-write-spec",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "write-spec"
+      ],
+      "skill": "write-spec",
+      "correct": true,
+      "cost_usd": 0.042978199999999994
+    },
+    {
+      "case": "t15-write-spec",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "write-spec"
+      ],
+      "skill": "write-spec",
+      "correct": true,
+      "cost_usd": 0.0429702
+    },
+    {
+      "case": "t15-write-vision",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "write-vision"
+      ],
+      "skill": "write-vision",
+      "correct": true,
+      "cost_usd": 0.00337552
+    },
+    {
+      "case": "t15-write-vision",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "write-vision"
+      ],
+      "skill": "write-vision",
+      "correct": true,
+      "cost_usd": 0.0033780200000000002
+    },
+    {
+      "case": "t15-write-vision",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "write-vision"
+      ],
+      "skill": "write-vision",
+      "correct": true,
+      "cost_usd": 0.06683420000000001
+    },
+    {
+      "case": "t15-write-vision",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "write-vision"
+      ],
+      "skill": "write-vision",
+      "correct": true,
+      "cost_usd": 0.06683420000000001
+    },
+    {
+      "case": "t15-write-vision",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "write-vision"
+      ],
+      "skill": "write-vision",
+      "correct": true,
+      "cost_usd": 0.00223282
+    },
+    {
+      "case": "t15-write-vision",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "write-vision"
+      ],
+      "skill": "write-vision",
+      "correct": true,
+      "cost_usd": 0.00224172
+    },
+    {
+      "case": "t15-write-vision",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "write-vision"
+      ],
+      "skill": "write-vision",
+      "correct": true,
+      "cost_usd": 0.0429822
+    },
+    {
+      "case": "t15-write-vision",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "write-vision"
+      ],
+      "skill": "write-vision",
+      "correct": true,
+      "cost_usd": 0.0429822
+    },
+    {
+      "case": "bug-checkout-total",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0033934200000000003
+    },
+    {
+      "case": "bug-checkout-total",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.00040919999999999997
+    },
+    {
+      "case": "bug-checkout-total",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0666642
+    },
+    {
+      "case": "bug-checkout-total",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0666642
+    },
+    {
+      "case": "bug-checkout-total",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.00222872
+    },
+    {
+      "case": "bug-checkout-total",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0022104200000000003
+    },
+    {
+      "case": "bug-checkout-total",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0428202
+    },
+    {
+      "case": "bug-checkout-total",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0428122
+    },
+    {
+      "case": "bug-regression",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0034099200000000003
+    },
+    {
+      "case": "bug-regression",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0003972
+    },
+    {
+      "case": "bug-regression",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0666642
+    },
+    {
+      "case": "bug-regression",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.06668020000000001
+    },
+    {
+      "case": "bug-regression",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.00219572
+    },
+    {
+      "case": "bug-regression",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.00220922
+    },
+    {
+      "case": "bug-regression",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0427962
+    },
+    {
+      "case": "bug-regression",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "diagnose-bug"
+      ],
+      "skill": "diagnose-bug",
+      "correct": true,
+      "cost_usd": 0.0428282
+    },
+    {
+      "case": "plan-change",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "plan-changeset"
+      ],
+      "skill": "plan-changeset",
+      "correct": true,
+      "cost_usd": 0.00069182
+    },
+    {
+      "case": "plan-change",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "plan-changeset"
+      ],
+      "skill": "plan-changeset",
+      "correct": true,
+      "cost_usd": 0.0034456200000000004
+    },
+    {
+      "case": "plan-change",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "plan-changeset"
+      ],
+      "skill": "plan-changeset",
+      "correct": true,
+      "cost_usd": 0.0666662
+    },
+    {
+      "case": "plan-change",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "plan-changeset"
+      ],
+      "skill": "plan-changeset",
+      "correct": true,
+      "cost_usd": 0.0666742
+    },
+    {
+      "case": "plan-change",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "plan-changeset"
+      ],
+      "skill": "plan-changeset",
+      "correct": true,
+      "cost_usd": 0.0022149200000000004
+    },
+    {
+      "case": "plan-change",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "plan-changeset"
+      ],
+      "skill": "plan-changeset",
+      "correct": true,
+      "cost_usd": 0.00035762
+    },
+    {
+      "case": "plan-change",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "plan-changeset"
+      ],
+      "skill": "plan-changeset",
+      "correct": true,
+      "cost_usd": 0.0428302
+    },
+    {
+      "case": "plan-change",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "plan-changeset"
+      ],
+      "skill": "plan-changeset",
+      "correct": true,
+      "cost_usd": 0.042822200000000005
+    },
+    {
+      "case": "review-diff",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "review-exec",
+        "review-gate",
+        "review-cross-model"
+      ],
+      "skill": "review-exec",
+      "correct": true,
+      "cost_usd": 0.0034940199999999996
+    },
+    {
+      "case": "review-diff",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "review-exec",
+        "review-gate",
+        "review-cross-model"
+      ],
+      "skill": "review-exec",
+      "correct": true,
+      "cost_usd": 0.00046458000000000003
+    },
+    {
+      "case": "review-diff",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "review-exec",
+        "review-gate",
+        "review-cross-model"
+      ],
+      "skill": "review-exec",
+      "correct": true,
+      "cost_usd": 0.0665942
+    },
+    {
+      "case": "review-diff",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "review-exec",
+        "review-gate",
+        "review-cross-model"
+      ],
+      "skill": "review-exec",
+      "correct": true,
+      "cost_usd": 0.0665862
+    },
+    {
+      "case": "review-diff",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "review-exec",
+        "review-gate",
+        "review-cross-model"
+      ],
+      "skill": "review-exec",
+      "correct": true,
+      "cost_usd": 0.0022938200000000002
+    },
+    {
+      "case": "review-diff",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "review-exec",
+        "review-gate",
+        "review-cross-model"
+      ],
+      "skill": "review-exec",
+      "correct": true,
+      "cost_usd": 0.00044507
+    },
+    {
+      "case": "review-diff",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "review-exec",
+        "review-gate",
+        "review-cross-model"
+      ],
+      "skill": "review-exec",
+      "correct": true,
+      "cost_usd": 0.042750199999999995
+    },
+    {
+      "case": "review-diff",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "review-exec",
+        "review-gate",
+        "review-cross-model"
+      ],
+      "skill": "review-exec",
+      "correct": true,
+      "cost_usd": 0.042742199999999994
+    },
+    {
+      "case": "review-plan",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "review-plan"
+      ],
+      "skill": "review-plan",
+      "correct": true,
+      "cost_usd": 0.0035382200000000003
+    },
+    {
+      "case": "review-plan",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "review-plan"
+      ],
+      "skill": "review-plan",
+      "correct": true,
+      "cost_usd": 0.00045834
+    },
+    {
+      "case": "review-plan",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "review-plan"
+      ],
+      "skill": "review-plan",
+      "correct": true,
+      "cost_usd": 0.0666502
+    },
+    {
+      "case": "review-plan",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "review-plan"
+      ],
+      "skill": "review-plan",
+      "correct": true,
+      "cost_usd": 0.0666502
+    },
+    {
+      "case": "review-plan",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "review-plan"
+      ],
+      "skill": "review-plan",
+      "correct": true,
+      "cost_usd": 0.0023235200000000004
+    },
+    {
+      "case": "review-plan",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "review-plan"
+      ],
+      "skill": "review-plan",
+      "correct": true,
+      "cost_usd": 0.00043803
+    },
+    {
+      "case": "review-plan",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "review-plan"
+      ],
+      "skill": "review-plan",
+      "correct": true,
+      "cost_usd": 0.042806199999999996
+    },
+    {
+      "case": "review-plan",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "review-plan"
+      ],
+      "skill": "review-plan",
+      "correct": true,
+      "cost_usd": 0.042806199999999996
+    },
+    {
+      "case": "security-review",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "review-security"
+      ],
+      "skill": "review-security",
+      "correct": true,
+      "cost_usd": 0.0034419200000000002
+    },
+    {
+      "case": "security-review",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "review-security"
+      ],
+      "skill": "review-security",
+      "correct": true,
+      "cost_usd": 0.00045720000000000005
+    },
+    {
+      "case": "security-review",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "review-security"
+      ],
+      "skill": "review-security",
+      "correct": true,
+      "cost_usd": 0.0665842
+    },
+    {
+      "case": "security-review",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "review-security"
+      ],
+      "skill": "review-security",
+      "correct": true,
+      "cost_usd": 0.0665842
+    },
+    {
+      "case": "security-review",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "review-security"
+      ],
+      "skill": "review-security",
+      "correct": true,
+      "cost_usd": 0.00224472
+    },
+    {
+      "case": "security-review",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "review-security"
+      ],
+      "skill": "review-security",
+      "correct": true,
+      "cost_usd": 0.00223572
+    },
+    {
+      "case": "security-review",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "review-security"
+      ],
+      "skill": "review-security",
+      "correct": true,
+      "cost_usd": 0.0427402
+    },
+    {
+      "case": "security-review",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "review-security"
+      ],
+      "skill": "review-security",
+      "correct": true,
+      "cost_usd": 0.0427402
+    },
+    {
+      "case": "design-arch",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "design-tech",
+        "explore-solutions"
+      ],
+      "skill": "design-tech",
+      "correct": true,
+      "cost_usd": 0.00046266
+    },
+    {
+      "case": "design-arch",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "design-tech",
+        "explore-solutions"
+      ],
+      "skill": "design-tech",
+      "correct": true,
+      "cost_usd": 0.0034717200000000006
+    },
+    {
+      "case": "design-arch",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "design-tech",
+        "explore-solutions"
+      ],
+      "skill": "design-tech",
+      "correct": true,
+      "cost_usd": 0.0680582
+    },
+    {
+      "case": "design-arch",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "design-tech",
+        "explore-solutions"
+      ],
+      "skill": "design-tech",
+      "correct": true,
+      "cost_usd": 0.0684802
+    },
+    {
+      "case": "design-arch",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "design-tech",
+        "explore-solutions"
+      ],
+      "skill": "design-tech",
+      "correct": true,
+      "cost_usd": 0.00233692
+    },
+    {
+      "case": "design-arch",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "design-tech",
+        "explore-solutions"
+      ],
+      "skill": "strategic-decision",
+      "correct": false,
+      "cost_usd": 0.0024264200000000003
+    },
+    {
+      "case": "design-arch",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "design-tech",
+        "explore-solutions"
+      ],
+      "skill": "design-tech",
+      "correct": true,
+      "cost_usd": 0.0427662
+    },
+    {
+      "case": "design-arch",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "design-tech",
+        "explore-solutions"
+      ],
+      "skill": "design-tech",
+      "correct": true,
+      "cost_usd": 0.0427822
+    },
+    {
+      "case": "compare-vendors",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "strategic-decision",
+        "decide",
+        "procurement"
+      ],
+      "skill": "strategic-decision",
+      "correct": true,
+      "cost_usd": 0.00345192
+    },
+    {
+      "case": "compare-vendors",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "strategic-decision",
+        "decide",
+        "procurement"
+      ],
+      "skill": "strategic-decision",
+      "correct": true,
+      "cost_usd": 0.00047985
+    },
+    {
+      "case": "compare-vendors",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "strategic-decision",
+        "decide",
+        "procurement"
+      ],
+      "skill": "strategic-decision",
+      "correct": true,
+      "cost_usd": 0.0666742
+    },
+    {
+      "case": "compare-vendors",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "strategic-decision",
+        "decide",
+        "procurement"
+      ],
+      "skill": "strategic-decision",
+      "correct": true,
+      "cost_usd": 0.0666662
+    },
+    {
+      "case": "compare-vendors",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "strategic-decision",
+        "decide",
+        "procurement"
+      ],
+      "skill": "strategic-decision",
+      "correct": true,
+      "cost_usd": 0.00039413999999999996
+    },
+    {
+      "case": "compare-vendors",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "strategic-decision",
+        "decide",
+        "procurement"
+      ],
+      "skill": "strategic-decision",
+      "correct": true,
+      "cost_usd": 0.00223222
+    },
+    {
+      "case": "compare-vendors",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "strategic-decision",
+        "decide",
+        "procurement"
+      ],
+      "skill": "strategic-decision",
+      "correct": true,
+      "cost_usd": 0.042822200000000005
+    },
+    {
+      "case": "compare-vendors",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "strategic-decision",
+        "decide",
+        "procurement"
+      ],
+      "skill": "strategic-decision",
+      "correct": true,
+      "cost_usd": 0.042822200000000005
+    },
+    {
+      "case": "competitors",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "analyze-competitors",
+        "market-intel"
+      ],
+      "skill": "analyze-competitors",
+      "correct": true,
+      "cost_usd": 0.0034428200000000005
+    },
+    {
+      "case": "competitors",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "analyze-competitors",
+        "market-intel"
+      ],
+      "skill": "analyze-competitors",
+      "correct": true,
+      "cost_usd": 0.00041469
+    },
+    {
+      "case": "competitors",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "analyze-competitors",
+        "market-intel"
+      ],
+      "skill": "analyze-competitors",
+      "correct": true,
+      "cost_usd": 0.06666820000000001
+    },
+    {
+      "case": "competitors",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "analyze-competitors",
+        "market-intel"
+      ],
+      "skill": "analyze-competitors",
+      "correct": true,
+      "cost_usd": 0.06665220000000001
+    },
+    {
+      "case": "competitors",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "analyze-competitors",
+        "market-intel"
+      ],
+      "skill": "analyze-competitors",
+      "correct": true,
+      "cost_usd": 0.0022481199999999997
+    },
+    {
+      "case": "competitors",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "analyze-competitors",
+        "market-intel"
+      ],
+      "skill": "analyze-competitors",
+      "correct": true,
+      "cost_usd": 0.00037758
+    },
+    {
+      "case": "competitors",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "analyze-competitors",
+        "market-intel"
+      ],
+      "skill": "analyze-competitors",
+      "correct": true,
+      "cost_usd": 0.0428002
+    },
+    {
+      "case": "competitors",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "analyze-competitors",
+        "market-intel"
+      ],
+      "skill": "analyze-competitors",
+      "correct": true,
+      "cost_usd": 0.0428162
+    },
+    {
+      "case": "personas",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "build-personas"
+      ],
+      "skill": "build-personas",
+      "correct": true,
+      "cost_usd": 0.0033818200000000002
+    },
+    {
+      "case": "personas",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "build-personas"
+      ],
+      "skill": "build-personas",
+      "correct": true,
+      "cost_usd": 0.00038027000000000004
+    },
+    {
+      "case": "personas",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "build-personas"
+      ],
+      "skill": "build-personas",
+      "correct": true,
+      "cost_usd": 0.0666222
+    },
+    {
+      "case": "personas",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "build-personas"
+      ],
+      "skill": "build-personas",
+      "correct": true,
+      "cost_usd": 0.0666222
+    },
+    {
+      "case": "personas",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "build-personas"
+      ],
+      "skill": "build-personas",
+      "correct": true,
+      "cost_usd": 0.00222462
+    },
+    {
+      "case": "personas",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "build-personas"
+      ],
+      "skill": "build-personas",
+      "correct": true,
+      "cost_usd": 0.0021991199999999997
+    },
+    {
+      "case": "personas",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "build-personas"
+      ],
+      "skill": "build-personas",
+      "correct": true,
+      "cost_usd": 0.042770199999999994
+    },
+    {
+      "case": "personas",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "build-personas"
+      ],
+      "skill": "build-personas",
+      "correct": true,
+      "cost_usd": 0.042778199999999995
+    },
+    {
+      "case": "landing",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "landing-page"
+      ],
+      "skill": "landing-page",
+      "correct": true,
+      "cost_usd": 0.00340132
+    },
+    {
+      "case": "landing",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "landing-page"
+      ],
+      "skill": "landing-page",
+      "correct": true,
+      "cost_usd": 0.00040458
+    },
+    {
+      "case": "landing",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "landing-page"
+      ],
+      "skill": "landing-page",
+      "correct": true,
+      "cost_usd": 0.0665942
+    },
+    {
+      "case": "landing",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "landing-page"
+      ],
+      "skill": "landing-page",
+      "correct": true,
+      "cost_usd": 0.0665942
+    },
+    {
+      "case": "landing",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "landing-page"
+      ],
+      "skill": "landing-page",
+      "correct": true,
+      "cost_usd": 0.00036087
+    },
+    {
+      "case": "landing",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "landing-page"
+      ],
+      "skill": "landing-page",
+      "correct": true,
+      "cost_usd": 0.0022003200000000004
+    },
+    {
+      "case": "landing",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "landing-page"
+      ],
+      "skill": "landing-page",
+      "correct": true,
+      "cost_usd": 0.042750199999999995
+    },
+    {
+      "case": "landing",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "landing-page"
+      ],
+      "skill": "landing-page",
+      "correct": true,
+      "cost_usd": 0.0427342
+    },
+    {
+      "case": "ux-flows",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "design-ux"
+      ],
+      "skill": "design-ux",
+      "correct": true,
+      "cost_usd": 0.00340592
+    },
+    {
+      "case": "ux-flows",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "design-ux"
+      ],
+      "skill": "design-ux",
+      "correct": true,
+      "cost_usd": 0.00042717
+    },
+    {
+      "case": "ux-flows",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "design-ux"
+      ],
+      "skill": "design-ux",
+      "correct": true,
+      "cost_usd": 0.0666222
+    },
+    {
+      "case": "ux-flows",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "design-ux"
+      ],
+      "skill": "design-ux",
+      "correct": true,
+      "cost_usd": 0.0666142
+    },
+    {
+      "case": "ux-flows",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "design-ux"
+      ],
+      "skill": "design-ux",
+      "correct": true,
+      "cost_usd": 0.00222062
+    },
+    {
+      "case": "ux-flows",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "design-ux"
+      ],
+      "skill": "design-ux",
+      "correct": true,
+      "cost_usd": 0.00036006
+    },
+    {
+      "case": "ux-flows",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "design-ux"
+      ],
+      "skill": "design-ux",
+      "correct": true,
+      "cost_usd": 0.042778199999999995
+    },
+    {
+      "case": "ux-flows",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "design-ux"
+      ],
+      "skill": "design-ux",
+      "correct": true,
+      "cost_usd": 0.042770199999999994
+    },
+    {
+      "case": "ui-components",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "design-ui"
+      ],
+      "skill": "design-ui",
+      "correct": true,
+      "cost_usd": 0.0033925199999999996
+    },
+    {
+      "case": "ui-components",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "design-ui"
+      ],
+      "skill": "design-ui",
+      "correct": true,
+      "cost_usd": 0.000415
+    },
+    {
+      "case": "ui-components",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "design-ui"
+      ],
+      "skill": "design-ui",
+      "correct": true,
+      "cost_usd": 0.0665942
+    },
+    {
+      "case": "ui-components",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "design-ui"
+      ],
+      "skill": "design-ui",
+      "correct": true,
+      "cost_usd": 0.0665942
+    },
+    {
+      "case": "ui-components",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "design-ui"
+      ],
+      "skill": "design-ui",
+      "correct": true,
+      "cost_usd": 0.00220772
+    },
+    {
+      "case": "ui-components",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "design-ui"
+      ],
+      "skill": "design-ui",
+      "correct": true,
+      "cost_usd": 0.00219622
+    },
+    {
+      "case": "ui-components",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "design-ui"
+      ],
+      "skill": "design-ui",
+      "correct": true,
+      "cost_usd": 0.042742199999999994
+    },
+    {
+      "case": "ui-components",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "design-ui"
+      ],
+      "skill": "design-ui",
+      "correct": true,
+      "cost_usd": 0.042742199999999994
+    },
+    {
+      "case": "e2e",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "write-e2e"
+      ],
+      "skill": "write-e2e",
+      "correct": true,
+      "cost_usd": 0.00039814
+    },
+    {
+      "case": "e2e",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "write-e2e"
+      ],
+      "skill": "write-e2e",
+      "correct": true,
+      "cost_usd": 0.0033852200000000004
+    },
+    {
+      "case": "e2e",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "write-e2e"
+      ],
+      "skill": "write-e2e",
+      "correct": true,
+      "cost_usd": 0.0666042
+    },
+    {
+      "case": "e2e",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "write-e2e"
+      ],
+      "skill": "write-e2e",
+      "correct": true,
+      "cost_usd": 0.0052534999999999995
+    },
+    {
+      "case": "e2e",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "write-e2e"
+      ],
+      "skill": "write-e2e",
+      "correct": true,
+      "cost_usd": 0.00220522
+    },
+    {
+      "case": "e2e",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "write-e2e"
+      ],
+      "skill": "write-e2e",
+      "correct": true,
+      "cost_usd": 0.0021996200000000002
+    },
+    {
+      "case": "e2e",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "write-e2e"
+      ],
+      "skill": "write-e2e",
+      "correct": true,
+      "cost_usd": 0.0427682
+    },
+    {
+      "case": "e2e",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "write-e2e"
+      ],
+      "skill": "write-e2e",
+      "correct": true,
+      "cost_usd": 0.0427762
+    },
+    {
+      "case": "journey-qa",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "test-journeys"
+      ],
+      "skill": "test-journeys",
+      "correct": true,
+      "cost_usd": 0.0033901200000000004
+    },
+    {
+      "case": "journey-qa",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "test-journeys"
+      ],
+      "skill": "test-journeys",
+      "correct": true,
+      "cost_usd": 0.00339812
+    },
+    {
+      "case": "journey-qa",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "test-journeys"
+      ],
+      "skill": "test-journeys",
+      "correct": true,
+      "cost_usd": 0.0666362
+    },
+    {
+      "case": "journey-qa",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "test-journeys"
+      ],
+      "skill": "test-journeys",
+      "correct": true,
+      "cost_usd": 0.0052617
+    },
+    {
+      "case": "journey-qa",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "test-journeys"
+      ],
+      "skill": "test-journeys",
+      "correct": true,
+      "cost_usd": 0.0022169200000000003
+    },
+    {
+      "case": "journey-qa",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "test-journeys"
+      ],
+      "skill": "test-journeys",
+      "correct": true,
+      "cost_usd": 0.00036195
+    },
+    {
+      "case": "journey-qa",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "test-journeys"
+      ],
+      "skill": "test-journeys",
+      "correct": true,
+      "cost_usd": 0.0427762
+    },
+    {
+      "case": "journey-qa",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "test-journeys"
+      ],
+      "skill": "test-journeys",
+      "correct": true,
+      "cost_usd": 0.0427842
+    },
+    {
+      "case": "onboard",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "onboard-repo"
+      ],
+      "skill": "onboard-repo",
+      "correct": true,
+      "cost_usd": 0.0033936199999999995
+    },
+    {
+      "case": "onboard",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "onboard-repo"
+      ],
+      "skill": "onboard-repo",
+      "correct": true,
+      "cost_usd": 0.0033965200000000005
+    },
+    {
+      "case": "onboard",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "onboard-repo"
+      ],
+      "skill": "onboard-repo",
+      "correct": true,
+      "cost_usd": 0.0666262
+    },
+    {
+      "case": "onboard",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "onboard-repo"
+      ],
+      "skill": "onboard-repo",
+      "correct": true,
+      "cost_usd": 0.0666262
+    },
+    {
+      "case": "onboard",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "onboard-repo"
+      ],
+      "skill": "onboard-repo",
+      "correct": true,
+      "cost_usd": 0.00221582
+    },
+    {
+      "case": "onboard",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "onboard-repo"
+      ],
+      "skill": "onboard-repo",
+      "correct": true,
+      "cost_usd": 0.00035602
+    },
+    {
+      "case": "onboard",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "onboard-repo"
+      ],
+      "skill": "onboard-repo",
+      "correct": true,
+      "cost_usd": 0.042782200000000006
+    },
+    {
+      "case": "onboard",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "onboard-repo"
+      ],
+      "skill": "onboard-repo",
+      "correct": true,
+      "cost_usd": 0.0427742
+    },
+    {
+      "case": "ship",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "land-changeset"
+      ],
+      "skill": "land-changeset",
+      "correct": true,
+      "cost_usd": 0.00336252
+    },
+    {
+      "case": "ship",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "land-changeset"
+      ],
+      "skill": "land-changeset",
+      "correct": true,
+      "cost_usd": 0.0033944200000000004
+    },
+    {
+      "case": "ship",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "land-changeset"
+      ],
+      "skill": "land-changeset",
+      "correct": true,
+      "cost_usd": 0.0666042
+    },
+    {
+      "case": "ship",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "land-changeset"
+      ],
+      "skill": "land-changeset",
+      "correct": true,
+      "cost_usd": 0.0665802
+    },
+    {
+      "case": "ship",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "land-changeset"
+      ],
+      "skill": "land-changeset",
+      "correct": true,
+      "cost_usd": 0.0021768200000000003
+    },
+    {
+      "case": "ship",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "land-changeset"
+      ],
+      "skill": "land-changeset",
+      "correct": true,
+      "cost_usd": 0.00033797
+    },
+    {
+      "case": "ship",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "land-changeset"
+      ],
+      "skill": "land-changeset",
+      "correct": true,
+      "cost_usd": 0.0427602
+    },
+    {
+      "case": "ship",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "land-changeset"
+      ],
+      "skill": "land-changeset",
+      "correct": true,
+      "cost_usd": 0.0427442
+    },
+    {
+      "case": "post-deploy",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "verify-promotion"
+      ],
+      "skill": "test-journeys",
+      "correct": false,
+      "cost_usd": 0.0035747200000000004
+    },
+    {
+      "case": "post-deploy",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "verify-promotion"
+      ],
+      "skill": "verify-promotion",
+      "correct": true,
+      "cost_usd": 0.00049822
+    },
+    {
+      "case": "post-deploy",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "verify-promotion"
+      ],
+      "skill": "verify-promotion",
+      "correct": true,
+      "cost_usd": 0.0666142
+    },
+    {
+      "case": "post-deploy",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "verify-promotion"
+      ],
+      "skill": "verify-promotion",
+      "correct": true,
+      "cost_usd": 0.06662219999999999
+    },
+    {
+      "case": "post-deploy",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "verify-promotion"
+      ],
+      "skill": "verify-promotion",
+      "correct": true,
+      "cost_usd": 0.00222762
+    },
+    {
+      "case": "post-deploy",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "verify-promotion"
+      ],
+      "skill": "verify-promotion",
+      "correct": true,
+      "cost_usd": 0.00041311000000000006
+    },
+    {
+      "case": "post-deploy",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "verify-promotion"
+      ],
+      "skill": "verify-promotion",
+      "correct": true,
+      "cost_usd": 0.042770199999999994
+    },
+    {
+      "case": "post-deploy",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "verify-promotion"
+      ],
+      "skill": "verify-promotion",
+      "correct": true,
+      "cost_usd": 0.0427782
+    },
+    {
+      "case": "idea",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.0033941200000000005
+    },
+    {
+      "case": "idea",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.00040781
+    },
+    {
+      "case": "idea",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.0666482
+    },
+    {
+      "case": "idea",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.0666482
+    },
+    {
+      "case": "idea",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.0022058200000000003
+    },
+    {
+      "case": "idea",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.00039269999999999995
+    },
+    {
+      "case": "idea",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.0427962
+    },
+    {
+      "case": "idea",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "capture-idea"
+      ],
+      "skill": "capture-idea",
+      "correct": true,
+      "cost_usd": 0.0428042
+    },
+    {
+      "case": "pricing",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "monetization-architecture"
+      ],
+      "skill": "monetization-architecture",
+      "correct": true,
+      "cost_usd": 0.0033929200000000002
+    },
+    {
+      "case": "pricing",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "monetization-architecture"
+      ],
+      "skill": "monetization-architecture",
+      "correct": true,
+      "cost_usd": 0.00039915
+    },
+    {
+      "case": "pricing",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "monetization-architecture"
+      ],
+      "skill": "monetization-architecture",
+      "correct": true,
+      "cost_usd": 0.0666442
+    },
+    {
+      "case": "pricing",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "monetization-architecture"
+      ],
+      "skill": "monetization-architecture",
+      "correct": true,
+      "cost_usd": 0.06662820000000001
+    },
+    {
+      "case": "pricing",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "monetization-architecture"
+      ],
+      "skill": "monetization-architecture",
+      "correct": true,
+      "cost_usd": 0.00220412
+    },
+    {
+      "case": "pricing",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "monetization-architecture"
+      ],
+      "skill": "monetization-architecture",
+      "correct": true,
+      "cost_usd": 0.00219872
+    },
+    {
+      "case": "pricing",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "monetization-architecture"
+      ],
+      "skill": "monetization-architecture",
+      "correct": true,
+      "cost_usd": 0.0428002
+    },
+    {
+      "case": "pricing",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "monetization-architecture"
+      ],
+      "skill": "monetization-architecture",
+      "correct": true,
+      "cost_usd": 0.0428002
+    },
+    {
+      "case": "launch-ready",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "assess-market-readiness"
+      ],
+      "skill": "assess-market-readiness",
+      "correct": true,
+      "cost_usd": 0.0033941199999999996
+    },
+    {
+      "case": "launch-ready",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "assess-market-readiness"
+      ],
+      "skill": "assess-market-readiness",
+      "correct": true,
+      "cost_usd": 0.00040069
+    },
+    {
+      "case": "launch-ready",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "assess-market-readiness"
+      ],
+      "skill": "assess-market-readiness",
+      "correct": true,
+      "cost_usd": 0.0666222
+    },
+    {
+      "case": "launch-ready",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "assess-market-readiness"
+      ],
+      "skill": "assess-market-readiness",
+      "correct": true,
+      "cost_usd": 0.0666302
+    },
+    {
+      "case": "launch-ready",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "assess-market-readiness"
+      ],
+      "skill": "assess-market-readiness",
+      "correct": true,
+      "cost_usd": 0.0021974200000000003
+    },
+    {
+      "case": "launch-ready",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "assess-market-readiness"
+      ],
+      "skill": "assess-market-readiness",
+      "correct": true,
+      "cost_usd": 0.00221142
+    },
+    {
+      "case": "launch-ready",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "assess-market-readiness"
+      ],
+      "skill": "assess-market-readiness",
+      "correct": true,
+      "cost_usd": 0.0427782
+    },
+    {
+      "case": "launch-ready",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "assess-market-readiness"
+      ],
+      "skill": "assess-market-readiness",
+      "correct": true,
+      "cost_usd": 0.0427862
+    },
+    {
+      "case": "runway",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "fin-analyst"
+      ],
+      "skill": "fin-analyst",
+      "correct": true,
+      "cost_usd": 0.0033971199999999996
+    },
+    {
+      "case": "runway",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "fin-analyst"
+      ],
+      "skill": "fin-analyst",
+      "correct": true,
+      "cost_usd": 0.00039970999999999995
+    },
+    {
+      "case": "runway",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "fin-analyst"
+      ],
+      "skill": "fin-analyst",
+      "correct": true,
+      "cost_usd": 0.0666102
+    },
+    {
+      "case": "runway",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "fin-analyst"
+      ],
+      "skill": "fin-analyst",
+      "correct": true,
+      "cost_usd": 0.0666182
+    },
+    {
+      "case": "runway",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "fin-analyst"
+      ],
+      "skill": "fin-analyst",
+      "correct": true,
+      "cost_usd": 0.00225892
+    },
+    {
+      "case": "runway",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "fin-analyst"
+      ],
+      "skill": "fin-analyst",
+      "correct": true,
+      "cost_usd": 0.000361
+    },
+    {
+      "case": "runway",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "fin-analyst"
+      ],
+      "skill": "fin-analyst",
+      "correct": true,
+      "cost_usd": 0.0427902
+    },
+    {
+      "case": "runway",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "fin-analyst"
+      ],
+      "skill": "fin-analyst",
+      "correct": true,
+      "cost_usd": 0.0427742
+    },
+    {
+      "case": "legal-tos",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "counsel",
+        "privacy-dpo"
+      ],
+      "skill": "counsel",
+      "correct": true,
+      "cost_usd": 0.0034604200000000005
+    },
+    {
+      "case": "legal-tos",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "counsel",
+        "privacy-dpo"
+      ],
+      "skill": "counsel",
+      "correct": true,
+      "cost_usd": 0.0035029200000000005
+    },
+    {
+      "case": "legal-tos",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "counsel",
+        "privacy-dpo"
+      ],
+      "skill": "counsel",
+      "correct": true,
+      "cost_usd": 0.0665682
+    },
+    {
+      "case": "legal-tos",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "counsel",
+        "privacy-dpo"
+      ],
+      "skill": "counsel",
+      "correct": true,
+      "cost_usd": 0.06657619999999999
+    },
+    {
+      "case": "legal-tos",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "counsel",
+        "privacy-dpo"
+      ],
+      "skill": "counsel",
+      "correct": true,
+      "cost_usd": 0.00230722
+    },
+    {
+      "case": "legal-tos",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "counsel",
+        "privacy-dpo"
+      ],
+      "skill": "counsel",
+      "correct": true,
+      "cost_usd": 0.00045549
+    },
+    {
+      "case": "legal-tos",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "counsel",
+        "privacy-dpo"
+      ],
+      "skill": "counsel",
+      "correct": true,
+      "cost_usd": 0.0427322
+    },
+    {
+      "case": "legal-tos",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "counsel",
+        "privacy-dpo"
+      ],
+      "skill": "counsel",
+      "correct": true,
+      "cost_usd": 0.0427402
+    },
+    {
+      "case": "growth-exp",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "growth-lead",
+        "growth-eng"
+      ],
+      "skill": "growth-lead",
+      "correct": true,
+      "cost_usd": 0.0034251200000000002
+    },
+    {
+      "case": "growth-exp",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "growth-lead",
+        "growth-eng"
+      ],
+      "skill": "growth-lead",
+      "correct": true,
+      "cost_usd": 0.0034097200000000006
+    },
+    {
+      "case": "growth-exp",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "growth-lead",
+        "growth-eng"
+      ],
+      "skill": "growth-lead",
+      "correct": true,
+      "cost_usd": 0.0666282
+    },
+    {
+      "case": "growth-exp",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "growth-lead",
+        "growth-eng"
+      ],
+      "skill": "growth-lead",
+      "correct": true,
+      "cost_usd": 0.0666282
+    },
+    {
+      "case": "growth-exp",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "growth-lead",
+        "growth-eng"
+      ],
+      "skill": "growth-lead",
+      "correct": true,
+      "cost_usd": 0.0022144200000000004
+    },
+    {
+      "case": "growth-exp",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "growth-lead",
+        "growth-eng"
+      ],
+      "skill": "growth-lead",
+      "correct": true,
+      "cost_usd": 0.00036815000000000003
+    },
+    {
+      "case": "growth-exp",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "growth-lead",
+        "growth-eng"
+      ],
+      "skill": "growth-lead",
+      "correct": true,
+      "cost_usd": 0.0427682
+    },
+    {
+      "case": "growth-exp",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "growth-lead",
+        "growth-eng"
+      ],
+      "skill": "growth-lead",
+      "correct": true,
+      "cost_usd": 0.0427922
+    },
+    {
+      "case": "brief-company",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "cos"
+      ],
+      "skill": "cos",
+      "correct": true,
+      "cost_usd": 0.00338602
+    },
+    {
+      "case": "brief-company",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "cos"
+      ],
+      "skill": "cos",
+      "correct": true,
+      "cost_usd": 0.0033895199999999996
+    },
+    {
+      "case": "brief-company",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "cos"
+      ],
+      "skill": "cos",
+      "correct": true,
+      "cost_usd": 0.06656619999999999
+    },
+    {
+      "case": "brief-company",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "cos"
+      ],
+      "skill": "cos",
+      "correct": true,
+      "cost_usd": 0.0665582
+    },
+    {
+      "case": "brief-company",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "cos"
+      ],
+      "skill": "cos",
+      "correct": true,
+      "cost_usd": 0.00218832
+    },
+    {
+      "case": "brief-company",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "cos"
+      ],
+      "skill": "cos",
+      "correct": true,
+      "cost_usd": 0.00033197
+    },
+    {
+      "case": "brief-company",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "cos"
+      ],
+      "skill": "cos",
+      "correct": true,
+      "cost_usd": 0.042730199999999996
+    },
+    {
+      "case": "brief-company",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "cos"
+      ],
+      "skill": "cos",
+      "correct": true,
+      "cost_usd": 0.042722199999999995
+    },
+    {
+      "case": "research-api",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "research"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.00339092
+    },
+    {
+      "case": "research-api",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "research"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.00339222
+    },
+    {
+      "case": "research-api",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "research"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.0665922
+    },
+    {
+      "case": "research-api",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "research"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.0665922
+    },
+    {
+      "case": "research-api",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "research"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.00224872
+    },
+    {
+      "case": "research-api",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "research"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.00220362
+    },
+    {
+      "case": "research-api",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "research"
+      ],
+      "skill": "research",
+      "correct": true,
+      "cost_usd": 0.0437382
+    },
+    {
+      "case": "research-api",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "research"
+      ],
+      "skill": "research",
+      "correct": true,
+      "cost_usd": 0.043888199999999995
+    },
+    {
+      "case": "ad-video",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "produce-ad-video",
+        "ad-video-script"
+      ],
+      "skill": "ad-video-script",
+      "correct": true,
+      "cost_usd": 0.0034577200000000005
+    },
+    {
+      "case": "ad-video",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "produce-ad-video",
+        "ad-video-script"
+      ],
+      "skill": "ad-video-script",
+      "correct": true,
+      "cost_usd": 0.0034253200000000004
+    },
+    {
+      "case": "ad-video",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "produce-ad-video",
+        "ad-video-script"
+      ],
+      "skill": "ad-video-script",
+      "correct": true,
+      "cost_usd": 0.06659419999999999
+    },
+    {
+      "case": "ad-video",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "produce-ad-video",
+        "ad-video-script"
+      ],
+      "skill": "ad-video-script",
+      "correct": true,
+      "cost_usd": 0.0666022
+    },
+    {
+      "case": "ad-video",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "produce-ad-video",
+        "ad-video-script"
+      ],
+      "skill": "ad-video-script",
+      "correct": true,
+      "cost_usd": 0.00229332
+    },
+    {
+      "case": "ad-video",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "produce-ad-video",
+        "ad-video-script"
+      ],
+      "skill": "ad-video-script",
+      "correct": true,
+      "cost_usd": 0.00043256
+    },
+    {
+      "case": "ad-video",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "produce-ad-video",
+        "ad-video-script"
+      ],
+      "skill": "ad-video-script",
+      "correct": true,
+      "cost_usd": 0.0427502
+    },
+    {
+      "case": "ad-video",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "produce-ad-video",
+        "ad-video-script"
+      ],
+      "skill": "ad-video-script",
+      "correct": true,
+      "cost_usd": 0.042758199999999996
+    },
+    {
+      "case": "logo",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "design-logo"
+      ],
+      "skill": "design-logo",
+      "correct": true,
+      "cost_usd": 0.0033439200000000007
+    },
+    {
+      "case": "logo",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "design-logo"
+      ],
+      "skill": "design-logo",
+      "correct": true,
+      "cost_usd": 0.00334432
+    },
+    {
+      "case": "logo",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "design-logo"
+      ],
+      "skill": "design-logo",
+      "correct": true,
+      "cost_usd": 0.0665622
+    },
+    {
+      "case": "logo",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "design-logo"
+      ],
+      "skill": "design-logo",
+      "correct": true,
+      "cost_usd": 0.0665622
+    },
+    {
+      "case": "logo",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "design-logo"
+      ],
+      "skill": "design-logo",
+      "correct": true,
+      "cost_usd": 0.0024347300000000004
+    },
+    {
+      "case": "logo",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "design-logo"
+      ],
+      "skill": "design-logo",
+      "correct": true,
+      "cost_usd": 0.00032801
+    },
+    {
+      "case": "logo",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "design-logo"
+      ],
+      "skill": "design-logo",
+      "correct": true,
+      "cost_usd": 0.0427182
+    },
+    {
+      "case": "logo",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "design-logo"
+      ],
+      "skill": "design-logo",
+      "correct": true,
+      "cost_usd": 0.0427182
+    },
+    {
+      "case": "why-not-shipping",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "honest-diagnosis"
+      ],
+      "skill": "honest-diagnosis",
+      "correct": true,
+      "cost_usd": 0.0034155200000000004
+    },
+    {
+      "case": "why-not-shipping",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "honest-diagnosis"
+      ],
+      "skill": "honest-diagnosis",
+      "correct": true,
+      "cost_usd": 0.00338142
+    },
+    {
+      "case": "why-not-shipping",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "honest-diagnosis"
+      ],
+      "skill": "honest-diagnosis",
+      "correct": true,
+      "cost_usd": 0.0666542
+    },
+    {
+      "case": "why-not-shipping",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "honest-diagnosis"
+      ],
+      "skill": "honest-diagnosis",
+      "correct": true,
+      "cost_usd": 0.0666702
+    },
+    {
+      "case": "why-not-shipping",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "honest-diagnosis"
+      ],
+      "skill": "honest-diagnosis",
+      "correct": true,
+      "cost_usd": 0.00220872
+    },
+    {
+      "case": "why-not-shipping",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "honest-diagnosis"
+      ],
+      "skill": "honest-diagnosis",
+      "correct": true,
+      "cost_usd": 0.00037604
+    },
+    {
+      "case": "why-not-shipping",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "honest-diagnosis"
+      ],
+      "skill": "honest-diagnosis",
+      "correct": true,
+      "cost_usd": 0.042802200000000006
+    },
+    {
+      "case": "why-not-shipping",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "honest-diagnosis"
+      ],
+      "skill": "honest-diagnosis",
+      "correct": true,
+      "cost_usd": 0.0428102
+    },
+    {
+      "case": "write-prompt",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "craft-prompt"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.0034006199999999996
+    },
+    {
+      "case": "write-prompt",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "craft-prompt"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.00040161
+    },
+    {
+      "case": "write-prompt",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "craft-prompt"
+      ],
+      "skill": "craft-prompt",
+      "correct": true,
+      "cost_usd": 0.0666102
+    },
+    {
+      "case": "write-prompt",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "craft-prompt"
+      ],
+      "skill": "craft-prompt",
+      "correct": true,
+      "cost_usd": 0.0666102
+    },
+    {
+      "case": "write-prompt",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "craft-prompt"
+      ],
+      "skill": "craft-prompt",
+      "correct": true,
+      "cost_usd": 0.00232342
+    },
+    {
+      "case": "write-prompt",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "craft-prompt"
+      ],
+      "skill": "craft-prompt",
+      "correct": true,
+      "cost_usd": 0.0004336
+    },
+    {
+      "case": "write-prompt",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "craft-prompt"
+      ],
+      "skill": "craft-prompt",
+      "correct": true,
+      "cost_usd": 0.0427742
+    },
+    {
+      "case": "write-prompt",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "craft-prompt"
+      ],
+      "skill": "craft-prompt",
+      "correct": true,
+      "cost_usd": 0.042766200000000004
+    },
+    {
+      "case": "bootstrap-template",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "extract-bootstrap"
+      ],
+      "skill": "extract-bootstrap",
+      "correct": true,
+      "cost_usd": 0.0034096200000000004
+    },
+    {
+      "case": "bootstrap-template",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "extract-bootstrap"
+      ],
+      "skill": "extract-bootstrap",
+      "correct": true,
+      "cost_usd": 0.00040576
+    },
+    {
+      "case": "bootstrap-template",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "extract-bootstrap"
+      ],
+      "skill": "extract-bootstrap",
+      "correct": true,
+      "cost_usd": 0.0666422
+    },
+    {
+      "case": "bootstrap-template",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "extract-bootstrap"
+      ],
+      "skill": "extract-bootstrap",
+      "correct": true,
+      "cost_usd": 0.0666582
+    },
+    {
+      "case": "bootstrap-template",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "extract-bootstrap"
+      ],
+      "skill": "extract-bootstrap",
+      "correct": true,
+      "cost_usd": 0.00218942
+    },
+    {
+      "case": "bootstrap-template",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "extract-bootstrap"
+      ],
+      "skill": "extract-bootstrap",
+      "correct": true,
+      "cost_usd": 0.00032915
+    },
+    {
+      "case": "bootstrap-template",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "extract-bootstrap"
+      ],
+      "skill": "extract-bootstrap",
+      "correct": true,
+      "cost_usd": 0.042830200000000006
+    },
+    {
+      "case": "bootstrap-template",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "extract-bootstrap"
+      ],
+      "skill": "extract-bootstrap",
+      "correct": true,
+      "cost_usd": 0.042814200000000004
+    },
+    {
+      "case": "social-post",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "grow-social"
+      ],
+      "skill": "comms",
+      "correct": false,
+      "cost_usd": 0.0036606200000000003
+    },
+    {
+      "case": "social-post",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "grow-social"
+      ],
+      "skill": "analyze-marketing",
+      "correct": false,
+      "cost_usd": 0.00055408
+    },
+    {
+      "case": "social-post",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "grow-social"
+      ],
+      "skill": "comms",
+      "correct": false,
+      "cost_usd": 0.0675362
+    },
+    {
+      "case": "social-post",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "grow-social"
+      ],
+      "skill": "comms",
+      "correct": false,
+      "cost_usd": 0.0674762
+    },
+    {
+      "case": "social-post",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "grow-social"
+      ],
+      "skill": "addon-gateway",
+      "correct": false,
+      "cost_usd": 0.00238482
+    },
+    {
+      "case": "social-post",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "grow-social"
+      ],
+      "skill": "addon-gateway",
+      "correct": false,
+      "cost_usd": 0.0024424200000000003
+    },
+    {
+      "case": "social-post",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "grow-social"
+      ],
+      "skill": "addon-gateway",
+      "correct": false,
+      "cost_usd": 0.0428022
+    },
+    {
+      "case": "social-post",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "grow-social"
+      ],
+      "skill": "comms",
+      "correct": false,
+      "cost_usd": 0.0427622
+    },
+    {
+      "case": "song",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "suno-architect"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.00338402
+    },
+    {
+      "case": "song",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "suno-architect"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.00339402
+    },
+    {
+      "case": "song",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "suno-architect"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.0665602
+    },
+    {
+      "case": "song",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "suno-architect"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.06656820000000001
+    },
+    {
+      "case": "song",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "suno-architect"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.00219492
+    },
+    {
+      "case": "song",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "suno-architect"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.00220192
+    },
+    {
+      "case": "song",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "suno-architect"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.0427162
+    },
+    {
+      "case": "song",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "suno-architect"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.042724200000000004
+    },
+    {
+      "case": "framework-question",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "svc-advisor",
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0035665199999999997
+    },
+    {
+      "case": "framework-question",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "svc-advisor",
+        "none"
+      ],
+      "skill": "route-workflow",
+      "correct": false,
+      "cost_usd": 0.00044718000000000004
+    },
+    {
+      "case": "framework-question",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "svc-advisor",
+        "none"
+      ],
+      "skill": "route-workflow",
+      "correct": false,
+      "cost_usd": 0.0665882
+    },
+    {
+      "case": "framework-question",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "svc-advisor",
+        "none"
+      ],
+      "skill": "route-workflow",
+      "correct": false,
+      "cost_usd": 0.0666042
+    },
+    {
+      "case": "framework-question",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "svc-advisor",
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.00220382
+    },
+    {
+      "case": "framework-question",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "svc-advisor",
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.00034547
+    },
+    {
+      "case": "framework-question",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "svc-advisor",
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0432142
+    },
+    {
+      "case": "framework-question",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "svc-advisor",
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0427122
+    },
+    {
+      "case": "wsl-audio",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "wsl2-audio"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.00337782
+    },
+    {
+      "case": "wsl-audio",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "wsl2-audio"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.0033797200000000006
+    },
+    {
+      "case": "wsl-audio",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "wsl2-audio"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.0665802
+    },
+    {
+      "case": "wsl-audio",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "wsl2-audio"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.0665802
+    },
+    {
+      "case": "wsl-audio",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "wsl2-audio"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.00225402
+    },
+    {
+      "case": "wsl-audio",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "wsl2-audio"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.00040302999999999997
+    },
+    {
+      "case": "wsl-audio",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "wsl2-audio"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.0427282
+    },
+    {
+      "case": "wsl-audio",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "wsl2-audio"
+      ],
+      "skill": "none",
+      "correct": false,
+      "cost_usd": 0.0427362
+    },
+    {
+      "case": "q-plain-1",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0033432199999999996
+    },
+    {
+      "case": "q-plain-1",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.00035646
+    },
+    {
+      "case": "q-plain-1",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0665482
+    },
+    {
+      "case": "q-plain-1",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.06654020000000001
+    },
+    {
+      "case": "q-plain-1",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0022155200000000003
+    },
+    {
+      "case": "q-plain-1",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.00036755
+    },
+    {
+      "case": "q-plain-1",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.042704200000000005
+    },
+    {
+      "case": "q-plain-1",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0426882
+    },
+    {
+      "case": "q-plain-2",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0034146199999999997
+    },
+    {
+      "case": "q-plain-2",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0033971199999999996
+    },
+    {
+      "case": "q-plain-2",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.06656820000000001
+    },
+    {
+      "case": "q-plain-2",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.06656820000000001
+    },
+    {
+      "case": "q-plain-2",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.00215242
+    },
+    {
+      "case": "q-plain-2",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.00033099999999999997
+    },
+    {
+      "case": "q-plain-2",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.042724200000000004
+    },
+    {
+      "case": "q-plain-2",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0427162
+    },
+    {
+      "case": "q-plain-3",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.00334422
+    },
+    {
+      "case": "q-plain-3",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0033950200000000003
+    },
+    {
+      "case": "q-plain-3",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0665522
+    },
+    {
+      "case": "q-plain-3",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0665602
+    },
+    {
+      "case": "q-plain-3",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0021820200000000002
+    },
+    {
+      "case": "q-plain-3",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.00032397999999999997
+    },
+    {
+      "case": "q-plain-3",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0427162
+    },
+    {
+      "case": "q-plain-3",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0427082
+    },
+    {
+      "case": "q-plain-4",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0033681200000000005
+    },
+    {
+      "case": "q-plain-4",
+      "ref": "origin/main",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0033736200000000004
+    },
+    {
+      "case": "q-plain-4",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0665322
+    },
+    {
+      "case": "q-plain-4",
+      "ref": "origin/main",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.06654020000000001
+    },
+    {
+      "case": "q-plain-4",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0022261200000000003
+    },
+    {
+      "case": "q-plain-4",
+      "ref": "HEAD",
+      "model": "haiku",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.00219372
+    },
+    {
+      "case": "q-plain-4",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 0,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.0426882
+    },
+    {
+      "case": "q-plain-4",
+      "ref": "HEAD",
+      "model": "sonnet",
+      "rep": 1,
+      "accept": [
+        "none"
+      ],
+      "skill": "none",
+      "correct": true,
+      "cost_usd": 0.042704200000000005
+    }
+  ]
+}

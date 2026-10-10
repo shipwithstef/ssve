@@ -1,0 +1,57 @@
+{
+  "$comment": "Delivery profiles for plan-changeset. Pick one before planning; it sets how much proof the work needs. A prototype that ships 2,000 tests is waste; a production change with one smoke test is a risk. scripts/overengineering-index.mjs --profile checks a plan against max_index. Moving a prototype to production does not backfill old commits: one retroactive-attestation receipt covers the prototype range (references/chain-receipt-contract.md). conditional_stages lists which triggered conditional stages a profile keeps (\"all\" keeps every one); scripts/stage-activation.mjs --profile marks the rest deferred.",
+  "updated": "2026-10-10",
+  "default": "mvp",
+  "profiles": {
+    "prototype": {
+      "goal": "Prove the idea works end to end and learn fast. Throwaway is fine.",
+      "use_when": "Spikes, demos, hackathons, 'does this even work', anything not yet used by real users.",
+      "tests": "A smoke test for the happy path of each AC. No coverage target, no edge-case matrix.",
+      "chain": "Essential stages only, plus a conditional stage when it is mechanically triggered AND risk is high (auth, money, data loss).",
+      "review": "Self-review. One independent review only for auth, payments or data deletion.",
+      "receipts": "Quick receipt per commit. No backfill. Promotion to mvp or production is one range attestation, not per-commit receipts.",
+      "max_index": 20,
+      "conditional_stages": [
+        "pricing",
+        "security",
+        "compliance"
+      ]
+    },
+    "mvp": {
+      "goal": "Real users, small scale: works reliably on the main paths and is easy to change.",
+      "use_when": "First release to real users, internal tools, features behind a flag.",
+      "tests": "One test per AC, a regression test per fixed bug, and the critical user journey end to end.",
+      "chain": "Essential stages plus conditional stages the plan or diff mechanically triggers.",
+      "review": "Independent review of plan and implementation.",
+      "receipts": "Full receipt envelope on merges to main. Gaps are covered by one range attestation when an audit needs them, never by replaying stages.",
+      "max_index": 40,
+      "conditional_stages": "all"
+    },
+    "production": {
+      "goal": "Many users or money or data at stake: correct, observable, reversible.",
+      "use_when": "Paid products, regulated data, anything a rollback would hurt.",
+      "tests": "AC tests, edge cases and failure paths, journeys/E2E for critical paths, and the repo's coverage gate.",
+      "chain": "Full chain from the stage registry for the story type, with every conditional stage evaluated.",
+      "review": "Full chain with cross-family independent review.",
+      "receipts": "Full envelope on every pushed commit; enforce mode when the owner sets it.",
+      "max_index": 40,
+      "conditional_stages": "all"
+    }
+  },
+  "method": {
+    "$comment": "How execution verifies itself, chosen by evidence (test-framework/outcome-evals/README.md, 66 Haiku 5.5 runs on 2026-10-10). Re-measure with scripts/outcome-eval.mjs when models or prompts change. Variants change only through `node scripts/outcome-eval.mjs promote`: an established judged gain, a higher solve rate, or the same solve rate at lower cost.",
+    "spec_complete": {
+      "use": "plain",
+      "why": "Implement directly; the repository's own tests and CI verify. Measured on 9 spec-complete tasks (Haiku 5.5): plain, lean (verify loop) and the written blueprint all solved 100%; lean cost 1.18x and the blueprint 3.34x for no gain, so `outcome-eval.mjs promote` keeps plain. Re-measure when models or prompts change."
+    },
+    "underspecified": {
+      "use": "production",
+      "why": "One-line product request: spec with roles and 10+ journeys, layered build, external services behind interfaces, journey tests, browser verification, README. Measured on a one-sentence paid booking app (Haiku 5.5, blind Opus judge, 7 builds per arm): 14.71/16 vs 7.14/16 for a plain run, at about $0.79 vs $0.09 per build."
+    },
+    "never": "A method that costs more without a measured gain: the written rules list (3.3x) and the extra verify-loop instruction (1.18x) on spec-complete work.",
+    "small_interactive": {
+      "use": "plain",
+      "why": "A one-line small game (harbor-game, Haiku 5.5, blind Opus judge on 13 claims, 4 builds per arm): plain 11.75, production 11.0 and studio 12.0, with no established difference, while the framework arms cost about 10x. Use production only when the product will be changed again and needs protective tests: its own tests caught 0.55 of seeded mutations vs 0.10 for plain (difference +0.45, CI [0.36, 0.54], p = 0.028)."
+    }
+  }
+}

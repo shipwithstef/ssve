@@ -1,8 +1,10 @@
 ---
 name: product-lead
 version: "1.0"
-description: >-
-  Product decisions. Use when: "product priority", "which feature", "validate product problem", "roadmap tradeoff". Not implementation design.
+description: >
+  Product decisions grounded in evidence: priority, which feature, problem validation,
+  roadmap tradeoffs. Use when: product priority, which feature, validate product problem,
+  roadmap tradeoff. Not implementation design.
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

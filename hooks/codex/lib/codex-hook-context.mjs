@@ -12,6 +12,7 @@ import { resolveOperationScope } from "../../lib/operation-scope.mjs";
 import { assertPrivateDirectory, ensurePrivateDirectory, resolveRuntimeDirectory } from "../../lib/svc-runtime-root.mjs";
 import { isShellTool } from "../../lib/shell-tools.mjs";
 import { processIsAlive } from "../../lib/process-liveness.mjs";
+import { gitRevParse } from "../../lib/git-query.mjs";
 
 export const SCHEMA_VERSION = 1;
 
@@ -154,7 +155,7 @@ export function mutationPayload(payload) {
 
 export function findRepoRoot(cwd) {
   try {
-    return fs.realpathSync(execFileSync("git", ["-C", path.resolve(cwd || process.cwd()), "rev-parse", "--show-toplevel"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim());
+    return fs.realpathSync(gitRevParse(path.resolve(cwd || process.cwd()), "--show-toplevel", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim());
   } catch {
     return null;
   }
@@ -190,7 +191,7 @@ function readRepositorySkill(repoRoot, candidate) {
 
 function gitCommonDir(root) {
   try {
-    const value = execFileSync("git", ["-C", root, "rev-parse", "--git-common-dir"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+    const value = gitRevParse(root, "--git-common-dir", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
     return fs.realpathSync(path.isAbsolute(value) ? value : path.resolve(root, value));
   } catch {
     return null;

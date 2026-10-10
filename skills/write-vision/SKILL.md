@@ -2,12 +2,9 @@
 name: write-vision
 version: "1.0"
 description: >
-  Create, refine, or convert product vision documents using an evidence-first,
-  proposal-first workflow aligned with Serious Vibe Coding repository modes. Use when the
-  user says "create vision", "refine vision", "convert vision", "update north star",
-  "align vision with code", "vision drift", "vision rewrite", or "make this
-  vision canonical". Supports `bootstrap` and `convert` repo modes and defaults
-  to canonical target `docs/specs/vision.md`.
+  Create, refine or convert the product vision doc (docs/specs/vision.md) from evidence,
+  proposal first. Use for 'create vision', 'refine vision', 'update north star', 'align
+  vision with code', 'vision drift'.
 phases:
   - id: P1-ModeTargetResolution
     trigger: always

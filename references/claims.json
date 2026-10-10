@@ -1,0 +1,264 @@
+{
+  "$comment": "Every quantitative claim the framework makes about itself, with the command that reproduces it and the bound it must meet. scripts/verify-claims.mjs runs them; a claim that cannot be reproduced is removed from the docs, not kept. `json` names a dotted path into the command's JSON output; `max`/`min` bound it; `exit` is the expected exit code. Slow claims carry \"slow\": true and run only with --all.",
+  "claims": [
+    {
+      "id": "lint",
+      "claim": "The five source-of-truth files agree",
+      "source": "CLAUDE.md",
+      "command": [
+        "node",
+        "scripts/lint-skills-manifest.mjs"
+      ],
+      "exit": 0
+    },
+    {
+      "id": "always-loaded",
+      "claim": "Always-loaded context stays under 36.5K chars per turn",
+      "source": "docs/framework-5.5-audit.md",
+      "command": [
+        "node",
+        "scripts/measure-always-loaded.mjs",
+        "--json"
+      ],
+      "json": "per_turn.total_chars",
+      "max": 36500
+    },
+    {
+      "id": "git-calls",
+      "claim": "One pre-edit decision runs at most 10 git subprocesses (68 on 1b69e0d)",
+      "source": "docs/decisions/2026-10-10-speed-and-defaults.md",
+      "command": [
+        "node",
+        "scripts/count-hook-git.mjs",
+        "--json"
+      ],
+      "json": "git_calls",
+      "max": 10
+    },
+    {
+      "id": "graders",
+      "claim": "Outcome-eval graders pass their reference solution and fail a constant stub",
+      "source": "scripts/outcome-eval.mjs",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "check"
+      ],
+      "exit": 0
+    },
+    {
+      "id": "hook-budgets",
+      "claim": "Every hook event stays within its node-start budget",
+      "source": "references/hook-budgets.json",
+      "command": [
+        "node",
+        "scripts/hook-bench.mjs",
+        "--runs",
+        "3"
+      ],
+      "exit": 0,
+      "slow": true
+    },
+    {
+      "id": "plain-solves",
+      "claim": "Haiku 5.5 solved every outcome-eval task in the plain arm (recorded 2026-10-10 runs)",
+      "source": "test-framework/outcome-evals/README.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-brownfield.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-fullstack.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-hard.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-lean.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku.json"
+      ],
+      "json": "plain_solve_rate",
+      "min": 1
+    },
+    {
+      "id": "blueprint-cost",
+      "claim": "The written blueprint cost at least 2.5x a plain run on the same tasks",
+      "source": "test-framework/outcome-evals/README.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-brownfield.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-fullstack.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-hard.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-lean.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku.json"
+      ],
+      "json": "blueprint_cost_vs_plain",
+      "min": 2.5
+    },
+    {
+      "id": "lean-cost",
+      "claim": "Across matched tasks, the lean verifier loop costs at most 1.5x a plain run in total (per task it ranges 0.93-1.56x)",
+      "source": "references/delivery-profiles.json",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-brownfield.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-fullstack.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-hard.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-lean.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku.json"
+      ],
+      "json": "lean_cost_vs_plain",
+      "max": 1.5
+    },
+    {
+      "id": "production-quality",
+      "claim": "On a one-sentence product request, the production method scores at least 12/16 with the blind judge (Haiku 5.5 builds, three rounds, 7 builds per arm)",
+      "source": "test-framework/outcome-evals/README.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production-v2.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production-v3.json"
+      ],
+      "json": "production_mean_judge_total",
+      "min": 12
+    },
+    {
+      "id": "plain-product-gap",
+      "claim": "A plain run of the same request scores at most 8/16",
+      "source": "test-framework/outcome-evals/README.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production-v2.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-production-v3.json"
+      ],
+      "json": "plain_mean_judge_total",
+      "max": 8
+    },
+    {
+      "id": "vague-no-difference",
+      "claim": "On the vague game request no method beats a plain run (6 builds per arm; difference not established)",
+      "source": "test-framework/outcome-evals/README.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-vague.json",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-vague-r2.json"
+      ],
+      "json": "brief_judge_vs_plain.p",
+      "min": 0.05
+    },
+    {
+      "id": "continuity-before",
+      "claim": "Before the standing-rules section, a fresh session followed the owner rules from an earlier session in at most 60% of runs with the shipped svc prompt",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-continuity.json",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-continuity-r2.json"
+      ],
+      "json": "svc_solve_rate",
+      "max": 0.6
+    },
+    {
+      "id": "continuity-bare",
+      "claim": "Without the framework, a fresh session followed the owner rules from an earlier session in at most 60% of runs",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-continuity.json",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-continuity-r2.json"
+      ],
+      "json": "bare_solve_rate",
+      "max": 0.6
+    },
+    {
+      "id": "continuity-shipped",
+      "claim": "With the standing-rules section in _shared/before-starting.md, a fresh session follows the earlier session's owner rules in at least 90% of runs",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-continuity-shipped.json"
+      ],
+      "json": "svc_solve_rate",
+      "min": 0.9
+    },
+    {
+      "id": "review-ceiling",
+      "claim": "Bare Haiku 5.5 already finds every planted fault in the multi-file review task: the review pillars sit at the model's ceiling",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-review-large.json"
+      ],
+      "json": "bare_solve_rate",
+      "min": 1
+    },
+    {
+      "id": "game-no-judged-gain",
+      "claim": "On the one-line game request, the production method's judged score does not beat plain (difference not established)",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-harbor-game.json"
+      ],
+      "json": "production_judge_vs_plain.p",
+      "min": 0.05
+    },
+    {
+      "id": "game-test-strength",
+      "claim": "Production builds' own tests catch at least 40% of seeded mutations on the game task",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-harbor-game.json"
+      ],
+      "json": "production_mutation_score",
+      "min": 0.4
+    },
+    {
+      "id": "game-plain-weak-tests",
+      "claim": "Plain builds' own tests catch at most 20% of seeded mutations on the game task",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-haiku-harbor-game.json"
+      ],
+      "json": "plain_mutation_score",
+      "max": 0.2
+    },
+    {
+      "id": "effort-medium-solves",
+      "claim": "At medium effort, the shipped svc stage prompts solve every run of the six single-stage tasks on Haiku",
+      "source": "test-framework/outcome-evals/PILLARS.md",
+      "command": [
+        "node",
+        "scripts/outcome-eval.mjs",
+        "summarize",
+        "test-framework/outcome-evals/results/2026-10-10-pillars-haiku-effort-medium.json"
+      ],
+      "json": "svc_solve_rate",
+      "min": 1
+    }
+  ]
+}

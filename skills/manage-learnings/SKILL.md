@@ -2,10 +2,9 @@
 name: manage-learnings
 version: "1.0"
 description: >
-  Manage project learnings that compound across sessions. Review, search,
-  prune, and export what was discovered during pipeline runs. Use when
-  "what did we learn", "show learnings", "prune stale learnings", "search
-  learnings for <topic>", or when starting a new session to load context.
+  Review, search, prune, promote and export learnings captured across sessions. Use when:
+  what did we learn, show learnings, search learnings for <topic>, prune stale learnings,
+  promote auto-captured learnings.
 phases:
   - id: P1-LearningsSourceModeSelection
     trigger: always

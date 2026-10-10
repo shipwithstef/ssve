@@ -2,11 +2,9 @@
 name: onboard-repo
 version: "1.0"
 description: >
-  Convert an existing repository into the svc way of working before applying
-  the full pipeline. Use when the repo already has shipped behavior, docs, tests,
-  or conventions that must be preserved and mapped instead of overwritten. Produces
-  repo-canonical project state, compatibility notes, and structured work items for
-  discovered features, bugs, regressions, drift, and chores.
+  Convert an existing repo to the svc way of working without overwriting what already
+  ships: map current docs, tests and conventions into project state and work items. Use
+  when onboarding a brownfield repo.
 phases:
   - id: P1-StateInitRepoInventory
     trigger: always

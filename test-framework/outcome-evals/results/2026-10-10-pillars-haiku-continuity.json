@@ -1,0 +1,416 @@
+{
+  "ran_at": "2026-10-10T16:59:56.742Z",
+  "model": "haiku",
+  "reps": 7,
+  "tasks": [
+    "continuity-rules"
+  ],
+  "arms": [
+    "bare",
+    "svc"
+  ],
+  "summary": [
+    {
+      "arm": "bare",
+      "runs": 7,
+      "errors": 0,
+      "solved": "3/7",
+      "solve_rate": 0.429,
+      "mean_hidden_score": 0.543,
+      "mean_cost_usd": 0.0123,
+      "mean_turns": 16.3
+    },
+    {
+      "arm": "svc",
+      "runs": 7,
+      "errors": 0,
+      "solved": "5/7",
+      "solve_rate": 0.714,
+      "mean_hidden_score": 0.943,
+      "mean_cost_usd": 0.0169,
+      "mean_turns": 20.9
+    }
+  ],
+  "rows": [
+    {
+      "task": "continuity-rules",
+      "arm": "bare",
+      "rep": 0,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "436605276d10",
+      "wall_ms": 43789,
+      "ok": true,
+      "cost_usd": 0.012663210000000001,
+      "turns": 16,
+      "duration_ms": 37692,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        "it.\n- **Standing rules:** I wrote the money, cancellation-refund and member-discount rules into `CLAUDE.md` so the next session sees them. I did not build the cancellation refund itself, since you asked for the pricing module only.\n\nNode 22 doesn't accept a directory for `node --test`, so run the tests with `node --test test/pricing.test.mjs`. Nothing is committed; the repo isn't a git repository.",
+        "nd \"down to 6 hours\" in CLAUDE.md.\n- **Half refunds round down.** CLAUDE.md doesn't specify a rounding rule for refunds, so I used the same round-down convention as the member discount.\n\nThe repo's `package.json` has no test script, and `node --test test/` fails on this Node version because it doesn't accept a directory. Run the tests with `node --test test/pricing.test.mjs test/refunds.test.mjs`."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-bare-0"
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "bare",
+      "rep": 1,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "436605276d10",
+      "wall_ms": 30964,
+      "ok": true,
+      "cost_usd": 0.00866005,
+      "turns": 10,
+      "duration_ms": 23499,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        "d of returning a value. I checked the three prices and the rejection cases by running the module with Node. The repo has no test setup, so I didn't add a test file.\n\nI did not build the cancellation refund or the 10% member discount. You asked for only the pricing module now, and those rules belong to the later features. The module stores money in cents, so those features can follow the same rule.",
+        "ial refund is rounded to cents (floor, round half up, or something else).\n5. **Edge cases:** a cancellation after `startsAt`, and a `cancelledAt` that is later than `startsAt`.\n\nOnce you send the rules, I'll write `src/refunds.mjs` so it imports `price` from `pricing.mjs`, rejects unknown class types (as `pricing.mjs` already does), and returns integer cents. I can also add tests if you want them."
+      ],
+      "hidden_pass": 1,
+      "hidden_total": 5,
+      "score": 0.2,
+      "solved": false,
+      "hidden_failures": [
+        "full refund at 24 hours or more before the class: error: \"Cannot find module '/tmp/oe-continuity-rules-5xXw19/src/refunds.mjs' imported from /tmp/oe-continuity-rules-5xXw19/__hidden.test.mjs\"",
+        "half refund between 24 and 6 hours before: error: \"Cannot find module '/tmp/oe-continuity-rules-5xXw19/src/refunds.mjs' imported from /tmp/oe-continuity-rules-5xXw19/__hidden.test.mjs\"",
+        "no refund under 6 hours before: error: \"Cannot find module '/tmp/oe-continuity-rules-5xXw19/src/refunds.mjs' imported from /tmp/oe-continuity-rules-5xXw19/__hidden.test.mjs\"",
+        "members are refunded what they paid: 10% off, rounded down: error: \"Cannot find module '/tmp/oe-continuity-rules-5xXw19/src/refunds.mjs' imported from /tmp/oe-continuity-rules-5xXw19/__hidden.test.mjs\""
+      ],
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-bare-1"
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "bare",
+      "rep": 2,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "436605276d10",
+      "wall_ms": 49609,
+      "ok": true,
+      "cost_usd": 0.011871449999999999,
+      "turns": 15,
+      "duration_ms": 43247,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        "nrecognised class type throws a `RangeError` rather than returning `undefined`.\n\nThe cancellation refund rules (full refund at least 24 hours before, half from 24 down to 6 hours, nothing after) are not implemented. That's for the next session, as you said. The rounding rule is also only exercised by the fixed prices, which divide evenly. I didn't write a test that proves the round-down behaviour.",
+        "ncelledAt` always at or before `startsAt`? Should I throw for a cancellation after the start, or return 0?\n\nOnce you send the rules, I'll add `src/refunds.mjs` with `refundFor(booking, cancelledAt)` built on `price()`, add tests in `test/refunds.test.mjs` next to the existing pricing tests, and run them with `node --test`. The repo isn't a git repository, so I won't commit anything unless you ask."
+      ],
+      "hidden_pass": 1,
+      "hidden_total": 5,
+      "score": 0.2,
+      "solved": false,
+      "hidden_failures": [
+        "full refund at 24 hours or more before the class: error: \"Cannot find module '/tmp/oe-continuity-rules-P8iizy/src/refunds.mjs' imported from /tmp/oe-continuity-rules-P8iizy/__hidden.test.mjs\"",
+        "half refund between 24 and 6 hours before: error: \"Cannot find module '/tmp/oe-continuity-rules-P8iizy/src/refunds.mjs' imported from /tmp/oe-continuity-rules-P8iizy/__hidden.test.mjs\"",
+        "no refund under 6 hours before: error: \"Cannot find module '/tmp/oe-continuity-rules-P8iizy/src/refunds.mjs' imported from /tmp/oe-continuity-rules-P8iizy/__hidden.test.mjs\"",
+        "members are refunded what they paid: 10% off, rounded down: error: \"Cannot find module '/tmp/oe-continuity-rules-P8iizy/src/refunds.mjs' imported from /tmp/oe-continuity-rules-P8iizy/__hidden.test.mjs\""
+      ],
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-bare-2"
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "bare",
+      "rep": 3,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "436605276d10",
+      "wall_ms": 37128,
+      "ok": true,
+      "cost_usd": 0.0105484,
+      "turns": 14,
+      "duration_ms": 31125,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        " **Return unit:** cents, not dollars, to follow the \"all money is integer cents\" rule.\n- **Unknown types:** throw rather than return `undefined` or a default price.\n\nI did not build the cancellation refund or the 10% member discount. The request asked only for the base price, and the other rules are for the features the next session will build. The directory is not a git repo, so I did not commit.",
+        " **Rounding:** if a percentage is involved, should it round down or to nearest cent?\n6. **Source of truth:** if the rules live in a document, a CLAUDE.md, or another repo, send me the path or paste the text.\n\nOnce you give me the rules, I'll write `refundFor(booking, cancelledAt)` in `src/refunds.mjs`, import `price` from `./pricing.mjs`, return integer cents, and add tests for the boundary cases."
+      ],
+      "hidden_pass": 1,
+      "hidden_total": 5,
+      "score": 0.2,
+      "solved": false,
+      "hidden_failures": [
+        "full refund at 24 hours or more before the class: error: \"Cannot find module '/tmp/oe-continuity-rules-4qrVVh/src/refunds.mjs' imported from /tmp/oe-continuity-rules-4qrVVh/__hidden.test.mjs\"",
+        "half refund between 24 and 6 hours before: error: \"Cannot find module '/tmp/oe-continuity-rules-4qrVVh/src/refunds.mjs' imported from /tmp/oe-continuity-rules-4qrVVh/__hidden.test.mjs\"",
+        "no refund under 6 hours before: error: \"Cannot find module '/tmp/oe-continuity-rules-4qrVVh/src/refunds.mjs' imported from /tmp/oe-continuity-rules-4qrVVh/__hidden.test.mjs\"",
+        "members are refunded what they paid: 10% off, rounded down: error: \"Cannot find module '/tmp/oe-continuity-rules-4qrVVh/src/refunds.mjs' imported from /tmp/oe-continuity-rules-4qrVVh/__hidden.test.mjs\""
+      ],
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-bare-3"
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "bare",
+      "rep": 4,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "436605276d10",
+      "wall_ms": 43337,
+      "ok": true,
+      "cost_usd": 0.01186731,
+      "turns": 17,
+      "duration_ms": 37000,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        "pec didn't say how membership is passed in, so this is my choice and easy to change.\n- **Unknown class types:** they throw a `RangeError` rather than returning a price.\n\nThe cancellation refund rules are not implemented. They are standing rules for future features, and this task was only the pricing module. Nothing else in the repo was touched, and the project isn't a git repo, so I didn't commit.",
+        "of `price(classType, { member })` and how to round it. `pricing.mjs` rounds member prices down, so I'd round refunds down too unless you say otherwise.\n6. **Edge cases:** what to return when `cancelledAt` is after `startsAt`, and whether to throw on that or return 0.\n\nWhen I have those, I'll add `src/refunds.mjs` and a `src/refunds.test.mjs` covering each tier and edge case, and run `node --test`."
+      ],
+      "hidden_pass": 1,
+      "hidden_total": 5,
+      "score": 0.2,
+      "solved": false,
+      "hidden_failures": [
+        "full refund at 24 hours or more before the class: error: \"Cannot find module '/tmp/oe-continuity-rules-9YkIqQ/src/refunds.mjs' imported from /tmp/oe-continuity-rules-9YkIqQ/__hidden.test.mjs\"",
+        "half refund between 24 and 6 hours before: error: \"Cannot find module '/tmp/oe-continuity-rules-9YkIqQ/src/refunds.mjs' imported from /tmp/oe-continuity-rules-9YkIqQ/__hidden.test.mjs\"",
+        "no refund under 6 hours before: error: \"Cannot find module '/tmp/oe-continuity-rules-9YkIqQ/src/refunds.mjs' imported from /tmp/oe-continuity-rules-9YkIqQ/__hidden.test.mjs\"",
+        "members are refunded what they paid: 10% off, rounded down: error: \"Cannot find module '/tmp/oe-continuity-rules-9YkIqQ/src/refunds.mjs' imported from /tmp/oe-continuity-rules-9YkIqQ/__hidden.test.mjs\""
+      ],
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-bare-4"
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "bare",
+      "rep": 5,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "436605276d10",
+      "wall_ms": 46234,
+      "ok": true,
+      "cost_usd": 0.01354083,
+      "turns": 21,
+      "duration_ms": 39916,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        "identified, so the caller has to pass the flag.\n- **Refund rules:** I did not build the cancellation refund logic. You said another session will build the next features, so I left that alone.\n- **Test file:** I added `test/pricing.test.mjs` with the three tests. Run them with `node --test test/pricing.test.mjs`. Passing the `test/` directory to `node --test` fails on Node 22, so use the file path.",
+        "\n- **Half-refund rounding:** I used `Math.floor`, the same rounding-down the member discount uses.\n- **Boundaries:** exactly 24 hours counts as full, and exactly 6 hours counts as half.\n- **Unknown class type:** it throws the `RangeError` from `price()`.\n\nI also added `test/refunds.test.mjs`, covering the boundaries, member pricing, rounding and the unknown-type error. I didn't change `CLAUDE.md`."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-bare-5"
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "bare",
+      "rep": 6,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "436605276d10",
+      "wall_ms": 45205,
+      "ok": true,
+      "cost_usd": 0.016653309999999998,
+      "turns": 21,
+      "duration_ms": 42566,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        "ules didn't say how to round a half refund on an odd-cent amount, so I round it down.\n- \"Half from 24 hours down to 6 hours\" is read as: exactly 24 hours gets the full refund, and exactly 6 hours gets half.\n- Member pricing is an option on `price()` rather than a separate function.\n\nI ran the tests with `node --test` directly, because the `npm test` command needed approval and I didn't request it.",
+        "ndFor` doesn't repeat them.\n- **Tests:** `test/refunds.test.mjs` covers the full, half and zero windows, member pricing, rounding down to the cent, and rejection of unknown class types.\n\n`npm test` was blocked by the permission prompt, so I ran `node --test test/pricing.test.mjs test/refunds.test.mjs` instead. Node 22 doesn't accept a directory argument, so that's the same run `npm test` would do."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-bare-6"
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "svc",
+      "rep": 0,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "f8e171a43595",
+      "wall_ms": 48616,
+      "ok": true,
+      "cost_usd": 0.015927880000000002,
+      "turns": 21,
+      "duration_ms": 44485,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        "s down. This only matters for member prices, since 1665 is odd.\n- A member's refund is based on what they actually paid, the discounted price.\n\nI didn't write a discussion artifact under `docs/specs/discussions/`. The rules were explicit enough that there was no gray area to resolve. The framework's repo scripts, receipts and decision log don't exist in this directory, so I didn't run those steps.",
+        "ng test pattern. It covers non-member and member refunds, the 24-hour and 6-hour boundaries, the odd-cent rounding (1665 → 832), and rejection of unknown class types. Run it with `node --test test/refunds.test.mjs`.\n\nThe framework's context-loading steps (session contract, spec index, builder profile) don't exist in this repo, so I used `docs/pricing-rules.md` and `src/pricing.mjs` as the context."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-svc-0"
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "svc",
+      "rep": 1,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "f8e171a43595",
+      "wall_ms": 56688,
+      "ok": true,
+      "cost_usd": 0.017602250000000003,
+      "turns": 23,
+      "duration_ms": 53553,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        "fund rounds down, so the odd cent stays with the studio. The owner did not specify this, so please confirm it.\n\n**Framework procedure**\n\nThe discussion-phase skill, its scripts and its receipts are not in this directory, so I did not write a discussion artifact or receipts. The procedure's output location was `src/pricing.mjs`, which I used. The directory has no git repo, so nothing was committed.",
+        " the thresholds, member and non-member pricing, the default for an omitted `member` flag, and the unknown-type error.\n\nThe framework's context files (`.svc/*`, `docs/specs/*`, the builder profile) don't exist in this directory, so the only sources were the code, the README, and the existing tests. The README is a one-line placeholder, so the rules come from the comments and tests in `pricing.mjs`."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-svc-1"
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "svc",
+      "rep": 2,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "f8e171a43595",
+      "wall_ms": 59672,
+      "ok": true,
+      "cost_usd": 0.018859729999999998,
+      "turns": 23,
+      "duration_ms": 56797,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        "the next session will start from the repo. The cancellation refund rule is recorded there but not built, because you said the next features are a separate session's job.\n\nThe framework procedure (discussion artifact, phase receipts, pipeline log) doesn't apply here: the repo has no framework scripts or `docs/` tree. I used its method for the gray areas above and did not write any of its artifacts.",
+        " done as specified:** the framework procedure you referenced reads `.svc/`, `docs/specs/` and `~/.svc/` files. None of those exist in this directory, so I worked from the README and the existing code instead.\n\n`node --test test/` fails with `MODULE_NOT_FOUND` in this Node version, because it doesn't accept a directory argument. Running the two test files by name works, as the README's commands do."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-svc-2"
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "svc",
+      "rep": 3,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "f8e171a43595",
+      "wall_ms": 62033,
+      "ok": true,
+      "cost_usd": 0.018650359999999998,
+      "turns": 21,
+      "duration_ms": 59148,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        "with `node --test test/pricing.test.mjs`. On Node 22, passing the directory `test/` fails, so the file path is needed. I did not add a `test` script to `package.json`.\n\nI did not create the framework's discussion artifact or phase receipts, since those paths belong to the framework repository and don't exist in this directory. The owner's rules settled every gray area, so there was nothing to log.",
+        "defaults to false** when it is omitted.\n\nThe framework's context files (`.svc/`, `docs/specs/`) don't exist in this directory, so I worked from `src/pricing.mjs`, its tests and the README. The README has no rules, so the cancellation rules come only from the comments and tests in `pricing.mjs`.\n\nNode 22 here doesn't accept a directory argument to `node --test`, so I ran the two test files by name."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-svc-3"
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "svc",
+      "rep": 4,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "f8e171a43595",
+      "wall_ms": 52042,
+      "ok": true,
+      "cost_usd": 0.01681161,
+      "turns": 20,
+      "duration_ms": 49174,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        " of this request. It's written down in `docs/BOOKING-RULES.md` for whoever builds cancellations.\n\n**Framework procedure**\nThe discuss-phase steps, receipts and decision log live in the framework repo, which isn't here. I did not run discuss-phase, because the owner had already settled the rules and there was no open gray area to discuss. This directory is not a git repository, so I made no commit.",
+        "e half refund.\n- **Unknown class types throw the `RangeError` from `price()`** rather than returning 0.\n\nThe framework's before-starting checks don't apply here, so I used the repo's own rules doc and the pricing module as the context. I ran the tests with `node --test` on the two files directly. `npm test` needed approval, and `node --test test/` failed on the directory argument, not on the code."
+      ],
+      "hidden_pass": 5,
+      "hidden_total": 5,
+      "score": 1,
+      "solved": true,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-svc-4"
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "svc",
+      "rep": 5,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "f8e171a43595",
+      "wall_ms": 46639,
+      "ok": true,
+      "cost_usd": 0.01520184,
+      "turns": 19,
+      "duration_ms": 43667,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        "so it isn't lost.\n\nThe framework procedure (discussion phase, receipts, decision log) referred to files that don't exist in this directory, so I did not produce those artifacts. This directory is not a git repository, so nothing was committed.\n\nOne note on running tests: `node --test test/` fails on Node 22 because it treats the directory as a file. Use `node --test test/pricing.test.mjs` instead.",
+        "ly. The refund is the price paid (member or non-member, from `price()`) times the tier percentage, floored to the whole cent. An unknown class type throws the same `RangeError` that `price()` does.\n\nI also added `test/refunds.test.mjs`. Run the tests with `node --test test/pricing.test.mjs test/refunds.test.mjs`. Passing the `test/` directory itself fails on Node 22, but that predates this change."
+      ],
+      "hidden_pass": 4,
+      "hidden_total": 5,
+      "score": 0.8,
+      "solved": false,
+      "hidden_failures": [
+        "half refund between 24 and 6 hours before: error: |-"
+      ],
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-svc-5"
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "svc",
+      "rep": 6,
+      "model": "haiku",
+      "pillar": "continuity",
+      "prompt_sha": "f8e171a43595",
+      "wall_ms": 52622,
+      "ok": true,
+      "cost_usd": 0.015580320000000002,
+      "turns": 19,
+      "duration_ms": 49798,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "steps": 2,
+      "step_replies": [
+        " to a later feature, so I left it out as you asked. It is written up in your request and will need its own module.\n\n**Framework procedure**\n- The discuss-phase procedure didn't apply here. The owner's rules settle every choice in this request, so there was no open gray area to write up. I did not create a `docs/specs/discussions/` artifact or a pipeline log entry, since this directory has neither.",
+        "es pass (`node --test test/pricing.test.mjs test/refunds.test.mjs`). Running `node --test test/` on its own only picked up one file here, so I ran them by name.\n\nThe framework's context files (`.svc/`, `docs/specs/`, `~/.svc/`) don't exist in this directory, so I couldn't check any spec or decision log. If the studio's real rules differ, change the two constants and the matching test expectations."
+      ],
+      "hidden_pass": 4,
+      "hidden_total": 5,
+      "score": 0.8,
+      "solved": false,
+      "hidden_failures": [
+        "no refund under 6 hours before: error: |-"
+      ],
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T16-57-37-542Z/continuity-rules-svc-6"
+    }
+  ]
+}

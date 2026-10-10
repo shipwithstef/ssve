@@ -1,0 +1,6 @@
+[
+  {"file": "src/http.mjs", "line": 34, "severity": "CRITICAL", "issue": "the cancel route takes userId from the request body, so any logged-in customer can cancel (and refund) another customer's booking"},
+  {"file": "src/bookings.mjs", "line": 50, "severity": "HIGH", "issue": "on a failed charge the loop breaks instead of continuing with the next customer, leaving the seat empty while others wait"},
+  {"file": "src/bookings.mjs", "line": 38, "severity": "HIGH", "issue": "promotion runs even when the class has already started, charging a waitlisted customer for a class in the past"},
+  {"file": "src/reports.mjs", "line": 7, "severity": "MEDIUM", "issue": "only 'cancelling' is skipped, so refunded bookings still count as revenue; the report is not net of refunds"}
+]

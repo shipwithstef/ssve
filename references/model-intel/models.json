@@ -1,0 +1,39 @@
+{
+  "$comment": "Model facts read by scripts/route-model.mjs: the model id behind each alias (outcomes recorded on an older id stop counting when it changes) and the output price that, times the effort multiplier, gives each rung's relative cost. Prices are USD per million output tokens (first-party API list price). Refresh from references/model-intel/SOURCES.md; route-model check flags this file when older than max_age_days. A model with opt_in is skipped from every ladder unless opted in. Sources: references/model-intel/SOURCES.md.",
+  "updated": "2026-10-10",
+  "max_age_days": 45,
+  "efforts": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+  ],
+  "effort_cost_multiplier": {
+    "low": 0.5,
+    "medium": 1,
+    "high": 1.6,
+    "xhigh": 2.4,
+    "max": 3.5
+  },
+  "effort_cost_multiplier_note": "Heuristic relative output-token spend per effort level. Recorded outcomes carry tokens; replacing this table with measured averages is a follow-up once enough outcomes exist.",
+  "models": {
+    "haiku": {
+      "id": "claude-haiku-5-5",
+      "price_out": 0.5
+    },
+    "sonnet": {
+      "id": "claude-sonnet-5-5",
+      "price_out": 10.0
+    },
+    "opus": {
+      "id": "claude-opus-5-5",
+      "price_out": 20.0
+    },
+    "fable": {
+      "id": "claude-fable-5-1",
+      "price_out": 50.0,
+      "opt_in": "Bills usage credits on some plans. Enable with --allow-opt-in or SVC_ROUTE_ALLOW_OPT_IN=1."
+    }
+  }
+}

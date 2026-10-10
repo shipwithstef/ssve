@@ -1,7 +1,7 @@
 ---
 name: svc-journey-qa
 description: Locked journey-QA runner for test-journeys. Use when a browser-visible WI needs its journey scenarios validated against a reachable URL (localhost/preview/staging/prod) — runs the Gherkin steps as a real user via the playwright MCP tools, captures evidence to the canonical screenshot dirs, writes QA status back per scenario. Returns a structured per-scenario verdict list. Never self-selects for non-browser WIs.
-model: claude-sonnet-5
+model: sonnet
 cognitive_label: "[REVIEW]"
 lock_class: executor
 host_resolution: |

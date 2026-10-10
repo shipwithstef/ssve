@@ -2,12 +2,9 @@
 name: define-code-style
 version: "1.0"
 description: >
-  Define or audit a code style contract for the project. In create mode, analyzes
-  existing codebase (brownfield) or design system + tech stack choice (greenfield) to
-  produce a style contract. In audit mode, checks generated code against the contract.
-  Produces docs/specs/style-contract.md. Use when: "code style", "naming conventions",
-  "style contract", "style audit", "check code consistency", or automatically between
-  design-tech and plan-changeset in the pipeline.
+  Create or audit the project style contract (docs/specs/style-contract.md): naming,
+  structure, conventions. Use for "code style", "naming conventions", "style contract",
+  "style audit", "check code consistency".
 phases:
   - id: P1-ModeAndStalenessCheck
     trigger: always

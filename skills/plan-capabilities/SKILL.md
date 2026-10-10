@@ -7,12 +7,9 @@ handles_concerns:
   - github-api-touch
   - social-media-api-touch
 description: >
-  Classify the project type and produce a capability plan: recommended MCPs,
-  installable skills, research sources, maintenance cadence, and framework gaps.
-  Use when: starting a new project, entering a new domain, detecting missing
-  capabilities, "what tools do I need", "what MCPs should I add", "what skills
-  should I install", "capability plan", or when route-workflow detects a new
-  project type that needs environment setup.
+  Classify the project type and plan its capabilities: MCPs, installable skills, research
+  sources, maintenance cadence, framework gaps. Use when: starting a project or new
+  domain, what tools do I need, what MCPs should I add, capability plan.
 phases:
   - id: P1-ContextLoadProjectClassification
     trigger: always

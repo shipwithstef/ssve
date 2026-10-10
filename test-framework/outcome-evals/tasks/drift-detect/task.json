@@ -1,0 +1,7 @@
+{
+  "pillar": "drift",
+  "max_turns": 25,
+  "timeout_min": 8,
+  "instruction": "docs/SPEC.md is the behaviour contract for the code in src/ (spec.md explains the task). Audit every claim C1-C6 against the code. Do not change any file except the one you write. Write DRIFT.json in this directory: a JSON array with one object per claim, {\"claim\": \"C1\", \"status\": \"matches\" or \"drifted\", \"evidence\": \"<file:line and what the code does>\"}.",
+  "svc": ["skills/sync-spec-code/SKILL.md"]
+}

@@ -5,12 +5,9 @@ handles_concerns:
   - e2e-coverage-for-flow
   - flaky-test-quarantine
 description: >
-  Journey-first manual QA that validates real user flows against journey scenarios
-  and mapped acceptance criteria. Use when the user says "run QA by journey",
-  "validate journeys", "manual QA pass", "regression pass", "smoke test with ACs",
-  or "verify this flow on staging/local/prod". This skill verifies runtime behavior
-  at any reachable URL (localhost, preview, staging, production), captures evidence,
-  and writes QA status back to feature spec AC tables.
+  Journey-based QA of real user flows at any URL (local, preview, staging, prod),
+  capturing evidence and writing pass/fail back to spec AC tables. Use for 'run QA by
+  journey', 'validate journeys', 'regression pass', 'verify this flow on staging'.
 phases:
   - { id: P1-Inputs, trigger: always, reads: [], writes: [], evidence_kind: command_output, required_for_completion: true }
   - { id: P2-RuntimeExecution, trigger: always, reads: [], writes: [], evidence_kind: live_dom, required_for_completion: true }

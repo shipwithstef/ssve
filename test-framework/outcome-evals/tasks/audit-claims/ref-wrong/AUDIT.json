@@ -1,0 +1,4 @@
+[
+  {"ac": "AC1", "status": "met"}, {"ac": "AC2", "status": "met"}, {"ac": "AC3", "status": "not-met"},
+  {"ac": "AC4", "status": "met", "evidence": "test 'concurrent redemptions' passes"}, {"ac": "AC5", "status": "met"}
+]

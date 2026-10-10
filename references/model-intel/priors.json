@@ -1,0 +1,268 @@
+{
+  "$comment": "Starting ladders per task type for scripts/route-model.mjs. Rung 0 is the first attempt; each failure moves one rung up. At most 3 rungs: two-model cascades capture almost all of the gain and deeper ones rarely help (arXiv 2605.06350: more than 2 models added no accuracy in 118 of 135 comparisons). The usual first escalation raises effort on the same model because it is the cheaper step; the next changes model. An arm keeps its prior until it has min_samples recorded outcomes on the current model id.",
+  "min_samples": 5,
+  "prior_strength": 4,
+  "failure_penalty": 10,
+  "failure_penalty_note": "Relative cost units charged for each failed attempt (verification time, rework, attention) on top of the spent tokens. Same units as price_out x effort multiplier.",
+  "task_types": {
+    "mechanical": {
+      "why": "Renames, formatting, extraction, state hygiene, summaries of known files. Effort guide: low for small changes you review.",
+      "ladder": [
+        [
+          "haiku",
+          "low"
+        ],
+        [
+          "haiku",
+          "medium"
+        ],
+        [
+          "sonnet",
+          "medium"
+        ]
+      ],
+      "prior_success": [
+        0.85,
+        0.9,
+        0.97
+      ]
+    },
+    "explore": {
+      "why": "Locating code, read-only search, inventories.",
+      "ladder": [
+        [
+          "haiku",
+          "medium"
+        ],
+        [
+          "sonnet",
+          "medium"
+        ],
+        [
+          "sonnet",
+          "high"
+        ]
+      ],
+      "prior_success": [
+        0.8,
+        0.92,
+        0.95
+      ]
+    },
+    "exec": {
+      "why": "Implementing an approved plan with a clear scope. Effort guide: medium fits day-to-day engineering with a clear scope.",
+      "ladder": [
+        [
+          "sonnet",
+          "medium"
+        ],
+        [
+          "sonnet",
+          "high"
+        ],
+        [
+          "opus",
+          "high"
+        ]
+      ],
+      "prior_success": [
+        0.75,
+        0.85,
+        0.93
+      ]
+    },
+    "debug": {
+      "why": "Bug fixing in an existing codebase. Effort guide: high where verification matters or edge cases are likely.",
+      "ladder": [
+        [
+          "opus",
+          "medium"
+        ],
+        [
+          "opus",
+          "high"
+        ],
+        [
+          "opus",
+          "xhigh"
+        ]
+      ],
+      "prior_success": [
+        0.7,
+        0.82,
+        0.88
+      ]
+    },
+    "plan": {
+      "why": "Specs, plan-changeset, architecture, strategy: errors here propagate to every later stage.",
+      "ladder": [
+        [
+          "opus",
+          "high"
+        ],
+        [
+          "opus",
+          "xhigh"
+        ],
+        [
+          "fable",
+          "high"
+        ]
+      ],
+      "prior_success": [
+        0.8,
+        0.86,
+        0.92
+      ]
+    },
+    "review": {
+      "why": "Adversarial review of a frozen diff or plan. Same-family review stays advisory; independent review still goes through run-external-review.mjs.",
+      "ladder": [
+        [
+          "opus",
+          "high"
+        ],
+        [
+          "opus",
+          "xhigh"
+        ],
+        [
+          "fable",
+          "high"
+        ]
+      ],
+      "prior_success": [
+        0.8,
+        0.86,
+        0.9
+      ]
+    },
+    "security": {
+      "why": "Vulnerability hunting and auth or secrets work. Effort guide: max for hard problems such as finding security vulnerabilities. Cyber-flagged Fable requests re-run on an older Opus, so the ladder stays on the current Opus.",
+      "ladder": [
+        [
+          "opus",
+          "high"
+        ],
+        [
+          "opus",
+          "xhigh"
+        ],
+        [
+          "opus",
+          "max"
+        ]
+      ],
+      "prior_success": [
+        0.75,
+        0.82,
+        0.87
+      ]
+    },
+    "writing": {
+      "why": "Docs, marketing copy, posts, briefs where a person reviews the result.",
+      "ladder": [
+        [
+          "sonnet",
+          "medium"
+        ],
+        [
+          "opus",
+          "medium"
+        ],
+        [
+          "opus",
+          "high"
+        ]
+      ],
+      "prior_success": [
+        0.8,
+        0.88,
+        0.92
+      ]
+    }
+  },
+  "failure_kinds": {
+    "verify_fail": "A deterministic check failed: tests, validators, receipt check, review FAIL. Escalate one rung.",
+    "capability": "The model could not make progress (maxTurns reached, repeated identical error, gave up). Move to the next rung on a different model, or the next rung when the ladder has one model.",
+    "context": "Ran out of context or lost the thread after compaction. Skip to the next rung that changes model.",
+    "refusal": "Safety refusal. Do not escalate here; Claude Code's automatic fallback handles it.",
+    "infra": "Overload, network, rate limit. Retry the same rung; fallbackModel chains handle availability."
+  },
+  "skill_task_types": {
+    "plan-changeset": "plan",
+    "write-spec": "plan",
+    "design-tech": "plan",
+    "strategic-decision": "plan",
+    "explore-solutions": "plan",
+    "execute-changeset": "exec",
+    "land-changeset": "mechanical",
+    "verify-promotion": "mechanical",
+    "review-plan": "review",
+    "review-exec": "review",
+    "review-cross-model": "review",
+    "audit-implementation": "review",
+    "audit-ac": "review",
+    "diagnose-bug": "debug",
+    "honest-diagnosis": "debug",
+    "review-security": "security",
+    "security-ops": "security",
+    "svc-state-janitor": "mechanical",
+    "summary-extractor": "mechanical",
+    "manage-learnings": "mechanical",
+    "onboard-repo": "explore",
+    "sync-spec-code": "explore",
+    "audit-coverage": "explore",
+    "grow-social": "writing",
+    "design-sync": "plan",
+    "analyze-marketing": "writing",
+    "addon-gateway": "writing",
+    "ad-video-script": "writing"
+  },
+  "high_risk_target": 0.9,
+  "text_rules": {
+    "_comment": "Request-text classifier, tried when no task type or known skill is given. Patterns are case-insensitive JS regex sources. Security wins whenever it matches; a debug match removes explore from contention; otherwise the earliest match in the text names the task.",
+    "priority": [
+      "security"
+    ],
+    "suppress": {
+      "debug": [
+        "explore"
+      ]
+    },
+    "rules": [
+      [
+        "security",
+        "\\b(security|vulnerab\\w*|exploit\\w*|cves?|authn|authz|authentication|authorization|auth (?:token|flow|bypass|check|logic|middleware)s?|secrets?|xss|csrf|(?:sql|command|code|prompt|header|ldap) injection|injection (?:attack|vuln\\w*)|access control|pentest\\w*|rls)\\b"
+      ],
+      [
+        "debug",
+        "\\b(bugs?|broken|fail\\w*|errors?|crash\\w*|regress\\w*|stack ?traces?|flaky|why (?:does|is|do))\\b|doesn'?t work|not working"
+      ],
+      [
+        "review",
+        "\\b(review\\w*|audit\\w*|critique\\w*)\\b|check (?:this|the) (?:diff|pr|plan)"
+      ],
+      [
+        "plan",
+        "\\b(plan\\w*|design\\w*|architect\\w*|spec|specs|strateg\\w*|approach\\w*|trade-?offs?)\\b"
+      ],
+      [
+        "mechanical",
+        "\\b(renam\\w*|reformat\\w*|format\\w*|typos?|bump\\w*|sort imports|lint fix\\w*|changelog|summari[sz]\\w*)\\b|move (?:the )?files?|update (?:the )?\\w+ field"
+      ],
+      [
+        "exec",
+        "\\b(implement\\w*|build|add|wire|refactor\\w*|port|integrat\\w*|create)\\b"
+      ],
+      [
+        "explore",
+        "\\b(locate|search\\w*|inventor\\w*)\\b|where is|list all|which files|find (?:all|where|the file)"
+      ],
+      [
+        "writing",
+        "\\b(posts?|blog\\w*|emails?|tweets?|announce\\w*|readme|docs? page|marketing copy|landing copy)\\b"
+      ]
+    ]
+  }
+}

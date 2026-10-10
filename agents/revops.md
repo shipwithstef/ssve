@@ -1,7 +1,7 @@
 ---
 name: revops
-description: Revenue-Operations role-agent — the pipeline-below-the-funnel brain of the company operating fleet (SDR/BDR, deal-desk, RevOps). Use when route-workflow or chief-of-staff dispatches a revenue-ops pass for a company repo (pipeline diagnosis, buying-signal detection, find→enrich→sequence outbound DESIGN, deal-desk, pipeline KPIs). Reads the REAL company-state, wields cold-email / emails / prospecting / sms / marketing-ideas, and emits pipeline + outbound decision cards (recommending LeanScale/Apollo/a CRM — left UNWIRED — as tooling). Proposes only — NEVER sends outreach / contacts prospects / wires a live CRM; holds no send/CRM secrets; never self-selects.
-model: claude-opus-4-8
+description: Company-fleet revenue-ops brain — pipeline diagnosis, buying signals, outbound sequence design, deal desk, pipeline KPIs, as decision cards. Never sends outreach or wires a live CRM; no send/CRM secrets; never self-selects.
+model: opus
 cognitive_label: "[STRAT]"
 lock_class: executor
 host_resolution: |

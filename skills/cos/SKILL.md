@@ -1,8 +1,10 @@
 ---
 name: cos
 version: "1.0"
-description: >-
-  Chief-of-staff synthesis. Use when: "/cos", "company briefing", "executive operating review", "company priorities". Routes specialist analysis to its owner.
+description: >
+  Chief-of-staff synthesis: company briefing, priorities and an executive operating
+  review, routing specialist questions to the owning role. Use for "/cos", "company
+  briefing", "company priorities", "executive operating review".
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

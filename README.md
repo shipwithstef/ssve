@@ -859,6 +859,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 
 <!-- svc:generated:begin readme-included-skills — edit skills-manifest.json / references/model-registry.json, then run: node scripts/generate-manifest-mirrors.mjs --write -->
 - `ad-video-script` — Performance ad-video script writer (Senior DR Creative Strategist). Reads the real product first, then emits a placement-aware modular script + render-ready 6×10s beat sheet (per-beat image+motion prompts, character lock, last-frame seeding). One base or many variants; hands the beat sheet to `produce-ad-video`.
+- `addon-gateway` — Load one add-on pack playbook (e.g. coreyhaines marketing) on demand instead of listing every add-on skill
 - `align-feature` — Execute the story-receipts chain for one WI until STORY ALIGNED — the fixing counterpart of audit-feature
 - `analyze-competitors` — Comprehensive one-shot competitive deep-dive for new entrants
 - `analyze-domain` — Build domain expertise and reference packs
@@ -888,6 +889,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 - `decide` — Present a decision to the founder so it can actually be decided — one choice at a time, options as outcomes, grounded confidence per option
 - `define-code-style` — Define or audit the project code style contract
 - `design-logo` — Produce an iterative SVG logo/lockup pack with rubric-gated refinement and live in-app evidence
+- `design-sync` — Import the design from code into Claude Design, record its rationale, propose evidenced improvements, sync chosen ones back; storyboard ad motion
 - `design-tech` — Define architecture, data model, feasibility matrix
 - `design-ui` — Define component specs, design tokens, visual hierarchy
 - `design-ux` — Define screen flows, state machines, interaction patterns

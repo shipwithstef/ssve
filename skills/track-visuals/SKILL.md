@@ -2,13 +2,9 @@
 name: track-visuals
 version: "1.0"
 description: >
-  Capture and track visual state of all screens. Creates a baseline after first
-  UI design or brownfield onboarding, then diffs against it when code changes.
-  Use when "capture visuals", "visual baseline", "screenshot all screens",
-  "visual regression", "what changed visually", "track visual state", or
-  automatically as a sidecar after design-ui (baseline) and after
-  execute-changeset (diff) for browser-visible features. Also works
-  standalone for periodic visual audits.
+  Capture and diff screenshots of every screen across viewports against a visual baseline.
+  Use for 'visual baseline', 'screenshot all screens', 'visual regression', 'what changed
+  visually', or after design-ui and UI-affecting changes.
 phases:
   - id: P1-ModeAndScopeSelection
     trigger: always

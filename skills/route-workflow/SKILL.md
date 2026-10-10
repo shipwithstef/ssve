@@ -2,13 +2,10 @@
 name: route-workflow
 version: "1.0"
 description: >
-  Universal entry point for any work. Routes freeform intent to the right svc skill
-  based on repo state, change type, and current project artifacts. Handles: "do this",
-  "build this", "I want to", "help me with", "make me a", "ship this", "fix this",
-  or ANY freeform description of work; also handles explicit routing questions like
-  "what should I do next", "which skill do I run", "what's the right order", and
-  "what lane is this". Here "what should I do next" means only which skill and
-  lane to run in this repo.
+  Routes a work request in an svc-onboarded repo to the right lane and next svc skill from
+  repo state and artifacts. Use for 'build this', 'fix this', 'ship this', 'I want to',
+  'which skill do I run', 'what lane is this'. Not needed for questions, explanations or
+  read-only lookups.
 phases:
   - { id: P1-SessionContextLoad, trigger: always, reads: [".svc/session-contract.jsonl", "docs/specs/project-state.md", "~/.svc/builder-profile.md", "docs/specs/domain-profile.md"], writes: [".svc/session-contract.jsonl when needed", ".svc/orchestrator-state.json when initializing"], evidence_kind: command_output, required_for_completion: true }
   - { id: P2-IntentNormalizationAndCorrection, trigger: always, reads: ["user request", "references/intent-normalization.md", "references/intent-classification.md", ".svc/session-contract.jsonl"], writes: [".svc/pipeline-decisions.jsonl when route-relevant"], evidence_kind: command_output, required_for_completion: true }
@@ -113,7 +110,7 @@ When `execution_mode: end_to_end` crosses a verification/review/closeout seam an
 `.svc/session-contract.jsonl`'s field schema (required + optional fields, including `authorization_envelope` — §4c) is canonically documented in `_shared/session-contract.md`; read it before writing or interpreting a contract row.
 
 ## Lane Model & Routing
-Lane selection is mandatory: choose the lane from `references/lane-model.md`; use `references/framework-policy.md` for svc-on-svc work; use `references/routing-rules.md` for change-type signals; use `references/intent-routing.md` for phrase-to-skill mappings. If no lane fits, propose a new lane instead of forcing a bad match. Explicit framework-quality/capability questions ("is svc good at X", "how does svc handle Y") route to `svc-advisor`, which loads `references/advisor/framework-knowledge-index.md` and answers cite-before-assert.
+Lane selection is mandatory: choose the lane from `references/lane-model.md`; use `references/framework-policy.md` for svc-on-svc work; use `references/routing-rules.md` for change-type signals; use `references/intent-routing.md` for phrase-to-skill mappings. If no lane fits, propose a new lane instead of forcing a bad match. On the Claude host, pick each subagent's model and effort with `scripts/route-model.mjs` and escalate per its output (`references/hot-path-operational-details.md`, Per-dispatch model and effort). Explicit framework-quality/capability questions ("is svc good at X", "how does svc handle Y") route to `svc-advisor`, which loads `references/advisor/framework-knowledge-index.md` and answers cite-before-assert.
 
 ## Human-Invoked Prompt Composer
 For human-invoked routing, produce a Prompt Composer package. It must include normalized intent, repo/session evidence read, lane and delivery tier, exact skill sequence, required artifacts, skip conditions, eval/verification commands, closeout requirements, and when to use `/goal`, `/loop`, `dispatch-waves`, or other host capabilities.

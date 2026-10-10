@@ -6,11 +6,9 @@ handles_concerns:
   - oauth-callback
   - paid-external-api
 description: >
-  Root-cause-first bug and regression planning for svc repos. Use when a work item
-  describes broken behavior, a regression, or a production issue that needs correction
-  without forcing full feature-spec authoring. Produces an implementation-ready bugfix
-  brief with reproduction, root cause, expected behavior, smallest safe fix surface,
-  and proof-of-fix plan.
+  Root-cause-first diagnosis for broken behavior, regressions or production issues;
+  produces a bugfix brief with repro, root cause, smallest fix and proof plan. Use for
+  "bug", "regression", "this broke", "why is X failing". Not for new features.
 phases:
   - { id: P1-Inputs, trigger: always, reads: ["latest reproduction", "current expected behavior and spec/code conflicts", "affected dependencies and applicable mode"], writes: [], evidence_kind: command_output, required_for_completion: true }
   - { id: P2-Reproduction, trigger: always, reads: [], writes: [], evidence_kind: file, required_for_completion: true }

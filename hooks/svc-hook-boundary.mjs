@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
 import { lexSimpleCommand } from "./codex/lib/argv-lex.mjs";
-import { resolveHookMode, hookPolicyWarning } from "./lib/hook-policy.mjs";
+import { resolveHookMode, hookPolicyWarning, repoOptOut } from "./lib/hook-policy.mjs";
 import { diagnosticReason, steeringReason } from "./lib/advisory-diagnostic.mjs";
 
 const MAX_INPUT = 8 * 1024 * 1024;
@@ -228,6 +228,8 @@ async function boundaryRuntimeSource() {
 async function main() {
   const mode = resolveHookMode();
   hookPolicyWarning(mode);
+  // Per-repo switch (scripts/svc-repo.mjs off); an owner "enforce" always wins.
+  if (repoOptOut(process.env, process.env.HOME || os.homedir(), mode)) { process.stdout.write("{}\n"); return; }
   const marker = process.argv.slice(2, process.argv.indexOf("--spec")).join(" ") || "svc-hook";
   let spec;
   try { spec = decodeSpec(process.argv[process.argv.indexOf("--spec") + 1]); }

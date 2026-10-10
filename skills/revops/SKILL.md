@@ -1,8 +1,9 @@
 ---
 name: revops
 version: "1.0"
-description: >-
-  Revenue-process proposals. Use when: "revops", "revenue funnel", "lead handoff", "pipeline process". Not accounting or customer outreach.
+description: >
+  Revenue-process proposals. Use when: "revops", "revenue funnel", "lead handoff",
+  "pipeline process". Not accounting or customer outreach.
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

@@ -1,8 +1,10 @@
 ---
 name: blend-private
 version: "1.0"
-description: >-
-  Blend patterns from a private repo you own into svc WITHOUT leaving source identifiers in the tree (repo/org/service/client names, private URLs, proprietary terms) — sibling to blend-external for when attribution is neither required nor possible. Use when: "blend from my private repo", "take this pattern but scrub the source". Also: "blend without attribution", "take this pattern from my own code". Also: "extract from my internal repo".
+description: >
+  Blends patterns from a private repo you own into svc while scrubbing source identifiers
+  (repo, org, client names, private URLs). Use for "blend from my private repo", "take
+  this pattern but scrub the source", "blend without attribution".
 phases:
   - id: P1-AuthorizationGate
     trigger: always

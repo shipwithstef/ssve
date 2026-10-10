@@ -1,8 +1,10 @@
 ---
 name: find-opportunity
 version: "1.0"
-description: >-
-  Find the fastest path to online revenue for this builder — reverse-engineers what makes money now (SaaS, extensions, APIs, templates, AI wrappers), matches builder skills/distribution, scores and ranks opportunities. Use when: "what should I build", "fastest path to revenue", "find me a project", "I need money", or validate-feature returns NO-SHIP. Also: "first project", "help me pick".
+description: >
+  Find and rank the fastest paths to online revenue matched to the builder's skills and
+  distribution. Use for "what should I build", "fastest path to revenue", "find me a
+  project", "I need money", or after a NO-SHIP verdict.
 phases:
   - id: P1-BuilderProfileVisionContext
     trigger: always

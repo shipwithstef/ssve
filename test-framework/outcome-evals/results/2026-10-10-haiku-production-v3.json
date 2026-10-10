@@ -1,0 +1,110 @@
+{
+  "ran_at": "2026-10-10T12:27:39.263Z",
+  "model": "haiku",
+  "reps": 1,
+  "tasks": [
+    "yoga-studio"
+  ],
+  "arms": [
+    "plain",
+    "production"
+  ],
+  "summary": [
+    {
+      "arm": "plain",
+      "runs": 1,
+      "errors": 0,
+      "solved": "1/1",
+      "solve_rate": 1,
+      "mean_hidden_score": 1,
+      "mean_cost_usd": 0.1331,
+      "mean_turns": 34,
+      "judged": 1,
+      "mean_judge_total": 8
+    },
+    {
+      "arm": "production",
+      "runs": 1,
+      "errors": 0,
+      "solved": "1/1",
+      "solve_rate": 1,
+      "mean_hidden_score": 1,
+      "mean_cost_usd": 0.8492,
+      "mean_turns": 99,
+      "judged": 1,
+      "mean_judge_total": 16
+    }
+  ],
+  "rows": [
+    {
+      "task": "yoga-studio",
+      "arm": "plain",
+      "rep": 0,
+      "model": "haiku",
+      "prompt_sha": "7ba14aba5903",
+      "wall_ms": 325797,
+      "ok": true,
+      "cost_usd": 0.13311724,
+      "turns": 34,
+      "duration_ms": 324364,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "hidden_pass": 2,
+      "hidden_total": 2,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 8,
+      "judge_scores": {
+        "spec_depth": 0,
+        "journeys_verified": 1,
+        "payments": 1,
+        "auth_security": 1,
+        "data_integrity": 2,
+        "architecture": 1,
+        "ux_sellable": 2,
+        "ops_ready": 0
+      },
+      "judge_verified_journeys": 0,
+      "judge_money_pump": false,
+      "judge_notes": "The biggest gap is that there is no real payment integration: charges and refunds are an inline mock card check plus a database field, with no provider abstraction and no signed, idempotent webhooks; in addition spec.md is just the one-sentence request with no journeys, the README is one line, there is no health endpoint, login has no brute-force limit, and sessions are lost on restart. The strongest part is the core booking loop: the server sets the price, a seat is only confirmed after the charge succeeds, the capacity check and insert run synchronously so concurrent requests cannot overbook, writes go through a temp file and rename, the UI is clean, accessible and safe against XSS, and all 21 HTTP and Playwright tests pass. Sellable: no, not until a real payment provider, a proper spec, ops docs and login rate limiting are added.",
+      "judge_cost_usd": 0.46268800000000004,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T12-15-46-764Z/yoga-studio-plain-0"
+    },
+    {
+      "task": "yoga-studio",
+      "arm": "production",
+      "rep": 0,
+      "model": "haiku",
+      "prompt_sha": "b906ccc6a91b",
+      "wall_ms": 652368,
+      "ok": true,
+      "cost_usd": 0.8491581299999996,
+      "turns": 99,
+      "duration_ms": 651097,
+      "model_id": "claude-haiku-5-5",
+      "stop": "success",
+      "hidden_pass": 2,
+      "hidden_total": 2,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 16,
+      "judge_scores": {
+        "spec_depth": 2,
+        "journeys_verified": 2,
+        "payments": 2,
+        "auth_security": 2,
+        "data_integrity": 2,
+        "architecture": 2,
+        "ux_sellable": 2,
+        "ops_ready": 2
+      },
+      "judge_verified_journeys": 17,
+      "judge_money_pump": false,
+      "judge_notes": "The biggest gap is that the Stripe adapter has only been tested against a fake fetch, never live Stripe, and the app sends no emails, has an in-memory per-email login throttle, and runs as one SQLite process, so the first live test-mode payment and refund are still unproven. The strongest part is the payment and booking core: the server sets the price, seats are held inside BEGIN IMMEDIATE transactions, booking state changes only on signature-checked webhooks, late or duplicate payments are refunded with idempotency keys, and all 96 node --test tests pass and cover C1–C11 and O1–O6 over real HTTP, including 10 concurrent bookings for 3 seats. Sellable: yes, to a small studio as a single-instance deployment, after one end-to-end Stripe test-mode run.",
+      "judge_cost_usd": 0.6343726,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T12-15-46-764Z/yoga-studio-production-0"
+    }
+  ]
+}

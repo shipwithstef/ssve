@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><title>Market stall</title>
+<p>Coins <b data-testid="coins"></b> · Day <b data-testid="day"></b> <button data-testid="next-day">Next day</button></p>
+<p data-testid="error"></p><table id="t"></table>
+<script>
+const ids = ["apple", "bread", "sword"];
+document.getElementById("t").innerHTML = ids.map((id) => `<tr><td>${id}</td><td data-testid="price-${id}"></td><td data-testid="owned-${id}"></td><td><button data-testid="buy-${id}">Buy</button><button data-testid="sell-${id}">Sell</button></td></tr>`).join("");
+const q = (t) => document.querySelector(`[data-testid="${t}"]`);
+function show(s) { q("coins").textContent = s.coins; q("day").textContent = s.day; for (const id of ids) { q(`price-${id}`).textContent = s.prices[id].buy; q(`owned-${id}`).textContent = s.inventory[id] || 0; } }
+async function call(url, body) { const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}) }); const j = await r.json(); if (r.ok) { q("error").textContent = ""; show(j); } else q("error").textContent = j.error; }
+for (const id of ids) { q(`buy-${id}`).onclick = () => call("/api/buy", { item: id }); q(`sell-${id}`).onclick = () => call("/api/sell", { item: id }); }
+q("next-day").onclick = () => call("/api/next-day");
+fetch("/api/state").then((r) => r.json()).then(show);
+</script>

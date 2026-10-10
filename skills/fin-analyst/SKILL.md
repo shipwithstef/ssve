@@ -1,8 +1,9 @@
 ---
 name: fin-analyst
 version: "1.0"
-description: >-
-  Financial analysis. Use when: "runway", "unit economics", "budget impact", "finance review", "spend evidence". Not tax or legal advice.
+description: >
+  Financial analysis proposals: runway, unit economics, budget impact, spend evidence.
+  Writes a reviewable decision card. Not tax or legal advice.
 inputs:
   required:
     - { path: ".svc/company-link.json", artifact: company-context, note: "Optional only when repository-local company-state/ exists; resolve through company-state.mjs." }

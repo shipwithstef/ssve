@@ -968,6 +968,7 @@ cp "$ROOT/hooks/lib/pretool-decision-engine.mjs" "$WI494_MUT/boot/hooks/lib/pret
 cp "$ROOT/hooks/lib/validate-task-graph-shape.mjs" "$WI494_MUT/boot/hooks/lib/validate-task-graph-shape.mjs"
 cp "$ROOT/hooks/lib/wi-claim.mjs" "$WI494_MUT/boot/hooks/lib/wi-claim.mjs"
 cp "$ROOT/hooks/lib/authoritative-binding.mjs" "$WI494_MUT/boot/hooks/lib/authoritative-binding.mjs"
+cp "$ROOT/hooks/lib/git-query.mjs" "$WI494_MUT/boot/hooks/lib/git-query.mjs"
 cp "$ROOT/hooks/lib/svc-runtime-root.mjs" "$WI494_MUT/boot/hooks/lib/svc-runtime-root.mjs"
 cp "$ROOT/hooks/lib/authority-store.mjs" "$WI494_MUT/boot/hooks/lib/authority-store.mjs"
 # WI-562: authority-store now imports the shared liveness lib
@@ -1038,6 +1039,7 @@ cp "$ROOT/hooks/lib/pretool-decision-engine.mjs" "$WI494_MUT/marker/hooks/lib/pr
 cp "$ROOT/hooks/lib/validate-task-graph-shape.mjs" "$WI494_MUT/marker/hooks/lib/validate-task-graph-shape.mjs"
 cp "$ROOT/hooks/lib/wi-claim.mjs" "$WI494_MUT/marker/hooks/lib/wi-claim.mjs"
 cp "$ROOT/hooks/lib/authoritative-binding.mjs" "$WI494_MUT/marker/hooks/lib/authoritative-binding.mjs"
+cp "$ROOT/hooks/lib/git-query.mjs" "$WI494_MUT/marker/hooks/lib/git-query.mjs"
 # WI-562: wi-claim/authority-store import the shared liveness lib
 cp "$ROOT/hooks/lib/process-liveness.mjs" "$WI494_MUT/marker/hooks/lib/process-liveness.mjs"
 cp "$ROOT/hooks/lib/svc-runtime-root.mjs" "$WI494_MUT/marker/hooks/lib/svc-runtime-root.mjs"

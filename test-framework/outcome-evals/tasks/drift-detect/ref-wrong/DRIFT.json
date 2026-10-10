@@ -1,0 +1,4 @@
+[
+  {"claim": "C1", "status": "matches"}, {"claim": "C2", "status": "drifted"}, {"claim": "C3", "status": "matches"},
+  {"claim": "C4", "status": "drifted"}, {"claim": "C5", "status": "drifted", "evidence": "no deduplication"}, {"claim": "C6", "status": "matches"}
+]

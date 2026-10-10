@@ -4,7 +4,10 @@ version: "1.0"
 handles_concerns:
   - feature-validation-closeout
   - provider-fidelity
-description: Use after a reviewed branch has been promoted to verify that the promoted implementation matches specs, passes tests, satisfies acceptance criteria, and closes the loop back into spec/journey state — triggers G7 review
+description: >
+  After a reviewed branch is promoted, verify the shipped result against specs, tests and
+  acceptance criteria, then close the loop into spec and journey state (G7). Use for
+  'verify the promotion', 'did it actually ship', post-merge verification.
 phases:
   - { id: P1-PromotionEvidence, trigger: always, reads: [], writes: [], evidence_kind: command_output, required_for_completion: true }
   - { id: P2-SpecACVerification, trigger: always, reads: [".svc/receipts/<sha>/plan-manifest.json#ac_digests (WI-381 baton: AC nav index; still verify against the live spec — baton routes attention, never replaces the AC source)"], writes: [], evidence_kind: file, required_for_completion: true }

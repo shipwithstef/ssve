@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "purpose": "Every dimension svc evaluates a build on, how each is measured, and where the standard comes from. Hidden tests cover correctness; this registry covers the rest: what makes software production-ready, what makes it lean rather than slop or over-built, and what makes it good to use. Prefer the cheapest grader that fits: a deterministic probe first, a judge only for what cannot be computed, and a judge rubric made of checkable claims, not a 1-5 scale.",
+  "classes": {
+    "gate": "Mandatory for production. Any failure blocks a release, whatever the other scores.",
+    "quality": "Engineering quality. Compared between arms on the same task; lower or higher is better as stated.",
+    "efficiency": "Cost and speed, of the build and of the running product.",
+    "taste": "Product and design quality a user feels. Judged blind, from screenshots and use, with named claims."
+  },
+  "sources": {
+    "develop-tests": "https://platform.claude.com/docs/en/test-and-evaluate/develop-tests",
+    "hillclimb": "https://claude.dev/blog/automating-eval-design-and-hillclimbing/",
+    "best-practices": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+    "haiku-5-5": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-haiku-5-5",
+    "sonnet-5-5": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5-5",
+    "opus-5-5": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5-5",
+    "rocket-production": "https://www.rocket.new/blog/vibe-coding-best-practices-to-build-production-ready-apps",
+    "aigamedev-engines": "https://www.reddit.com/r/aigamedev/comments/1wzjxmi/",
+    "mutation-testing": "DeMillo, Lipton and Sayward, Hints on Test Data Selection (1978); Papadakis et al., Mutation Testing Advances (2019)"
+  },
+  "dimensions": [
+    { "id": "correct", "layer": "correctness", "class": "gate", "measure": "hidden tests", "better": "higher", "source": "develop-tests" },
+    { "id": "journeys-verified", "layer": "correctness", "class": "gate", "measure": "judge: journeys specified and covered by a passing test", "better": "higher", "source": "rocket-production" },
+
+    { "id": "input-validation", "layer": "production", "class": "gate", "measure": "judge claim: every route and form validates and rejects bad input at the boundary", "better": "true", "source": "rocket-production" },
+    { "id": "authz", "layer": "production", "class": "gate", "measure": "judge claim + planted probes (review-security pillar): no route acts on another user's data", "better": "true", "source": "rocket-production" },
+    { "id": "no-hardcoded-secrets", "layer": "production", "class": "gate", "measure": "probe: secrets.hardcoded", "better": "0", "source": "rocket-production" },
+    { "id": "structured-errors", "layer": "production", "class": "gate", "measure": "judge claim: errors return a structured body, never a stack trace", "better": "true", "source": "rocket-production" },
+    { "id": "payments-idempotent", "layer": "production", "class": "gate", "measure": "judge claim: replayed webhooks and concurrent refunds pay out once", "better": "true", "source": "rocket-production" },
+    { "id": "config-from-env", "layer": "production", "class": "gate", "measure": "judge claim: secrets and endpoints come from the environment", "better": "true", "source": "rocket-production" },
+    { "id": "runbook", "layer": "production", "class": "gate", "measure": "judge claim: README states setup, configuration, run, test and deploy", "better": "true", "source": "rocket-production" },
+
+    { "id": "test-strength", "layer": "engineering", "class": "quality", "measure": "probe: mutation.score (share of seeded source mutations the build's own tests catch)", "better": "higher", "source": "mutation-testing" },
+    { "id": "test-hygiene", "layer": "engineering", "class": "quality", "measure": "probe: tests.trivial + tests.skipped", "better": "0", "source": "best-practices" },
+    { "id": "no-test-gaming", "layer": "engineering", "class": "gate", "measure": "hidden tests on inputs absent from visible tests; judge claim: no value hard-coded for a test input", "better": "true", "source": "best-practices" },
+    { "id": "lean-size", "layer": "engineering", "class": "quality", "measure": "probe: size.source_loc and size.source_files, compared between arms on the same task at equal correctness", "better": "lower", "source": "best-practices" },
+    { "id": "no-dead-code", "layer": "engineering", "class": "quality", "measure": "probe: slop.unused_exports", "better": "lower", "source": "best-practices" },
+    { "id": "no-swallowed-errors", "layer": "engineering", "class": "quality", "measure": "probe: slop.empty_catch", "better": "0", "source": "rocket-production" },
+    { "id": "no-placeholders", "layer": "engineering", "class": "quality", "measure": "probe: slop.todo_or_placeholder", "better": "0", "source": "best-practices" },
+    { "id": "no-duplication", "layer": "engineering", "class": "quality", "measure": "probe: size.duplicated_line_share", "better": "lower", "source": "best-practices" },
+    { "id": "minimal-deps", "layer": "engineering", "class": "quality", "measure": "probe: size.dependencies", "better": "lower", "source": "best-practices" },
+    { "id": "yagni", "layer": "engineering", "class": "quality", "measure": "judge claim: nothing built that the request and its journeys do not need (no speculative config, plugin layers or abstractions with one use)", "better": "true", "source": "best-practices" },
+    { "id": "layering", "layer": "engineering", "class": "quality", "measure": "judge claim: domain rules importable and testable without HTTP or UI; for games, simulation importable without a DOM", "better": "true", "source": "aigamedev-engines" },
+
+    { "id": "build-cost", "layer": "efficiency", "class": "efficiency", "measure": "run: cost_usd", "better": "lower", "source": "hillclimb" },
+    { "id": "build-time", "layer": "efficiency", "class": "efficiency", "measure": "run: wall_ms", "better": "lower", "source": "hillclimb" },
+    { "id": "frame-time", "layer": "efficiency", "class": "gate", "measure": "browser probe: p95 frame interval under 20 ms while playing", "better": "lower", "source": "aigamedev-engines" },
+    { "id": "startup", "layer": "efficiency", "class": "efficiency", "measure": "browser probe: page interactive", "better": "lower", "source": "aigamedev-engines" },
+
+    { "id": "zero-console-errors", "layer": "product", "class": "gate", "measure": "browser probe: no page or console errors while used", "better": "0", "source": "opus-5-5" },
+    { "id": "distinct-design", "layer": "product", "class": "taste", "measure": "judge claims from screenshots: avoids the named default styles (cream background, italic accent words, 01/02/03 labels, monospace labels, pill buttons); a deliberate palette and type scale", "better": "true", "source": "opus-5-5" },
+    { "id": "accessible", "layer": "product", "class": "gate", "measure": "judge claims: labelled controls, keyboard operable, visible focus, readable contrast", "better": "true", "source": "rocket-production" },
+    { "id": "feedback-and-states", "layer": "product", "class": "taste", "measure": "judge claims: loading, empty, error and success states exist and say what to do next", "better": "true", "source": "rocket-production" },
+
+    { "id": "game-determinism", "layer": "game", "class": "gate", "measure": "probe: same seed and inputs give the same state", "better": "true", "source": "aigamedev-engines" },
+    { "id": "game-seed-bots", "layer": "game", "class": "gate", "measure": "probe: scripted and random bots play many seeded games: no exception, no NaN, no softlock", "better": "true", "source": "aigamedev-engines" },
+    { "id": "game-loop", "layer": "game", "class": "taste", "measure": "judge claims: a clear goal, a decision every few seconds, a fail state and a reason to replay", "better": "true", "source": "aigamedev-engines" },
+    { "id": "game-progression", "layer": "game", "class": "taste", "measure": "judge claims: difficulty rises over a run; new elements appear after the first minute", "better": "true", "source": "aigamedev-engines" },
+    { "id": "game-feel", "layer": "game", "class": "taste", "measure": "judge claims from screenshots and play: every player action has visible feedback (hit flash, particles, shake, sound or tween)", "better": "true", "source": "aigamedev-engines" },
+    { "id": "game-ux", "layer": "game", "class": "taste", "measure": "judge claims: how to play is shown in the first screen; pause, restart and a readable HUD", "better": "true", "source": "aigamedev-engines" },
+    { "id": "game-art-direction", "layer": "game", "class": "taste", "measure": "judge claims from screenshots: a coherent palette and shapes, not default rectangles on black", "better": "true", "source": "aigamedev-engines" }
+  ]
+}

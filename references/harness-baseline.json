@@ -1,0 +1,183 @@
+{
+  "$comment": "Which harness version svc was last tuned against, and which areas of the harness svc depends on. scripts/harness-drift.mjs compares the installed version with tuned_version, reads the release notes in between, and lists entries that touch a watched area: 'Added' entries are adopt candidates, the rest are check candidates. After acting on them, record the new baseline with `harness-drift.mjs mark-tuned`. To track another harness, add a hosts entry with version_cmd, tuned_version and a changelog_url whose notes use <Update label=...> sections; watch areas and keywords are plain data and can be extended by people or models. Keywords match whole words, case-insensitive; entries tagged for a surface in skip_surfaces (\"[VS Code] ...\") are ignored.",
+  "hosts": {
+    "claude": {
+      "version_cmd": [
+        "claude",
+        "--version"
+      ],
+      "tuned_version": "2.1.296",
+      "tuned_on": "2026-10-10",
+      "changelog_url": "https://code.claude.com/docs/en/changelog.md"
+    }
+  },
+  "watch": [
+    {
+      "area": "skills",
+      "keywords": [
+        "SKILL.md",
+        "skillOverrides",
+        "disable-model-invocation",
+        "user-invocable",
+        "when_to_use",
+        "skill listing",
+        "skill frontmatter",
+        "/skills"
+      ],
+      "owners": [
+        "skills/",
+        "scripts/measure-always-loaded.mjs",
+        "scripts/svc-repo.mjs"
+      ]
+    },
+    {
+      "area": "hooks",
+      "keywords": [
+        "hook",
+        "PreToolUse",
+        "PostToolUse",
+        "SessionStart",
+        "UserPromptSubmit",
+        "StopFailure",
+        "onFailure",
+        "asyncRewake",
+        "PostToolBatch"
+      ],
+      "owners": [
+        "hooks/",
+        "scripts/wire-hooks.mjs",
+        "hooks/svc-hook-boundary.mjs"
+      ]
+    },
+    {
+      "area": "subagents",
+      "keywords": [
+        "subagent",
+        "--agents",
+        "agent frontmatter",
+        "omitClaudeMd",
+        "maxTurns",
+        "autoCompactWindow",
+        "isolation: worktree"
+      ],
+      "owners": [
+        ".claude/agents/",
+        "agents/",
+        "scripts/sync-native-agents.mjs"
+      ]
+    },
+    {
+      "area": "model-and-effort",
+      "keywords": [
+        "effort",
+        "advisor",
+        "fallbackModel",
+        "fallback model",
+        "opusplan",
+        "ultracode",
+        "model alias"
+      ],
+      "owners": [
+        "scripts/route-model.mjs",
+        "references/model-intel/",
+        "references/model-registry.json"
+      ]
+    },
+    {
+      "area": "rules-and-memory",
+      "keywords": [
+        "CLAUDE.md",
+        "AGENTS.md",
+        ".claude/rules",
+        "path-scoped rule",
+        "auto memory",
+        "InstructionsLoaded"
+      ],
+      "owners": [
+        "rules/",
+        "hooks/svc-rule-injector.mjs",
+        "CLAUDE.md"
+      ]
+    },
+    {
+      "area": "plugins",
+      "keywords": [
+        "plugin eval",
+        "plugin validate",
+        "plugin details",
+        "marketplace",
+        "/plugin"
+      ],
+      "owners": [
+        "scripts/migrate-packs-to-plugins.sh",
+        "skills/addon-gateway/"
+      ]
+    },
+    {
+      "area": "workflows-and-goals",
+      "keywords": [
+        "workflow",
+        "/goal",
+        "routine"
+      ],
+      "owners": [
+        "skills/route-workflow/",
+        "references/workflow-fanout-protocol.md"
+      ]
+    },
+    {
+      "area": "context-and-caching",
+      "keywords": [
+        "prompt cache",
+        "cache hit",
+        "compaction",
+        "/compact",
+        "/context",
+        "context window"
+      ],
+      "owners": [
+        "scripts/measure-always-loaded.mjs",
+        "references/context-budget.md"
+      ]
+    },
+    {
+      "area": "settings-and-permissions",
+      "keywords": [
+        "settings.json",
+        "settings.local.json",
+        "skillOverrides",
+        "permission rule",
+        "auto mode classifier",
+        "env key"
+      ],
+      "owners": [
+        "scripts/wire-hooks.mjs",
+        "scripts/svc-repo.mjs"
+      ]
+    },
+    {
+      "area": "artifacts-and-design",
+      "keywords": [
+        "artifact",
+        "design system"
+      ],
+      "owners": [
+        "skills/design-sync/",
+        "scripts/design-tokens.mjs"
+      ]
+    }
+  ],
+  "skip_surfaces": [
+    "Desktop",
+    "VS Code",
+    "JetBrains",
+    "Cloud sessions",
+    "Remote Control",
+    "Windows",
+    "Slack",
+    "Chrome",
+    "Mobile",
+    "iOS",
+    "Android"
+  ]
+}

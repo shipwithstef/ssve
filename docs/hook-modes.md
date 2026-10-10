@@ -10,10 +10,10 @@ When the owner authorizes a code repair without historical backfills, proceed wi
 
 ## Choose a mode
 
-The hook boundary resolves the mode for each invocation, in this order:
+The hook boundary resolves the mode for each invocation:
 
-1. `SVC_HOOK_MODE=advisory` or `SVC_HOOK_MODE=enforce` in the host process environment.
-2. The `mode` field in `~/.svc/hook-policy.json`.
+1. The `mode` field in `~/.svc/hook-policy.json`, the owner's choice.
+2. `SVC_HOOK_MODE=advisory` or `SVC_HOOK_MODE=enforce` in the host process environment. It can raise advisory to enforce, but it cannot lower an owner's `enforce`: host and repository settings can set environment variables, so a cloned repository must not be able to switch enforcement off. The boundary reports an ignored lowering as a warning.
 3. `advisory` when neither is configured.
 
 For persistent enforcement, merge this field into the owner policy file:
@@ -56,7 +56,7 @@ Setup migrates managed SVC entries idempotently. It does not rewrite foreign com
 
 Run free checks with `EVALS=0 bash scripts/ci/run-free-checks.sh`. Enforcement fixtures explicitly select enforce mode; default-mode fixtures leave mode unconfigured. Hosted check results apply to the tested commit, not later modifications.
 
-To recover from a regression, select advisory mode, repair the source and rerun setup. To restore the previous implementation, revert the source change and refresh installations from that revision. Keep evidence of failures visible throughout recovery.
+To recover from a regression, set `{"mode":"advisory"}` in `~/.svc/hook-policy.json` (the environment cannot lower an owner's enforce), repair the source and rerun setup. To restore the previous implementation, revert the source change and refresh installations from that revision. Keep evidence of failures visible throughout recovery.
 
 Routine skill-loader rewrites discarded by advisory mode are quiet: the original tool input runs, with no claim that the loader ran or that the operation must be retried. Missing post-tool receipts are quiet for advisory calls and proven read-only calls. Independent warnings and actual enforcement findings remain visible.
 

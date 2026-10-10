@@ -1,0 +1,38 @@
+[
+  {
+    "file": "src/http.mjs",
+    "line": 34,
+    "severity": "CRITICAL",
+    "issue": "userId from the body lets a customer cancel another's booking"
+  },
+  {
+    "file": "src/bookings.mjs",
+    "line": 20,
+    "severity": "HIGH",
+    "issue": "the held counter races: two concurrent bookings can overbook"
+  },
+  {
+    "file": "src/auth.mjs",
+    "line": 16,
+    "severity": "MEDIUM",
+    "issue": "session expiry compares with > instead of >="
+  },
+  {
+    "file": "src/auth.mjs",
+    "line": 15,
+    "severity": "MEDIUM",
+    "issue": "JSON.parse may throw"
+  },
+  {
+    "file": "src/http.mjs",
+    "line": 18,
+    "severity": "LOW",
+    "issue": "cookie parsing ignores quoted values"
+  },
+  {
+    "file": "src/http.mjs",
+    "line": 12,
+    "severity": "LOW",
+    "issue": "body size check after push"
+  }
+]

@@ -57,6 +57,7 @@
   },
   "includedSkills": [
     "ad-video-script",
+    "addon-gateway",
     "align-feature",
     "analyze-competitors",
     "analyze-domain",
@@ -86,6 +87,7 @@
     "decide",
     "define-code-style",
     "design-logo",
+    "design-sync",
     "design-tech",
     "design-ui",
     "design-ux",
@@ -668,6 +670,11 @@
           "bash": [
             "base44",
             "app\\.base44\\.com"
+          ],
+          "repo_markers": [
+            "base44",
+            ".base44",
+            "package.json:base44"
           ]
         }
       },
@@ -686,6 +693,11 @@
             "rls",
             "policies",
             "base44"
+          ],
+          "repo_markers": [
+            "base44",
+            ".base44",
+            "package.json:base44"
           ]
         }
       },
@@ -706,6 +718,11 @@
           ],
           "bash": [
             "coding/write"
+          ],
+          "repo_markers": [
+            "base44",
+            ".base44",
+            "package.json:base44"
           ]
         }
       },
@@ -1037,6 +1054,9 @@
             "^hooks/",
             "^scripts/",
             "^test-framework/"
+          ],
+          "repo_markers": [
+            "skills-manifest.json:includedSkills"
           ]
         }
       },
@@ -1052,9 +1072,10 @@
         "auto_inject": "signal",
         "signals": {
           "paths": [
-            "provider",
-            "generation",
-            "/ai/"
+            "provider[^/]*\\.(spec|test)\\.",
+            "(spec|test)s?/.*provider",
+            "/ai/.*\\.(spec|test)\\.",
+            "generation[^/]*\\.(spec|test)\\."
           ]
         }
       },
@@ -1200,10 +1221,10 @@
         "scope": "project",
         "stack": "universal",
         "source": "local",
-        "last_evaluated": "2026-04-13",
+        "last_evaluated": "2026-10-10",
         "source_sha": null,
-        "notes": "Prevents Agent/Explore spawns when target is known. Authored in-repo, not blended.",
-        "auto_inject": "always"
+        "notes": "Prevents Agent/Explore spawns when target is known. Authored in-repo, not blended. 2026-10 framework-5.5 audit: demoted always->lazy; Claude Code's own system prompt and Agent tool description carry the same known-target guidance. twin: host harness tool-selection guidance; consumer: WI-399 dispatch decision tree (CLAUDE.md)",
+        "auto_inject": "lazy"
       },
       {
         "path": "rules/transient-ui-assertion-pattern.md",
@@ -1262,7 +1283,7 @@
         "auto_inject": "signal",
         "signals": {
           "paths": [
-            "src/",
+            "src/.*\\.(tsx?|jsx?|mjs|vue|svelte|css|scss)$",
             "\\.css$",
             "vite\\.config"
           ]
@@ -1286,6 +1307,11 @@
           "bash": [
             "base44.*site.*deploy",
             "base44.*deploy"
+          ],
+          "repo_markers": [
+            "base44",
+            ".base44",
+            "package.json:base44"
           ]
         }
       },
@@ -1306,6 +1332,11 @@
           ],
           "bash": [
             "base44.*deploy"
+          ],
+          "repo_markers": [
+            "base44",
+            ".base44",
+            "package.json:base44"
           ]
         }
       },
@@ -1323,6 +1354,11 @@
           "paths": [
             "public/",
             "assets/"
+          ],
+          "repo_markers": [
+            "base44",
+            ".base44",
+            "package.json:base44"
           ]
         }
       },
@@ -1376,6 +1412,11 @@
           "paths": [
             "e2e/.*auth",
             "otp"
+          ],
+          "repo_markers": [
+            "base44",
+            ".base44",
+            "package.json:base44"
           ]
         }
       },
@@ -1444,7 +1485,7 @@
             "payslip",
             "invoice"
           ],
-          "content": [
+          "keywords": [
             "fabricat",
             "payslip",
             "lawyer letter",
