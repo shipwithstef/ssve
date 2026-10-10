@@ -108,7 +108,7 @@ function runTests(dir, timeoutMs) {
   // NODE_TEST_CONTEXT (set when the probe itself runs under node --test) would make the
   // child report to the parent instead of printing its summary.
   const { NODE_TEST_CONTEXT, ...env } = process.env;
-  const r = spawnSync(process.execPath, ["--test", "--test-timeout=20000"], { cwd: dir, encoding: "utf8", timeout: timeoutMs, env: { ...env, PORT: "0", NODE_ENV: "test" } });
+  const r = spawnSync(process.execPath, ["--test", "--test-reporter=tap", "--test-timeout=20000"], { cwd: dir, encoding: "utf8", timeout: timeoutMs, env: { ...env, PORT: "0", NODE_ENV: "test" } });
   const out = `${r.stdout}\n${r.stderr}`;
   const pass = Number(/^# pass (\d+)/m.exec(out)?.[1] ?? 0);
   const fail = Number(/^# fail (\d+)/m.exec(out)?.[1] ?? 0) + Number(/^# cancelled (\d+)/m.exec(out)?.[1] ?? 0);

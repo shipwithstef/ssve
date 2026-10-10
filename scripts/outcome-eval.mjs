@@ -157,7 +157,7 @@ export function failureReasons(out) {
 
 export function grade(dir, task) {
   fs.copyFileSync(path.join(TASKS, task, "hidden.test.mjs"), path.join(dir, "__hidden.test.mjs"));
-  const r = spawnSync(process.execPath, ["--test", "--test-timeout=30000", "__hidden.test.mjs"], { cwd: dir, encoding: "utf8", timeout: 180000, env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry() } });
+  const r = spawnSync(process.execPath, ["--test", "--test-reporter=tap", "--test-timeout=30000", "__hidden.test.mjs"], { cwd: dir, encoding: "utf8", timeout: 180000, env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry() } });
   const out = `${r.stdout}\n${r.stderr}`;
   const t = parseTap(out) || { pass: 0, fail: 1 };
   const total = t.pass + t.fail;
@@ -295,7 +295,7 @@ export function check() {
       const good = grade(plain, task);
       if (!good.solved) problems.push(`${task}: reference fails its grader (${good.hidden_pass}/${good.hidden_total})`);
       fs.rmSync(path.join(plain, "__hidden.test.mjs"), { force: true });
-      const own = spawnSync(process.execPath, ["--test"], { cwd: plain, encoding: "utf8", timeout: 120000, env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry() } });
+      const own = spawnSync(process.execPath, ["--test", "--test-reporter=tap"], { cwd: plain, encoding: "utf8", timeout: 120000, env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry() } });
       if (own.status !== 0) problems.push(`${task}: reference breaks the repository's own tests`);
       fs.rmSync(plain, { recursive: true, force: true });
       // A plausible but wrong answer (ref-wrong/ overlay) must fail too.
