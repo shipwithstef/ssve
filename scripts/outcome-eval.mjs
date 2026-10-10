@@ -154,6 +154,31 @@ async function pool(items, n, fn) {
   return out;
 }
 
+// Seeded statistics so recorded evidence re-derives to the same numbers every time.
+function rng(seed = 20261010) {
+  return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const avg = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+
+// Difference of means (a - b) with a bootstrap 95% interval and a two-sided permutation p-value.
+export function compareSamples(a, b, iterations = 10000) {
+  if (!a.length || !b.length) return null;
+  const rand = rng();
+  const diff = avg(a) - avg(b);
+  const pick = (xs) => xs[Math.floor(rand() * xs.length)];
+  const boots = [];
+  for (let i = 0; i < iterations; i++) boots.push(avg(a.map(() => pick(a))) - avg(b.map(() => pick(b))));
+  boots.sort((x, y) => x - y);
+  const pooled = [...a, ...b];
+  let extreme = 0;
+  for (let i = 0; i < iterations; i++) {
+    const shuffled = [...pooled];
+    for (let j = shuffled.length - 1; j > 0; j--) { const k = Math.floor(rand() * (j + 1)); [shuffled[j], shuffled[k]] = [shuffled[k], shuffled[j]]; }
+    if (Math.abs(avg(shuffled.slice(0, a.length)) - avg(shuffled.slice(a.length))) >= Math.abs(diff) - 1e-12) extreme++;
+  }
+  return { diff: +diff.toFixed(2), ci95: [+boots[Math.floor(iterations * 0.025)].toFixed(2), +boots[Math.floor(iterations * 0.975)].toFixed(2)], p: +((extreme + 1) / (iterations + 1)).toFixed(4), n: [a.length, b.length] };
+}
+
 // The judge answers with one JSON object; take the last {...} block in its reply.
 export function parseJudge(text) {
   const m = String(text || "").match(/\{[\s\S]*\}/);
@@ -250,6 +275,15 @@ async function main(argv) {
     for (const [arm, s] of Object.entries(by)) {
       out[`${arm}_solve_rate`] = s.solve_rate; out[`${arm}_mean_cost_usd`] = s.mean_cost_usd;
       if (s.mean_judge_total !== undefined) out[`${arm}_mean_judge_total`] = s.mean_judge_total;
+    }
+    // Judge-score difference from plain, with uncertainty: a difference whose interval spans
+    // zero, or whose permutation p is 0.05 or more (small samples make the bootstrap
+    // interval optimistic), is reported as not established.
+    const judged = (arm) => rows.filter((r) => r.arm === arm && typeof r.judge_total === "number").map((r) => r.judge_total);
+    for (const arm of Object.keys(by)) {
+      if (arm === "plain") continue;
+      const c = compareSamples(judged(arm), judged("plain"));
+      if (c) { out[`${arm}_judge_vs_plain`] = c; out[`${arm}_judge_vs_plain_ci_low`] = c.ci95[0]; out[`${arm}_judge_vs_plain_established`] = (c.ci95[0] > 0 || c.ci95[1] < 0) && c.p < 0.05; }
     }
     // Cost ratios compare matched tasks only: an arm run on harder tasks is not cheaper or dearer by that alone.
     const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;

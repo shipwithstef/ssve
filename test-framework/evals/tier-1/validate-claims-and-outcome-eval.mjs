@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { judge, pick } from "../../../scripts/verify-claims.mjs";
-import { parseTap, summarize, ARMS, listTasks, parseJudge, failureReasons } from "../../../scripts/outcome-eval.mjs";
+import { parseTap, summarize, ARMS, listTasks, parseJudge, failureReasons, compareSamples } from "../../../scripts/outcome-eval.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -47,6 +47,11 @@ test("outcome-eval: TAP parsing, error rows excluded from scores, arms differ on
   assert.deepEqual(Object.keys(ARMS).sort(), ["blueprint", "brief", "lean", "plain", "production"]);
   assert.equal(parseJudge('here: {"scores":{"a":2},"total":2,"notes":"x"}').total, 2);
   assert.equal(parseJudge("no verdict"), null);
+  const clear = compareSamples([15, 14, 16, 15, 14], [7, 6, 8, 7, 8]);
+  assert.ok(clear.ci95[0] > 0 && clear.p < 0.05, "a large gap is established");
+  const noise = compareSamples([11, 12, 11], [10, 11, 11]);
+  assert.ok(noise.ci95[0] <= 0 || noise.p >= 0.05, "a one-point gap on three runs is not");
+  assert.deepEqual(compareSamples([1, 2], [3, 4]), compareSamples([1, 2], [3, 4]), "seeded: same input, same numbers");
   assert.ok(listTasks().length >= 5);
   for (const t of listTasks()) {
     const dir = path.join(root, "test-framework/outcome-evals/tasks", t);
