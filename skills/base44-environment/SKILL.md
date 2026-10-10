@@ -183,19 +183,19 @@ with provider/API diagnosis instead of token recovery.
 
 ## Secrets API — manage Base44 Secrets (env vars) programmatically
 
-See references/secrets-and-deploy-gotchas.md for the full "Secrets API — manage Base44 Secrets (env vars) programmatically" section (moved verbatim).
+**Secrets API** — Base44 functions read env vars via `Deno.env.get('X')` from the app's Secrets store, so manage it through the API, not the dashboard: `GET https://app.base44.com/api/apps/$APP_ID/secrets` lists keys with masked values, `POST` to the same URL with a JSON object of name-to-value upserts one or many secrets, and `jq 'has("NAME")'` on the GET verifies one (token from `jq -r .accessToken ~/.base44/auth/auth.json`). Verify the secret exists BEFORE deploying any commit that adds a strict `Deno.env.get('X')` check (no fallback), or the function fails to compile and returns 404 "Deployment does not exist"; also use it before rotation (POST overwrites, no rebuild) and in preflight checks (`validate-required-secrets.sh`). The required Example Marketplace secret names are listed in the reference. Details: `references/secrets-and-deploy-gotchas.md`.
 
 ## coding/write response-shape gotcha (read this before you ever check `.error == null`)
 
-See references/secrets-and-deploy-gotchas.md for the full "coding/write response-shape gotcha (read this before you ever check `.error == null`)" section (moved verbatim).
+**coding/write response-shape gotcha** — `coding/write` has NO `.error` field on either outcome: success returns the full app config (confirm with `.last_git_commit_hash`), failure returns a flat `{error_type, message, detail, request_id, traceback}`. NEVER test `.error == null` (always true); test `.error_type` instead, e.g. `jq 'if .error_type then {error_type, message: .message[:200]} else {ok: true} end'`, or `response.data.error_type` in JS. Watch for `SandboxExecutionError` (non-fast-forward push rejected; recover per `rules/base44/auth-refresh.md`) and `HTTPException` (read `.message`). Details: `references/secrets-and-deploy-gotchas.md`.
 
 ## Static asset deploy gotchas — public/* must be tracked AND verified by Content-Type
 
-See references/secrets-and-deploy-gotchas.md for the full "Static asset deploy gotchas — public/* must be tracked AND verified by Content-Type" section (moved verbatim).
+**Static asset deploy gotchas** — HTTP 200 is NOT proof a `public/*` asset deployed, because the SPA returns 200 with `Content-Type: text/html` for unknown routes. For every new public asset: (1) the file exists locally, (2) `git ls-files public/<asset>` shows it tracked (blanket ignores like `*.png` hide it; use `git add -f`), (3) code references match the path exactly, (4) after push and deploy, `curl -sI https://<app>/<asset>` returns the matching MIME type, not `text/html`. Recover from untracked files by force-adding and redeploying, from a CDN-cached SPA fallback by cache-busting references with `?v=YYYYMMDD` or purging the zone, and never treat a local `dist/` build as deploy proof (it reads the working tree, not git). Details: `references/secrets-and-deploy-gotchas.md` and `rules/base44/static-assets-public-dir.md`.
 
 ## "Deployment does not exist" 404 — the misleading deploy error
 
-See references/secrets-and-deploy-gotchas.md for the full ""Deployment does not exist" 404 — the misleading deploy error" section (moved verbatim).
+**"Deployment does not exist" 404** — This 404 on `POST /api/apps/{id}/functions/<name>` usually means the module threw an exception during load, so compile produced no runnable artifact; it does NOT mean the function is unregistered, a stale artifact, git divergence, TypeScript syntax, or (check last) a size limit. Check FIRST the Base44 dashboard, Functions, the failing function, which shows the real exception (e.g. `REDEEM_SECRET not configured`). The most common cause is a required `Deno.env.get('X')` secret missing from Base44 Secrets (see `rules/base44/function-deploy-404-check-secrets.md`); if several functions return the same 404, grep the shared secret across `base44/functions/` and probe each function to confirm. Details: `references/secrets-and-deploy-gotchas.md`.
 
 ## Primary Deploy Flow (2026-04-18 update — headless-safe deploy)
 
@@ -284,7 +284,7 @@ The sections below document the legacy `coding/write` + `/deploy` pattern. Use t
 
 ## Legacy: coding/write + deploy API (entities + emergency fallback)
 
-See references/legacy-coding-write-deploy.md for the full "Legacy: coding/write + deploy API (entities + emergency fallback)" section (moved verbatim).
+**Legacy: coding/write + deploy API** — `coding/write` writes and deploys entities (`entities/EntityName`, JSON), backend functions (`functions/functionName`, TypeScript, instant) and pages (`pages/PageName`, JSX; then POST `/api/apps/{APP_ID}/deploy` to publish). NEVER use `src/` or any other prefix with `coding/write`: it creates an extensionless duplicate that shadows the real file and breaks the build, so commit and `git push origin main` `src/` files instead (and `git rm` any such duplicate). If `/deploy` returns `fatal: reference is not a tree: <sha>` (phantom ref from calling coding/write before `git push`), STOP and ask the user to disconnect and reconnect the GitHub repo in Base44 Settings, then `git pull`, push, `coding/write` a real page, and `/deploy`; do NOT loop coding/write, use empty-commit tricks, or force-push. In round-trip entity updates `file_path` MUST match the file passed as `content` or it silently overwrites a live page. Call functions from the frontend with `base44.functions.invoke(name, payload)` (not `base44.functions.name(...)`), with telemetry fire-and-forget (`.catch(() => {})`, state updates first). Details: `references/legacy-coding-write-deploy.md`.
 
 ## Quick Reference
 
