@@ -24,7 +24,8 @@
  *              score is the pass share; a last stdout line {"score": n} overrides it.
  *   variants   how many to try (default 4)
  *   hints      optional per-variant approach hints, to spread the search
- *   model, effort, max_turns, timeout_s   worker settings (default haiku, 25 turns, 600 s)
+ *   model, effort, max_turns, timeout_s, tools   worker settings (default haiku, 25 turns,
+ *              600 s, outcome-eval's tool list)
  *   budget_usd stop starting new variants once spent cost reaches this
  *   worker_cmd optional shell command instead of the Claude worker (another harness, or
  *              a test double); it runs in the variant directory with PROBE_VARIANT set
@@ -106,7 +107,12 @@ async function runVariant(spec, i, root, spent) {
     const r = spawnSync("sh", ["-c", spec.worker_cmd], { cwd: dir, encoding: "utf8", timeout: (spec.timeout_s ?? 600) * 1000, env: { ...process.env, PROBE_VARIANT: String(i + 1) } });
     worker = { ok: r.status === 0, cost_usd: 0, text: (r.stdout || "").slice(-400) };
   } else {
-    worker = await runAgent(dir, workerPrompt(spec, i), spec.model ?? "haiku", (spec.timeout_s ?? 600) * 1000, undefined, spec.max_turns ?? 25, spec.effort ?? null);
+    // A worker edits a throwaway copy with no .git; the ownership fence is checked after
+    // it finishes and the lead applies the winner inside the governed repo, where every
+    // hook runs. So workers start without user or project settings: no hook start-up on
+    // each of their tool calls (the same isolation flags as harness-transports.mjs).
+    const isolated = ["--setting-sources", "", "--strict-mcp-config", "--no-session-persistence"];
+    worker = await runAgent(dir, workerPrompt(spec, i), spec.model ?? "haiku", (spec.timeout_s ?? 600) * 1000, spec.tools, spec.max_turns ?? 25, spec.effort ?? null, isolated);
   }
   spent.usd += worker.cost_usd ?? 0;
   const changed = changedFiles(before, snapshot(dir));
@@ -126,9 +132,6 @@ export async function run(spec, { lanes } = {}) {
   const n = Math.max(1, Math.min(spec.variants, cap.max_parallel));
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "probe-"));
   const spent = { usd: 0 };
-  // Workers run with the minimal hook profile: safety guards stay, orchestration hooks
-  // that do nothing inside a throwaway copy are skipped.
-  process.env.SVC_HOOK_PROFILE ||= "minimal";
   const t0 = Date.now();
   const variants = await pool(Array.from({ length: spec.variants }, (_, i) => i), n, (i) => runVariant(spec, i, root, spent));
   const ranking = rank(variants);

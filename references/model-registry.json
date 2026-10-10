@@ -267,7 +267,25 @@
      "contextWindow": 200000,
      "invocation": "claude -p --model claude-haiku-4-5-20251001",
      "displayName": "Haiku 4.5"
-    }
+    },
+   "opus-5-5": {
+    "id": "claude-opus-5-5",
+    "invocation": "claude -p --model claude-opus-5-5",
+    "displayName": "Opus 5.5",
+    "_source": "Claude Code environment model list, 2026-10-10: Opus 5.5, Sonnet 5.5 and Haiku 5.5 are the current family; Haiku 5.5 is the recommended subagent for high-volume work (ClaudeDevs, 2026-10-07)."
+   },
+   "sonnet-5-5": {
+    "id": "claude-sonnet-5-5",
+    "invocation": "claude -p --model claude-sonnet-5-5",
+    "displayName": "Sonnet 5.5",
+    "_source": "Claude Code environment model list, 2026-10-10: Opus 5.5, Sonnet 5.5 and Haiku 5.5 are the current family; Haiku 5.5 is the recommended subagent for high-volume work (ClaudeDevs, 2026-10-07)."
+   },
+   "haiku-5-5": {
+    "id": "claude-haiku-5-5",
+    "invocation": "claude -p --model claude-haiku-5-5",
+    "displayName": "Haiku 5.5",
+    "_source": "Claude Code environment model list, 2026-10-10: Opus 5.5, Sonnet 5.5 and Haiku 5.5 are the current family; Haiku 5.5 is the recommended subagent for high-volume work (ClaudeDevs, 2026-10-07)."
+   }
    },
    "displayName": "Claude"
   },
@@ -426,25 +444,25 @@
    "labels": {
     "STRAT": {
      "harness": "claude",
-     "model": "opus",
+     "model": "opus-5-5",
      "rationale": "Highest reasoning depth for strategy"
     },
     "PLAN": {
      "harness": "claude",
-     "model": "opus",
+     "model": "opus-5-5",
      "rationale": "Deterministic blueprinting needs frontier reasoning",
      "displayRationale": "Deterministic blueprinting"
     },
     "EXEC": {
      "harness": "claude",
-     "model": "sonnet-5",
+     "model": "sonnet-5-5",
      "effort": "high",
      "rationale": "WI-470 2026-06-30: EXEC runs on Sonnet 5 (subagents pinned). effort:high is DECLARED here (output_config.effort:high, claude-api-verified, adaptive thinking) and surfaced via resolve-model EXEC --effort; consumers apply it via the Agent dispatch effort param (this is the routing source, not the applier). Supersedes WI-357 EXEC=Sonnet4.6; MiMo EXEC via opencode-mimo/kimi profiles",
      "displayRationale": "Sonnet 5 execution; effort:high declared (WI-470); MiMo EXEC via keyed profiles"
     },
     "REVIEW": {
      "harness": "claude",
-     "model": "sonnet-5",
+     "model": "sonnet-5-5",
      "effort": "high",
      "rationale": "WI-470 2026-06-30: REVIEW runs on Sonnet 5 (subagents pinned) against the Opus blueprint; effort:high declared here, consumer-applied via the Agent dispatch effort param"
     },
@@ -461,7 +479,7 @@
     },
     "PASS": {
      "harness": "claude",
-     "model": "haiku",
+     "model": "haiku-5-5",
      "rationale": "Cheapest pass-through extraction"
     }
    }

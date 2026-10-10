@@ -31,6 +31,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
 import { probe } from "./quality-probes.mjs";
+import { probe as chaosProbe } from "./chaos-probe.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const TASKS = path.join(ROOT, "test-framework", "outcome-evals", "tasks");
@@ -71,6 +72,21 @@ export const ARMS = {
     "4. Verify like a player: start the server, play in a real browser, take screenshots and look at them. Fix anything that reads as a placeholder or as a stock AI look: default rectangles on a plain background, a centered card on a gradient, emoji as the only art, unstyled system text. Keep frames under 16 ms and the console free of errors.",
     "5. Stop when the game is fun for a minute and every check passes. Do not add systems the game does not use.",
   ].join("\n"),
+  // The delivery-speed arms (docs/decisions/2026-10-10-bounded-delivery.md): the same
+  // request built by one model alone, by a lead with a swarm of cheap subagents, and by
+  // the framework's bounded method. Every arm may commit (git is initialised for all).
+  solo: "Build what spec.md asks for.",
+  swarm: "Build what spec.md asks for. You lead a team: split the work into independent parts and delegate them to parallel subagents (the Agent tool, model haiku), each owning its own folder. Integrate and verify their work yourself.",
+  bounded: [
+    "Build what spec.md asks for, fast and reliably. Commit early and often (git is set up here).",
+    "1. Words first: write BRIEF.md section 0 with 10 terms an expert in this field would use (one line on what each means, one on how it changes what to build) and the one question to settle first, with the answer you will assume.",
+    "2. BRIEF.md, one page: done-when checks (each a command that exits 0), boundaries (owned paths, a versioned contract file for interfaces, irreversible zones such as auth and money), open questions each with the check that decides it, and a decision log you append to as you learn.",
+    "3. Skeleton: a runnable shell, the contract and the checks. Commit as soon as it runs.",
+    `4. Settle each open question by trying variants against its check: write a spec JSON and run \`node ${ROOT}/scripts/probe-loop.mjs run --spec <spec.json> --out <result.json>\` (fields: question, base, prompt, owned, check, variants, model haiku), then \`node ${ROOT}/scripts/probe-loop.mjs apply --result <result.json> --to .\`. Record the winner and what the others taught you in the decision log.`,
+    "5. Fill the rest in small steps, committing after each passing check.",
+    `6. Harden: write chaos.json (start, ready, steady check, endpoints) and run \`node ${ROOT}/scripts/chaos-probe.mjs --dir . --spec chaos.json\`; fix what fails. Delete scratch files nothing uses.`,
+    "7. Stop when every done-when check passes. Do not add systems the build does not use.",
+  ].join("\n"),
   blueprint: [
     "Implement the specification in spec.md in this directory, following this plan exactly. Do every step; each one has a check.",
     "1. Read spec.md. Write RULES.md: a numbered list with one line per rule in the spec, including every input that must be rejected and every edge case it names. Check: every sentence of the spec maps to at least one rule.",
@@ -80,6 +96,14 @@ export const ARMS = {
     "5. Done when all tests pass and every rule in RULES.md has a passing test. Do not stop earlier.",
   ].join("\n"),
 };
+
+// Extra tools an arm needs beyond the task's list.
+export const ARM_TOOLS = { swarm: ["Agent", "Task"], bounded: ["Bash(git:*)"], solo: ["Bash(git:*)"] };
+export function armTools(taskTools, arm) {
+  const base = taskTools || "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)";
+  const extra = (ARM_TOOLS[arm] || []).filter((t) => !base.split(",").includes(t));
+  return [base, ...extra, ...(arm === "swarm" && !base.includes("Bash(git:*)") ? ["Bash(git:*)"] : [])].join(",");
+}
 
 // Optional per-task settings: tasks/<id>/task.json { max_turns, timeout_min, judge_model }.
 // Pillar tasks (one svc stage or checkpoint each) also set `pillar`, and either
@@ -175,13 +199,18 @@ export function prepare(task) {
   const files = taskConfig(task).copy_spec ? ["spec.md", "visible.test.mjs"] : ["visible.test.mjs"];
   for (const f of files) if (fs.existsSync(path.join(TASKS, task, f))) fs.copyFileSync(path.join(TASKS, task, f), path.join(dir, f));
   fs.writeFileSync(path.join(dir, "package.json"), '{"type":"module"}\n');
+  // A git repository with no commits, so the probes can read when and how often the
+  // agent committed (time to first runnable, commit cadence).
+  spawnSync("git", ["init", "-q"], { cwd: dir });
+  spawnSync("git", ["config", "user.name", "outcome-eval"], { cwd: dir });
+  spawnSync("git", ["config", "user.email", "outcome-eval@local"], { cwd: dir });
   return dir;
 }
 
-export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40, effort = null) {
+export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40, effort = null, extraArgs = []) {
   return new Promise((resolve) => {
     // The model guides tell you to sweep effort on your own evals rather than assume a level.
-    const args = ["-p", "--model", model, "--output-format", "json", "--max-turns", String(maxTurns), ...(effort ? ["--effort", effort] : []), "--allowedTools", tools];
+    const args = ["-p", "--model", model, "--output-format", "json", "--max-turns", String(maxTurns), ...(effort ? ["--effort", effort] : []), ...extraArgs, "--allowedTools", tools];
     // The prompt goes on stdin: --allowedTools is variadic and would swallow it.
     const child = spawn("claude", args, { cwd: dir, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry() } });
     child.stdin.end(prompt);
@@ -425,13 +454,13 @@ async function main(argv) {
     const prompts = armPrompts(job.task, job.arm);
     const sha = crypto.createHash("sha256").update(isPillarArm(job.arm) ? prompts.join("\n\0\n") : prompts[0]).digest("hex").slice(0, 12);
     for (const prompt of prompts) {
-      const step = await runAgent(dir, prompt, model, cfg.timeout_ms, cfg.tools, cfg.max_turns, effort);
+      const step = await runAgent(dir, prompt, model, cfg.timeout_ms, isPillarArm(job.arm) ? cfg.tools : armTools(cfg.tools, job.arm), cfg.max_turns, effort);
       replies.push(String(step.text || "").slice(-400));
       if (step.error) { agent = { ...agent, error: `step ${agent.steps + 1}: ${step.error}` }; break; }
       agent = { ...step, cost_usd: (agent.cost_usd || 0) + (step.cost_usd || 0), turns: (agent.turns || 0) + (step.turns || 0), duration_ms: (agent.duration_ms || 0) + (step.duration_ms || 0), steps: agent.steps + 1 };
     }
     // The end of each step's final reply, so a run that wrote nothing still says why.
-    const row = { ...job, model, ...(effort ? { effort } : {}), pillar: cfg.pillar, prompt_sha: sha, wall_ms: Date.now() - t, ...agent, step_replies: replies };
+    const row = { ...job, model, ...(effort ? { effort } : {}), pillar: cfg.pillar, prompt_sha: sha, started_at: new Date(t).toISOString(), wall_ms: Date.now() - t, ...agent, step_replies: replies };
     // A run that ended (even at its turn limit) is graded: hitting the limit is a failure to
     // count, not an error to hide. Only a crash or timeout with no result is an error.
     if (!agent.error) Object.assign(row, grade(dir, job.task), await judge(dir, job.task, judgeModel));
@@ -447,7 +476,11 @@ async function main(argv) {
   // Engineering-quality probes (test strength by mutation, size, slop, secrets) run on the
   // kept builds after every agent has finished: they run tests synchronously and would
   // otherwise stall the agents still working.
-  if (probeMutants > 0) for (const row of rows) if (!row.error && row.artifact) row.probes = probe(row.artifact, { mutants: probeMutants });
+  if (probeMutants > 0) for (const row of rows) if (!row.error && row.artifact) {
+    row.probes = probe(row.artifact, { mutants: probeMutants, startedAt: Date.parse(row.started_at) });
+    const chaosSpec = path.join(TASKS, row.task, "chaos.json");
+    if (fs.existsSync(chaosSpec)) row.probes.chaos = await chaosProbe(row.artifact, JSON.parse(fs.readFileSync(chaosSpec, "utf8")));
+  }
   const result = { ran_at: new Date().toISOString(), model, reps, tasks, arms, summary: summarize(rows), rows };
   const out = opt("--out");
   if (out) fs.writeFileSync(out, JSON.stringify(result, null, 2) + "\n");

@@ -1750,6 +1750,15 @@
       "next_eval": "Full greenfield chain vs bare on harbor-game and yoga (plan Phase 3.6)"
     },
     {
+      "id": "engine:scripts/ambiguity-eval.mjs",
+      "kind": "engine",
+      "source": "scripts/ambiguity-eval.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-ambiguity-eval.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/apply-skill-outcome.mjs",
       "kind": "engine",
       "source": "scripts/apply-skill-outcome.mjs",

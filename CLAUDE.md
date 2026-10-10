@@ -60,7 +60,6 @@ The linter checks these are in sync. Edit one, update the others:
 - **`FRAMEWORK-STATE.md`** — framework self-knowledge (framework work)
 
 Never use both simultaneously. Product work reads project-state. Framework work reads FRAMEWORK-STATE.
-
 ### Knowledge System
 
 `references/knowledge/` stores layered expertise. Layer 1 (INDEX.md) → Layer 2 (CAPABILITIES.md per source) → Layer 3 (detail files on demand). All research skills write here. `references/knowledge-protocol.md` defines the 4-pass extraction protocol.
@@ -70,6 +69,7 @@ Never use both simultaneously. Product work reads project-state. Framework work 
 ### Seven Lanes
 
 Product: greenfield, brownfield-conversion, brownfield-feature, bugfix, drift, refactor. Framework: framework (self-improvement).
+Prototype and MVP work plans **bounded**: expert terms first, a one-page brief that grows, cheap variants settled by `scripts/probe-loop.mjs` against a check, chaos checks (`scripts/chaos-probe.mjs`); full review depth only on auth, money, data, deploys and secrets. Production and framework work keep the full changeset (`docs/decisions/2026-10-10-bounded-delivery.md`).
 
 ### Commit Rules
 
@@ -84,7 +84,7 @@ This framework uses **profiles** to map cognitive labels to execution harnesses.
 ```bash
 # What harness + model should I use for execution right now?
 bash scripts/resolve-model.sh EXEC --json
-# → harness: claude, model: claude-sonnet-5, effort: high (svc-default per WI-470)
+# → harness: claude, model: claude-sonnet-5-5, effort: high (svc-default)
 ```
 
 ### svc-default Profile (Production)
@@ -92,13 +92,13 @@ bash scripts/resolve-model.sh EXEC --json
 <!-- svc:generated:begin claude-md-svc-default — edit skills-manifest.json / references/model-registry.json, then run: node scripts/generate-manifest-mirrors.mjs --write -->
 | Label | Harness | Model |
 |-------|---------|-------|
-| **[STRAT]** | Claude | Opus 4.8 |
-| **[PLAN]** | Claude | Opus 4.8 |
-| **[EXEC]** | Claude | Sonnet 5 |
-| **[REVIEW]** | Claude | Sonnet 5 |
+| **[STRAT]** | Claude | Opus 5.5 |
+| **[PLAN]** | Claude | Opus 5.5 |
+| **[EXEC]** | Claude | Sonnet 5.5 |
+| **[REVIEW]** | Claude | Sonnet 5.5 |
 | **[SENSE]** | **MiMo** | **MiMo-V2.5-Pro** |
 | **[DISC]** | Native | web_search |
-| **[PASS]** | Claude | Haiku 4.5 |
+| **[PASS]** | Claude | Haiku 5.5 |
 <!-- svc:generated:end claude-md-svc-default -->
 
 > The table is generated from `references/model-registry.json` (edit the registry, then sync mirrors); it shows pinned API-level IDs for API callers such as the external-review policy. Subagents in `agents/` name the Claude Code aliases (`opus`, `sonnet`, `haiku`), so they follow each family's current model.

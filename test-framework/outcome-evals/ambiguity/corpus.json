@@ -1,0 +1,23 @@
+{
+  "purpose": "Ambiguous one-line requests from people outside the field, each with the intent the owner actually has (hidden from the builder) and checkable claims a correct spec must meet. scripts/ambiguity-eval.mjs measures how many owner rounds and how much spend each planning style needs to reach a spec that meets the intent.",
+  "cases": [
+    { "id": "chess", "request": "I want a chess web app.",
+      "intent": "I want to play chess against my brother on one laptop when we are together, taking turns on the same screen. No accounts, nothing online, no computer opponent. It should stop illegal moves and say when it is checkmate. I would also like an undo button for when one of us misclicks.",
+      "claims": ["Two players share one device and take turns; no online play or server is required", "There is no computer opponent and no accounts", "Illegal moves are rejected and checkmate is detected", "There is an undo for the last move"] },
+    { "id": "barber", "request": "Make a booking site for my barbershop.",
+      "intent": "Customers pick a barber (there are 3 of us), a service (cut 30 min, cut and beard 45 min) and a free slot, and leave a phone number. No payment online; they pay in the shop. I need to block my lunch hour and days off. A text reminder the day before would be great.",
+      "claims": ["Customers choose a specific barber among several", "Services have different durations that affect slot length", "No online payment; contact is a phone number", "Barbers can block time off", "A reminder is sent before the appointment"] },
+    { "id": "gear", "request": "A marketplace for used climbing gear.",
+      "intent": "Local only: people list gear with photos and meet in person to swap or sell; the site never touches money. Ropes and harnesses must show their age and fall history because safety matters. I want to moderate listings before they go live.",
+      "claims": ["Transactions happen in person; the platform handles no payments", "Listings are local (by area)", "Safety items show age and usage or fall history", "Listings are reviewed before they go live"] },
+    { "id": "quiz", "request": "A multiplayer quiz game for my friends.",
+      "intent": "We are on a video call and I am the host: I share my screen with the questions and everyone answers on their own phone by joining with a short code. Faster correct answers score more. I write my own questions before the call.",
+      "claims": ["Players join from their own phones with a short code", "A host screen shows the questions to everyone", "Scoring rewards faster correct answers", "The host writes custom questions ahead of time"] },
+    { "id": "habits", "request": "An app to track habits.",
+      "intent": "Just for me, on my phone, no account and nothing in the cloud. I tick off 3 to 5 daily habits and want to see my streaks. If I miss a day it should not wipe the streak if I log a reason, because I travel.",
+      "claims": ["Single user, data stays on the device, no account", "Daily check-off of a small set of habits", "Streaks are shown", "A missed day with a logged reason does not break the streak"] },
+    { "id": "recipes", "request": "A website to share recipes.",
+      "intent": "For my family only, invite-only and private. Grandma's recipes are typed from her handwritten cards, so each recipe has a photo of the original card. We want to scale servings and print a clean recipe card.",
+      "claims": ["Private, invite-only for a family", "Each recipe can carry a photo of the original handwritten card", "Servings can be scaled", "A clean printable card is available"] }
+  ]
+}
