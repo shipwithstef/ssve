@@ -65,16 +65,7 @@ chain:
 
 ## Product-runtime v2 adapter
 
-When nested inside a `product-improvement-protocol-v2` run, research is strictly side-effect-free:
-resolve only the named uncertainty, bind claims/contradictions/trust/freshness to its declared
-consumer, and return typed evidence to the blocked decision. Do not mutate product state, dispatch
-implementation, or ask the owner. The caller resumes only if the new evidence changes the
-unresolved-decision digest; otherwise the anti-loop gate stops the research cycle. Follow
-`references/owner-decision-runtime-v2.md`.
-
-> **Cognitive routing:** 🔎 [DISC] — GitHub code/repo search and package-registry
-> APIs FIRST (per `rules/common/research-before-build.md`); native web_search ONLY
-> after Tiers 0–3 return insufficient signal. See `references/model-routing.md`.
+See references/product-runtime-v2-adapter.md for the full "Product-runtime v2 adapter" section (moved verbatim).
 
 # Research
 
@@ -117,7 +108,7 @@ storage, and staleness rules.
 against the framework skill repository, not `process.cwd()`. Default is the framework
 repo's `references/knowledge/`; set `SVC_KNOWLEDGE_DIR=/absolute/path` only when
 intentionally writing to another knowledge repository. Relative knowledge arguments are
-normalized by `skills/research/scripts/lib/knowledge-paths.mjs`.
+normalized by `skills/research/scripts/lib/knowledge-paths.mjs`. Helper JSON output reports the resolved `knowledge_root`; verify it before writing anything under `references/knowledge/` (see references/analysis-mode.md).
 
 ## Step 0: Emit Invocation Receipt (G-4 mandatory)
 
@@ -277,74 +268,11 @@ content `[FROM-RESEARCH]` (AP-24).
 
 ### Step 4: Source Credibility & Triangulation (during extraction)
 
-Assign every source a tier BEFORE using it. Higher tier = higher evidentiary weight.
-
-| Tier | Class | Examples |
-|------|-------|----------|
-| T1 | Primary / official record | spec (RFC/W3C/ECMA), source code + CHANGELOG, official API ref for the EXACT version, the actual commit/PR |
-| T2 | Authoritative secondary | maintainer/vendor docs, peer-reviewed paper, record-keeping journalism, maintainer conference talk |
-| T3 | Reputable expert community | accepted high-score SO answer, recognized practitioner deep-dive, company eng blog, authority's book |
-| T4 | General reputable secondary | mainstream tech press, tutorials w/ named author + citations, aggregators that LINK sources |
-| T5 | Weak / unverified | anonymous/undated blog, forum comment, marketing copy, no outbound citations |
-| T6 | AI-generated / unattributed | LLM output (incl. this model's prior claims), AI-summary snippets, no discoverable origin |
-
-Version-match is part of tier: an official doc for the WRONG version is demoted to T4.
-
-**Load-bearing claim** = deliverable correctness depends on it (API signature/behavior,
-version, security/compliance, perf number, "recommended/only way", cost). Opinion,
-illustration, and background are NOT load-bearing.
-
-**Fast path (quick single-fact lookup — the common case):** if ONE authoritative
-T1/T2 source answers the question directly (registry version, official CHANGELOG,
-spec, the actual API ref for the exact version) and the fact is not high-stakes
-(security/compliance/cost) or contested, **assert it with a one-line log** (claim +
-source + `[as-of <date>]`) and SKIP the triangulation apparatus below. A senior
-doesn't triangulate "what's the current axios major" — one trip to the npm registry
-is the senior answer. Triangulation (the full rule below) applies to load-bearing
-claims that are high-stakes, surprising, or where the first source is below T2.
-
-**Triangulation (load-bearing + high-stakes/contested only):**
-1. Require ≥2 **independent** sources before asserting. "Independent" (citogenesis test):
-   they do NOT trace to the same origin — NOT independent if both paraphrase the same
-   release/paper/upstream doc, one mirrors/translates/AI-summarizes the other, both are
-   Wikipedia + a source citing that same text, or same author/org.
-2. One T1 primary MAY stand alone IF it is THE definitional authority (lang spec for syntax,
-   source code for behavior) AND you traced to the real primary — record as
-   "T1-primary, single-source-justified."
-3. Read laterally (SIFT): leave the page, check the author/org's reputation, cite the ORIGIN
-   not the aggregator. A claim asserted only from T5–T6 is never load-bearing → tag
-   `[UNVERIFIED]` and confirm at ≥T3 or drop.
-4. Log per load-bearing claim in the research log: claim, source URLs+tiers,
-   independence-verified (Y/N + why), trace-to-origin result.
-
-**[CONTESTED] convention** — when independent sources disagree, do NOT silently pick one:
-prefix the claim `[CONTESTED]` and record each position with source+tier+as-of. Resolution
-order: (a) higher tier wins; (b) tie → closest to primary; (c) genuine current disagreement
-among ≥T2 → leave `[CONTESTED]` in the deliverable. A lone T5/T6 dissent vs a T1/T2
-consensus is a minority view, not a contest. All-T5/T6 support = `[UNVERIFIED]`, not
-`[CONTESTED]`.
+See references/process-detail.md for the full "Step 4: Source Credibility & Triangulation (during extraction)" section (moved verbatim).
 
 ### Step 5: Log the Finding
 
-Append to `docs/specs/research-log.md` (create if absent):
-
-```markdown
-## YYYY-MM-DD: [Question]
-
-**Asked by:** [skill name or "standalone"]
-**Context:** [what was being done when this came up]
-**Finding:** [the answer, with specifics]
-**Source(s):** [URL or file path — with tier per source]
-**Triangulation:** [≥2 independent / T1-primary single-source-justified; independence note]
-**Confidence:** high | medium | low
-**Volatility:** volatile | stable
-**As-of date:** [date verified live — only for volatile facts]
-**Re-verify after:** [as-of + window: pricing/latest-version/deprecation = 7d; active library minor line = 30d; major-version conventions = next major; language semantics = no expiry]
-**Version-specific:** [yes/no — does this only apply to version X?]
-**Routed-to:** [deep-research, if escalated — else omit]
-```
-
-On a cache hit past `Re-verify after`, the entry is a LEAD, not an answer — re-ground first.
+See references/process-detail.md for the full "Step 5: Log the Finding" section (moved verbatim).
 
 ### Step 6: Reflect to Source Heuristics (write-after)
 
@@ -382,86 +310,7 @@ fi
 
 ## Analysis Mode (full extraction — sub-agent + gates)
 
-Analysis mode runs full source extraction through a sub-agent with a fallback chain. The
-skill picks the agent, not the caller.
-
-| Order | Agent | Use when |
-|-------|-------|----------|
-| 1 | **agy-cli** (default) | First-choice for large-source extraction. Long context, cheap tokens. |
-| 2 | **Claude** (in-session) | Fallback when agy-cli errors, is out of credits, or stalls mid-pass. |
-
-**Fallback trigger:** if agy-cli returns non-zero, times out, or returns partial coverage
-(< 100%), hand off to Claude in the SAME invocation. A partial extraction is NOT a terminal
-state. Override: `SVC_RESEARCH_AGENT=claude`. **Machine-readable endpoint exception:** when
-the source exposes a content index (Mintlify `llms.txt`, Docusaurus `sidebars.json`, GitBook
-API), the skill MAY bypass sub-agent dispatch and fetch indexed raw content directly —
-document the exception in the prescope; run all gates as normal. Not for e-commerce /
-competitor homepages / JS-rendered / incomplete indexes.
-
-**Protocol (in order):**
-1. Clone/pull the source.
-2. **Pre-scope (mandatory)** — `docs/specs/research-prescope-<source>.md` per
-   `skills/research/references/prescope-template.md`: volume estimate, file checklist, extraction
-   plan, sub-agent selection, expected outputs. For website sources use the auto-generator:
-   `node skills/research/scripts/website-prescope.mjs <url> --domain <domain>` (robots/sitemap/imprint
-   aware). Hand-writing the checklist hides sub-pages — use the script; document any fallback.
-   Inspection gate: checklist non-empty, domain justified, sub-agent explicit, else no extraction.
-3. **Domain gate (mandatory)** — `node skills/research/scripts/domain-gate.mjs --source <name>
-   --domain <proposed> --justification "<why>" [--new-domain]`. Refused (exit 1/2) → resolve
-   before writing anything under `references/knowledge/`. Verify `knowledge_root` in the JSON
-   is the intended path. Silent mis-filing is the #1 historical failure — the gate refuses it.
-4. **Sub-agent dispatch** — `node skills/research/scripts/dispatch-agy.mjs --prescope <ps> --domain <domain>`
-   (strict prompt: verbatim quotes, footer/imprint-aware, per-URL findings table, coverage
-   table). On error/timeout/partial → Claude fallback, same invocation.
-5. **Single-pass extraction** — read every checklist file FULLY into
-   `CAPABILITIES.md` (Layer 2), `details/<area>.md` (Layer 3, one per area), `.version`. No
-   bit-by-bit re-prompting. Apply Step 4 tiering to every cited source.
-6. **Commit after the pass** (incremental for a single large pass, not per-file).
-7. **Verify coverage (mandatory)** — `node skills/research/scripts/coverage-check.mjs --prescope <ps>
-   --domain references/knowledge/<domain>/`. Exit 0 = 100%; non-zero lists missing URLs.
-   Do not proceed until 100% — re-dispatch missing URLs, re-run.
-8. **Validate per-URL deep extraction** — `node skills/research/scripts/deep-extraction-check.mjs
-   <raw-extraction.md>` (each `## URL:` block has Status + Body + verbatim quotes, or an
-   honest Error/Inaccessible verdict). Catches "URL acknowledged but content not extracted."
-9. **Playwright extraction for accordion / SPA / collapsed content** (when content is
-   suspected hidden — low char-count, Elementor/Divi/WPBakery, `<details>`, FAQ markers):
-   `node skills/research/scripts/playwright-extract.mjs <url> --out <out.txt>` (renders JS, expands
-   accordions/tabs/`<details>`, clicks "show more"). Static-fetch < 5% body/HTML chars signals
-   missed accordion content (validator `validate-research-content-density.sh`). Failure mode
-   this prevents: 2026-05-03 advokatami.bg — FAQ accordion price composition missed though all
-   validators passed.
-10. **Activity validation** (mandatory for website/competitor/vendor sources) —
-    `node skills/research/scripts/blog-crawl.mjs <site-url> --domain references/knowledge/<domain>/
-    --months 12` → `.activity.json` scorecard (active/dormant/abandoned) + `details/blog-recent.md`.
-    Prevents stale "site is active" assumptions. Skip: no public blog → `.activity-na` marker.
-11. **Synthesize meaning** (mandatory for ≥5 detail files OR a blog-posts/ dir) —
-    `node skills/research/scripts/synthesize-meaning.mjs --domain references/knowledge/<domain>/
-    [--project-context "<...>"]` → `details/applied-knowledge.md` with its 6 mandatory sections.
-    The "no loss of meaningful info" gate. Skip (pure mechanical config) → `.applied-na` marker.
-12. **Write provenance (mandatory)** — one line per source to
-    `references/knowledge/<domain>/.sources.jsonl`:
-    `{"url":"<url-or-path>","sha256":"<hash>","retrieved_at":"<ISO-8601-UTC>","retrieval_method":"<webfetch|agy-cli|gh-api|local-file>","extracted_into":["CAPABILITIES.md","details/<area>.md"]}`.
-    **If no sources can be cited, the extraction is REFUSED — do not write CAPABILITIES.md.**
-    Training-data confabulation without source anchoring is the failure this gate prevents
-    (WI-SPINE-006); `validate-knowledge-domain-provenance.sh` enforces it.
-13. **Reflect source heuristics** — apply Step 6 per `(domain, claim_class)` bet made.
-14. Update `references/knowledge/INDEX.md` + `.version`.
-15. **Commit, tag, push.** Stage all knowledge files (CAPABILITIES.md, .version, details/*.md,
-    .sources.jsonl, source-heuristics.jsonl, INDEX.md, research-log.md, prescope). Verify
-    `.svc/coverage.lock` matches the current `--prescope` + resolved `--domain` (a stale lock
-    from another domain is not valid proof). Run git from the repo that owns the resolved
-    `knowledge_root`. Commit `research: extract <source> knowledge (<repo>)`; tag
-    `research-<source>`; push per the Step 8 remote-handling block.
-
-**The coverage check is mandatory.** The #1 failure of research is "read the main file, skim
-the rest, declare done." If the repo has 7 reference docs, you read 7.
-
-**Model/host/effort:** configurable via the active profile and existing overrides
-(`SVC_RESEARCH_AGENT`, `resolve-model.sh`). Do not pin a fixed default old recipe.
-Mechanical extraction stays mechanical. **Session interrupts:** resume from the first
-area in CAPABILITIES.md lacking a `details/` file. **The output is always layered
-knowledge** — INDEX.md entry, CAPABILITIES.md, details/*.md, .version — never a chat
-response that disappears.
+See references/analysis-mode.md for the full "Analysis Mode (full extraction — sub-agent + gates)" section (moved verbatim).
 
 ## ingest-guide Handoff Format
 
