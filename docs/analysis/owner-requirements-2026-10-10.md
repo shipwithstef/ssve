@@ -24,7 +24,7 @@ Status values:
 |---|---|---|---|
 | 6 | Merge 14 skills into 1 only if outcomes hold (growth example) | gated | D2: the target is a router skill with role reference files, agents and knowledge banks unchanged. Needs a before/after growth outcome scenario first |
 | 7 | Receipts and self-eval; no slow backfill | done | Range attestation (delivery profiles); mirror ledger |
-| 8 | Add-ons lazy and optional; a "hot router" | done | `addon-gateway`, `scripts/addon-index.mjs` |
+| 8 | Add-ons lazy and optional; a "hot router" | done | `addon-gateway`, `skills/addon-gateway/scripts/addon-index.mjs` |
 | 9 | Dynamic model and effort router with escalation and evidence | done | `scripts/route-model.mjs`, `references/model-intel/` |
 | 10 | Per-repo on/off | done | `scripts/svc-repo.mjs` |
 | 11 | Claude Design import/sync; ad motion | partial | `design-sync` and `scripts/design-tokens.mjs` cover tokens and a storyboard mode. Rendering ad motion relies on the existing ad-video fleet |

@@ -95,7 +95,7 @@
     },
     {
       "id": "lean-cost",
-      "claim": "The lean verifier loop costs at most 1.5x a plain run",
+      "claim": "Across matched tasks, the lean verifier loop costs at most 1.5x a plain run in total (per task it ranges 0.93-1.56x)",
       "source": "references/delivery-profiles.json",
       "command": [
         "node",
