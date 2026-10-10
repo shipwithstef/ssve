@@ -3,23 +3,26 @@
  * route-model.mjs — pick the model and effort for a task, escalate on failure,
  * and learn from recorded outcomes. Claude Code host; deterministic, no LLM call.
  *
- *   node scripts/route-model.mjs pick --task-type exec [--risk low|med|high] [--size S|M|L]
- *        [--skill <name>] [--text "<request>"] [--rung N --last-failure <kind>] [--allow-fable] [--json]
- *   node scripts/route-model.mjs record --task-type exec --model sonnet --effort medium --outcome pass|fail
- *        [--rung N] [--failure-kind <kind>] [--signal tests] [--skill <name>] [--tokens N]
- *   node scripts/route-model.mjs stats [--task-type exec] [--json]
+ *   node scripts/route-model.mjs pick [--task-type T | --skill S | --text "<request>"] [--risk low|med|high]
+ *        [--size S|M|L] [--rung N --last-failure <kind>] [--allow-fable] [--json]
+ *   node scripts/route-model.mjs record --task-type T --model M --effort E --outcome pass|fail
+ *        [--rung N] [--failure-kind <kind>] [--signal tests] [--skill S] [--tokens N]
+ *   node scripts/route-model.mjs stats [--task-type T] [--json]
  *   node scripts/route-model.mjs check            # data files valid and fresh (exit 1 if not)
  *
  * Policy (references/model-intel/priors.json):
- *   - Each task type has a 3-rung ladder [model, effort]. Rung 0 is the first attempt.
+ *   - Each task type has a ladder of up to 3 [model, effort] rungs; rung 0 is the first try.
  *   - First pick: the rung with the lowest expected cost per completed task, counting the
- *     cost of failing and escalating (E(i) = cost(i) + (1-p(i)) * (penalty + E(i+1))).
- *     High risk only considers rungs whose success estimate meets the risk target.
- *     Estimates are Beta posteriors: the prior from priors.json, updated by
- *     .svc/model-outcomes.jsonl and ~/.svc/model-outcomes.jsonl as outcomes accumulate.
- *   - On failure: verify_fail -> next rung (effort first, which keeps the prompt cache);
- *     capability/context -> next rung on a different model; refusal/infra -> same rung.
- *   - Past the last rung: stop and hand to a person (or the advisor) instead of looping.
+ *     cost of failing and escalating: E(i) = c(i) + (1-p(i)) * (penalty + E(i+1)), and a
+ *     failure past the last rung costs the penalty. High risk starts at rung 1 unless rung 0
+ *     has proven itself on recorded outcomes.
+ *   - p(i) stays at its prior until the arm has min_samples outcomes on the current model
+ *     id, then follows a Beta posterior. A new model behind an alias starts from the prior
+ *     again, so cheaper rungs get retried after every model release.
+ *   - On failure: verify_fail -> next rung (cheaper effort step before a model change);
+ *     capability/context -> next rung on a different model, else the next rung;
+ *     refusal/infra -> same rung (Claude Code's own fallback handles those).
+ *   - Past the last rung: stop and report instead of looping.
  */
 
 import fs from "node:fs";
@@ -30,6 +33,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const INTEL = path.join(ROOT, "references", "model-intel");
+const FAILURE_KINDS = ["verify_fail", "capability", "context", "refusal", "infra"];
 
 export function loadIntel(dir = INTEL) {
   return {
@@ -39,28 +43,27 @@ export function loadIntel(dir = INTEL) {
 }
 
 const TEXT_RULES = [
-  ["security", /\b(vulnerab\w*|exploit\w*|cves?|auth\w*|secrets?|xss|csrf|injection|pentest\w*|rls)\b/i],
-  ["debug", /\b(bugs?|broken|fail\w*|errors?|crash\w*|regress\w*|stack ?traces?|flaky)\b|doesn'?t work|not working/i],
+  ["security", /\b(security|vulnerab\w*|exploit\w*|cves?|authn|authz|authentication|authorization|auth (?:token|flow|bypass|check|logic|middleware)s?|secrets?|xss|csrf|(?:sql|command|code|prompt|header|ldap) injection|injection (?:attack|vuln\w*)|access control|pentest\w*|rls)\b/i],
+  ["debug", /\b(bugs?|broken|fail\w*|errors?|crash\w*|regress\w*|stack ?traces?|flaky|why (?:does|is|do))\b|doesn'?t work|not working/i],
   ["review", /\b(review\w*|audit\w*|critique\w*)\b|check (?:this|the) (?:diff|pr|plan)/i],
   ["plan", /\b(plan\w*|design\w*|architect\w*|spec|specs|strateg\w*|approach\w*|trade-?offs?)\b/i],
-  ["mechanical", /\b(renam\w*|reformat\w*|format\w*|typos?|bump\w*|sort imports|lint fix\w*|changelog|summari[sz]\w*)\b|move (?:the )?files?/i],
+  ["mechanical", /\b(renam\w*|reformat\w*|format\w*|typos?|bump\w*|sort imports|lint fix\w*|changelog|summari[sz]\w*)\b|move (?:the )?files?|update (?:the )?\w+ field/i],
   ["exec", /\b(implement\w*|build|add|wire|refactor\w*|port|integrat\w*|create)\b/i],
-  ["explore", /\b(find|locate|search\w*|inventor\w*)\b|where is|list all|which files/i],
-  ["writing", /\b(posts?|copy|blog\w*|emails?|tweets?|announce\w*|readme|docs? page)\b/i],
+  ["explore", /\b(locate|search\w*|inventor\w*)\b|where is|list all|which files|find (?:all|where|the file)/i],
+  ["writing", /\b(posts?|blog\w*|emails?|tweets?|announce\w*|readme|docs? page|marketing copy|landing copy)\b/i],
 ];
 
 export function classify({ taskType, skill, text } = {}, priors) {
   if (taskType) return { taskType, source: "explicit" };
   if (skill && priors.skill_task_types[skill]) return { taskType: priors.skill_task_types[skill], source: `skill:${skill}` };
   if (text) {
-    // Security wins whenever it appears; otherwise the earliest matching verb names the task.
-    let best = null;
-    for (const [type, re] of TEXT_RULES) {
-      const m = re.exec(text);
-      if (!m) continue;
-      if (type === "security") return { taskType: type, source: `text:${m[0]}` };
-      if (!best || m.index < best.index) best = { type, index: m.index, word: m[0] };
-    }
+    // Security wins whenever it appears; a debug signal beats explore; otherwise the earliest matching verb names the task.
+    const hits = [];
+    for (const [type, re] of TEXT_RULES) { const m = re.exec(text); if (m) hits.push({ type, index: m.index, word: m[0] }); }
+    const sec = hits.find((h) => h.type === "security");
+    if (sec) return { taskType: "security", source: `text:${sec.word}` };
+    const pool = hits.some((h) => h.type === "debug") ? hits.filter((h) => h.type !== "explore") : hits;
+    const best = pool.sort((a, b) => a.index - b.index)[0];
     if (best) return { taskType: best.type, source: `text:${best.word}` };
   }
   return { taskType: "exec", source: "default" };
@@ -81,11 +84,13 @@ export function readOutcomes(files) {
   return rows;
 }
 
-export function tally(outcomes) {
+// Counts per arm, only for the model id currently behind each alias (legacy rows without model_id count).
+export function tally(outcomes, models = null) {
   const t = new Map();
   for (const o of outcomes) {
     if (!o.task_type || !o.model || !o.effort || !["pass", "fail"].includes(o.outcome)) continue;
     if (o.failure_kind === "refusal" || o.failure_kind === "infra") continue; // not a capability signal
+    if (models && o.model_id && models.models[o.model] && o.model_id !== models.models[o.model].id) continue;
     const k = armKey(o.task_type, o.model, o.effort);
     const cur = t.get(k) || { n: 0, pass: 0 };
     cur.n += 1;
@@ -96,22 +101,24 @@ export function tally(outcomes) {
 }
 
 export function estimate(prior, counts, priors) {
+  const n = counts?.n || 0;
+  const informed = n >= priors.min_samples;
+  if (!informed) return { mean: prior, n, informed };
   const s = priors.prior_strength;
-  const a = prior * s + (counts?.pass || 0);
-  const b = (1 - prior) * s + ((counts?.n || 0) - (counts?.pass || 0));
-  return { mean: a / (a + b), n: counts?.n || 0, informed: (counts?.n || 0) >= priors.min_samples };
+  const a = prior * s + counts.pass;
+  const b = (1 - prior) * s + (n - counts.pass);
+  return { mean: a / (a + b), n, informed };
 }
 
 export function relCost(model, effort, models) {
   return +(models.models[model].price_out * models.effort_cost_multiplier[effort]).toFixed(2);
 }
 
-// Expected cost of finishing the task when starting at rung i and escalating on failure:
-// E(i) = cost(i) + (1 - p(i)) * (failure_penalty + E(i + 1)); E(last) = cost(last).
 export function expectedCosts(arms, penalty) {
   const e = new Array(arms.length);
   for (let i = arms.length - 1; i >= 0; i--) {
-    e[i] = i === arms.length - 1 ? arms[i].cost : arms[i].cost + (1 - arms[i].mean) * (penalty + e[i + 1]);
+    const next = i === arms.length - 1 ? 0 : e[i + 1];
+    e[i] = arms[i].cost + (1 - arms[i].mean) * (penalty + next);
   }
   return e.map((x) => +x.toFixed(2));
 }
@@ -121,9 +128,12 @@ export function pick(opts, intel, outcomes = []) {
   const { taskType, source } = classify(opts, priors);
   const spec = priors.task_types[taskType];
   if (!spec) throw new Error(`unknown task type "${taskType}" (known: ${Object.keys(priors.task_types).join(", ")})`);
-  const risk = ["low", "med", "high"].includes(opts.risk) ? opts.risk : "med";
-  const target = priors.target_success[risk];
-  const counts = tally(outcomes);
+  const risk = opts.risk === undefined ? "med" : opts.risk;
+  if (!["low", "med", "high"].includes(risk)) throw new Error(`--risk must be low, med or high (got "${risk}")`);
+  const escalating = opts.rung !== undefined || opts.lastFailure !== undefined;
+  if (escalating && (opts.rung === undefined || opts.lastFailure === undefined)) throw new Error("--rung and --last-failure go together");
+  if (escalating && !FAILURE_KINDS.includes(opts.lastFailure)) throw new Error(`--last-failure must be one of ${FAILURE_KINDS.join(", ")}`);
+  const counts = tally(outcomes, models);
   // Fable rungs drop out unless allowed (it bills usage credits on some plans).
   const ladder = spec.ladder
     .map(([model, effort], i) => ({ model, effort, prior: spec.prior_success[i] }))
@@ -139,29 +149,31 @@ export function pick(opts, intel, outcomes = []) {
 
   let rung;
   let why;
-  if (opts.rung !== undefined && opts.lastFailure) {
-    const from = Math.max(0, Math.min(last, Number(opts.rung)));
+  if (escalating) {
+    const from = Number(opts.rung);
+    if (!Number.isInteger(from) || from < 0 || from > last) throw new Error(`--rung must be an integer from 0 to ${last}`);
     const kind = opts.lastFailure;
-    if (kind === "refusal" || kind === "infra") { rung = from; why = `${kind}: retry the same rung (native fallback handles it)`; }
+    if (kind === "refusal" || kind === "infra") { rung = from; why = `${kind}: retry the same rung (Claude Code's fallback handles it)`; }
     else if (kind === "capability" || kind === "context") {
-      rung = from + 1;
-      while (rung <= last && ladder[rung].model === ladder[from].model) rung += 1;
-      why = `${kind}: move to a different model`;
-    } else { rung = from + 1; why = "verify_fail: one rung up (same model first keeps the cache)"; }
+      const other = arms.find((a) => a.rung > from && a.model !== arms[from].model);
+      rung = other ? other.rung : from + 1;
+      why = other ? `${kind}: move to a different model` : `${kind}: no other model on this ladder, next rung`;
+    } else { rung = from + 1; why = "verify_fail: one rung up (effort before model)"; }
     if (rung > last) {
       return { taskType, classifiedBy: source, risk, exhausted: true, arms, note,
         next: "Ladder exhausted. Stop retrying: report the failing check and what was tried, or consult the advisor (/advisor) before another attempt." };
     }
   } else {
-    const bump = Math.min(last, (priors.risk_start_bump[risk] || 0) + (opts.size === "L" ? 1 : 0));
+    const proven = arms[0].informed && arms[0].mean >= priors.target_success.high;
+    const bump = Math.min(last, (risk === "high" && !proven ? 1 : 0) + (opts.size === "L" ? 1 : 0));
     let pool = arms.slice(bump);
     if (risk === "high") {
-      const safe = pool.filter((a) => a.mean >= target);
+      const safe = pool.filter((a) => a.mean >= priors.target_success.high);
       pool = safe.length ? safe : [pool.reduce((best, a) => (a.mean > best.mean ? a : best))];
     }
     rung = pool.reduce((best, a) => (a.expectedCost < best.expectedCost ? a : best)).rung;
     why = risk === "high"
-      ? `high risk: lowest expected cost among rungs with estimated success >= ${target} (or the best estimate)`
+      ? `high risk: lowest expected cost among rungs with estimated success >= ${priors.target_success.high} (or the best estimate)`
       : `lowest expected cost per completed task, counting escalation (start rung >= ${bump})`;
   }
   const arm = arms[rung];
@@ -172,15 +184,19 @@ export function pick(opts, intel, outcomes = []) {
     model: arm.model, modelId: models.models[arm.model].id, effort: arm.effort,
     estimate: +arm.mean.toFixed(3), samples: arm.n, informed: arm.informed, relCost: arm.cost, expectedCost: arm.expectedCost,
     why, note, advisor,
-    onFailure: `node scripts/route-model.mjs pick --task-type ${taskType} --rung ${rung} --last-failure <verify_fail|capability|context|refusal|infra>${opts.allowFable ? " --allow-fable" : ""}`,
+    onFailure: `node scripts/route-model.mjs pick --task-type ${taskType} --rung ${rung} --last-failure <${FAILURE_KINDS.join("|")}>${opts.allowFable ? " --allow-fable" : ""}`,
     arms,
   };
 }
 
+// Outcomes live in the main checkout (worktrees share it) and in ~/.svc for cross-repo learning.
 export function outcomeFiles(env = process.env, cwd = process.cwd(), home = os.homedir()) {
   if (env.SVC_MODEL_OUTCOMES) return env.SVC_MODEL_OUTCOMES.split(":").filter(Boolean);
   let top = cwd;
-  try { top = execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); } catch { /* not a repo */ }
+  try {
+    const common = execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+    top = path.dirname(common);
+  } catch { /* not a repo */ }
   return [path.join(top, ".svc", "model-outcomes.jsonl"), path.join(home, ".svc", "model-outcomes.jsonl")];
 }
 
@@ -234,25 +250,29 @@ function main(argv) {
   }
   if (cmd === "record") {
     const row = {
-      ts: new Date().toISOString(), task_type: args.taskType, skill: args.skill || null, model: args.model, effort: args.effort,
+      ts: new Date().toISOString(), task_type: args.taskType, skill: args.skill || null, model: args.model,
+      model_id: intel.models.models[args.model]?.id || null, effort: args.effort,
       rung: args.rung !== undefined ? Number(args.rung) : null, outcome: args.outcome, failure_kind: args.failureKind || null,
       signal: args.signal || null, tokens: args.tokens !== undefined ? Number(args.tokens) : null,
     };
-    if (!intel.priors.task_types[row.task_type] || !intel.models.models[row.model] || !intel.models.efforts.includes(row.effort) || !["pass", "fail"].includes(row.outcome)) {
-      process.stderr.write("route-model record: need --task-type <known> --model <haiku|sonnet|opus|fable> --effort <level> --outcome pass|fail\n");
+    if (!intel.priors.task_types[row.task_type] || !intel.models.models[row.model] || !intel.models.efforts.includes(row.effort) || !["pass", "fail"].includes(row.outcome)
+      || (row.failure_kind && !FAILURE_KINDS.includes(row.failure_kind))) {
+      process.stderr.write(`route-model record: need --task-type <known> --model <${Object.keys(intel.models.models).join("|")}> --effort <level> --outcome pass|fail [--failure-kind ${FAILURE_KINDS.join("|")}]\n`);
       return 2;
     }
-    fs.mkdirSync(path.dirname(files[0]), { recursive: true });
-    fs.appendFileSync(files[0], JSON.stringify(row) + "\n");
-    process.stdout.write(`recorded to ${files[0]}\n`);
+    for (const f of files) {
+      try { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.appendFileSync(f, JSON.stringify(row) + "\n"); }
+      catch (e) { process.stderr.write(`route-model record: could not write ${f}: ${e.message}\n`); }
+    }
+    process.stdout.write(`recorded to ${files.join(" and ")}\n`);
     return 0;
   }
   const outcomes = readOutcomes(files);
   if (cmd === "stats") {
     const rows = [];
+    const counts = tally(outcomes, intel.models);
     for (const [type, spec] of Object.entries(intel.priors.task_types)) {
       if (args.taskType && args.taskType !== type) continue;
-      const counts = tally(outcomes);
       spec.ladder.forEach(([m, e], i) => {
         const est = estimate(spec.prior_success[i], counts.get(armKey(type, m, e)), intel.priors);
         rows.push({ task_type: type, rung: i, model: m, effort: e, samples: est.n, estimate: +est.mean.toFixed(3), informed: est.informed });
@@ -267,7 +287,7 @@ function main(argv) {
   try {
     result = pick({ ...args, allowFable: args.allowFable || process.env.SVC_ROUTE_ALLOW_FABLE === "1" }, intel, outcomes);
   } catch (e) { process.stderr.write(`route-model: ${e.message}\n`); return 2; }
-  if (args.json) { process.stdout.write(JSON.stringify(result, null, 2) + "\n"); return 0; }
+  if (args.json) { process.stdout.write(JSON.stringify(result, null, 2) + "\n"); return result.exhausted ? 3 : 0; }
   if (result.exhausted) { process.stdout.write(`${result.taskType}: ${result.next}\n`); return 3; }
   process.stdout.write(`${result.taskType} (${result.classifiedBy}) -> model=${result.model} effort=${result.effort} rung=${result.rung} est=${result.estimate}${result.informed ? "" : " (prior)"}\n`);
   process.stdout.write(`why: ${result.why}${result.note ? `; ${result.note}` : ""}${result.advisor ? `; consider /advisor ${result.advisor}` : ""}\n`);
@@ -275,4 +295,6 @@ function main(argv) {
   return 0;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) process.exit(main(process.argv.slice(2)));
+// Main-module check that survives the symlinked install path (~/.claude/skills/...).
+const isMain = (() => { try { return Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
+if (isMain) process.exit(main(process.argv.slice(2)));

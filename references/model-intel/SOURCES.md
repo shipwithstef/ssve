@@ -29,7 +29,7 @@ Recorded outcomes (`.svc/model-outcomes.jsonl` in the repo, `~/.svc/model-outcom
 
 A source's opinion only moves a prior in proportion to how well its past claims predicted our own outcomes:
 
-1. Log each claim as a signal row in `signals.jsonl`: `{date, source, kind: official|benchmark|reviewer, model, task_type, claim: better|worse|same, vs_model, url}`.
+1. Log each claim as a signal row in `references/model-intel/signals.jsonl` (create it on first use): `{date, source, kind: official|benchmark|reviewer, model, task_type, claim: better|worse|same, vs_model, url}`.
 2. When our outcomes for that `task_type` and model pair reach `min_samples`, mark each earlier claim as confirmed or contradicted.
 3. Weight = confirmed / (confirmed + contradicted), with a floor of 0.2 for sources not yet checked. Sources that keep contradicting our data fade out on their own.
 

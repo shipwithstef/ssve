@@ -21,7 +21,7 @@ bash <SKILLS_PATH>/scripts/resolve-model.sh STRAT --json
 node <SKILLS_PATH>/scripts/route-model.mjs pick --skill <skill> [--risk low|med|high] [--size S|M|L] --json
 ```
 
-Pass the returned `model` and `effort` to the Agent call. When the stage's deterministic check fails (tests, validators, receipt check, review FAIL), re-pick with the printed `--rung N --last-failure <kind>`: the first escalation raises effort on the same model (keeps the prompt cache), the second changes model, and an exhausted ladder means stop and report rather than retry. After each stage verdict, record it so the estimates learn:
+Pass the returned `model` and `effort` to the Agent call. When the stage's deterministic check fails (tests, validators, receipt check, review FAIL), re-pick with the printed `--rung N --last-failure <kind>`: the usual first escalation raises effort on the same model (the cheaper step), the next changes model, and an exhausted ladder means stop and report rather than retry. A fresh subagent starts its own prompt cache either way; to keep a failed subagent's context, resume it with SendMessage instead of starting a new one. After each stage verdict, record it so the estimates learn:
 
 ```bash
 node <SKILLS_PATH>/scripts/route-model.mjs record --task-type <type> --model <m> --effort <e> --rung <n> --outcome pass|fail [--failure-kind <kind>] --signal <check>

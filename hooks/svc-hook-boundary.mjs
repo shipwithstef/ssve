@@ -228,9 +228,13 @@ async function boundaryRuntimeSource() {
 async function main() {
   const mode = resolveHookMode();
   hookPolicyWarning(mode);
-  // Per-repo switch (scripts/svc-repo.mjs off): skip svc hooks in advisory mode only;
-  // a repository setting never lowers enforcement.
-  if (process.env.SVC_REPO_MODE === "off" && mode.mode !== "enforce") { process.stdout.write("{}\n"); return; }
+  // Per-repo switch (scripts/svc-repo.mjs off): skip svc hooks in advisory mode only.
+  // Repo settings can also set env, so the owner's policy file is checked directly:
+  // an owner "enforce" always wins over a repository switch.
+  if (process.env.SVC_REPO_MODE === "off" && mode.mode !== "enforce" && resolveHookMode({}, process.env.HOME || os.homedir()).mode !== "enforce") {
+    process.stdout.write("{}\n");
+    return;
+  }
   const marker = process.argv.slice(2, process.argv.indexOf("--spec")).join(" ") || "svc-hook";
   let spec;
   try { spec = decodeSpec(process.argv[process.argv.indexOf("--spec") + 1]); }

@@ -22,8 +22,8 @@ test("off hides every svc skill from the listing but keeps /name; on restores ex
   assert.ok(skills.every((s) => off.skillOverrides[s] === "user-invocable-only"));
   assert.equal(off.skillOverrides["my-own"], "off");
   assert.deepEqual(describe(off, skills), { hooks: "off", skills_hidden: skills.length, skills_total: skills.length });
-  const on = applyOn(off, skills);
-  assert.deepEqual(on, { model: "opus", skillOverrides: { "my-own": "off" }, env: { FOO: "1" } });
+  const on = applyOn(applyOff(off, skills), skills);
+  assert.deepEqual(on, before, "on restores the user's own overrides, even after off twice");
   assert.ok(Object.values(applyOff({}, skills, { hard: true }).skillOverrides).every((v) => v === "off"));
 });
 
@@ -42,14 +42,29 @@ test("CLI writes the repo's local settings by default and shared settings with -
   assert.equal(run("bogus").status, 2);
 });
 
+test("settings symlinked to a dotfiles repo stay symlinks", () => {
+  const repo = tmp("svc-repo-link-");
+  spawnSync("git", ["init", "-q", repo]);
+  fs.mkdirSync(path.join(repo, ".claude"));
+  const real = path.join(repo, "real.json");
+  fs.writeFileSync(real, "{}");
+  fs.symlinkSync(real, path.join(repo, ".claude/settings.local.json"));
+  assert.equal(spawnSync(process.execPath, [script, "off", "--dir", repo]).status, 0);
+  assert.ok(fs.lstatSync(path.join(repo, ".claude/settings.local.json")).isSymbolicLink());
+  assert.equal(JSON.parse(fs.readFileSync(real, "utf8")).env.SVC_REPO_MODE, "off");
+});
+
 test("hook boundary skips svc hooks when the repo is off in advisory mode, but not in enforce mode", () => {
   const home = tmp("svc-repo-home-");
   const marker = path.join(home, "child-ran");
   const child = path.join(home, "child.mjs");
   fs.writeFileSync(child, `import fs from "node:fs"; fs.writeFileSync(${JSON.stringify(marker)}, "1"); process.stdout.write("{}");`);
   const spec = Buffer.from(JSON.stringify({ command: `'${process.execPath}' '${child}'`, host: "claude", event: "Stop", timeoutMs: 5000 })).toString("base64url");
-  const run = (mode) => {
+  const run = (mode, ownerPolicy) => {
     fs.rmSync(marker, { force: true });
+    fs.mkdirSync(path.join(home, ".svc"), { recursive: true });
+    if (ownerPolicy) fs.writeFileSync(path.join(home, ".svc/hook-policy.json"), JSON.stringify({ mode: ownerPolicy }));
+    else fs.rmSync(path.join(home, ".svc/hook-policy.json"), { force: true });
     const env = { ...process.env, HOME: home, SVC_REPO_MODE: "off", SVC_SESSION_ID: `repo-switch-${mode}` };
     delete env.SVC_HOOK_MODE;
     if (mode) env.SVC_HOOK_MODE = mode;
@@ -62,4 +77,6 @@ test("hook boundary skips svc hooks when the repo is off in advisory mode, but n
   assert.equal(advisory.r.stdout.trim(), "{}");
   const enforce = run("enforce");
   assert.equal(enforce.ran, true, "enforce mode ignores the repo switch");
+  const owner = run("advisory", "enforce");
+  assert.equal(owner.ran, true, "an owner enforce policy wins even when repo env says advisory");
 });

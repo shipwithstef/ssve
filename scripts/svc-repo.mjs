@@ -39,27 +39,41 @@ function readJson(file) {
 
 function writeJson(file, obj) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
+  // Write through a symlinked settings file (dotfile managers) instead of replacing the link.
+  try { file = fs.realpathSync(file); } catch { /* new file */ }
   const tmp = `${file}.${process.pid}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify(obj, null, 2) + "\n");
   fs.renameSync(tmp, file);
 }
 
+// Earlier values of svc skills' overrides are kept in env.SVC_REPO_SAVED so "on" restores them.
 export function applyOff(settings, skills, { hard = false } = {}) {
   const out = structuredClone(settings);
   out.skillOverrides = { ...(out.skillOverrides || {}) };
-  for (const s of skills) out.skillOverrides[s] = hard ? "off" : "user-invocable-only";
+  const saved = out.env?.SVC_REPO_SAVED ? JSON.parse(out.env.SVC_REPO_SAVED) : {};
+  for (const s of skills) {
+    if (out.skillOverrides[s] !== undefined && !(s in saved) && out.env?.SVC_REPO_MODE !== "off") saved[s] = out.skillOverrides[s];
+    out.skillOverrides[s] = hard ? "off" : "user-invocable-only";
+  }
   out.env = { ...(out.env || {}), SVC_REPO_MODE: "off" };
+  if (Object.keys(saved).length) out.env.SVC_REPO_SAVED = JSON.stringify(saved);
   return out;
 }
 
 export function applyOn(settings, skills) {
   const out = structuredClone(settings);
+  const saved = out.env?.SVC_REPO_SAVED ? JSON.parse(out.env.SVC_REPO_SAVED) : {};
   if (out.skillOverrides) {
-    for (const s of skills) if (OFF_VALUES.has(out.skillOverrides[s])) delete out.skillOverrides[s];
+    for (const s of skills) {
+      if (!OFF_VALUES.has(out.skillOverrides[s])) continue;
+      if (s in saved) out.skillOverrides[s] = saved[s];
+      else delete out.skillOverrides[s];
+    }
     if (!Object.keys(out.skillOverrides).length) delete out.skillOverrides;
   }
   if (out.env) {
     delete out.env.SVC_REPO_MODE;
+    delete out.env.SVC_REPO_SAVED;
     if (!Object.keys(out.env).length) delete out.env;
   }
   return out;
@@ -92,8 +106,15 @@ function main(argv) {
   const before = readJson(file);
   const after = cmd === "off" ? applyOff(before, skills, { hard: has("--hard") }) : applyOn(before, skills);
   writeJson(file, after);
-  process.stdout.write(`svc ${cmd} for ${root} (${path.relative(root, file)}). Takes effect in the next session${cmd === "off" ? "; /skill-name still works unless --hard" : ""}.\n`);
+  process.stdout.write(`svc ${cmd} for ${root} (${path.relative(root, file)}). Takes effect in the next session.\n`);
+  if (cmd === "off") process.stdout.write(`/skill-name still works${has("--hard") ? " only after svc on" : ""}. Still loaded: the always-on rules in ~/.claude/rules and the svc agent descriptions (uninstall or disable those globally if you need zero svc context).\n`);
+  const other = has("--shared") ? files.local : files.shared;
+  if (cmd === "on" && describe(readJson(other), skills).hooks === "off") {
+    process.stdout.write(`Note: ${path.relative(root, other)} still turns svc off; run "on${has("--shared") ? "" : " --shared"}" to clear it.\n`);
+  }
   return 0;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) process.exit(main(process.argv.slice(2)));
+// Main-module check that survives the symlinked install path (~/.claude/skills/...).
+const isMain = (() => { try { return Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
+if (isMain) process.exit(main(process.argv.slice(2)));

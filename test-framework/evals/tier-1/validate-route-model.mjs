@@ -37,11 +37,37 @@ test("classification: explicit, then skill, then request text, then exec", () =>
   assert.equal(classify({ text: "plan how to implement billing" }, intel.priors).taskType, "plan");
   assert.equal(classify({ text: "review the plan for the importer" }, intel.priors).taskType, "review");
   assert.equal(classify({}, intel.priors).taskType, "exec");
+  // review negatives: words that only look like security or explore
+  assert.notEqual(classify({ text: "update the author field in package.json" }, intel.priors).taskType, "security");
+  assert.notEqual(classify({ text: "refactor to use dependency injection" }, intel.priors).taskType, "security");
+  assert.notEqual(classify({ text: "fix the typo in the auth docs" }, intel.priors).taskType, "security");
+  assert.equal(classify({ text: "summarize the security audit" }, intel.priors).taskType, "security");
+  assert.equal(classify({ text: "find why the login fails" }, intel.priors).taskType, "debug");
+});
+
+test("bad escalation input is an error, never a silent fresh pick", () => {
+  assert.throws(() => pick({ taskType: "exec", rung: 1 }, intel), /go together/);
+  assert.throws(() => pick({ taskType: "exec", rung: "abc", lastFailure: "verify_fail" }, intel), /integer/);
+  assert.throws(() => pick({ taskType: "exec", rung: 0, lastFailure: "verify-fail" }, intel), /must be one of/);
+  assert.throws(() => pick({ taskType: "exec", risk: "medium" }, intel), /risk/);
+});
+
+test("capability failure on a one-model ladder moves up instead of ending", () => {
+  const d = pick({ taskType: "debug", rung: 0, lastFailure: "capability" }, intel);
+  assert.equal(d.exhausted, false);
+  assert.equal(d.rung, 1);
+});
+
+test("an arm keeps its prior until min_samples, and evidence resets when the alias points at a new model", () => {
+  const two = rows("exec", "sonnet", "medium", 0, 2);
+  assert.equal(pick({ taskType: "exec" }, intel, two).rung, 0, "two failures are not enough evidence");
+  const stale = rows("exec", "sonnet", "medium", 0, 20).map((r) => ({ ...r, model_id: "claude-sonnet-old" }));
+  assert.equal(pick({ taskType: "exec" }, intel, stale).rung, 0, "outcomes on an older model id do not count");
 });
 
 test("expected cost counts escalation: E(i) = c(i) + (1-p(i)) * (penalty + E(i+1))", () => {
   const e = expectedCosts([{ cost: 10, mean: 0.5 }, { cost: 20, mean: 0.9 }], 10);
-  assert.deepEqual(e, [25, 20]);
+  assert.deepEqual(e, [25.5, 21], "a failure past the last rung still costs the penalty");
 });
 
 test("first pick starts cheap when retry is cheap, and higher for high risk or large work", () => {
@@ -58,6 +84,7 @@ test("escalation: verify_fail raises effort on the same model first; capability 
   assert.equal(v.advisor, "opus");
   const c = pick({ taskType: "exec", rung: 0, lastFailure: "capability" }, intel);
   assert.equal(c.model, "opus");
+  assert.equal(pick({ taskType: "exec", rung: 0, lastFailure: "context" }, intel).model, "opus");
   assert.equal(pick({ taskType: "exec", rung: 1, lastFailure: "infra" }, intel).rung, 1);
   assert.equal(pick({ taskType: "exec", rung: 1, lastFailure: "refusal" }, intel).rung, 1);
 });
@@ -99,11 +126,15 @@ test("record appends a valid row and rejects an invalid one; stats reads it back
   const dir = tmp();
   const file = path.join(dir, "outcomes.jsonl");
   const env = { SVC_MODEL_OUTCOMES: file };
+  const recordedModelId = intel.models.models.sonnet.id;
   const ok = cli(["record", "--task-type", "exec", "--model", "sonnet", "--effort", "medium", "--outcome", "fail", "--failure-kind", "verify_fail", "--signal", "tests", "--rung", "0"], env);
   assert.equal(ok.status, 0, ok.stderr);
   const row = JSON.parse(fs.readFileSync(file, "utf8").trim());
   assert.equal(row.signal, "tests");
   assert.equal(row.rung, 0);
+  assert.equal(row.model_id, recordedModelId);
+  const badKind = cli(["record", "--task-type", "exec", "--model", "sonnet", "--effort", "medium", "--outcome", "fail", "--failure-kind", "oops"], env);
+  assert.equal(badKind.status, 2);
   const bad = cli(["record", "--task-type", "exec", "--model", "gpt", "--effort", "medium", "--outcome", "pass"], env);
   assert.equal(bad.status, 2);
   const stats = cli(["stats", "--task-type", "exec", "--json"], env);

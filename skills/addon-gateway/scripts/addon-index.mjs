@@ -12,6 +12,7 @@
 // else ~/.svc/external-skills/*/skills and ~/.agents/skills.
 
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import os from "node:os";
 import path from "node:path";
 
@@ -29,7 +30,7 @@ export function addonRoots(env = process.env, home = os.homedir()) {
 }
 
 export function readFrontmatter(text) {
-  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  const m = text.replace(/^\uFEFF/, "").match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!m) return {};
   const fm = m[1];
   const name = fm.match(/^name:\s*["']?([^"'\n]+)["']?\s*$/m)?.[1]?.trim();
@@ -37,15 +38,14 @@ export function readFrontmatter(text) {
   const d = fm.match(/^description:\s*(.*)$/m);
   if (d) {
     const first = d[1].trim();
-    if (first && !/^[>|][-+]?$/.test(first)) desc = first.replace(/^["']|["']$/g, "");
-    else {
-      const lines = [];
-      for (const line of fm.slice(d.index + d[0].length).split(/\r?\n/).slice(1)) {
-        if (/^\S/.test(line)) break;
-        lines.push(line.trim());
-      }
-      desc = lines.join(" ").trim();
+    const block = /^[>|][-+]?$/.test(first);
+    const lines = block ? [] : [first];
+    // Folded/literal blocks and plain multi-line scalars both continue on indented lines.
+    for (const line of fm.slice(d.index + d[0].length).split(/\r?\n/).slice(1)) {
+      if (!/^\s+\S/.test(line)) break;
+      lines.push(line.trim());
     }
+    desc = lines.join(" ").trim().replace(/^["']|["']$/g, "");
   }
   return { name, description: desc };
 }
@@ -60,7 +60,12 @@ export function buildIndex(roots) {
     for (const dir of dirs) {
       const file = path.join(root, dir, "SKILL.md");
       let text;
-      try { text = fs.readFileSync(file, "utf8"); } catch { continue; }
+      try {
+        // A SKILL.md that resolves outside its pack root (a symlink elsewhere) is not listed.
+        const real = fs.realpathSync(file);
+        if (!real.startsWith(fs.realpathSync(root) + path.sep)) continue;
+        text = fs.readFileSync(real, "utf8");
+      } catch { continue; }
       const { name, description } = readFrontmatter(text);
       const id = name || dir;
       if (seen.has(id)) continue;
@@ -102,4 +107,6 @@ function main(argv) {
   return 0;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) process.exit(main(process.argv.slice(2)));
+// Main-module check that survives the symlinked install path (~/.claude/skills/...).
+const isMain = (() => { try { return Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
+if (isMain) process.exit(main(process.argv.slice(2)));

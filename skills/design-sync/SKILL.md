@@ -76,7 +76,7 @@ Read, in this order and only what the mode needs: the repo's token sources (CSS 
 
 ## sync-back
 
-1. Update `docs/design/tokens.json` from the chosen design (read the Design System's `project/tokens.json`), then generate CSS: `node <SKILLS_PATH>/scripts/design-tokens.mjs export docs/design/tokens.json --out <the repo's token css>`.
+1. Update `docs/design/tokens.json` from the chosen design (read the Design System's `project/tokens.json`), then generate a **new** CSS file: `node <SKILLS_PATH>/scripts/design-tokens.mjs export docs/design/tokens.json --out docs/design/tokens.generated.css`. It keeps the source's root (`:root` or Tailwind `@theme`) and dark-mode mechanism, and refuses to overwrite a file it did not generate. Import the generated file from the app's stylesheet, or copy changed values into the hand-written token file. Variables that are not tokens (z-index, durations, color-mix) stay in your own CSS.
 2. Code changes beyond tokens (components, layout) go through the normal svc chain: `route-workflow` → write-spec / plan-changeset with the chosen artboards as the design reference. Re-run `contrast` and the repo's visual checks before landing.
 
 ## storyboard (ad video motion)

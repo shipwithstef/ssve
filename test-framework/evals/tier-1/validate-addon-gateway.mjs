@@ -29,6 +29,8 @@ test("frontmatter parsing handles folded and quoted descriptions", () => {
   assert.deepEqual(readFrontmatter('---\nname: a\ndescription: "One line."\n---\n'), { name: "a", description: "One line." });
   assert.equal(readFrontmatter("---\nname: b\ndescription: >\n  Two\n  lines.\nother: x\n---\n").description, "Two lines.");
   assert.deepEqual(readFrontmatter("no frontmatter"), {});
+  assert.equal(readFrontmatter("\uFEFF---\nname: c\ndescription: x\n---\n").name, "c");
+  assert.equal(readFrontmatter("---\nname: d\ndescription: When the user wants\n  to do things.\n---\n").description, "When the user wants to do things.");
 });
 
 test("roots come from SVC_ADDON_ROOTS, else ~/.svc/external-skills/*/skills and ~/.agents/skills", () => {
@@ -48,6 +50,15 @@ test("index lists every skill once, with the pack name, and stays compact", () =
   assert.equal(out.status, 0, out.stderr);
   assert.match(out.stdout, /^### marketingskills \(3\)/m);
   assert.match(out.stdout, /- cro: Optimize conversions on pages and forms\./);
+});
+
+test("a SKILL.md that resolves outside its pack is not listed", () => {
+  const { skills } = pack();
+  fs.mkdirSync(path.join(skills, "escape"));
+  const outside = path.join(os.tmpdir(), `addon-outside-${process.pid}.md`);
+  fs.writeFileSync(outside, "---\nname: escape\ndescription: x\n---\n");
+  fs.symlinkSync(outside, path.join(skills, "escape", "SKILL.md"));
+  assert.ok(!buildIndex([skills])[0].skills.some((s) => s.name === "escape"));
 });
 
 test("--path resolves one playbook and fails cleanly on an unknown name", () => {
@@ -71,6 +82,8 @@ test("the skill injects the index at invocation and loads one playbook, not the 
   assert.match(skill, /!`node "\$\{CLAUDE_SKILL_DIR\}\/scripts\/addon-index\.mjs"`/);
   assert.match(skill, /--path <name>/);
   assert.match(skill, /never load the whole pack/);
+  // The inline command runs only if allowed-tools pre-approves exactly that command.
+  assert.match(skill, /^allowed-tools: 'Bash\(node "\$\{CLAUDE_SKILL_DIR\}\/scripts\/addon-index\.mjs"\*\)'$/m);
   const desc = skill.match(/^description: >\n([\s\S]*?)\n[a-z-]+:/m)[1].replace(/\s+/g, " ").trim();
   assert.ok(desc.length <= 400, `description ${desc.length} chars`);
 });

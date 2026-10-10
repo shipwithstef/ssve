@@ -6,6 +6,7 @@ description: >
   email, launch, pricing, prospecting, churn…) without listing every add-on skill. Use for a
   named add-on skill or marketing execution work. Not svc's own marketing context (analyze-marketing).
 argument-hint: "[add-on skill name] [task]"
+allowed-tools: 'Bash(node "${CLAUDE_SKILL_DIR}/scripts/addon-index.mjs"*)'
 inputs:
   required:
     - { artifact: user-request, note: "The marketing or add-on task, optionally naming the add-on skill." }
