@@ -753,8 +753,8 @@
     {
       "skill": "execute-changeset",
       "path": "skills/execute-changeset/SKILL.md",
-      "content_hash": "6895d99ecd12458ad73134d1fe7f1def16ae4bda521b6ed93c0f5755bf47de12",
-      "description": "Execute a plan-changeset manifest and task graph, then record execution receipts. Use for \"execute the plan\", \"implement the changeset\", \"run the tasks\", \"start building\" once a plan manifest exists.",
+      "content_hash": "74a55ebd96a4a2d0da61c3668a76fde65b506dc3dc2a8f5dcc2a54a0e0810683",
+      "description": "Use after plan-changeset has produced a manifest and task graph. Triggers on \"execute the plan\", \"implement the changeset\", \"run the tasks\", \"start building\", or when a plan-changeset manifest exists and is ready for execution.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
