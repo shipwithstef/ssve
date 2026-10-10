@@ -181,6 +181,8 @@ function main() {
     let text = "";
     const rulesRoot = process.env.SVC_RULES_ROOT || SVC_ROOT;
     try { text = readFileSync(path.join(rulesRoot, e.path), "utf8"); } catch { continue; }
+    // Registry metadata (scope/stack/source_sha/paths) is for tooling, not the model.
+    text = text.replace(/^\uFEFF?---\r?\n[\s\S]*?\r?\n---\r?\n+/, "");
     if (ctx.length + text.length + 64 <= BUDGET) {
       ctx += `\n--- ${e.path} ---\n${text}\n`;
     } else {
