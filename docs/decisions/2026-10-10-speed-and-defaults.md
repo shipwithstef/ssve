@@ -155,13 +155,17 @@ All 28 agents now use `opus`, `sonnet` or `haiku`. Claude Code resolves these to
 - The commit-attribution fallback, which is owner policy.
 - The registry's generated table.
 
-**Confidence:** high. **Rollback:** restore the pins.
+**Confidence:** medium. Aliases move every agent to a new family model on release, with no outcome check (reviewer finding O-002).
+
+**Revisit trigger:** on each model-family release that `harness-drift` reports, run the Tier-2 scenarios for the reviewer agents (`plan-reviewer`, `strategic-reviewer`, `svc-lens-*`) on the old pin and on the alias. Pin back any agent whose catch rate drops.
+
+**Rollback:** restore that agent's pin in `agents/<name>.md` and run `scripts/sync-native-agents.mjs`.
 
 ### D1, D3, D5, D6, D8 (decided: hold, with triggers)
 
 - **D1. Keep the four retire candidates.** No usage data, and archiving touches 245 references. Trigger: `/skill-doctor` shows near-zero invocation over 30 days.
 - **D3. Rules on Codex, Grok, Kimi and Cursor are unchanged.** Their per-turn loading behaviour is unverified here, and trimming without proof risks quality. Trigger: a host is installed and its rule loading is measured.
-- **D5. Concern globs are unchanged.** Tightening them moves routing pins for a small noise gain. Trigger: injection noise appears in the mirror ledger.
+- **D5. Concern globs are unchanged.** Tightening them moves routing pins for a small noise gain. Trigger: more than 2 concern injections per 10 edits in `.svc/rule-injection-log*` on a normal feature WI, or one owner report of an irrelevant concern.
 - **D6. Hooks that do little are unchanged:**
   - `svc-vibe-auditor` is already async, so it adds no wall time.
   - `svc-rule-injector-explore` does inject rule pointers on Read, and removing it would trade quality for 87 ms. H3 is the fix that makes it free.
@@ -170,4 +174,12 @@ All 28 agents now use `opus`, `sonnet` or `haiku`. Claude Code resolves these to
 
 ## Adversarial review
 
-See the strategic-reviewer findings appended below.
+**Verdict:** approve with fixes, from the strategic-reviewer run on 2026-10-10.
+
+- **Applied:** O-002, a trigger and rollback gate for D7; O-005, a concrete trigger for D5.
+- **Confirmed by the reviewer:** H4 and D4. The H4 test (`validate-svc-repo-switch.mjs`, last case) asserts that an attempt to lower the mode is ignored.
+- **Recorded as pre-existing, not changed here (O-001):**
+  - The dispatcher keeps the pre-provisioning `repo` root when it evaluates crash-recovery self-heal after auto-provisioning (`svc-codex-pretool-dispatcher.mjs`, the `b?.worktree&&!boot` block).
+  - The memo is not involved: it clears on provisioning.
+  - Whether the stale root can change `gate.wi` needs tracing in `pretool-decision-engine.mjs`. That is authority code, so it gets its own WI with a regression test, not a drive-by change.
+- **Not verified by the reviewer:** the benchmark numbers. They come from `scratchpad/hookbench` on this container and must be re-run before H3 ships.
