@@ -268,11 +268,11 @@ deferred. "iOS is unproven" is too coarse and hides the part that genuinely was 
 
 ## 4a3 · 🔴 THE INDEX IS THE MAP. THE PLAN IS THE ROUTE. Do not size one by the other.
 
-See references/stage-rules-detail.md for the full "4a3 · 🔴 THE INDEX IS THE MAP. THE PLAN IS THE ROUTE. Do not size one by the other." section (moved verbatim).
+**Index is the map, plan is the route** — Size the index by the whole scope (used to check impact) and the plan and ACs by what CHANGES (one task per modified surface, not one per row that merely exists). Do NOT let the plan inherit the audit's enumeration denominator. An index correction does NOT invalidate the plan unless it touches a file the plan modifies, so check a new path for impact and move on rather than re-planning. If the task count tracks scope size instead of diff size, the plan is describing the territory, not the journey. Details: `references/stage-rules-detail.md`.
 
 ## 4b · 🔴 `implement` IS FOUR STEPS — and nothing mechanical catches you skipping two
 
-See references/stage-rules-detail.md for the full "4b · 🔴 `implement` IS FOUR STEPS — and nothing mechanical catches you skipping two" section (moved verbatim).
+**`implement` is four steps** — plan (`plan-changeset`, every screen-spec `UI-<WI>-NN` row maps to a task with DONE-conditions), review the plan (`review-plan`, before any code), execute (`execute-changeset`), review the diff (`review-exec`, the section-8 pair). The validator does NOT check plans, so steps 1 and 2 are the ones that get dropped: the `implement` receipt evidence MUST include the plan manifest path and the `review-plan` artifact path (repo-local, checked with `git ls-files --error-unmatch` before the receipt is written); a receipt citing only code has not done them. Tier the model by step: high for plan, review-plan and review-exec, a cheap model at MAX effort for execute (declared, not inherited; with Codex, `gpt-5.6-luna` max for step 3 and `gpt-5.6-sol high` for 1, 2, 4). If execution needs judgement, the plan was under-specified: fix and record the plan, never raise the execution tier. Details: `references/stage-rules-detail.md`.
 
 ## 4c · AN OPERATIONAL CHANGE NEEDS A RECEIPT — it leaves no diff
 
@@ -302,15 +302,15 @@ the **only** one with no artifact — which makes it the one most in need of a w
 
 ## 4d · REVIEWER LADDER — a declared list, and every rung on it CLOSES
 
-See references/stage-rules-detail.md for the full "4d · REVIEWER LADDER — a declared list, and every rung on it CLOSES" section (moved verbatim).
+**Reviewer ladder** — Declare `REVIEWERS` up front in priority order (the other vendor first, then the own vendor as `@subagent`; flipped when the executor is Codex), since `resolve-adversarial-reviewer.sh` does no availability probe and has no fallback. Every entry is a full `vendor-model-effort` tuple, declared never inherited, and the fallback names the strongest model available; the receipt records the resolved tuple. Every rung on the list closes the story (no provisional flag or debt); if none is left the stage stays `pending` with reason `reviewer_unavailable`. `REVIEW_UNAVAILABLE=<entry>:<timestamp>` means skip with no retry until then. NEVER use the main loop as the reviewer: the fallback is a separate fresh-context adversarial agent, self-review is not on the list. Record `review_family: cross|same` and `model_attestation.observed_models`; silent substitution of a weaker reviewer is the only unacceptable outcome. Details: `references/stage-rules-detail.md`.
 
 ## 7 · PARALLEL STREAMS — what is shared, and what must never be
 
-See references/stage-rules-detail.md for the full "7 · PARALLEL STREAMS — what is shared, and what must never be" section (moved verbatim).
+**Parallel streams** — When two stories run at once: (a) index freshness is two-tier, so a moved file the index cites is a HARD FAIL (re-walk, re-stamp) while an in-scope file it never cites is a SOFT WARN that never blocks; (b) the phone is an exclusive lease via `.svc/device-lease.json` (`{holder, wi, expires_at}`, 30 min TTL), so if someone else holds it do NOT queue or wait, leave `device-proof` `pending` and continue, but it still blocks STORY ALIGNED at the end, and build the APK to a per-stream path with the build id in screenshot names; (c) one session republishes each canonical twin (e.g. the QA companion) once after both streams land, streams only edit the repo file and record the receipt; (d) `.svc/*.jsonl` ledgers are append-only (use `merge=union`, never resolve by taking one side), assign each stream a migration timestamp range, and declare one owner per shared surface; (e) the handoff prompt MUST state the shared-surface owner, migration range and device rule. Details: `references/stage-rules-detail.md`.
 
 ## 8 · EVERY REVIEW IS TWO PASSES, PAIRED — never the diff alone
 
-See references/stage-rules-detail.md for the full "8 · EVERY REVIEW IS TWO PASSES, PAIRED — never the diff alone" section (moved verbatim).
+**Every review is two passes, paired** — Run back to back: Pass 1 EXACT reviews `git diff main..HEAD` plus spec and ACs; Pass 2 FULL reviews `docs/specs/relations/<scope>.branches.md` plus the DECISION card, bounded by the diff's relation-neighbours (callers, counters, promises, journeys and tests, data, auth) and hunting for absence: what the change should have touched and did not. The same scoping applies to self-review. FREEZE THE TARGET BEFORE ANY EXTERNAL PASS: the reviewer reviews a named SHA that does not move during the review (freeze, review, remediate, re-freeze, review), with at most two remediation rounds before you stop and report that the plan was wrong. Loop pass 1 until two runs find nothing new, then pass 2 until dry, record what you considered and rejected, and stamp the artifact with `Reviewed-diff-at`, `Reviewed-index-at` and both `## Pass 1` and `## Pass 2` sections; an artifact with no Pass 2 has not reviewed the feature. Details: `references/stage-rules-detail.md`.
 
 ## Never
 
