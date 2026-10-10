@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "compiled_from": {
-    "manifest_sha256": "9b5f3d0a71ee37f34ce5ee9ccd1911a6360fd0803bfab67c3be7ae6b84ddfef9",
+    "manifest_sha256": "539b128da178550bb9c14c24d7ee11b0f26c2805597085b5987187faec46e54b",
     "overrides_sha256": "14fa674603c6a84ddf5b2673fe072778aa69cfd415d3d58e55adf4486a685249",
     "concern_registry_sha256": "6c336c8832c4907ee78413a2b7d377b790bb55bba180783d2164892a130ea507"
   },
@@ -11,6 +11,24 @@
       "path": "skills/ad-video-script/SKILL.md",
       "content_hash": "1609263d179ba1ca30a3742fdf35707fc2db03a79a28a4692f1b3bde81800bfb",
       "description": "Writes performance ad-video scripts plus a render-ready beat sheet (about 10s beats with frame and motion prompts) for produce-ad-video. Use for \"ad video script\", \"video ad\", \"UGC script\", \"60 second ad\". Not for editing an existing cut; use produce-ad-video.",
+      "aliases": [],
+      "positive_triggers": [],
+      "negative_triggers": [],
+      "domains": [],
+      "actions": [],
+      "objects": [],
+      "repo_signals": [],
+      "lane_roles": [],
+      "invocation_policy": "suggest-only",
+      "risk": "low",
+      "requires": [],
+      "required_rules": []
+    },
+    {
+      "skill": "addon-gateway",
+      "path": "skills/addon-gateway/SKILL.md",
+      "content_hash": "64c3f8eb47cfd2b59bb35e227da79b93f3c5661e63472839da45cb10a5b90337",
+      "description": "Run one playbook from an installed add-on pack (coreyhaines marketing: CRO, copy, SEO, ads, email, launch, pricing, prospecting, churn…) without listing every add-on skill. Use for a named add-on skill or marketing execution work. Not svc's own marketing context (analyze-marketing).",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
@@ -533,6 +551,24 @@
       "path": "skills/design-logo/SKILL.md",
       "content_hash": "cc57874304dc4744a34e239b22cf296dcf2bdb365a203eb466960ac170a839cd",
       "description": "Design or redesign a logo, wordmark or favicon as a scalable SVG pack with iterative refinement and in-app-context checks. Use for \"design a logo\", \"make a logo\", \"redesign the logo\", \"logo is bad\", \"favicon\", \"wordmark\".",
+      "aliases": [],
+      "positive_triggers": [],
+      "negative_triggers": [],
+      "domains": [],
+      "actions": [],
+      "objects": [],
+      "repo_signals": [],
+      "lane_roles": [],
+      "invocation_policy": "suggest-only",
+      "risk": "low",
+      "requires": [],
+      "required_rules": []
+    },
+    {
+      "skill": "design-sync",
+      "path": "skills/design-sync/SKILL.md",
+      "content_hash": "e45c0bfc3c94c1a7763db0df1e70d19f49931835be33b265618db9cb17e81c73",
+      "description": "Import a product's existing design from code into Claude Design (design system + canvas), record why it looks the way it does, propose improvements as side-by-side artboards, and sync the chosen ones back to code. Also storyboards ad-video motion before rendering. Use for \"import our design\", \"put this in Claude Design\", \"improve our UI\", \"storyboard this ad\".",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
@@ -1636,7 +1672,7 @@
     {
       "skill": "route-workflow",
       "path": "skills/route-workflow/SKILL.md",
-      "content_hash": "c19ae7d985a110f6060a051b64bfb958e2f4714737b4287381e66f3cf30dec37",
+      "content_hash": "0e895c103753a2d26bed407f95e1d7f884fce06d97f2ead1278f096156cf9050",
       "description": "Routes a work request in an svc-onboarded repo to the right lane and next svc skill from repo state and artifacts. Use for 'build this', 'fix this', 'ship this', 'I want to', 'which skill do I run', 'what lane is this'. Not needed for questions, explanations or read-only lookups.",
       "aliases": [
         "what should I do next",

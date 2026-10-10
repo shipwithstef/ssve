@@ -31,6 +31,7 @@ Validator: `test-framework/evals/tier-1/validate-visual-skills-have-live-evidenc
 
 <!-- svc:generated:begin external-core-pack — edit skills-manifest.json / references/model-registry.json, then run: node scripts/generate-manifest-mirrors.mjs --write -->
 - `ad-video-script`
+- `addon-gateway`
 - `align-feature`
 - `analyze-competitors`
 - `analyze-domain`
@@ -60,6 +61,7 @@ Validator: `test-framework/evals/tier-1/validate-visual-skills-have-live-evidenc
 - `decide`
 - `define-code-style`
 - `design-logo`
+- `design-sync`
 - `design-tech`
 - `design-ui`
 - `design-ux`
@@ -207,7 +209,11 @@ git clone https://github.com/coreyhaines31/marketingskills.git ~/.svc/external-s
 cd ~/.svc/external-skills/marketingskills && git checkout 2815104d
 ```
 
-Central install: `~/.svc/external-skills/marketingskills` (per-skill symlinks into every harness skill dir: `~/.claude/skills`, `~/.codex/skills`, `~/.gemini/skills`, `~/.config/opencode/skills`, `~/.kimi/skills`)
+Central install: `~/.svc/external-skills/marketingskills`.
+
+**Recommended: gateway mode (no symlinks).** Keep only the clone. The `addon-gateway` skill lists the pack from disk when invoked and loads the one playbook a task needs, so the pack costs about 400 chars of skill listing per session instead of about 31K (46 descriptions, measured on v2.6.0). Nothing else to configure; set `SVC_ADDON_ROOTS` to use another location.
+
+**Alternatives:** a per-project toggleable plugin (`scripts/migrate-packs-to-plugins.sh`, WI-377), or per-skill symlinks into every harness skill dir (`~/.claude/skills`, `~/.codex/skills`, `~/.gemini/skills`, `~/.config/opencode/skills`, `~/.kimi/skills`). Both list every add-on description in every session where they are active. If you switch to gateway mode, remove the symlinks (the relink loop below shows which ones) or disable the plugin.
 
 **46 skills across 9 categories:**
 
@@ -238,6 +244,8 @@ for H in ~/.claude/skills ~/.codex/skills ~/.gemini/skills ~/.config/opencode/sk
 done
 ```
 A plain `git pull` is NOT enough across major versions — renamed skill dirs leave dangling host symlinks.
+
+In gateway mode, reach any of them through `addon-gateway <name>`.
 
 Use these only when installed:
 

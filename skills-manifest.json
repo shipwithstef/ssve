@@ -57,6 +57,7 @@
   },
   "includedSkills": [
     "ad-video-script",
+    "addon-gateway",
     "align-feature",
     "analyze-competitors",
     "analyze-domain",
@@ -86,6 +87,7 @@
     "decide",
     "define-code-style",
     "design-logo",
+    "design-sync",
     "design-tech",
     "design-ui",
     "design-ux",
