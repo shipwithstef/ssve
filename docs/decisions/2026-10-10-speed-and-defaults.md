@@ -37,6 +37,19 @@ A CPU profile of the dispatcher showed that 286 ms of its 435 ms went to `spawnS
 
 A V8 compile cache (`NODE_COMPILE_CACHE`) made no measurable difference, so module compilation is not the cost.
 
+## Measured result (scripts/hook-bench.mjs)
+
+Same throwaway governed repository, 5 runs per event. The base is commit 1b69e0d, before this change.
+
+| Event | Base | This branch | Change |
+|---|---|---|---|
+| PreToolUse:Edit | 648 ms | 335 ms | −48% |
+| PostToolUse:Edit | 313 ms | 222 ms | −29% |
+| Stop | 263 ms | 270 ms | no change |
+| Other events | | | within noise |
+
+`references/hook-budgets.json` now gates each event in units of one Node start. The base fails the PreToolUse:Edit gate.
+
 ## Decisions
 
 ### H1. Memoize repository-location git queries inside one hook decision (done)

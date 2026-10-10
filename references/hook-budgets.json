@@ -1,0 +1,22 @@
+{
+  "$comment": "Per-event hook budgets for scripts/hook-bench.mjs, in units of one bare Node start on the measuring machine, so they hold across machines. `events` is the regression gate, set about 25% above the 2026-10-10 measurement (after the git memo and if filters); a change that exceeds one must explain why. `target` is where the event should land once hook calls no longer start Node per call (decision record H3); lower `events` toward it as work lands.",
+  "measured_on": "2026-10-10",
+  "events": {
+    "PreToolUse:Edit": 14,
+    "PostToolUse:Edit": 10,
+    "PreToolUse:Bash": 6,
+    "PostToolUse:Bash": 5,
+    "PostToolUse:Read": 4.5,
+    "UserPromptSubmit": 6.5,
+    "Stop": 12
+  },
+  "target": {
+    "PreToolUse:Edit": 4,
+    "PostToolUse:Edit": 2,
+    "PreToolUse:Bash": 2,
+    "PostToolUse:Bash": 1,
+    "PostToolUse:Read": 1,
+    "UserPromptSubmit": 2,
+    "Stop": 4
+  }
+}

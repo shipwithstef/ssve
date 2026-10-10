@@ -1,0 +1,280 @@
+<title>Founder Cockpit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: an instrument panel. A fixed steering bar, a goal strip (layer 1), and one
+   expanded goal at a time whose cards open into layer 2 and layer 3 detail in place. */
+:root {
+  --bg: #eef1f3; --panel: #ffffff; --ink: #121a20; --muted: #5a6872; --line: #d5dce1;
+  --accent: #0b7d95; --accent-ink: #ffffff; --accent-soft: #dff1f5;
+  --ok: #1f8a4c; --warn: #b26a00; --crit: #c23a2b; --idle: #7d8a93;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1317; --panel: #151d23; --ink: #e6edf1; --muted: #93a3ad; --line: #26323a;
+  --accent: #46c6dd; --accent-ink: #06222a; --accent-soft: #123039;
+  --ok: #4cc27f; --warn: #e6a33a; --crit: #f0705f; --idle: #75848e; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d1317; --panel: #151d23; --ink: #e6edf1; --muted: #93a3ad; --line: #26323a;
+  --accent: #46c6dd; --accent-ink: #06222a; --accent-soft: #123039;
+  --ok: #4cc27f; --warn: #e6a33a; --crit: #f0705f; --idle: #75848e; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 80px; display: grid; gap: 22px }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance }
+h1 { font-size: 1.55rem; font-stretch: 112%; font-weight: 800; letter-spacing: -.01em }
+h2 { font-size: 1.05rem; font-weight: 700 }
+h3 { font-size: .95rem; font-weight: 700 }
+.label { font: 600 .68rem/1 var(--mono); letter-spacing: .09em; text-transform: uppercase; color: var(--muted) }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.muted { color: var(--muted) }
+button { font: inherit; cursor: pointer }
+button:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+/* header */
+.top { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: end; justify-content: space-between }
+.gauges { display: flex; flex-wrap: wrap; gap: 10px }
+.gauge { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px; min-width: 132px; display: grid; gap: 4px }
+.gauge b { font: 600 .95rem var(--mono) }
+.meter { height: 5px; background: var(--line); border-radius: 3px; overflow: hidden }
+.meter i { display: block; height: 100%; background: var(--accent) }
+
+/* steering */
+.steer { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; gap: 8px }
+.steer form { display: flex; gap: 8px; flex-wrap: wrap }
+.steer textarea { flex: 1 1 320px; min-width: 0; resize: vertical; min-height: 44px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 8px; padding: 10px; font: inherit }
+.btn { border: 0; border-radius: 8px; padding: 9px 14px; background: var(--accent); color: var(--accent-ink); font-weight: 700 }
+.btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line) }
+.btn:disabled { opacity: .5; cursor: default }
+.feed { display: grid; gap: 6px; max-height: 220px; overflow: auto }
+.entry { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; padding: 6px 0; border-top: 1px dashed var(--line) }
+.entry p { margin: 0; min-width: 0; overflow-wrap: anywhere }
+.reply { grid-column: 2; color: var(--muted); font-size: .9rem }
+
+/* goals */
+.goals { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px }
+.goal { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 8px; color: inherit }
+.goal[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft) }
+.goal .row { display: flex; align-items: center; gap: 10px; justify-content: space-between }
+.ring { --p: 0; width: 42px; height: 42px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: conic-gradient(var(--accent) calc(var(--p) * 1%), var(--line) 0); }
+.ring span { width: 32px; height: 32px; border-radius: 50%; background: var(--panel); display: grid; place-items: center; font: 600 .7rem var(--mono) }
+.pill { display: inline-flex; align-items: center; gap: 6px; font: 600 .7rem/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; padding: 4px 8px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap }
+.s-done { color: var(--ok) } .s-active { color: var(--accent) } .s-blocked, .s-gated { color: var(--warn) } .s-open, .s-planned { color: var(--idle) } .s-risk { color: var(--crit) }
+
+/* focus: one goal, its plan in lanes */
+.focus { display: grid; gap: 14px }
+.focus-head { display: grid; gap: 6px; max-width: 75ch }
+.why { margin: 0 }
+.ground { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font-size: .8rem; padding: 3px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--ink) }
+.lanes { display: grid; gap: 10px }
+.lane { display: grid; grid-template-columns: 120px 1fr; gap: 10px; align-items: start }
+.lane > .label { padding-top: 10px }
+.lane-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; min-width: 0 }
+@media (max-width: 640px) { .lane { grid-template-columns: 1fr } .lane > .label { padding-top: 0 } }
+details.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); min-width: 0 }
+details.card > summary { list-style: none; padding: 12px; display: grid; gap: 6px; cursor: pointer }
+details.card > summary::-webkit-details-marker { display: none }
+details.card[open] { grid-column: 1 / -1 }
+.card .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.card .body { padding: 0 12px 12px; display: grid; gap: 12px }
+.layer { border-left: 2px solid var(--line); padding-left: 12px; display: grid; gap: 6px }
+.layer p { margin: 0; max-width: 72ch }
+.teach { background: var(--accent-soft); border-radius: 8px; padding: 10px 12px }
+.children { display: grid; gap: 6px }
+.child { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap }
+.challenge { display: grid; gap: 8px }
+.challenge textarea { width: 100%; min-height: 60px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 8px; padding: 8px; font: inherit }
+.analysis { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px }
+.empty { background: var(--panel); border: 1px dashed var(--line); border-radius: var(--r); padding: 22px; display: grid; gap: 6px }
+.empty code { font-family: var(--mono); font-size: .85rem }
+.foot { color: var(--muted); font-size: .8rem }
+@media (prefers-reduced-motion: no-preference) { .goal, details.card { transition: border-color .15s, box-shadow .15s } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="label" id="mode">Founder cockpit</div>
+      <h1 id="project">Waiting for the orchestrator</h1>
+      <div class="muted" id="north"></div>
+    </div>
+    <div class="gauges" id="gauges"></div>
+  </header>
+
+  <section class="steer" aria-labelledby="steer-h">
+    <div class="label" id="steer-h">Steer</div>
+    <form id="steer-form">
+      <label for="steer-text" class="label" hidden>Instruction</label>
+      <textarea id="steer-text" placeholder="Tell the orchestrator what you want next, what to stop, or what matters more."></textarea>
+      <button class="btn" id="steer-send" type="submit">Send</button>
+    </form>
+    <div class="feed" id="feed"></div>
+  </section>
+
+  <section aria-labelledby="goals-h" style="display:grid;gap:10px">
+    <div class="label" id="goals-h">Goals · layer 1</div>
+    <div class="goals" id="goals">
+      <div class="empty">
+        <h2>No goals yet</h2>
+        <p class="muted">The orchestrator writes goals and cards here. From a Claude Code session in the project, run <code>node scripts/cockpit.mjs build --out .svc/cockpit-batch.json</code> and sync it to this page.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="focus" id="focus" hidden></section>
+  <p class="foot" id="foot">Live: changes from the orchestrator appear without reloading.</p>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { meta: {}, goals: [], cards: [], steer: [], focus: null, db: null, sample: null, me: null };
+const STATUS = ["active", "blocked", "gated", "risk", "planned", "open", "done"];
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pill = (s) => `<span class="pill s-${esc(s || "open")}">${esc(s || "open")}</span>`;
+const pct = (v) => Math.round(Math.max(0, Math.min(1, Number(v) || 0)) * 100);
+try { state.focus = localStorage.getItem("cockpit.focus"); } catch {}
+
+function renderHeader() {
+  const m = state.meta;
+  if (m.project) $("project").textContent = m.project;
+  $("north").textContent = m.north_star || "";
+  $("mode").textContent = [m.profile && `${m.profile} profile`, m.harness, m.runtime].filter(Boolean).join(" · ") || "Founder cockpit";
+  const g = [];
+  if (m.usage) {
+    const u = m.usage, used = Number(u.used) || 0, lim = Number(u.limit) || 0;
+    g.push(`<div class="gauge"><span class="label">${esc(u.label || "Plan usage")}</span><b>${lim ? pct(used / lim) + "%" : esc(used)}</b><div class="meter"><i style="width:${lim ? pct(used / lim) : 0}%"></i></div></div>`);
+  }
+  if (m.parallelism) g.push(`<div class="gauge"><span class="label">Parallel lanes</span><b>${esc(m.parallelism)}</b><span class="muted" style="font-size:.78rem">${esc(m.parallelism_why || "")}</span></div>`);
+  for (const k of m.gauges || []) g.push(`<div class="gauge"><span class="label">${esc(k.label)}</span><b>${esc(k.value)}</b>${k.note ? `<span class="muted" style="font-size:.78rem">${esc(k.note)}</span>` : ""}</div>`);
+  $("gauges").innerHTML = g.join("");
+}
+
+function renderFeed() {
+  const rows = state.steer.slice(0, 30).map((d) => `
+    <div class="entry"><span class="pill s-${d.state === "applied" ? "done" : d.state === "seen" ? "active" : "open"}">${esc(d.kind === "challenge" ? "challenge" : d.state || "new")}</span>
+      <p>${esc(d.text)}${d.card_title ? ` <span class="muted">· on ${esc(d.card_title)}</span>` : ""}</p>
+      ${d.response ? `<p class="reply">↳ ${esc(d.response)}</p>` : ""}</div>`);
+  $("feed").innerHTML = rows.join("") || `<p class="muted" style="margin:0">Nothing sent yet. The orchestrator reads this feed at each checkpoint and replies here.</p>`;
+}
+
+function goalCards(goalId) { return state.cards.filter((c) => c.goal === goalId && !c.parent); }
+function goalProgress(goal) {
+  if (goal.progress != null) return goal.progress;
+  const cs = goalCards(goal.id);
+  return cs.length ? cs.filter((c) => c.status === "done").length / cs.length : 0;
+}
+
+function renderGoals() {
+  if (!state.goals.length) return;
+  $("goals").innerHTML = state.goals.map((g) => `
+    <button class="goal" type="button" data-goal="${esc(g.id)}" aria-pressed="${state.focus === g.id}">
+      <div class="row"><h2>${esc(g.title)}</h2><div class="ring" style="--p:${pct(goalProgress(g))}"><span>${pct(goalProgress(g))}%</span></div></div>
+      <div class="muted">${esc(g.outcome || "")}</div>
+      <div class="row"><span class="label">${goalCards(g.id).length} parts</span>${pill(g.status)}</div>
+    </button>`).join("");
+  for (const b of document.querySelectorAll(".goal")) b.addEventListener("click", () => {
+    state.focus = state.focus === b.dataset.goal ? null : b.dataset.goal;
+    try { localStorage.setItem("cockpit.focus", state.focus || ""); } catch {}
+    render();
+  });
+}
+
+function cardHtml(c) {
+  const kids = state.cards.filter((k) => k.parent === c.id);
+  const ev = (c.evidence || []).map((e) => `<span class="chip">${esc(e)}</span>`).join("");
+  const why = c.happened ? `<div class="layer"><span class="label">Why it is in this state</span><p>${esc(c.happened)}</p></div>` : "";
+  const tech = c.technical ? `<div class="layer"><span class="label">Technical foundation · layer 2</span><p>${esc(c.technical)}</p></div>` : "";
+  const dec = c.decided_because ? `<div class="layer"><span class="label">Decided because</span><p>${esc(c.decided_because)}</p></div>` : "";
+  const teach = c.teach ? `<div class="teach"><span class="label">Why this is the right call</span><p style="margin:.3rem 0 0">${esc(c.teach)}</p></div>` : "";
+  const children = kids.length ? `<div class="layer"><span class="label">Layer 3 · sub-tasks</span><div class="children">${kids.map((k) => `<div class="child">${pill(k.status)}<span>${esc(k.title)}</span>${k.harness ? `<span class="mono muted">${esc(k.harness)}</span>` : ""}</div>`).join("")}</div></div>` : "";
+  const analyses = state.steer.filter((s) => s.card === c.id && s.analysis).map((s) => `
+    <div class="analysis"><span class="label">Challenge analysis</span><p style="margin:0"><b>${esc(s.analysis.verdict)}</b> ${esc(s.analysis.summary)}</p>
+    ${(s.analysis.affects || []).length ? `<p class="muted" style="margin:0">Affects: ${s.analysis.affects.map(esc).join(", ")}</p>` : ""}</div>`).join("");
+  return `<details class="card" data-card="${esc(c.id)}">
+    <summary><div class="meta">${pill(c.status)}${c.harness ? `<span class="mono muted">${esc(c.harness)}</span>` : ""}</div>
+      <h3>${esc(c.title)}</h3><span class="muted">${esc(c.summary || "")}</span></summary>
+    <div class="body">${why}${dec}${teach}${tech}${children}${ev ? `<div class="ground">${ev}</div>` : ""}${analyses}
+      <div class="challenge">
+        <label class="label" for="ch-${esc(c.id)}">Challenge this</label>
+        <textarea id="ch-${esc(c.id)}" placeholder="What do you disagree with, and why?"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" type="button" data-challenge="${esc(c.id)}">Send challenge</button>
+        <span class="muted" id="ch-status-${esc(c.id)}" role="status"></span></div>
+      </div></div></details>`;
+}
+
+function renderFocus() {
+  const g = state.goals.find((x) => x.id === state.focus);
+  const box = $("focus");
+  if (!g) { box.hidden = true; return; }
+  const cards = goalCards(g.id);
+  const lanes = new Map();
+  for (const c of cards) { const k = c.lane || "Sequence"; if (!lanes.has(k)) lanes.set(k, []); lanes.get(k).push(c); }
+  for (const list of lanes.values()) list.sort((a, b) => STATUS.indexOf(a.status) - STATUS.indexOf(b.status) || (a.order || 0) - (b.order || 0));
+  const ground = (g.grounding || []).map((x) => `<span class="chip">${esc(x.kind ? x.kind + ": " : "")}${esc(x.text)}</span>`).join("");
+  box.innerHTML = `<div class="focus-head"><div class="label">Goal · layer 2 plan</div><h2>${esc(g.title)}</h2>
+      <p class="why"><b>Outcome:</b> ${esc(g.outcome || "")}</p>${g.why ? `<p class="why"><b>Why:</b> ${esc(g.why)}</p>` : ""}
+      ${ground ? `<div class="ground">${ground}</div>` : ""}</div>
+    <div class="lanes">${[...lanes].map(([name, list]) => `<div class="lane"><span class="label">${esc(name)}</span><div class="lane-cards">${list.map(cardHtml).join("")}</div></div>`).join("") || `<p class="muted">No cards for this goal yet.</p>`}</div>`;
+  box.hidden = false;
+  for (const b of box.querySelectorAll("[data-challenge]")) b.addEventListener("click", () => challenge(b.dataset.challenge));
+}
+
+function render() { renderHeader(); renderFeed(); renderGoals(); renderFocus(); }
+
+async function send(entry) {
+  if (!state.db) throw new Error("Sign in to claude.ai to steer this project.");
+  return state.db.collection("steer").add({ ...entry, state: "new", at: new Date().toISOString(), by: state.me || null });
+}
+
+$("steer-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const text = $("steer-text").value.trim();
+  if (!text) return;
+  $("steer-send").disabled = true;
+  try { await send({ kind: "steer", text }); $("steer-text").value = ""; }
+  catch (err) { $("foot").textContent = `Not sent: ${err.message || err.code}`; }
+  finally { $("steer-send").disabled = false; }
+});
+
+async function challenge(cardId) {
+  const card = state.cards.find((c) => c.id === cardId);
+  const text = $(`ch-${cardId}`).value.trim();
+  const status = $(`ch-status-${cardId}`);
+  if (!text || !card) { status.textContent = "Write the challenge first."; return; }
+  status.textContent = "Sending…";
+  let ref;
+  try { ref = await send({ kind: "challenge", text, card: cardId, card_title: card.title }); }
+  catch (err) { status.textContent = `Not sent: ${err.message || err.code}`; return; }
+  $(`ch-${cardId}`).value = "";
+  if (!state.sample) { status.textContent = "Sent. The orchestrator will analyse it at its next checkpoint."; return; }
+  status.textContent = "Sent. Analysing impact…";
+  const plan = state.cards.filter((c) => c.goal === card.goal).map((c) => ({ id: c.id, title: c.title, status: c.status, summary: c.summary }));
+  try {
+    const analysis = await state.sample.json([{ role: "user", content:
+      `You review a challenge a founder raised against one part of a software plan. Reply with JSON only: {"verdict":"holds"|"revise"|"needs data","summary":"two sentences on whether the challenge is right and what changes","affects":["titles of plan parts that would change"]}.\n` +
+      `Card challenged: ${JSON.stringify(card)}\nOther parts of the plan: ${JSON.stringify(plan)}\nChallenge: ${text}` }], { modelTier: "default" });
+    await ref.update({ analysis: { verdict: String(analysis.verdict || ""), summary: String(analysis.summary || ""), affects: Array.isArray(analysis.affects) ? analysis.affects.map(String).slice(0, 8) : [] } });
+    status.textContent = "Analysis saved below. The orchestrator re-plans from it.";
+  } catch (err) { status.textContent = err.code === "not_granted" ? "Sent. Analysis skipped (not allowed here)." : "Sent. Analysis failed; the orchestrator will take it from here."; }
+}
+
+render();
+(async () => {
+  const [db, user, sample] = await Promise.all(["db", "user", "sample"].map((n) => (window.claude?.use ? window.claude.use(n) : Promise.resolve(null)).catch(() => null)));
+  state.sample = sample;
+  if (user) { try { state.me = await user.id(); } catch {} }
+  if (!db) { $("foot").textContent = "Read-only: sign in to claude.ai to see live project state and steer it."; return; }
+  state.db = db;
+  const fail = (e) => { $("foot").textContent = `Live updates paused: ${e.message || e.code}`; };
+  db.doc("meta/project").onSnapshot((s) => { state.meta = s.data() || {}; render(); }, fail);
+  db.collection("goals").orderBy("order").onSnapshot((s) => { state.goals = s.docs.map((d) => ({ id: d.id, ...d.data() })); if (!state.goals.some((g) => g.id === state.focus)) state.focus = state.goals[0]?.id || null; render(); }, fail);
+  db.collection("cards").onSnapshot((s) => { state.cards = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }, fail);
+  db.collection("steer").orderBy("at", "desc").limit(50).onSnapshot((s) => { state.steer = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }, fail);
+})();
+</script>

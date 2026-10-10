@@ -36,17 +36,17 @@ Status values:
 | 17 | Reference prompts for Claude Code, Codex, agy, Grok, Cursor and others | done | `references/harness-playbook.json` |
 | 18 | Planning defines the chain dynamically | done | `stage-activation --manifest --profile` |
 | 19 | Worktree cleanup discipline; no fake receipts | partial | `svc-state-janitor` agent exists. No scheduled cleanup yet |
-| 20 | Orchestrator knows when to compact, per layer | open | Policy to add in the cockpit/orchestrator layer: layer 2 compacts after a sequential phase closes, layer 3 sub-sessions end instead of compacting |
+| 20 | Orchestrator knows when to compact, per layer | partial | Policy written (`references/cockpit-protocol.md`, Compaction by layer); not yet enforced by a hook |
 
 ## Founder cockpit (the product surface)
 
 | # | Requirement | Status | Evidence / what remains |
 |---|---|---|---|
-| 21 | One focal point: a private page as the decision panel for any harness, Claude Code first | open | Building `cockpit`: a private artifact page whose shared database the orchestrator writes and the owner steers |
-| 22 | Three layers: L1 intent and goals, L2 session orchestration (knows harnesses, subscriptions, subagents), L3 sub-sessions | open | Cockpit model: goal → cards → expandable layers |
-| 23 | Input box for steering that controls the rest cheaply; voice later | open | Steering entries land in the cockpit database; the orchestrator reads them at checkpoints |
+| 21 | One focal point: a private page as the decision panel for any harness, Claude Code first | partial | Private cockpit artifact live: goals, plan lanes, three layers of detail, steering feed, challenge analysis. `templates/cockpit/cockpit.html`, `references/cockpit-protocol.md`, `scripts/cockpit.mjs` |
+| 22 | Three layers: L1 intent and goals, L2 session orchestration (knows harnesses, subscriptions, subagents), L3 sub-sessions | partial | Defined in `references/cockpit-protocol.md`; the page shows them. Orchestrator automation still manual | Cockpit model: goal → cards → expandable layers |
+| 23 | Input box for steering that controls the rest cheaply; voice later | partial | Steering box live; the orchestrator reads it at checkpoints. Voice not started |
 | 24 | Goal cards: what, why, expected outcome, progress, "why this happened" expansions, grounded in market, business and internal knowledge | open | |
-| 25 | Drill down as deep as the user wants; boxes that teach why something was decided; challenge any box, which triggers analysis and re-planning | open | Challenge entries become re-plan inputs |
+| 25 | Drill down as deep as the user wants; boxes that teach why something was decided; challenge any box, which triggers analysis and re-planning | partial | Cards open into why / decided because / teach / technical / sub-tasks; a challenge is analysed on the page and re-planned at the next checkpoint |
 | 26 | Knows usage and limits; parallelises as far as the subscription allows (sequential on a $20 plan) | open | Subscription profile in the cockpit model; `route-model` supplies cost |
 | 27 | Pitch-deck-quality explanation of product, spec and journeys, grounded in business | open | |
 | 28 | Metrics portal: audits sessions, measures spend per harness, suggests different approaches, self-amends mid-task | partial | `route-model stats` and the mirror ledger supply the data; no portal yet |
@@ -61,3 +61,14 @@ Status values:
 | 32 | Learns what converts: pages are judged by real conversion, honestly measured | open | Needs an outcome ledger fed by analytics, plus the growth outcome eval (row 6) |
 | 33 | Production-ready by default (payments, compliance, legal research, scale); proven foundations, not boilerplate; validate where internal knowledge is weak | partial | Existing skills cover parts; not audited against this bar |
 | 34 | Lightweight; nothing that does not buy a large founder gain | standing rule | Over-engineering index; every row above must justify itself |
+
+## Added later in the session
+
+| # | Requirement | Status | Evidence / what remains |
+|---|---|---|---|
+| 35 | Challenge the plan at full changeset depth; each step says how to build it and how to verify it, down to the lowest useful detail, so any model, even a weak one, produces a provable result | open | Extend plan-changeset blueprints with a per-step verification command and expected evidence; review-plan rejects steps without one |
+| 36 | Prompts improve themselves from measured experience, per model, as models change | open | Prompt-variant ledger on top of the mirror ledger; `harness-drift` triggers re-tests on model releases |
+| 37 | Best blueprint, not every variation: proven foundations and templates over boilerplate; innovation by trial and error only where nothing proven exists | partial | Over-engineering index and delivery profiles exist; no curated foundation catalog yet |
+| 38 | Chief of staff rebuilt with real memory (Claude memory, repo files or an open-source store, chosen by evidence) | open | Evaluate recall quality and cost of the three options; the CoS writes decisions to it and reads it at session start |
+| 39 | Front ends feel alive, not boilerplate; growth changes ship safely; token spend only where it buys value | open | Ties to rows 32 and 37 |
+| 40 | Evaluate everything we build: fix the outcome and how it is verified, leave the path free; known problems use proven technique at full speed, uncharted ones go by measured trial | partial | Hook speed is now an eval: `scripts/hook-bench.mjs` with `references/hook-budgets.json` (base commit fails the pre-edit gate, this branch passes). Still to do: outcome evals for the cockpit loop, the fleet merge (row 6) and prompts (row 36) |
