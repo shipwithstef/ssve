@@ -39,20 +39,35 @@ async function players(n) {
   return { browser, pages, errors };
 }
 const st = (p) => p.evaluate(() => window.__game.state());
+// The player's actions move the player: their own position (you.x, you.y) differs from
+// the start at some point while they act. Only the player's position counts, because the
+// world may change by itself (ticks, monsters); and any point counts, not only the end,
+// because moves can cancel out (north then south).
+async function actsChangeState(p, acts, n) {
+  const pos = async () => { const s = await st(p); return JSON.stringify([s?.you?.x, s?.you?.y]); };
+  const before = await pos();
+  for (let i = 0; i < n; i++) {
+    await p.evaluate((a) => window.__game.act(a), acts[i % acts.length]);
+    await p.waitForTimeout(60);
+    if ((await pos()) !== before) return true;
+  }
+  await p.waitForTimeout(800);
+  return (await pos()) !== before;
+}
 const moveAction = (acts) => acts.find((a) => /north|south|east|west|up|down|left|right|move/i.test(a)) || acts[0];
 
 test("solo: one player can play; actions change the world without errors", async () => {
   const { browser, pages, errors } = await players(1);
   try {
     const [p] = pages;
-    const before = JSON.stringify(await st(p));
     const acts = await p.evaluate(() => window.__game.actions());
     assert.ok(Array.isArray(acts) && acts.length > 0, "actions() lists inputs");
-    for (let i = 0; i < 30; i++) await p.evaluate((a) => window.__game.act(a), acts[i % acts.length]);
+    const changed = await actsChangeState(p, acts, 30);
+    for (let i = 0; i < 10; i++) await p.evaluate((a) => window.__game.act(a), acts[i % acts.length]);
     await p.waitForTimeout(800);
     fs.mkdirSync("__shots", { recursive: true });
     await p.screenshot({ path: "__shots/1-solo.png" });
-    assert.notEqual(JSON.stringify(await st(p)), before, "playing changes the state");
+    assert.ok(changed, "playing changes the state");
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
 });
@@ -99,11 +114,10 @@ test("hostile clients: malformed, oversized and flooding traffic to the game's o
   const again = await players(1);
   try {
     const p = again.pages[0];
-    const before = JSON.stringify(await st(p));
     const acts2 = await p.evaluate(() => window.__game.actions());
-    for (let i = 0; i < 10; i++) await p.evaluate((a) => window.__game.act(a), acts2[i % acts2.length]);
+    const changed = await actsChangeState(p, acts2, 10);
     await p.waitForTimeout(500);
-    assert.notEqual(JSON.stringify(await st(p)), before, "a new player can still play after the attack");
+    assert.ok(changed, "a new player can still play after the attack");
   } finally { await again.browser.close(); }
 });
 
@@ -122,15 +136,20 @@ test("load: four players at once all see four players, frames stay under 25 ms",
 });
 
 // "Inspired by" is not "copied from": names and places from Tolkien's works in anything a
-// player or the public sees are an IP risk. docs/ may discuss them (the legal memo must).
+// player or the public sees are an IP risk. Internal writing may name the inspiration in
+// order to avoid it: docs/ (the legal memo must), planning and contract notes (Markdown
+// other than README.md and public/), and build tooling (scripts/, tests), where an IP
+// guard's own denylist would otherwise count as a leak.
 const TOLKIEN = /\b(middle[- ]earth|tolkien|lord of the rings|lotro|mordor|gondor|rohan|the shire|hobbits?|frodo|bilbo|samwise|gandalf|saruman|sauron|aragorn|legolas|gimli|elrond|galadriel|rivendell|lothl[oó]rien|moria|isengard|minas tirith|nazg[uû]l|mithril|palant[ií]r|ents?wood|balrog|uruk[- ]hai)\b/i;
 test("IP gate: no Tolkien names or places in shipped game content or public copy", () => {
   const hits = [];
   const walk = (dir) => { for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (["node_modules", ".git", "docs", "__shots"].includes(e.name) || e.name.startsWith("__")) continue;
+    if (["node_modules", ".git", "docs", "__shots", "scripts", "test", "tests"].includes(e.name) || e.name.startsWith("__")) continue;
     const p = path.join(dir, e.name);
     if (e.isDirectory()) walk(p);
-    else if (/\.(js|mjs|cjs|ts|json|html|css|md|txt|yaml|yml)$/.test(e.name) && !["package-lock.json", "spec.md"].includes(e.name)) {
+    else if (/\.(js|mjs|cjs|ts|json|html|css|md|txt|yaml|yml)$/.test(e.name) && !["package-lock.json", "spec.md"].includes(e.name)
+      && !/\.test\.[cm]?js$/.test(e.name)
+      && !(e.name.endsWith(".md") && e.name !== "README.md" && !p.split(path.sep).includes("public"))) {
       const m = TOLKIEN.exec(fs.readFileSync(p, "utf8")); if (m) hits.push(`${p}: ${m[0]}`);
     }
   } };
