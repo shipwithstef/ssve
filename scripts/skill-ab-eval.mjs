@@ -16,6 +16,9 @@
  * (then the grader should test that contract and it will not tie).
  *
  * Usage:
+ *   node scripts/skill-ab-eval.mjs --tasks FILE --regrade REPORT.json [--json]
+ *     re-applies the task file's current graders to a saved report's stored
+ *     answers and artifacts: fixing a grader costs nothing to re-score.
  *   node scripts/skill-ab-eval.mjs --tasks FILE [--runner "CMD ARGS"]
  *        [--repeat 3] [--margin 0.15] [--only skill,skill] [--json] [--out FILE]
  *
@@ -46,7 +49,7 @@ export function parseArgs(argv, env = process.env) {
     const a = argv[i];
     if (a === "--json") { o.json = true; continue; }
     if (a === "--help" || a === "-h") { o.help = true; continue; }
-    if (!["--tasks", "--runner", "--repeat", "--margin", "--only", "--out", "--cwd"].includes(a)) throw new Error(`unknown option: ${a}`);
+    if (!["--tasks", "--runner", "--repeat", "--margin", "--only", "--out", "--cwd", "--regrade"].includes(a)) throw new Error(`unknown option: ${a}`);
     const v = argv[++i];
     if (v === undefined || v.startsWith("--")) throw new Error(`${a} requires a value`);
     o[a.slice(2)] = ["--repeat", "--margin"].includes(a) ? Number(v) : v;
@@ -55,7 +58,7 @@ export function parseArgs(argv, env = process.env) {
   if (!o.tasks) throw new Error("--tasks is required");
   if (!Number.isInteger(o.repeat) || o.repeat < 1 || o.repeat > 20) throw new Error("--repeat must be an integer 1..20");
   if (!(o.margin >= 0 && o.margin < 1)) throw new Error("--margin must be in [0, 1)");
-  if (!o.runner) {
+  if (!o.runner && !o.regrade) {
     if (env.EVALS !== "1") throw new Error(`default runner '${DEFAULT_RUNNER}' spends paid tokens; set EVALS=1 or pass --runner`);
     o.runner = DEFAULT_RUNNER;
   }
@@ -170,6 +173,19 @@ export function summarize(runs, margin) {
   return tasks;
 }
 
+/** Re-score stored runs with the task file's current graders (no runner calls). */
+export function regrade(o) {
+  const spec = JSON.parse(fs.readFileSync(o.tasks, "utf8"));
+  const report = JSON.parse(fs.readFileSync(o.regrade, "utf8"));
+  const byId = new Map(spec.tasks.map((t) => [t.id, t]));
+  const runs = report.runs.map((r) => {
+    const t = byId.get(r.task); if (!t) throw new Error(`report task '${r.task}' is not in ${o.tasks}`);
+    if (typeof r.answer !== "string") throw new Error("report has no stored answers (made before answers were kept)");
+    return { ...r, pass: r.exit === 0 && grade(t.grader, r.answer, ROOT, (r.artifacts || []).map((a) => ({ path: a.path, text: a.text }))) };
+  });
+  return { ...report, regraded_from: o.regrade, margin: o.margin, tasks: summarize(runs, o.margin), runs };
+}
+
 export function run(o) {
   const spec = JSON.parse(fs.readFileSync(o.tasks, "utf8"));
   const tasks = spec.tasks.filter((t) => !o.only || o.only.has(t.skill));
@@ -200,7 +216,7 @@ if (path.resolve(process.argv[1] || "") === fileURLToPath(import.meta.url)) {
   try { o = parseArgs(process.argv.slice(2)); } catch (e) { console.error(`skill-ab-eval: ${e.message}`); process.exit(2); }
   if (o.help) { console.log(fs.readFileSync(fileURLToPath(import.meta.url), "utf8").match(/\/\*\*([\s\S]*?)\*\//)[1]); process.exit(0); }
   try {
-    const report = run(o);
+    const report = o.regrade ? regrade(o) : run(o);
     if (o.out) fs.writeFileSync(o.out, JSON.stringify(report, null, 2) + "\n");
     const broken = report.tasks.filter((t) => t.verdict === "error");
     if (broken.length) { process.exitCode = 1; const r0 = report.runs.find((x) => x.exit !== 0); console.error(`skill-ab-eval: runner failed for ${broken.map((t) => t.task).join(", ")} (first failure: exit ${r0?.exit} ${r0?.error || r0?.signal || ""}); no verdict for those tasks`); }

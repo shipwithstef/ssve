@@ -115,3 +115,19 @@ process.stdout.write(JSON.stringify({ result: leaked ? 'LEAKED' : 'I wrote the b
     assert.deepEqual(out.runs.find((x) => x.arm === "with-skill").artifacts.map((a) => a.path), ["docs/brief.md"]);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
+
+test("--regrade re-scores stored answers with the current graders, without calling a runner", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "svc-ab-regrade-"));
+  try {
+    const report = path.join(tmp, "r.json");
+    const first = cli(["--tasks", tasks, "--runner", fake, "--repeat", "1", "--only", "write-spec", "--out", report, "--json"]);
+    assert.equal(first.status, 0, first.stderr);
+    const t2 = path.join(tmp, "t.json"); const spec = JSON.parse(fs.readFileSync(tasks, "utf8"));
+    spec.tasks.find((t) => t.id === "write-spec-csv-export").grader = { type: "regex", pattern: "CSV" }; // looser grader: both arms now pass
+    fs.writeFileSync(t2, JSON.stringify(spec));
+    const r = cli(["--tasks", t2, "--regrade", report, "--json"], { EVALS: "0" });
+    assert.equal(r.status, 0, r.stderr);
+    const row = JSON.parse(r.stdout).tasks[0];
+    assert.equal(row.bare.pass_rate, 1); assert.equal(row.with_skill.pass_rate, 1); assert.equal(row.verdict, "no-gain");
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
