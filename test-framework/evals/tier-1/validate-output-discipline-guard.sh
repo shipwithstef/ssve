@@ -19,6 +19,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 TMP="$(mktemp -d /tmp/wi393-output-guard.XXXXXX)"
+# The injector delivers each rule once per session; a fresh session id per run keeps
+# an earlier run on this machine from suppressing the delivery under test.
+RUN_ID="$$-$(date +%s)"
 trap 'rm -rf "$TMP"' EXIT
 
 INJ="hooks/svc-rule-injector.mjs"
@@ -56,20 +59,20 @@ check "(a) rule file still present on disk (injector reads it)" test -r "rules/l
 
 # injector FIRES on an output-heavy path
 rm -f .svc/rule-injections-wi393a1.json
-printf '%s' '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"docs/specs/audit-reports/WI-1.md"},"session_id":"wi393a1"}' \
+printf '%s' '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"docs/specs/audit-reports/WI-1.md"},"session_id":"wi393a1-'"$RUN_ID"'"}' \
   | run_node "$INJ" > "$TMP/a1.json" 2>/dev/null
 check "(a) injector fires long-output on audit-reports path" grep -q "long-output-to-file" "$TMP/a1.json"
 check "(a) injector emits allow on PreToolUse" grep -q '"permissionDecision":"allow"' "$TMP/a1.json"
 
 # injector FIRES on an output-heavy bash command
 rm -f .svc/rule-injections-wi393a2.json
-printf '%s' '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"run audit-implementation WI-1"},"session_id":"wi393a2"}' \
+printf '%s' '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"run audit-implementation WI-1"},"session_id":"wi393a2-'"$RUN_ID"'"}' \
   | run_node "$INJ" > "$TMP/a2.json" 2>/dev/null
 check "(a) injector fires long-output on audit-implementation bash" grep -q "long-output-to-file" "$TMP/a2.json"
 
 # injector SILENT on a control path (proves it is no longer always-on)
 rm -f .svc/rule-injections-wi393a3.json
-OUTC=$(printf '%s' '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"CHANGELOG.md"},"session_id":"wi393a3"}' | run_node "$INJ" 2>/dev/null)
+OUTC=$(printf '%s' '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"CHANGELOG.md"},"session_id":"wi393a3-'"$RUN_ID"'"}' | run_node "$INJ" 2>/dev/null)
 check "(a) long-output NOT injected on control path" not_contains "long-output-to-file" "$OUTC"
 rm -f .svc/rule-injections-wi393a*.json
 
