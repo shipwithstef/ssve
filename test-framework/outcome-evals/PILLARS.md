@@ -60,7 +60,7 @@ Every pillar below was run on Haiku 5.5. Cells show solved runs out of runs, the
 - **The guard:** `task.json` `leak_terms`, checked in tier-1, now fails any framework text that contains a task's answer.
 - **The real measurement:** the leak-free rule is wired into `_shared/before-starting.md`, which every skill reads, and the shipped arm is re-measured below.
 
-The shipped arm after the change, run 20 times (one prompt hash across all 20 runs, recorded at send time):
+The shipped arm after the change, run 20 times. All 20 rows carry one prompt hash. At the time, the runner computed it when each row was written rather than when the prompt was sent, and no prompt file changed during the run. Since this run the runner hashes the prompts it sends:
 
 | Arm | Solved | Mean cost | vs shipped-before (95% CI, p) | vs bare (95% CI, p) |
 |---|---|---|---|---|

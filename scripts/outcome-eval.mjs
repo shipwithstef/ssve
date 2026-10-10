@@ -15,6 +15,8 @@
  *   lean       plain plus the verifier loop: run every test, fix until green.
  *   production one-line request to a sellable product: spec with journeys, layers, e2e, verify.
  *   brief      plan-first for underspecified requests: brief, build, test, verify.
+ *   studio     interactive products and games: design note, pure seeded rules, seed-bot
+ *              tests, screenshot review against named stock looks.
  *   blueprint  the svc method: rules → one test per rule → implement → run the tests,
  *              fix until green (a generator with an external verifier in the loop).
  * The score is the share of hidden tests passed and whether all passed. Cost, turns and
@@ -28,6 +30,7 @@ import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
+import { probe } from "./quality-probes.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const TASKS = path.join(ROOT, "test-framework", "outcome-evals", "tasks");
@@ -55,6 +58,18 @@ export const ARMS = {
     "3. Tests: unit tests for the domain rules, and end-to-end tests that drive every journey through HTTP.",
     "4. Verify like a customer would: run `node --test`, start the server, and drive the main customer and owner journeys in a real browser when one is available, with zero console errors. Fix until every acceptance criterion holds. Finish with a README covering setup, configuration, running and deploying.",
     "Keep SPEC.md tight (one line per acceptance criterion) and reuse test helpers: depth comes from coverage, not length.",
+  ].join("\n"),
+  // Candidate method for interactive products and games (references/quality-dimensions.json
+  // game layer). Sources: r/aigamedev practitioners (keep the simulation separate from
+  // rendering, test with seeded bots, review screenshots against a reference) and the Opus
+  // 5.5 prompting guide (name the default styles to avoid; verify in a real browser).
+  studio: [
+    "spec.md is a founder's request for an interactive product. Work like a small studio shipping a polished first version at the lowest sensible cost.",
+    "1. Write DESIGN.md (one screen, no more): the core loop, the player's moment-to-moment decision, how difficulty rises over a run, the fail state, what each action looks and feels like (its feedback), and the visual direction: a palette of 4-6 named colours and shapes that fit the theme.",
+    "2. Keep the rules in a pure, seeded module with no DOM; rendering and input only read state and send actions.",
+    "3. Tests: unit tests for the rules, plus seeded bots (random, idle and greedy) that play many games and assert no crash, no NaN and no softlock, that idling loses and that a good player scores.",
+    "4. Verify like a player: start the server, play in a real browser, take screenshots and look at them. Fix anything that reads as a placeholder or as a stock AI look: default rectangles on a plain background, a centered card on a gradient, emoji as the only art, unstyled system text. Keep frames under 16 ms and the console free of errors.",
+    "5. Stop when the game is fun for a minute and every check passes. Do not add systems the game does not use.",
   ].join("\n"),
   blueprint: [
     "Implement the specification in spec.md in this directory, following this plan exactly. Do every step; each one has a check.",
@@ -163,9 +178,10 @@ function prepare(task) {
   return dir;
 }
 
-function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40) {
+function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40, effort = null) {
   return new Promise((resolve) => {
-    const args = ["-p", "--model", model, "--output-format", "json", "--max-turns", String(maxTurns), "--allowedTools", tools];
+    // The model guides tell you to sweep effort on your own evals rather than assume a level.
+    const args = ["-p", "--model", model, "--output-format", "json", "--max-turns", String(maxTurns), ...(effort ? ["--effort", effort] : []), "--allowedTools", tools];
     // The prompt goes on stdin: --allowedTools is variadic and would swallow it.
     const child = spawn("claude", args, { cwd: dir, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry() } });
     child.stdin.end(prompt);
@@ -244,7 +260,7 @@ export function parseJudge(text) {
 
 // Blind rubric judging for tasks without a full contract (judge.md). The judge sees the
 // product, never the arm or the instruction that produced it.
-async function judge(dir, task, model) {
+export async function judge(dir, task, model) {
   const rubric = path.join(TASKS, task, "judge.md");
   if (!model || !fs.existsSync(rubric)) return {};
   fs.rmSync(path.join(dir, "__hidden.test.mjs"), { force: true });
@@ -357,6 +373,21 @@ async function main(argv) {
       const c = compareSamples(judged(arm), judged("plain"));
       if (c) { out[`${arm}_judge_vs_plain`] = c; out[`${arm}_judge_vs_plain_ci_low`] = c.ci95[0]; out[`${arm}_judge_vs_plain_established`] = (c.ci95[0] > 0 || c.ci95[1] < 0) && c.p < 0.05; }
     }
+    // Quality probes and judge claims per arm: the dimensions hidden tests do not see.
+    const meanOf = (xs) => (xs.length ? +(xs.reduce((a, b) => a + b, 0) / xs.length).toFixed(3) : null);
+    for (const arm of Object.keys(by)) {
+      const ok = rows.filter((r) => r.arm === arm && !r.error);
+      const probed = ok.filter((r) => r.probes);
+      if (probed.length) {
+        out[`${arm}_mutation_score`] = meanOf(probed.map((r) => r.probes.mutation?.score).filter((x) => typeof x === "number"));
+        out[`${arm}_mutation_scored`] = `${probed.filter((r) => typeof r.probes.mutation?.score === "number").length}/${probed.length}`;
+        out[`${arm}_source_loc`] = meanOf(probed.map((r) => r.probes.size.source_loc));
+        out[`${arm}_source_files`] = meanOf(probed.map((r) => r.probes.size.source_files));
+        out[`${arm}_slop`] = meanOf(probed.map((r) => r.probes.slop.todo_or_placeholder + r.probes.slop.empty_catch + r.probes.slop.unused_exports));
+      }
+      const judged = ok.filter((r) => r.judge_scores);
+      if (judged.length) out[`${arm}_judge_claims`] = Object.fromEntries(Object.keys(judged[0].judge_scores).map((k) => [k, meanOf(judged.map((r) => Number(r.judge_scores[k]) || 0))]));
+    }
     // Cost ratios compare matched tasks only: an arm run on harder tasks is not cheaper or dearer by that alone.
     const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
     const costOf = (arm, task) => { const xs = rows.filter((r) => r.arm === arm && r.task === task && !r.error).map((r) => r.cost_usd || 0); return xs.length ? mean(xs) : null; };
@@ -374,6 +405,8 @@ async function main(argv) {
   const model = opt("--model", "haiku"), reps = Number(opt("--reps", 3));
   const judgeModel = opt("--judge", "sonnet") === "none" ? null : opt("--judge", "sonnet");
   const arms = opt("--arms", "plain,blueprint").split(",");
+  const probeMutants = Number(opt("--probes", 0));
+  const effort = opt("--effort", null);
   const tasks = opt("--tasks") ? opt("--tasks").split(",") : listTasks();
   const keepRoot = opt("--keep", path.join(os.homedir(), ".svc", "outcome-eval-artifacts", new Date().toISOString().replace(/[:.]/g, "-")));
   fs.mkdirSync(keepRoot, { recursive: true });
@@ -388,14 +421,17 @@ async function main(argv) {
     // what an earlier session left on disk carries over, as between real sessions.
     let agent = { cost_usd: 0, turns: 0, duration_ms: 0, steps: 0 };
     const replies = [];
-    for (const prompt of armPrompts(job.task, job.arm)) {
-      const step = await runAgent(dir, prompt, model, cfg.timeout_ms, undefined, cfg.max_turns);
+    // Hash the prompts actually sent, not the files as they are when the row is written.
+    const prompts = armPrompts(job.task, job.arm);
+    const sha = crypto.createHash("sha256").update(isPillarArm(job.arm) ? prompts.join("\n\0\n") : prompts[0]).digest("hex").slice(0, 12);
+    for (const prompt of prompts) {
+      const step = await runAgent(dir, prompt, model, cfg.timeout_ms, undefined, cfg.max_turns, effort);
       replies.push(String(step.text || "").slice(-400));
       if (step.error) { agent = { ...agent, error: `step ${agent.steps + 1}: ${step.error}` }; break; }
       agent = { ...step, cost_usd: (agent.cost_usd || 0) + (step.cost_usd || 0), turns: (agent.turns || 0) + (step.turns || 0), duration_ms: (agent.duration_ms || 0) + (step.duration_ms || 0), steps: agent.steps + 1 };
     }
     // The end of each step's final reply, so a run that wrote nothing still says why.
-    const row = { ...job, model, pillar: cfg.pillar, prompt_sha: promptSha(job.arm, job.task), wall_ms: Date.now() - t, ...agent, step_replies: replies };
+    const row = { ...job, model, ...(effort ? { effort } : {}), pillar: cfg.pillar, prompt_sha: sha, wall_ms: Date.now() - t, ...agent, step_replies: replies };
     // A run that ended (even at its turn limit) is graded: hitting the limit is a failure to
     // count, not an error to hide. Only a crash or timeout with no result is an error.
     if (!agent.error) Object.assign(row, grade(dir, job.task), await judge(dir, job.task, judgeModel));
@@ -408,6 +444,10 @@ async function main(argv) {
     process.stderr.write(`${job.task}/${job.arm}#${job.rep}: ${row.error ? "ERROR " + row.error : `${row.hidden_pass}/${row.hidden_total}${row.solved ? " solved" : ""} $${row.cost_usd}`}\n`);
     return row;
   });
+  // Engineering-quality probes (test strength by mutation, size, slop, secrets) run on the
+  // kept builds after every agent has finished: they run tests synchronously and would
+  // otherwise stall the agents still working.
+  if (probeMutants > 0) for (const row of rows) if (!row.error && row.artifact) row.probes = probe(row.artifact, { mutants: probeMutants });
   const result = { ran_at: new Date().toISOString(), model, reps, tasks, arms, summary: summarize(rows), rows };
   const out = opt("--out");
   if (out) fs.writeFileSync(out, JSON.stringify(result, null, 2) + "\n");

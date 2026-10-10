@@ -44,7 +44,7 @@ test("outcome-eval: TAP parsing, error rows excluded from scores, arms differ on
   assert.equal(plain.errors, 1);
   assert.equal(plain.solved, "1/1");
   assert.equal(plain.mean_hidden_score, 1);
-  assert.deepEqual(Object.keys(ARMS).sort(), ["blueprint", "brief", "lean", "plain", "production"]);
+  assert.deepEqual(Object.keys(ARMS).sort(), ["blueprint", "brief", "lean", "plain", "production", "studio"]);
   assert.equal(parseJudge('here: {"scores":{"a":2},"total":2,"notes":"x"}').total, 2);
   assert.equal(parseJudge("no verdict"), null);
   const clear = compareSamples([15, 14, 16, 15, 14], [7, 6, 8, 7, 8]);
