@@ -401,4 +401,4 @@ Self-verify: the receipt at `.svc/receipts/<sha>/<type>.json` passes its schema 
 
 ## Handback
 
-Run the `EMIT` command `svc-next` printed for this stage (it writes the `audit-implementation` receipt and prints `audit-implementation:<sha256>`), then `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done audit-implementation --receipt audit-implementation:<sha256>` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.
+Run the `EMIT` command `svc-next` printed for this stage; it prints `audit-implementation:<sha256>`. Then run the `CLOSEOUT` command `svc-next` printed, verbatim, with that value in place of `audit-implementation:<sha256>`. Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

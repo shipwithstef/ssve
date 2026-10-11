@@ -31,11 +31,15 @@
  */
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readJsonAtomic, updateJsonAtomic } from "./state-io.mjs";
 import { validateReceipt } from "./emit-receipt.mjs";
+import { familyOf } from "./lib/cognitive-family.mjs";
+import { verifyReviewerEvidence } from "./lib/reviewer-evidence.mjs";
+import { candidateTreeIdentity } from "./lib/external-review-provenance.mjs";
+import { putObject } from "./lib/review-evidence-store.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const FRAMEWORK_ROOT = resolve(SCRIPT_DIR, "..");
@@ -66,7 +70,7 @@ export class CliError extends Error {
 }
 
 function parseArgs(argv) {
-  const out = { root: ".", wi: null, done: null, receipt: null, template: null, sha: null, recipe: null };
+  const out = { root: ".", wi: null, done: null, receipt: null, template: null, sha: null, recipe: null, buildReview: null, summary: null, out: null, planBody: null, orchestrator: null, store: false, candidateDigest: null };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     const next = () => {
@@ -82,6 +86,13 @@ function parseArgs(argv) {
     else if (a === "--template") out.template = next();
     else if (a === "--sha") out.sha = next();
     else if (a === "--recipe") out.recipe = next();
+    else if (a === "--build-review") out.buildReview = next();
+    else if (a === "--summary") out.summary = next();
+    else if (a === "--out") out.out = next();
+    else if (a === "--plan-body") out.planBody = next();
+    else if (a === "--orchestrator") out.orchestrator = next();
+    else if (a === "--store") out.store = true;
+    else if (a === "--candidate-digest") out.candidateDigest = next();
     else throw new CliError(4, `unknown argument: ${a}`);
   }
   return out;
@@ -165,12 +176,26 @@ const isSkipped = (task) => {
   return task.status === "completed" && typeof task.skip_reason === "string" && task.skip_reason.length > 0;
 };
 
-/** Does this chain skill's receipt still match bytes on disk? Non-chain skills carry none. */
+/**
+ * Does this chain skill's receipt still stand? The recorded bytes must exist AND still pass the
+ * receipt's own acceptance rules (current schema, passing verdict, authenticated cross-family
+ * reviewer evidence): a hash match alone never keeps a stage complete.
+ */
+const acceptedCache = new Map();
 function chainLive(root, graph, task) {
   const type = EMIT_TYPE[taskSkill(task)];
   if (!type) return true;
   const cr = task.chain_receipt;
-  return Boolean(cr && cr.type === type && liveReceipt(root, graph.wi, type, cr.sha256));
+  if (!cr || cr.type !== type) return false;
+  const hit = liveReceipt(root, graph.wi, type, cr.sha256);
+  if (!hit) return false;
+  const key = `${root}\0${type}\0${cr.sha256}\0${Boolean(__testing.emitterValidator)}`;
+  if (!acceptedCache.has(key)) {
+    let ok = false;
+    try { ok = acceptanceReasons(root, type, JSON.parse(hit.bytes.toString("utf8")), { issuance: false }).length === 0; } catch { ok = false; }
+    acceptedCache.set(key, ok);
+  }
+  return acceptedCache.get(key);
 }
 
 /** A chain stage is unfinished unless it is completed (never skipped) with a live receipt. */
@@ -356,35 +381,47 @@ const PLAN_BODY = ".svc/external-review-artifacts/plan-handoff/body.json";
 export function recipeFor(type, ctx) {
   const wi = ctx.wi;
   const SR = '"$SVC_ROOT"/scripts';
-  const sha = `node ${SR}/svc-next.mjs --root . --wi ${wi} --sha ${type}`;
+  const NEXT = `node ${SR}/svc-next.mjs --root . --wi ${wi}`;
+  const sha = `${NEXT} --sha ${type}`;
   const NO_SUBSTITUTE = "Adversarial review is cross-family by design: if the launcher cannot reach the reviewer, stop and report it; never substitute a same-host or self review.";
+  const planReviewDir = ".svc/external-review-artifacts/plan-review";
+  const manifest = `${PLAN_DIR(wi)}/manifest.md`;
+  const planReview = `SVC_EXTERNAL_REVIEW_ARTIFACTS_DIR="$PWD/${planReviewDir}" bash ${SR}/review-plan-codex.sh ${manifest} > .svc/review-plan.findings.json`;
+  const buildPlan = `${NEXT} --build-review plan --summary ${planReviewDir}/summary.json --out .svc/review-plan.body.json`;
   if (type === "plan-manifest") {
-    const manifest = `${PLAN_DIR(wi)}/manifest.md`;
     return [
       `# plan-manifest for ${wi} (run from the project root; .svc/ must be gitignored; two-box planning)`,
       `1. MODEL  write the original requirements and facts as the two-box input JSON, then: node ${SR}/two-box-plan.mjs --input <input.json> --mode live --out .svc/two-box-plan.out.json`,
       `   It runs the independent Open/Contract boxes, the two scouts and the assessor through the external reviewer CLI. ${NO_SUBSTITUTE}`,
-      `2. MODEL  write ${manifest}: one <!-- SVC_PLAN_BODY --> fenced JSON object, schema_version 5, planning_contract.kind two_box with the refs from step 1 (shapes: references/manifest-templates.md; starting point: node ${SR}/svc-next.mjs --root . --template plan-manifest --wi ${wi}).`,
+      `2. MODEL  write ${manifest} with frontmatter "work_item: ${wi}" and one <!-- SVC_PLAN_BODY --> fenced JSON object, schema_version 5, planning_contract.kind two_box with the refs from step 1 (shapes: references/manifest-templates.md; starting point: node ${SR}/svc-next.mjs --root . --template plan-manifest --wi ${wi}).`,
       `3. git add -A -- . ':!${PLAN_DIR(wi)}'      # stage the candidate; the manifest itself stays unstaged (the plan scope must equal the staged candidate)`,
       `4. node ${SR}/prepare-plan-handoff.mjs --manifest ${manifest} --write --out ${PLAN_BODY}`,
-      `5. bash ${SR}/review-plan-codex.sh ${manifest} > .svc/review-plan.summary.json      # the cross-family plan review of the exact prepared bytes; note the review-plan receipt object sha256 as <review_ref>`,
-      `   ${NO_SUBSTITUTE}`,
-      `6. node ${SR}/prepare-plan-handoff.mjs --manifest ${manifest} --seal-after-review <review_ref>      # prints {"seal_ref":{...}}`,
-      `7. node ${SR}/emit-receipt.mjs --type plan-manifest --wi ${wi} --body ${PLAN_BODY} --manifest ${manifest} --seal-ref '<seal_ref as printed>'`,
-      `8. ${sha}      # prints plan-manifest:<sha256> for the CLOSEOUT line`,
+      `5. ${planReview}      # the cross-family plan review of the exact prepared bytes. ${NO_SUBSTITUTE}`,
+      `6. ${buildPlan} --store      # builds the canonical review-plan body from the launcher run, proves it, stores it; prints review_ref <sha256>`,
+      `7. node ${SR}/prepare-plan-handoff.mjs --manifest ${manifest} --seal-after-review <review_ref>      # prints {"seal_ref":{...}}`,
+      `8. node ${SR}/emit-receipt.mjs --type plan-manifest --wi ${wi} --body ${PLAN_BODY} --manifest ${manifest} --seal-ref '<seal_ref as printed>'`,
+      `9. ${sha}      # prints plan-manifest:<sha256> for the CLOSEOUT line`,
     ];
   }
-  if (type === "review-plan" || type === "review-exec") {
-    const plan = type === "review-plan";
+  if (type === "review-plan") {
     return [
-      `# ${type} for ${wi} (run from the project root)`,
-      plan
-        ? `1. bash ${SR}/review-plan-codex.sh ${PLAN_DIR(wi)}/manifest.md > .svc/review-plan.summary.json      # reuses the exact passing plan review when the plan stage already ran it`
-        : `1. node ${SR}/run-external-review.mjs --orchestrator "\${SVC_HOST:-claude}" --review-kind exec --input-file .svc/review-cross-model-package.md --artifacts-dir .svc/external-review-artifacts/cross-model > .svc/review-exec.summary.json      # package and digest rules: skills/review-cross-model/SKILL.md`,
-      `   ${NO_SUBSTITUTE}`,
-      `2. MODEL  build the receipt body exactly as skills/${type}/SKILL.md describes (self_review, adversarial_review, verdict, candidate_digest, reviewer_evidence copied from the launcher receipt) and save it as .svc/${type}.body.json. Never hand-write reviewer_evidence.`,
-      `3. node ${SR}/emit-receipt.mjs --type ${type} --wi ${wi} --sha "$(git rev-parse HEAD)" --body .svc/${type}.body.json`,
-      `4. ${sha}      # prints ${type}:<sha256> for the CLOSEOUT line`,
+      `# review-plan for ${wi} (run from the project root)`,
+      `1. ${planReview}      # an exact repeat of the plan-stage review replays the signed result; ${NO_SUBSTITUTE}`,
+      `2. ${buildPlan}      # canonical review-plan body from the launcher run: current schema, authenticated reviewer evidence, cross-family check`,
+      `3. node ${SR}/emit-receipt.mjs --type review-plan --wi ${wi} --sha "$(git rev-parse HEAD)" --body .svc/review-plan.body.json`,
+      `4. ${sha}      # prints review-plan:<sha256> for the CLOSEOUT line`,
+    ];
+  }
+  if (type === "review-exec") {
+    const pkg = ".svc/review-cross-model-package.md";
+    return [
+      `# review-exec for ${wi} (run from the project root; package rules: skills/review-cross-model/SKILL.md)`,
+      `1. MODEL  write the review package to ${pkg} (the frozen diff and entry points).`,
+      `2. DIGEST="$(${NEXT} --candidate-digest exec)" && printf '\\ncandidate_digest=%s\\n' "$DIGEST" >> ${pkg}      # the launcher needs the frozen candidate digest inside the request`,
+      `3. SVC_WI=${wi} node ${SR}/run-external-review.mjs --orchestrator "\${SVC_HOST:-claude}" --review-kind exec --candidate-digest "$DIGEST" --input-file ${pkg} --artifacts-dir .svc/external-review-artifacts/cross-model > .svc/review-exec.summary.json      # ${NO_SUBSTITUTE}`,
+      `4. ${NEXT} --build-review exec --summary .svc/review-exec.summary.json --out .svc/review-exec.body.json      # canonical review-exec body from the launcher run`,
+      `5. node ${SR}/emit-receipt.mjs --type review-exec --wi ${wi} --sha "$(git rev-parse HEAD)" --body .svc/review-exec.body.json`,
+      `6. ${sha}      # prints review-exec:<sha256> for the CLOSEOUT line`,
     ];
   }
   if (BODY_FILE_TYPES.has(type)) {
@@ -477,35 +514,87 @@ export function receiptTemplate(type, wi, root = ".") {
 
 // ------------------------------------------------------- canonical acceptance
 
-/** Seam for in-process tests only; the CLI cannot reach it. */
+/** Seam for in-process tests only; the CLI cannot reach it. A validator returns an array to decide, or null to leave the receipt to the real checks. */
 export const __testing = { emitterValidator: null };
 
+const VERDICTS = {
+  "review-plan": new Set(["pass", "pass-with-acks"]),
+  "review-exec": new Set(["pass", "pass-with-acks"]),
+  "audit-implementation": new Set(["pass", "pass-with-acks"]),
+  "verify-promotion": new Set(["pass"]),
+};
+const REVIEW_KIND = { "review-plan": "plan", "review-exec": "exec" };
+
+function schemaRequired(type) {
+  try { return JSON.parse(readFileSync(join(FRAMEWORK_ROOT, "schemas", "receipts", `${type}.schema.json`), "utf8")).required || []; }
+  catch { return null; }
+}
+
+/** The reviewer host of a review receipt: the fallback when it was used, else the primary. */
+function reviewerHostOf(body) {
+  const ar = body?.adversarial_review || {};
+  return ar.fallback_used ? ar.fallback_host : ar.primary_reviewer_host;
+}
+
 /**
- * Would emit-receipt.mjs accept this receipt body? Uses the emitter's own validateReceipt (schema,
- * required evidence, reviewer evidence, plan issuance) from the project root, and additionally
- * requires a passing verdict wherever the receipt carries one.
+ * Would this receipt body be accepted? Same rules the canonical emitter and chain checker apply:
+ *  - an explicit allowed passing verdict wherever the type carries one (null, non-strings and
+ *    anything else never pass);
+ *  - current schemas: review receipts need an integer schema_version >= 3, plan-manifest 5;
+ *  - review receipts need authenticated reviewer evidence (verifyReviewerEvidence) and a genuine
+ *    cross-family pair: author and reviewer families both known and different;
+ *  - emit-receipt's own validateReceipt (required fields; plan issuance only at completion time,
+ *    because it binds the live staged tree).
  */
-export function emitterRejects(root, type, body) {
+export function acceptanceReasons(root, type, body, { issuance = true } = {}) {
   const reasons = [];
-  if (typeof body?.verdict === "string" && !PASSING.has(body.verdict.toLowerCase())) {
-    reasons.push(`verdict ${JSON.stringify(body.verdict)} is not passing; a failed ${type} never completes a stage`);
+  if (!body || typeof body !== "object" || Array.isArray(body)) return ["receipt is not a JSON object"];
+  if (body.receipt_type !== type) reasons.push(`receipt_type ${JSON.stringify(body.receipt_type)} is not ${type}`);
+  if (VERDICTS[type] && !(typeof body.verdict === "string" && VERDICTS[type].has(body.verdict))) {
+    reasons.push(`verdict ${JSON.stringify(body.verdict)} is not an allowed passing verdict (${[...VERDICTS[type]].join(" | ")}); a failed or unstated ${type} never completes a stage`);
   }
-  const text = JSON.stringify(body || {});
+  const text = JSON.stringify(body);
   if (/same_host|host_subagent_declared/.test(text) || body?.adversarial_review?.different_family === false || body?.review_route?.different_family === false) {
     reasons.push(`${type} carries a same-host/self review; only a genuine cross-family review completes a stage`);
   }
-  if (__testing.emitterValidator) return [...reasons, ...__testing.emitterValidator(root, type, body)];
-  const previous = process.cwd();
-  try {
-    process.chdir(root);
-    const result = validateReceipt(type, body, null, {});
-    if (!result.valid) reasons.push(...result.reasons);
-  } catch (error) {
-    reasons.push(`emitter validation threw: ${error.message}`);
-  } finally {
-    process.chdir(previous);
+  if (__testing.emitterValidator) {
+    const verdictOnly = __testing.emitterValidator(root, type, body); // null = no opinion: validate for real
+    if (Array.isArray(verdictOnly)) return [...reasons, ...verdictOnly];
   }
-  return reasons;
+  if (type === "plan-manifest" && body.schema_version !== 5) reasons.push(`plan-manifest schema_version ${JSON.stringify(body.schema_version)} is not the current 5`);
+  if (REVIEW_KIND[type]) {
+    if (!Number.isInteger(body.schema_version) || body.schema_version < 3) {
+      reasons.push(`${type} schema_version ${JSON.stringify(body.schema_version)} is below the current 3; legacy v1/v2 review receipts never complete a stage`);
+    }
+    const authorFamily = familyOf(body.self_review?.orchestrator);
+    const reviewerFamily = familyOf(reviewerHostOf(body));
+    if (authorFamily === "unknown" || reviewerFamily === "unknown" || authorFamily === reviewerFamily) {
+      reasons.push(`${type} is not a genuine cross-family review (author host ${JSON.stringify(body.self_review?.orchestrator)} -> ${authorFamily}, reviewer host ${JSON.stringify(reviewerHostOf(body))} -> ${reviewerFamily})`);
+    }
+    try { reasons.push(...verifyReviewerEvidence({ root, reviewKind: REVIEW_KIND[type], body })); }
+    catch (error) { reasons.push(`reviewer evidence verification threw: ${error.message}`); }
+  }
+  const required = schemaRequired(type);
+  if (required === null) reasons.push(`schema for ${type} is unavailable`);
+  else for (const key of required) if (!(key in body)) reasons.push(`missing required: ${key}`);
+  if (type !== "plan-manifest" || issuance) {
+    const previous = process.cwd();
+    try {
+      process.chdir(root);
+      const result = validateReceipt(type, body, null, {});
+      if (!result.valid) reasons.push(...result.reasons);
+    } catch (error) {
+      reasons.push(`emitter validation threw: ${error.message}`);
+    } finally {
+      process.chdir(previous);
+    }
+  }
+  return [...new Set(reasons)];
+}
+
+/** Completion-time check (includes plan issuance). */
+export function emitterRejects(root, type, body) {
+  return acceptanceReasons(root, type, body, { issuance: true });
 }
 
 // ------------------------------------------------------------------- --done
@@ -571,6 +660,79 @@ function applyDone(root, file, pick, chain) {
   });
 }
 
+// ------------------------------------------------------- review body builder
+
+const sha256File = (file) => sha256(readFileSync(file));
+
+/** The frozen digest a launcher run must be bound to. plan: the prepared plan JSON; exec: the candidate tree. */
+export function candidateDigestFor(root, kind, planBody = PLAN_BODY) {
+  if (kind === "plan") {
+    const file = resolve(root, planBody);
+    if (!existsSync(file)) throw new CliError(4, `prepared plan ${planBody} not found; run prepare-plan-handoff.mjs --write first`);
+    return sha256File(file);
+  }
+  if (kind === "exec") return candidateTreeIdentity(root).candidate_digest;
+  throw new CliError(4, `candidate digest kind must be plan or exec, got ${kind}`);
+}
+
+/**
+ * Build the canonical review-plan / review-exec receipt body from a REAL launcher run (the summary
+ * run-external-review.mjs printed: ok, findings path, receipt path), prove it with the same verifier the
+ * chain uses, and optionally persist it in the review evidence store (the object --seal-after-review needs).
+ * Nothing here can fabricate a review: the launcher receipt must verify, the verdict must be the
+ * reviewer's, and author and reviewer families must both be known and different.
+ */
+export function buildReviewBody(root, { kind, wi, summaryPath, planBody = PLAN_BODY, orchestrator, store = false }) {
+  if (!["plan", "exec"].includes(kind)) throw new CliError(4, "--build-review needs plan or exec");
+  if (!summaryPath) throw new CliError(4, "--build-review needs --summary <launcher summary json>");
+  const summary = JSON.parse(readFileSync(resolve(root, summaryPath), "utf8"));
+  if (summary.ok !== true || !summary.findings || !summary.receipt) throw new CliError(4, "launcher summary must carry ok:true, findings and receipt");
+  const findingsFile = resolve(root, summary.findings);
+  const receiptFile = resolve(root, summary.receipt);
+  const findings = JSON.parse(readFileSync(findingsFile, "utf8"));
+  const launcher = JSON.parse(readFileSync(receiptFile, "utf8"));
+  const host = orchestrator || process.env.SVC_HOST || "claude";
+  const identity = candidateTreeIdentity(root);
+  const requested = launcher.requested_tuple?.host;
+  const effective = launcher.effective_tuple?.host || requested;
+  const fv = String(findings.verdict || "");
+  const severe = (findings.findings || []).some((f) => f.blocking === true || ["critical", "high"].includes(f.severity));
+  const verdict = fv === "pass" && !severe ? "pass" : fv === "pass-with-findings" && !severe ? "pass-with-acks" : "fail";
+  const rel = (f) => relative(resolve(root), f);
+  const type = kind === "plan" ? "review-plan" : "review-exec";
+  const body = {
+    receipt_type: type, schema_version: 3, wi,
+    candidate_digest: identity.candidate_digest, tree_hash: identity.tree_hash,
+    self_review: { orchestrator: host, findings_count: (findings.findings || []).length, notes: `launcher run ${launcher.request_id || ""}`.trim() },
+    adversarial_review: {
+      primary_reviewer_host: requested, primary_used: !launcher.fallback?.used,
+      fallback_host: effective, fallback_used: Boolean(launcher.fallback?.used),
+      findings: findings.findings || [], iteration_count: Array.isArray(launcher.attempts) ? Math.max(1, launcher.attempts.length) : 1,
+    },
+    verdict,
+    timestamp: new Date().toISOString(),
+    reviewer_evidence: {
+      independent: true, submitter_only: false,
+      launcher_receipts: [{ path: rel(receiptFile), sha256: sha256File(receiptFile) }],
+      commands: launcher.reviewer_run?.commands || [],
+      output_artifacts: (launcher.reviewer_run?.output_artifacts || [findingsFile]).map((f) => ({ path: rel(resolve(root, f)), sha256: sha256File(resolve(root, f)) })),
+      deletion_bearing: false, parse_collect_evidence: [],
+    },
+  };
+  const head = gitOut(["rev-parse", "--verify", "HEAD"], root).trim();
+  if (head) body.candidate_sha = head;
+  if (kind === "plan") body.reviewed_plan_digest = sha256File(resolve(root, planBody));
+  else {
+    const execDir = receiptCandidates(root, "exec-record", wi).sort((a, b) => statSync(b.file).mtimeMs - statSync(a.file).mtimeMs)[0];
+    body.diff_hash = execDir ? JSON.parse(execDir.bytes.toString("utf8")).diff_hash : sha256(gitOut(["diff", "--cached", "--binary"], root));
+  }
+  const reasons = acceptanceReasons(root, type, body, { issuance: true });
+  if (reasons.length) throw new CliError(4, `the ${type} body built from ${summaryPath} would not be accepted: ${reasons.join("; ")}`);
+  const result = { body };
+  if (store) result.ref = putObject(Buffer.from(JSON.stringify(body)), { start: root }).sha256;
+  return result;
+}
+
 // ------------------------------------------------------------------------ main
 
 function print(lines) { process.stdout.write(`${lines.join("\n")}\n`); }
@@ -592,6 +754,21 @@ export function run(argv) {
     } catch (e) { process.stderr.write(`svc-next: ${e.message}\n`); return e.code || 4; }
   }
   const root = resolve(args.root);
+  if (args.candidateDigest) {
+    try { process.stdout.write(`${candidateDigestFor(root, args.candidateDigest, args.planBody || PLAN_BODY)}\n`); return 0; }
+    catch (e) { process.stderr.write(`svc-next: ${e.message}\n`); return e.code || 4; }
+  }
+  if (args.buildReview) {
+    try {
+      const sel0 = selectGraph(root, args.wi);
+      const built = buildReviewBody(root, { kind: args.buildReview, wi: sel0.graph.wi, summaryPath: args.summary, planBody: args.planBody || PLAN_BODY, orchestrator: args.orchestrator, store: args.store });
+      const text = `${JSON.stringify(built.body, null, 2)}\n`;
+      if (args.out) { mkdirSync(dirname(resolve(root, args.out)), { recursive: true }); writeFileSync(resolve(root, args.out), text); }
+      else process.stdout.write(text);
+      if (built.ref) process.stdout.write(`review_ref ${built.ref}\n`);
+      return 0;
+    } catch (e) { process.stderr.write(`svc-next: ${e.message}\n`); return e.code || 4; }
+  }
   if (args.recipe) {
     try {
       const sel0 = selectGraph(root, args.wi);

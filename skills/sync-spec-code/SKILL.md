@@ -397,4 +397,4 @@ If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.jso
 
 ## Handback
 
-Run `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done sync-spec-code --receipt load-skill` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.
+Run the `CLOSEOUT` command `svc-next` printed for this stage, verbatim (it ends in `--receipt load-skill`). Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

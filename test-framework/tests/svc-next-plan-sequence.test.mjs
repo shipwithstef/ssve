@@ -127,7 +127,9 @@ test('the printed plan-manifest sequence produces a receipt svc-next accepts (re
     const bodyPath = path.join(tmp, '.svc/external-review-artifacts/plan-handoff/body.json');
     const planBytes = fs.readFileSync(bodyPath);
 
-    // STEP 5 (cross-family review): the launcher's signed artifacts, supplied by the fixture
+    // STEP 5 (cross-family review): the launcher's signed artifacts, supplied by the fixture. The
+    // printed step 6 then builds, proves and stores the canonical review-plan body from them.
+    process.env.SVC_HOST = 'codex';
     const tree = git(tmp, 'write-tree');
     const treeDigest = sha(`git-tree:${tree}\n`);
     const manifestBytes = fs.readFileSync(path.join(tmp, manifestRel));
@@ -142,15 +144,15 @@ test('the printed plan-manifest sequence produces a receipt svc-next accepts (re
       ],
     });
     putObject(fs.readFileSync(fixture.receiptPath), { start: tmp });
-    const review = {
-      receipt_type: 'review-plan', schema_version: 3, wi: WI, candidate_digest: treeDigest, candidate_sha: head, tree_hash: tree, reviewed_plan_digest: sha(planBytes),
-      self_review: { orchestrator: 'codex', findings_count: 0, notes: 'self' },
-      adversarial_review: { primary_reviewer_host: 'agy', primary_used: true, fallback_host: 'agy', fallback_used: false, findings: [], iteration_count: 1 },
-      verdict: 'pass', timestamp: new Date().toISOString(), reviewer_evidence: fixture.reviewerEvidence,
-    };
-    const reviewRef = putObject(Buffer.from(JSON.stringify(review)), { start: tmp }).sha256;
+    const summaryDir = path.join(tmp, '.svc/external-review-artifacts/plan-review');
+    fs.mkdirSync(summaryDir, { recursive: true });
+    fs.writeFileSync(path.join(summaryDir, 'summary.json'), JSON.stringify({ ok: true, findings: fixture.output, receipt: fixture.receiptPath }));
+    const built = sh(find('--build-review plan'));
+    const reviewRef = /^review_ref ([0-9a-f]{64})$/m.exec(built)?.[1];
+    assert.ok(reviewRef, built);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(tmp, '.svc/review-plan.body.json'), 'utf8')).schema_version, 3);
 
-    // STEPS 6-8: seal, emit, print the closeout digest
+    // STEPS 7-9: seal, emit, print the closeout digest
     const sealOut = sh(find('--seal-after-review').replace('<review_ref>', reviewRef));
     const sealRef = JSON.stringify(JSON.parse(sealOut.trim().split('\n').pop()).seal_ref);
     sh(find('emit-receipt.mjs --type plan-manifest').replace(/'<seal_ref as printed>'/, `'${sealRef}'`));

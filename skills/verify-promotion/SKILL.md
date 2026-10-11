@@ -450,4 +450,4 @@ Reference: `references/chain-receipt-contract.md`.
 
 ## Handback
 
-Run the `EMIT` command `svc-next` printed for this stage (it writes the `verify-promotion` receipt and prints `verify-promotion:<sha256>`), then `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done verify-promotion --receipt verify-promotion:<sha256>` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.
+Run the `EMIT` command `svc-next` printed for this stage; it prints `verify-promotion:<sha256>`. Then run the `CLOSEOUT` command `svc-next` printed, verbatim, with that value in place of `verify-promotion:<sha256>`. Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

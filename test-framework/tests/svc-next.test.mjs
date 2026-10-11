@@ -1,7 +1,7 @@
 // @organism-suite
 // svc-next: the lane driver. No model, no network: it builds real graphs with the compiler
 // and drives them through run() (and the CLI where the process boundary matters) in temp dirs.
-import test from 'node:test';
+import test, { afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -10,7 +10,9 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { compileDeliveryGraph } from '../../scripts/compile-delivery-graph.mjs';
-import { run, __testing, recipeFor } from '../../scripts/svc-next.mjs';
+import { run, __testing, recipeFor, candidateDigestFor } from '../../scripts/svc-next.mjs';
+import { candidateTreeIdentity } from '../../scripts/lib/external-review-provenance.mjs';
+import { createExternalReviewFixture } from '../evals/tier-1/fixtures/external-review-fixture.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 process.env.SVC_ROOT = ROOT;
@@ -49,19 +51,23 @@ function next(dir, ...args) {
   return { code, card, stdout, stderr: err.join('') };
 }
 
-/** Lane-flow tests exercise ordering and bookkeeping; the emitter's own acceptance is tested separately. */
+/**
+ * Lane-flow tests exercise ordering and bookkeeping with fixture receipts (marked fixture_loose); the seam
+ * leaves every other receipt to the real checks. It is reset after every test.
+ */
 function withLooseEmitter(fn) {
-  const previous = __testing.emitterValidator;
-  __testing.emitterValidator = () => [];
-  try { return fn(); } finally { __testing.emitterValidator = previous; }
+  __testing.emitterValidator = (root, type, body) => (body && body.fixture_loose === true ? [] : null);
+  return fn();
 }
+afterEach(() => { __testing.emitterValidator = null; });
+const useRealEmitter = () => { __testing.emitterValidator = null; };
 
 function stagedReceipt(dir, wi, type, extra = {}) {
   const tree = crypto.randomBytes(20).toString('hex');
   const d = path.join(dir, '.svc', 'receipts', 'staging', tree);
   fs.mkdirSync(d, { recursive: true });
   const file = path.join(d, `${type}--${wi}.json`);
-  const bytes = JSON.stringify({ receipt_type: type, schema_version: 1, wi, verdict: 'pass', timestamp: new Date().toISOString(), ...extra });
+  const bytes = JSON.stringify({ receipt_type: type, schema_version: 1, wi, verdict: 'pass', fixture_loose: true, timestamp: new Date().toISOString(), ...extra });
   fs.writeFileSync(file, bytes);
   return { file, sha: crypto.createHash('sha256').update(bytes).digest('hex') };
 }
@@ -318,7 +324,6 @@ test('--template exec-record binds the staged diff; --sha prints the newest rece
 test('R1 [schema/verdict]: identity-only JSON and a fail verdict never complete a stage; the emitter\'s own receipt does', () => {
   const p = project('bugfix');
   gitProject(p);
-  assert.equal(__testing.emitterValidator, null, 'the real emitter validator is in force');
   withLooseEmitter(() => driveUntil(p, 'audit-implementation'));
   const before = fs.readFileSync(p.file);
 
@@ -330,7 +335,7 @@ test('R1 [schema/verdict]: identity-only JSON and a fail verdict never complete 
   const failed = realEmit(p, 'audit-implementation', { verdict: 'fail', findings: [{ id: 'F1', severity: 'critical' }] });
   const b = next(p.dir, '--done', 'audit-implementation', '--receipt', `audit-implementation:${failed.sha}`);
   assert.equal(b.code, 4);
-  assert.match(b.stderr, /not passing/);
+  assert.match(b.stderr, /not an allowed passing verdict/);
   assert.deepEqual(fs.readFileSync(p.file), before);
 
 });
@@ -338,7 +343,6 @@ test('R1 [schema/verdict]: identity-only JSON and a fail verdict never complete 
 test('R1 [real receipts]: a receipt written by the real emitter completes audit-implementation and exec-record', () => {
   const p = project('bugfix');
   gitProject(p);
-  assert.equal(__testing.emitterValidator, null);
   withLooseEmitter(() => driveUntil(p, 'execute-changeset'));
   fs.writeFileSync(path.join(p.dir, 'work.txt'), 'x');
   spawnSync('git', ['add', '-A'], { cwd: p.dir });
@@ -362,7 +366,7 @@ test('R1 [verdict]: a failing verdict is refused for every verdict-bearing type,
         const rec = stagedReceipt(p.dir, p.wi, type, { verdict });
         assert.equal(next(p.dir, '--done', stage, '--receipt', `${type}:${rec.sha}`).code, 4, `${type} ${verdict}`);
       }
-      const ok = stagedReceipt(p.dir, p.wi, type, { verdict: 'pass-with-acks' });
+      const ok = stagedReceipt(p.dir, p.wi, type, { verdict: type === 'verify-promotion' ? 'pass' : 'pass-with-acks' });
       assert.equal(next(p.dir, '--done', stage, '--receipt', `${type}:${ok.sha}`).code, 0);
     });
   }
@@ -447,6 +451,8 @@ test('R5 [EMIT/recipes]: plan and review stages print a command sequence whose s
   for (const script of ['prepare-plan-handoff.mjs', 'emit-receipt.mjs', 'svc-next.mjs']) assert.ok(fs.existsSync(path.join(ROOT, 'scripts', script)), script);
   assert.match(plan, /prepare-plan-handoff\.mjs --manifest docs\/plans\/WI-NEXT\/manifest\.md --write --out \.svc\/external-review-artifacts\/plan-handoff\/body\.json/);
   assert.match(plan, /--seal-after-review <review_ref>/);
+  assert.ok(plan.indexOf('--build-review plan') > 0 && plan.indexOf('--build-review plan') < plan.indexOf('--seal-after-review'), 'the stored review object is built before the seal');
+  assert.match(plan, /--build-review plan --summary \S+ --out \S+ --store/);
   assert.match(plan, /emit-receipt\.mjs --type plan-manifest --wi WI-NEXT --body \S+ --manifest \S+ --seal-ref/);
   assert.match(plan, /--sha plan-manifest/);
   const review = recipeFor('review-exec', ctx).join('\n');
@@ -507,4 +513,181 @@ test('cross-family only: a same-host or self review receipt never completes a re
   assert.match(recipeFor('plan-manifest', { rootArg: '.', wi: p.wi }).join('\n'), /two-box-plan\.mjs --input/);
   assert.match(recipeFor('review-plan', { rootArg: '.', wi: p.wi }).join('\n'), /review-plan-codex\.sh/);
   assert.match(recipeFor('review-exec', { rootArg: '.', wi: p.wi }).join('\n'), /run-external-review\.mjs --orchestrator "\$\{SVC_HOST:-claude\}" --review-kind exec/);
+});
+
+// ------------------------------------------------------------ round 2 findings
+
+function stagedBody(dir, type, body) {
+  const d = path.join(dir, '.svc', 'receipts', 'staging', crypto.randomBytes(20).toString('hex'));
+  fs.mkdirSync(d, { recursive: true });
+  const file = path.join(d, `${type}--${body.wi}.json`);
+  const bytes = JSON.stringify(body);
+  fs.writeFileSync(file, bytes);
+  return { file, sha: crypto.createHash('sha256').update(bytes).digest('hex') };
+}
+
+test('W1 [legacy and same-family reviews]: v1/v2 review receipts and codex-reviewed-by-codex never complete review-plan or review-exec', () => {
+  for (const type of ['review-plan', 'review-exec']) {
+    const p = project('bugfix');
+    withLooseEmitter(() => driveUntil(p, type));
+    const before = fs.readFileSync(p.file);
+    const review = (extra) => ({ receipt_type: type, wi: p.wi, verdict: 'pass', diff_hash: 'x', reviewed_plan_digest: 'x', timestamp: new Date().toISOString(), ...extra });
+    const sameFamily = { self_review: { orchestrator: 'codex', findings_count: 0, notes: 'n' }, adversarial_review: { primary_reviewer_host: 'codex', primary_used: true, fallback_host: 'codex', fallback_used: false, findings: [], iteration_count: 1 } };
+    const crossFamily = { self_review: { orchestrator: 'claude', findings_count: 0, notes: 'n' }, adversarial_review: { primary_reviewer_host: 'codex', primary_used: true, fallback_host: 'codex', fallback_used: false, findings: [], iteration_count: 1 } };
+    for (const [label, body, expected] of [
+      ['v1 legacy', review({ schema_version: 1, ...crossFamily }), /legacy v1\/v2|below the current 3/],
+      ['v2 legacy', review({ schema_version: 2, ...crossFamily }), /legacy v1\/v2|below the current 3/],
+      ['v3 same family', review({ schema_version: 3, ...sameFamily }), /not a genuine cross-family review/],
+      ['v3 no reviewer evidence', review({ schema_version: 3, ...crossFamily }), /reviewer evidence/],
+      ['string schema_version', review({ schema_version: '3', ...crossFamily }), /below the current 3/],
+    ]) {
+      const rec = stagedBody(p.dir, type, body);
+      const r = next(p.dir, '--done', type, '--receipt', `${type}:${rec.sha}`);
+      assert.equal(r.code, 4, `${type} ${label}`);
+      assert.match(r.stderr, expected, `${type} ${label}`);
+    }
+    assert.deepEqual(fs.readFileSync(p.file), before);
+  }
+});
+
+test('W2 [terminal completion revalidates receipts]: six identity-only fail receipts recorded in the graph never produce STATUS done', () => {
+  const p = project('bugfix');
+  const g = readGraph(p.file);
+  for (const t of g.tasks) {
+    t.status = 'completed';
+    t.skill_receipt = { skill: skillOf(t), loaded_at: new Date().toISOString(), loaded_via: 'fixture' };
+    const type = EMIT[skillOf(t)];
+    if (type) {
+      const rec = stagedBody(p.dir, type, { receipt_type: type, wi: p.wi, verdict: 'fail' });
+      t.chain_receipt = { type, sha256: rec.sha, path: path.relative(p.dir, rec.file) };
+    } else t.chain_receipt = { type: 'load-skill' };
+  }
+  g.status = 'completed';
+  fs.writeFileSync(p.file, JSON.stringify(g));
+  const r = next(p.dir);
+  assert.equal(r.code, 5);
+  assert.equal(r.card.STATUS, 'not_done');
+  assert.equal(r.card.MISSING, ALL_TYPES.join(','));
+  assert.equal(r.card.SKILL, 'plan-changeset');
+});
+
+test('W3 [explicit verdicts]: a null, missing, numeric or odd-cased verdict never completes audit-implementation or verify-promotion', () => {
+  for (const [stage, type] of [['audit-implementation', 'audit-implementation'], ['verify-promotion', 'verify-promotion']]) {
+    const p = project('bugfix');
+    withLooseEmitter(() => driveUntil(p, stage));
+    const before = fs.readFileSync(p.file);
+    for (const verdict of [null, undefined, 0, true, [], {}, 'Pass', 'PASS', ' pass', 'passed', 'pass-with-findings', 'fail']) {
+      const rec = stagedBody(p.dir, type, { receipt_type: type, wi: p.wi, ...(verdict === undefined ? {} : { verdict }) });
+      const r = next(p.dir, '--done', stage, '--receipt', `${type}:${rec.sha}`);
+      assert.equal(r.code, 4, `${stage} ${JSON.stringify(verdict)}`);
+      assert.match(r.stderr, /not an allowed passing verdict/);
+    }
+    assert.deepEqual(fs.readFileSync(p.file), before);
+  }
+  // verify-promotion has no acks verdict: only "pass" is a pass.
+  const p = project('bugfix');
+  withLooseEmitter(() => {
+    driveUntil(p, 'verify-promotion');
+    const rec = stagedBody(p.dir, 'verify-promotion', { receipt_type: 'verify-promotion', wi: p.wi, verdict: 'pass-with-acks' });
+    assert.equal(next(p.dir, '--done', 'verify-promotion', '--receipt', `verify-promotion:${rec.sha}`).code, 4);
+  });
+});
+
+test('W4 [review body construction]: build-review proves a real launcher run, stores the object, and refuses same-family and failing runs', () => {
+  const p = project('bugfix');
+  const git = gitProject(p);
+  fs.mkdirSync(path.join(p.dir, 'src'), { recursive: true });
+  fs.writeFileSync(path.join(p.dir, 'src', 'a.txt'), 'change');
+  git('add', '-A');
+  const saved = { ...process.env };
+  try {
+    process.env.SVC_HOST = 'codex';
+    const summaryFor = (fx) => {
+      const f = path.join(p.dir, `summary-${crypto.randomBytes(4).toString('hex')}.json`);
+      fs.writeFileSync(f, JSON.stringify({ ok: true, findings: fx.output, receipt: fx.receiptPath }));
+      return f;
+    };
+    const good = createExternalReviewFixture({ frameworkRoot: ROOT, repo: p.dir, reviewKind: 'exec', wi: p.wi, candidateSha: null });
+    const out = path.join(p.dir, '.svc', 'review-exec.body.json');
+    const built = next(p.dir, '--wi', p.wi, '--build-review', 'exec', '--summary', summaryFor(good), '--out', out);
+    assert.equal(built.code, 0, built.stderr);
+    const body = JSON.parse(fs.readFileSync(out, 'utf8'));
+    assert.equal(body.schema_version, 3);
+    assert.equal(body.verdict, 'pass');
+    assert.equal(body.candidate_digest, candidateTreeIdentity(p.dir).candidate_digest);
+    assert.equal(body.reviewer_evidence.independent, true);
+    // same family (author agy == reviewer agy) is refused
+    const same = next(p.dir, '--wi', p.wi, '--build-review', 'exec', '--summary', summaryFor(good), '--orchestrator', 'agy', '--out', path.join(p.dir, 'x.json'));
+    assert.equal(same.code, 4);
+    assert.match(same.stderr, /cross-family/);
+    assert.equal(fs.existsSync(path.join(p.dir, 'x.json')), false);
+    // a failing reviewer verdict is refused
+    const failing = createExternalReviewFixture({ frameworkRoot: ROOT, repo: p.dir, reviewKind: 'exec', wi: p.wi, roundLabel: 'failing', verdict: 'fail', findings: [{ id: 'F1', severity: 'high', claim: 'c', analysis: 'a', evidence: 'e', proposed_fix: 'p' }] });
+    const refused = next(p.dir, '--wi', p.wi, '--build-review', 'exec', '--summary', summaryFor(failing), '--out', path.join(p.dir, 'y.json'));
+    assert.equal(refused.code, 4);
+    assert.match(refused.stderr, /not an allowed passing verdict/);
+    // missing or unsuccessful launcher summary
+    const bad = path.join(p.dir, 'bad.json');
+    fs.writeFileSync(bad, JSON.stringify({ ok: false }));
+    assert.equal(next(p.dir, '--wi', p.wi, '--build-review', 'exec', '--summary', bad).code, 4);
+    assert.equal(next(p.dir, '--wi', p.wi, '--build-review', 'exec').code, 4);
+    // the emitter accepts the body and svc-next completes the stage with it
+    withLooseEmitter(() => driveUntil(p, 'review-exec'));
+    const rec = realEmit(p, 'review-exec', body);
+    const done = next(p.dir, '--done', 'review-exec', '--receipt', `review-exec:${rec.sha}`);
+    assert.equal(done.code, 0, done.stderr);
+    assert.equal(done.card.SKILL, 'audit-implementation');
+    // and a --store build persists an object a seal can find
+    const stored = next(p.dir, '--wi', p.wi, '--build-review', 'exec', '--summary', summaryFor(good), '--store', '--out', path.join(p.dir, 'z.json'));
+    assert.match(stored.stdout, /^review_ref [0-9a-f]{64}$/m);
+  } finally {
+    for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
+    Object.assign(process.env, saved);
+  }
+});
+
+test('W5 [exec review recipe]: the frozen candidate digest is computed, put in the request, and passed with the selected WI', () => {
+  const p = project('bugfix');
+  const git = gitProject(p);
+  fs.writeFileSync(path.join(p.dir, 'src.txt'), 'x');
+  git('add', '-A');
+  const text = recipeFor('review-exec', { rootArg: '.', wi: p.wi }).join('\n');
+  assert.match(text, /--candidate-digest exec\)" && printf .*candidate_digest=%s.* "\$DIGEST" >> \.svc\/review-cross-model-package\.md/);
+  assert.match(text, /SVC_WI=WI-NEXT node "\$SVC_ROOT"\/scripts\/run-external-review\.mjs .*--review-kind exec --candidate-digest "\$DIGEST" --input-file/);
+  const exec = next(p.dir, '--candidate-digest', 'exec');
+  assert.equal(exec.code, 0);
+  assert.equal(exec.stdout.trim(), candidateTreeIdentity(p.dir).candidate_digest);
+  assert.match(exec.stdout.trim(), /^[0-9a-f]{64}$/);
+  fs.mkdirSync(path.join(p.dir, '.svc/external-review-artifacts/plan-handoff'), { recursive: true });
+  fs.writeFileSync(path.join(p.dir, '.svc/external-review-artifacts/plan-handoff/body.json'), '{"a":1}');
+  assert.equal(next(p.dir, '--candidate-digest', 'plan').stdout.trim(), crypto.createHash('sha256').update('{"a":1}').digest('hex'));
+  assert.equal(candidateDigestFor(p.dir, 'plan'), crypto.createHash('sha256').update('{"a":1}').digest('hex'));
+  assert.equal(next(p.dir, '--candidate-digest', 'nonsense').code, 4);
+  // the review-plan recipe also reaches the launcher through the plan adapter, then builds the body
+  const plan = recipeFor('review-plan', { rootArg: '.', wi: p.wi }).join('\n');
+  assert.match(plan, /review-plan-codex\.sh .*manifest\.md/);
+  assert.match(plan, /--build-review plan/);
+});
+
+test('W6 [handback follows the printed CLOSEOUT]: no changed skill rebuilds the command, and execute-changeset is untouched', () => {
+  const skills = fs.readdirSync(path.join(ROOT, 'skills'));
+  let handbacks = 0;
+  for (const name of skills) {
+    const text = fs.readFileSync(path.join(ROOT, 'skills', name, 'SKILL.md'), 'utf8');
+    const m = /\n## Handback\n([\s\S]*)$/.exec(text);
+    if (!m) continue;
+    handbacks += 1;
+    assert.match(m[1], /CLOSEOUT/, name);
+    assert.doesNotMatch(m[1], /--done|--root \./, `${name}: Handback must not rebuild the command`);
+    assert.match(m[1], /verbatim/, name);
+  }
+  assert.ok(handbacks >= 20, `${handbacks} skills carry a Handback`);
+  const exec = fs.readFileSync(path.join(ROOT, 'skills/execute-changeset/SKILL.md'), 'utf8');
+  assert.doesNotMatch(exec, /## Handback|svc-next/, 'execute-changeset stays exactly as the base branch has it; its card carries the CLOSEOUT');
+  // the card is the contract for that stage
+  const p = project('bugfix');
+  withLooseEmitter(() => driveUntil(p, 'execute-changeset'));
+  const card = next(p.dir).card;
+  assert.equal(card.SKILL, 'execute-changeset');
+  assert.match(card.CLOSEOUT, /--wi WI-NEXT --done execute-changeset --receipt exec-record:<sha256>$/);
 });
