@@ -463,6 +463,18 @@ function orderPrerequisites(steps) {
   return steps;
 }
 
+// Same derivation task-graph applies (and its validator requires): the graph status follows
+// the tasks, so it is recomputed after every reopen, reset and block.
+function deriveStatus(tasks) {
+  if (tasks.length === 0) return "pending";
+  if (tasks.every((task) => task.status === "completed")) return "completed";
+  if (tasks.some((task) => task.status === "in_progress")) return "in_progress";
+  if (tasks.some((task) => task.status === "pending")) return "pending";
+  if (tasks.some((task) => task.status === "blocked")) return "blocked";
+  if (tasks.every((task) => task.status === "skipped")) return "skipped";
+  return "completed";
+}
+
 function taskList(steps, solutionConfidence) {
   const tasks = steps.map((step, index) => ({
     id: index + 1,
@@ -529,7 +541,8 @@ function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrat
     if (!queues.has(key)) queues.set(key, []);
     queues.get(key).push(task);
   }
-  let nextId = Math.max(...reserved) + 1;
+  const migratedIds = (existingGraph?.delivery_graph?.migrated_prerequisites || []).map((row) => row?.task?.id).filter(Number.isInteger);
+  let nextId = Math.max(...reserved, ...migratedIds) + 1;
   const remap = new Map(), matched = new Set(), pairs = [];
   for (const task of tasks) {
     const prev = queues.get(taskMatchKey(task))?.shift();
@@ -563,6 +576,7 @@ function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrat
     else clone.blocked_by = prev?.status === "completed" ? inherited : [...new Set([...inherited, ...required])];
     return clone;
   });
+  reopenBehindMovedPrerequisites(out, pairs, position, notes);
   for (const prev of existing) {
     if (matched.has(prev.id)) continue;
     // Retain completed evidence and unrelated work. Unstarted research that is
@@ -582,6 +596,27 @@ function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrat
   for (const task of out) task.blocked_by = (task.blocked_by || []).filter(id => !retired.has(id));
   reopenForNewProcessSteps(out, pairs, notes);
   return out;
+}
+
+// An unfinished prerequisite that is new, or moved ahead of planning, now precedes stages that
+// may already be started or done. Those stages did not run behind it: they depend on it again
+// and go back to pending, so the scheduler cannot select land-changeset ahead of it.
+function reopenBehindMovedPrerequisites(out, pairs, position, notes) {
+  const first = pairs.findIndex(({ task, prev, clone }) =>
+    Object.hasOwn(UPSTREAM_PREREQUISITES, task.metadata?.skill) && clone.status !== "completed" &&
+    (!prev || (prev.blocked_by || []).some((id) => position.has(id) && position.get(id) >= position.get(clone.id))));
+  if (first === -1) return;
+  const why = `unfinished prerequisite ${pairs[first].task.metadata.skill} now precedes this stage`;
+  pairs.forEach(({ task, clone }, index) => {
+    if (index <= first || !["completed", "in_progress"].includes(clone.status)) return;
+    const previous = clone.status;
+    clone.status = "pending";
+    clone.metadata ||= {};
+    clone.metadata.reopened = { reason: why, previous, at: new Date().toISOString() };
+    const required = (task.blocked_by || []).map((id) => pairs.find((row) => row.task.id === id)?.clone.id).filter((id) => id != null);
+    clone.blocked_by = [...new Set([...(clone.blocked_by || []), ...required])];
+    notes.reopened.push({ id: clone.id, skill: clone.metadata.skill, reason: why });
+  });
 }
 
 // A process receipt counts only when it names a digest-bound evidence file that still
@@ -616,8 +651,9 @@ function reopenForNewProcessSteps(out, pairs, notes) {
     if (!downstream.has(task.id) || !["completed", "in_progress"].includes(task.status)) continue;
     const previous = task.status;
     task.status = "pending";
+    task.metadata ||= {};
     task.metadata.reopened = { reason: why, previous, at: new Date().toISOString() };
-    notes.reopened.push({ id: task.id, skill: task.metadata?.skill, reason: why });
+    notes.reopened.push({ id: task.id, skill: task.metadata.skill, reason: why });
   }
 }
 
@@ -634,7 +670,7 @@ function assertAcyclic(tasks) {
   for (const task of tasks) visit(task.id, []);
 }
 
-function attachResearchRequestors(tasks, questions, foldedIds = new Set()) {
+function attachResearchRequestors(tasks, questions, remap = {}) {
   const defaultRequestor = tasks.find(task => task.metadata?.skill === "design-tech")
     || tasks.find(task => task.metadata?.skill === "explore-solutions")
     || tasks.find(task => task.metadata?.skill === "plan-changeset");
@@ -649,11 +685,14 @@ function attachResearchRequestors(tasks, questions, foldedIds = new Set()) {
     if (task.metadata?.skill !== "research") continue;
     const question = questions.find(item => item.id === task.metadata.requesting_decision_id);
     const requestedId = question?.requesting_task_id ?? task.metadata.requesting_task_id;
-    let requestor = requestedId != null ? tasks.find(item => item.id === requestedId)
-      : question?.requesting_skill ? tasks.find(item => item.metadata?.skill === question.requesting_skill) : defaultRequestor;
     // A stage folded into execute-changeset (e2e, journey proof) no longer has its own task;
-    // its research is requested by execute-changeset instead.
-    if (!requestor && (EXECUTION_PREREQUISITES.includes(question?.requesting_skill) || foldedIds.has(requestedId))) {
+    // research it asked for is requested by execute-changeset. The remapping is stored in
+    // the graph, so a later resume resolves the same old id the same way.
+    const remappedSkill = requestedId != null ? remap[String(requestedId)] : undefined;
+    let requestor = remappedSkill ? tasks.find(item => item.metadata?.skill === remappedSkill)
+      : requestedId != null ? tasks.find(item => item.id === requestedId)
+      : question?.requesting_skill ? tasks.find(item => item.metadata?.skill === question.requesting_skill) : defaultRequestor;
+    if (!requestor && EXECUTION_PREREQUISITES.includes(question?.requesting_skill)) {
       requestor = tasks.find(item => item.metadata?.skill === "execute-changeset");
     }
     if (!requestor || requestor === task) throw new Error("research has no valid requesting task");
@@ -828,10 +867,15 @@ export function compileDeliveryGraph(input) {
   };
 
   const notes = { reopened: [], migrated: [] };
-  const tasks = attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph, notes), questions, new Set(notes.migrated.map((row) => row.task.id)));
+  const remap = { ...(existingGraph?.delivery_graph?.research?.requester_remap || {}) };
+  const tasks = attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph, notes), questions, (() => {
+    for (const row of notes.migrated) remap[String(row.task.id)] = "execute-changeset";
+    return remap;
+  })());
   assertAcyclic(tasks);
+  if (Object.keys(remap).length) deliveryGraph.research.requester_remap = remap;
   deliveryGraph.migrated_prerequisites = [...(existingGraph?.delivery_graph?.migrated_prerequisites || []), ...notes.migrated];
-  if (notes.reopened.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "reopen_for_process_steps", reason: "E2E/journey proof moved into execute-changeset process steps; execution and downstream stages reopened until process evidence exists.", tasks: notes.reopened });
+  if (notes.reopened.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "reopen_for_process_steps", reason: "A prerequisite moved upstream or gained a required process step; execution and downstream stages reopened until it is done and its evidence exists (per-task reasons below).", tasks: notes.reopened });
   const reopened = applyPlanningDepth(tasks, planning);
   if (reopened.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "reopen_for_depth", reason: "Planning depth increased; lighter completed stages reopened.", tasks: reopened });
   const superseded = [...(existingGraph?.delivery_graph?.research?.superseded_tasks || []),
@@ -843,7 +887,7 @@ export function compileDeliveryGraph(input) {
     wi,
     lane,
     created: existingGraph?.created || new Date().toISOString(),
-    status: existingGraph?.status === "completed" && tasks.some(task => task.status !== "completed") ? "in_progress" : existingGraph?.status || "pending",
+    status: deriveStatus(tasks),
     delivery_graph: deliveryGraph,
     tasks,
   };

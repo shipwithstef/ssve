@@ -201,7 +201,11 @@ for (const legacyStatus of ["pending", "completed"]) {
     const { next } = resume(legacyGraph({ legacyStatus, rest: "completed" }));
     const status = (s) => next.tasks.find((t) => skillOf(t) === s).status;
     for (const s of ["execute-changeset", "review-gate", "review-exec", "audit-implementation", "land-changeset", "verify-promotion"]) assert.equal(status(s), "pending", s);
-    for (const s of ["write-spec", "plan-changeset", "review-plan"]) assert.equal(status(s), "completed", `${s} upstream stays done`);
+    // A pending persona task that moves in front of write-spec reopens everything after it;
+    // a completed one leaves the upstream stages alone.
+    const upstream = legacyStatus === "completed" ? "completed" : "pending";
+    for (const s of ["write-spec", "plan-changeset", "review-plan"]) assert.equal(status(s), upstream, `${s} upstream`);
+    assert.equal(status("validate-feature"), "completed");
     assert.ok(next.delivery_graph.mutation_history.some((m) => m.action === "reopen_for_process_steps"));
     const steps = next.tasks.find((t) => skillOf(t) === "execute-changeset").metadata.required_process_steps.map((p) => p.skill);
     assert.ok(steps.includes("write-e2e") && steps.includes("test-journeys"));
@@ -311,4 +315,86 @@ test("reopening execution also resets in_progress dependents to pending, so task
   fs.writeFileSync(file, JSON.stringify(next));
   const r = spawnSync(process.execPath, [path.join(ROOT, "scripts/task-graph.mjs"), "next", file], { encoding: "utf8" });
   assert.equal(r.status, 0, r.stdout + r.stderr);
+});
+
+// ---- round 3 -----------------------------------------------------------------------
+const nextOk = (g) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tg3-"));
+  const file = path.join(dir, "g.json");
+  const copy = structuredClone(g);
+  for (const t of copy.tasks) if (t.status === "completed") t.skill_receipt = { skill: skillOf(t), loaded_at: new Date().toISOString(), loaded_via: "fixture" };
+  fs.writeFileSync(file, JSON.stringify(copy));
+  const r = spawnSync(process.execPath, [path.join(ROOT, "scripts/task-graph.mjs"), "next", file], { encoding: "utf8" });
+  return { status: r.status, out: r.stdout + r.stderr, next: r.status === 0 && r.stdout.trim() ? JSON.parse(r.stdout) : null };
+};
+
+test("reopening a completed legacy graph recomputes graph.status so task-graph next accepts it", () => {
+  const old = legacyGraph({ legacyStatus: "completed", rest: "completed" });
+  old.status = "completed";
+  const { next } = resume(old);
+  assert.equal(next.status, "pending");
+  const r = nextOk(next);
+  assert.equal(r.status, 0, r.out);
+  assert.equal(r.next.metadata.skill, "execute-changeset");
+});
+
+test("graph.status follows the tasks: in_progress dependents reset leaves no active task in an in_progress graph", () => {
+  const old = legacyGraph({ legacyStatus: "pending", rest: "completed" });
+  old.status = "in_progress";
+  old.tasks.find((t) => skillOf(t) === "land-changeset").status = "in_progress";
+  const { next } = resume(old);
+  assert.ok(!(next.status === "in_progress" && !next.tasks.some((t) => t.status === "in_progress")), "in_progress graph without an active task");
+  assert.equal(nextOk(next).status, 0);
+});
+
+test("a task without metadata is reopened without throwing", () => {
+  const old = legacyGraph({ legacyStatus: "completed", rest: "completed" });
+  const extra = { id: old.tasks.length + 1, subject: "hand-made", status: "completed", blocked_by: [old.tasks.find((t) => skillOf(t) === "execute-changeset").id] };
+  old.tasks.push(extra);
+  const { next } = resume(old);
+  const t = next.tasks.find((x) => x.id === extra.id);
+  assert.equal(t.status, "pending");
+  assert.equal(t.metadata.reopened.previous, "completed");
+});
+
+test("research addressed only by a folded task's requesting_task_id survives repeated resumes", () => {
+  const q = { ...question("legacy-id-q", undefined) };
+  delete q.requesting_skill;
+  const old = legacyGraph({ legacyStatus: "pending", rest: "pending" });
+  const e2e = old.tasks.find((t) => skillOf(t) === "write-e2e");
+  q.requesting_task_id = e2e.id;
+  const r = { id: old.tasks.length + 1, subject: "research", status: "pending", blocked_by: [], metadata: { skill: "research", requesting_decision_id: q.id, question_id: q.id, requesting_task_id: e2e.id } };
+  old.tasks.push(r);
+  e2e.blocked_by.push(r.id);
+  let g = compileDeliveryGraph({ ...INPUT, questions: [q], existing_graph: old });
+  const executeId = (x) => x.tasks.find((t) => skillOf(t) === "execute-changeset").id;
+  for (let i = 0; i < 3; i += 1) {
+    assert.equal(g.tasks.find((t) => skillOf(t) === "research").metadata.requesting_task_id, executeId(g), `resume ${i}`);
+    assert.deepEqual(validateResearchGraph(g), []);
+    assert.equal(cyclic(g.tasks), false);
+    g = compileDeliveryGraph({ ...INPUT, questions: [q], existing_graph: g });
+  }
+  assert.ok(g.delivery_graph.research.requester_remap, "remapping is persisted in the graph");
+});
+
+test("an unfinished design-tech moving ahead of planning reopens the downstream stages", () => {
+  const input = { wi: "WI-ORD-3", lane: "bugfix", user_intent: "x", change_type: "bugfix", delivery_profile: "production", planned_files: ["src/a.js"], risk_flags: ["backend-function", "data-model-change"] };
+  const fresh = compileDeliveryGraph({ ...input, risk_flags: [] });
+  // Older graph: bugfix compiled without technical risk, mid-way through the chain.
+  const old = structuredClone(fresh);
+  old.status = "in_progress";
+  old.tasks.forEach((t) => { t.status = "completed"; });
+  old.tasks.find((t) => skillOf(t) === "land-changeset").status = "in_progress";
+  old.tasks.find((t) => skillOf(t) === "verify-promotion").status = "pending";
+  const next = compileDeliveryGraph({ ...input, existing_graph: old });
+  const by = (s) => next.tasks.find((t) => skillOf(t) === s);
+  const order = next.tasks.map(skillOf);
+  assert.ok(order.indexOf("design-tech") < order.indexOf("plan-changeset"));
+  assert.equal(by("design-tech").status, "pending");
+  for (const s of ["plan-changeset", "execute-changeset", "land-changeset", "verify-promotion"]) assert.equal(by(s).status, "pending", s);
+  assert.ok(by("plan-changeset").blocked_by.includes(by("design-tech").id), "planning now depends on design-tech");
+  assert.equal(cyclic(next.tasks), false);
+  const r = nextOk(next);
+  assert.equal(r.status, 0, r.out);
+  assert.equal(r.next.metadata.skill, "design-tech", "next picks the unfinished prerequisite, not land-changeset");
 });
