@@ -3,12 +3,17 @@
  * Project standing rules: owner rules for everything we build, now and later.
  *
  * Durable store: .svc/standing-rules.md (regular file, never a symlink).
+ * Add, list, and session preload all use the owning project root: the nearest
+ * ancestor with a real .svc directory or a git work tree. A subdirectory is
+ * not its own project. The home directory (~/.svc is user config) and the
+ * temp root are never that project.
  * Session start loads print-for-session, a single block capped at 2 KB.
  * Nothing is appended to CLAUDE.md or AGENTS.md.
  */
 import crypto from "node:crypto";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -21,10 +26,59 @@ const FRESH_FLAGS = fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_
 const LOCK_FLAGS = fs.constants.O_CREAT | fs.constants.O_RDWR | NOFOLLOW;
 const HEADER = "[STANDING RULES — owner rules for everything we build, now and later]";
 
-function resolveRoot(root) {
+// Temp roots are never a project. A polluted /tmp/.svc must not own a fixture,
+// and the walk must not climb out of the temp root into "/".
+const TEMP_ROOTS = (() => {
+  const roots = new Set();
+  for (const candidate of [os.tmpdir(), "/tmp", process.env.TMPDIR]) {
+    if (!candidate) continue;
+    try { roots.add(path.resolve(candidate)); } catch { /* unresolvable temp path */ }
+    try { roots.add(fs.realpathSync(candidate)); } catch { /* unresolvable temp path */ }
+  }
+  return roots;
+})();
+
+function homeDirectory() {
+  try { return fs.realpathSync(os.homedir()); }
+  catch { return null; }
+}
+
+function stopsWalk(dir, home) {
+  return TEMP_ROOTS.has(dir) || dir === home;
+}
+
+function hasRealSvc(dir) {
+  try {
+    const stat = fs.lstatSync(path.join(dir, ".svc"));
+    return stat.isDirectory() && !stat.isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+function hasGitMarker(dir) {
+  try {
+    const stat = fs.lstatSync(path.join(dir, ".git"));
+    return !stat.isSymbolicLink() && (stat.isDirectory() || stat.isFile());
+  } catch {
+    return false;
+  }
+}
+
+// Nearest ancestor that owns the project. An empty subdirectory must not hide
+// rules stored in the ancestor's .svc/standing-rules.md.
+export function resolveRoot(root) {
   const projectRoot = fs.realpathSync(path.resolve(root));
   if (!fs.statSync(projectRoot).isDirectory()) {
     throw Object.assign(new Error("project root must be a directory"), { code: "ROOT" });
+  }
+  const home = homeDirectory();
+  let dir = projectRoot;
+  for (;;) {
+    if (!stopsWalk(dir, home) && (hasRealSvc(dir) || hasGitMarker(dir))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir || stopsWalk(dir, home)) break;
+    dir = parent;
   }
   return projectRoot;
 }

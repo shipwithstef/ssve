@@ -1,3 +1,4 @@
+// @organism-suite
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -11,6 +12,7 @@ import {
   addRule,
   createFreshTemp,
   printForSession,
+  resolveRoot,
 } from "../../scripts/standing-rules.mjs";
 
 const testsDir = path.dirname(fileURLToPath(import.meta.url));
@@ -251,6 +253,100 @@ test("a symlinked store is not read or replaced", () => {
     assert.equal(printed.status, 0);
     assert.doesNotMatch(printed.stdout, /secret outside/);
     assert.doesNotMatch(printed.stdout, new RegExp(RULE));
+  });
+});
+
+test("the standing-rules regression file is in the organism suite", () => {
+  const source = fs.readFileSync(fileURLToPath(import.meta.url), "utf8");
+  assert.equal(source.startsWith("// @organism-suite\n"), true);
+  assert.match(source, /\btest\s*\(/);
+});
+
+test("session start in a subdirectory prints the ancestor standing rules", () => {
+  fixture((root) => {
+    assert.equal(run(["add", "--root", root, "--text", RULE]).status, 0);
+    const sub = path.join(root, "src", "app");
+    fs.mkdirSync(sub, { recursive: true });
+    assert.equal(resolveRoot(sub), resolveRoot(root));
+
+    const started = spawnSync(process.execPath, [hook], {
+      encoding: "utf8",
+      input: JSON.stringify({ hook_event_name: "SessionStart", cwd: sub }),
+    });
+    assert.equal(started.status, 0, started.stderr);
+    assert.match(started.stdout, new RegExp(RULE));
+    assert.match(started.stdout, /STANDING RULES/);
+    assert.equal(fs.existsSync(path.join(sub, ".svc")), false);
+    assert.equal(fs.existsSync(path.join(root, "src", ".svc")), false);
+
+    const second = "shipping labels use the warehouse address";
+    const added = run(["add", "--root", sub, "--text", second]);
+    assert.equal(added.status, 0, added.stderr);
+    assert.equal(added.stdout, `recorded: ${second}\n`);
+    assert.equal(run(["list", "--root", sub]).stdout, `${RULE}\n${second}\n`);
+    assert.equal(run(["list", "--root", root]).stdout, `${RULE}\n${second}\n`);
+    assert.equal(fs.existsSync(path.join(sub, ".svc")), false);
+  });
+});
+
+test("a git subdirectory records rules at the repository root", () => {
+  fixture((root) => {
+    fs.mkdirSync(path.join(root, ".git"));
+    const sub = path.join(root, "src", "app");
+    fs.mkdirSync(sub, { recursive: true });
+    assert.equal(resolveRoot(sub), fs.realpathSync(root));
+    const added = run(["add", "--root", sub, "--text", RULE]);
+    assert.equal(added.status, 0, added.stderr);
+    assert.equal(fs.existsSync(path.join(sub, ".svc")), false);
+    assert.match(fs.readFileSync(path.join(root, ".svc", "standing-rules.md"), "utf8"), new RegExp(RULE));
+    assert.equal(run(["list", "--root", sub]).stdout.trim(), RULE);
+    const printed = run(["print-for-session", "--root", sub]);
+    assert.match(printed.stdout, new RegExp(RULE));
+    assert.match(printed.stdout, /STANDING RULES/);
+  });
+});
+
+test("a nested project keeps its own standing rules", () => {
+  fixture((root) => {
+    assert.equal(run(["add", "--root", root, "--text", "outer rule"]).status, 0);
+    const inner = path.join(root, "packages", "app");
+    const innerSub = path.join(inner, "src");
+    fs.mkdirSync(path.join(inner, ".svc"), { recursive: true });
+    fs.mkdirSync(innerSub);
+    const added = run(["add", "--root", innerSub, "--text", "inner rule"]);
+    assert.equal(added.status, 0, added.stderr);
+    assert.equal(run(["list", "--root", innerSub]).stdout.trim(), "inner rule");
+    assert.equal(run(["list", "--root", root]).stdout.trim(), "outer rule");
+    assert.equal(fs.existsSync(path.join(innerSub, ".svc")), false);
+  });
+});
+
+test("the home directory .svc is not the owning project", () => {
+  fixture((root) => {
+    const home = path.join(root, "home");
+    const project = path.join(home, "project", "src");
+    fs.mkdirSync(path.join(home, ".svc"), { recursive: true });
+    fs.writeFileSync(path.join(home, ".svc", "standing-rules.md"), "- home rule\n");
+    fs.mkdirSync(project, { recursive: true });
+    const env = { ...process.env, HOME: home };
+    const added = run(["add", "--root", project, "--text", RULE], { env });
+    assert.equal(added.status, 0, added.stderr);
+    assert.equal(fs.readFileSync(path.join(home, ".svc", "standing-rules.md"), "utf8"), "- home rule\n");
+    assert.match(fs.readFileSync(path.join(project, ".svc", "standing-rules.md"), "utf8"), new RegExp(RULE));
+    const printed = run(["print-for-session", "--root", project], { env });
+    assert.match(printed.stdout, new RegExp(RULE));
+    assert.doesNotMatch(printed.stdout, /home rule/);
+  });
+});
+
+test("an unmarked temp subdirectory does not climb into the temp root", () => {
+  fixture((root) => {
+    const sub = path.join(root, "sub");
+    fs.mkdirSync(sub);
+    assert.equal(run(["add", "--root", sub, "--text", RULE]).status, 0);
+    assert.equal(fs.existsSync(path.join(root, ".svc")), false);
+    assert.match(fs.readFileSync(path.join(sub, ".svc", "standing-rules.md"), "utf8"), new RegExp(RULE));
+    assert.equal(run(["list", "--root", sub]).stdout.trim(), RULE);
   });
 });
 
