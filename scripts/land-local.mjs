@@ -3,7 +3,8 @@
 // (no network remote, no GitHub PR). The GitHub PR path in land-changeset is unchanged and is
 // never used here: a project with any git remote is refused and must use that path.
 //
-//   node "$SVC_ROOT"/scripts/land-local.mjs --root <wi-worktree> --wi <WI> [--json] [--dry-run]
+//   node "$SVC_ROOT"/scripts/land-local.mjs --root <wi-worktree> --wi <WI> [--json] [--dry-run] [--cleanup]
+// --cleanup (run it from the project root) removes the WI worktree and its merged branch after a landing.
 //
 // Lands only when (1) the chain receipts validate for the LOCAL consumer
 // (`check-chain-receipts --consumer stop`, note-sourced) for the WI tip as the full five-receipt
@@ -106,7 +107,8 @@ export function crossFamilyProblems(wtRoot, sha, wi) {
     const bodies = noteBodies(wtRoot, sha).filter((b) => b.receipt_type === type && (!b.wi || b.wi.toLowerCase() === wi.toLowerCase()));
     if (!bodies.length) { problems.push(`${type}: no receipt in the note`); continue; }
     for (const b of bodies) {
-      if (Number(b.schema_version) < 3 || !b.reviewer_evidence || typeof b.reviewer_evidence !== "object") {
+      // an integer >= 3 only: strings, NaN, floats and missing values never reach (or skip) evidence verification
+      if (!Number.isInteger(b.schema_version) || b.schema_version < 3 || !b.reviewer_evidence || typeof b.reviewer_evidence !== "object" || Array.isArray(b.reviewer_evidence)) {
         problems.push(`${type}: cross-family reviewer evidence required (schema_version >= 3 with reviewer_evidence); a v1/v2 or self-declared review is not accepted`);
         continue;
       }
@@ -125,11 +127,13 @@ export function crossFamilyProblems(wtRoot, sha, wi) {
 // cumulative change). Otherwise EVERY incoming commit must carry its own eligible quick-fix receipt,
 // so an unreviewed code commit cannot ride in under a later documentation-only commit.
 function checkReceipts(wtRoot, tip, wi, incoming) {
-  const full = runChecker(wtRoot, tip, wi, ["--expected-stage", "audit"]);
-  let fullProblems = null;
-  if (full.ok) {
-    fullProblems = crossFamilyProblems(wtRoot, tip, wi);
-    if (!fullProblems.length) return { type: full.type || "complete", sha: tip, commits: incoming.length };
+  // The local cross-family fence runs BEFORE the shared checker: a review that fails it is never handed
+  // to evidence verification (whose own version gate a non-integer schema_version could otherwise skip).
+  const fullProblems = crossFamilyProblems(wtRoot, tip, wi);
+  let full = null;
+  if (!fullProblems.length) {
+    full = runChecker(wtRoot, tip, wi, ["--expected-stage", "audit"]);
+    if (full.ok) return { type: full.type || "complete", sha: tip, commits: incoming.length };
   }
   const quickFailures = [];
   const merges = incoming.filter((c) => git(wtRoot, ["rev-list", "--parents", "-n", "1", c]).out.split(" ").length > 2);
@@ -141,7 +145,7 @@ function checkReceipts(wtRoot, tip, wi, incoming) {
     }
   }
   if (!quickFailures.length) return { type: "quick-fix", sha: tip, commits: incoming.length };
-  const missing = fullProblems ? fullProblems : full.missing;
+  const missing = fullProblems.length ? fullProblems : full.missing;
   throw new Refusal("RECEIPTS_MISSING", `chain receipts do not validate for local landing of ${incoming.length} incoming commit(s)`, { missing: [...missing, ...quickFailures], sha: tip });
 }
 
@@ -173,27 +177,48 @@ function incomingCollisions(mainRoot, mainSha, tip) {
 }
 
 // Identical untracked copies are moved aside (never deleted) and restored on any failure.
-function setAside(mainRoot, rels) {
+export function setAside(mainRoot, rels) {
   const dir = path.join(git(mainRoot, ["rev-parse", "--absolute-git-dir"]).out, `svc-land-local-aside-${process.pid}`);
   const moved = [];
-  for (const rel of rels) {
-    const dest = path.join(dir, rel);
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.renameSync(path.join(mainRoot, rel), dest);
-    moved.push(rel);
-  }
-  return {
-    restore() {
-      for (const rel of moved) {
-        const target = path.join(mainRoot, rel);
+  const restore = () => {
+    const failed = [];
+    for (const rel of moved.splice(0).reverse()) {
+      const target = path.join(mainRoot, rel);
+      try {
         if (fs.existsSync(target)) continue;
         fs.mkdirSync(path.dirname(target), { recursive: true });
         fs.renameSync(path.join(dir, rel), target);
-      }
-      fs.rmSync(dir, { recursive: true, force: true });
-    },
-    discard() { fs.rmSync(dir, { recursive: true, force: true }); },
+      } catch { failed.push(rel); }
+    }
+    if (!failed.length) fs.rmSync(dir, { recursive: true, force: true });
+    return failed;
   };
+  try {
+    for (const rel of rels) {
+      const dest = path.join(dir, rel);
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.renameSync(path.join(mainRoot, rel), dest);
+      moved.push(rel);
+    }
+  } catch (e) {
+    // all-or-nothing: put back everything already moved before surfacing the failure
+    const failed = restore();
+    throw new Refusal("ASIDE_FAILED", `could not set aside identical untracked files (${e.message}); ${failed.length ? `COULD NOT RESTORE ${failed.join(", ")} - copies kept in ${dir}` : "all restored"}`);
+  }
+  return { restore, discard() { fs.rmSync(dir, { recursive: true, force: true }); } };
+}
+
+// Package-resolved cleanup (no project-local scripts/hooks needed): only after the WI tip is in main.
+function cleanupWorktree(mainRoot, wtTop, branch, mainBranch, tip) {
+  const cwd = (() => { try { return fs.realpathSync(process.cwd()); } catch { return process.cwd(); } })();
+  if (cwd === wtTop || cwd.startsWith(wtTop + path.sep)) return "skipped-cwd-inside-worktree: run from the project root";
+  if (!isAncestor(mainRoot, tip, resolveRef(mainRoot, `refs/heads/${mainBranch}`))) return "skipped-not-landed";
+  if (dirtyTracked(wtTop).length) return "skipped-tracked-changes";
+  // Tracked work is clean and landed; what `--force` discards is untracked/ignored scratch (.svc state).
+  const rm = git(mainRoot, ["worktree", "remove", "--force", wtTop], { allowFail: true });
+  if (!rm.ok) return `worktree-remove-failed: ${rm.err || rm.out}`;
+  const br = git(mainRoot, ["branch", "-d", branch], { allowFail: true });
+  return br.ok ? "removed" : `worktree-removed-branch-kept: ${br.err || br.out}`;
 }
 
 function conflictCheck(mainRoot, mainSha, tip) {
@@ -227,7 +252,7 @@ export function advanceLocalOrigin(mainRoot, newMain, seams = {}) {
   return result;
 }
 
-export function landLocal({ root, wi, dryRun = false }) {
+export function landLocal({ root, wi, dryRun = false, cleanup = false }) {
   if (!wi || !WI_RE.test(wi)) throw new Refusal("USAGE", "--wi <WI-###> is required");
   const wtRoot = fs.realpathSync(path.resolve(root || process.cwd()));
   const top = git(wtRoot, ["rev-parse", "--show-toplevel"], { allowFail: true });
@@ -258,7 +283,8 @@ export function landLocal({ root, wi, dryRun = false }) {
 
   if (isAncestor(mainRoot, tip, mainSha)) {
     const origin = dryRun ? "not-run" : advanceLocalOrigin(mainRoot, mainSha);
-    return { landed: true, main_sha: mainSha, method: "already-landed", dry_run: dryRun || undefined, local_origin_ref: origin, ...common };
+    const cleaned = cleanup && !dryRun ? cleanupWorktree(mainRoot, wtTop, branch, mainBranch, tip) : undefined;
+    return { landed: true, main_sha: mainSha, method: "already-landed", dry_run: dryRun || undefined, local_origin_ref: origin, ...(cleaned ? { cleanup: cleaned } : {}), ...common };
   }
 
   const onBranch = git(mainRoot, ["symbolic-ref", "--quiet", "--short", "HEAD"], { allowFail: true }).out;
@@ -298,17 +324,19 @@ export function landLocal({ root, wi, dryRun = false }) {
   aside.discard();
   const newMain = resolveRef(mainRoot, "HEAD");
   const origin = advanceLocalOrigin(mainRoot, newMain);
-  return { landed: true, main_sha: newMain, previous_main_sha: mainSha, method, local_origin_ref: origin, ...common };
+  const cleaned = cleanup ? cleanupWorktree(mainRoot, wtTop, branch, mainBranch, tip) : undefined;
+  return { landed: true, main_sha: newMain, previous_main_sha: mainSha, method, local_origin_ref: origin, ...(cleaned ? { cleanup: cleaned } : {}), ...common };
 }
 
 function parseArgs(argv) {
-  const o = { root: null, wi: null, json: false, dryRun: false };
+  const o = { root: null, wi: null, json: false, dryRun: false, cleanup: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--root") o.root = argv[++i];
     else if (a === "--wi") o.wi = argv[++i];
     else if (a === "--json") o.json = true;
     else if (a === "--dry-run") o.dryRun = true;
+    else if (a === "--cleanup") o.cleanup = true;
     else if (a === "-h" || a === "--help") o.help = true;
     else { console.error(`land-local: unknown argument ${a}`); process.exit(1); }
   }
@@ -317,9 +345,9 @@ function parseArgs(argv) {
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
-  if (args.help) { console.log("usage: land-local.mjs --root <wi-worktree> --wi <WI-###> [--json] [--dry-run]"); return; }
+  if (args.help) { console.log("usage: land-local.mjs --root <wi-worktree> --wi <WI-###> [--json] [--dry-run] [--cleanup]"); return; }
   try {
-    const result = landLocal({ root: args.root, wi: args.wi, dryRun: args.dryRun });
+    const result = landLocal({ root: args.root, wi: args.wi, dryRun: args.dryRun, cleanup: args.cleanup });
     console.log(args.json ? JSON.stringify(result, null, 2) : `${result.landed ? "landed" : "would land"} ${result.branch} on ${result.main_branch} at ${result.main_sha.slice(0, 12)} (${result.method})`);
   } catch (e) {
     if (e instanceof Refusal) {

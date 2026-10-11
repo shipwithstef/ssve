@@ -178,7 +178,7 @@ node "$SVC_ROOT"/scripts/land-local.mjs --root "$WORKTREE" --wi "$WI" --json
 
 `land-local` validates the chain receipts with the local consumer (`check-chain-receipts --consumer stop`, note-sourced) and then merges the WI branch into the main branch in the project's main checkout. Receipts must cover EVERY incoming commit (`main..tip`): either the full five-receipt chain at the tip with cross-family adversarial review evidence (review-plan and review-exec at schema_version 3 with `reviewer_evidence`, author and reviewer families different; there is no same-host route), or an eligible tree-bound quick-fix receipt on each incoming commit (a merge commit inside the branch needs the full chain). It fast-forwards when possible, otherwise makes a merge commit. It never rewrites history, never forces, never resolves a conflict, and refuses on any tracked change in either checkout. Receipts are git notes on the WI commits in the same repository, so they stay attached after the merge. With no `origin` remote it also advances the local `refs/remotes/origin/main` (compare-and-swap, never rewinding) to the landed main. It prints `{landed, main_sha, method}`; a repeat run reports `already-landed`.
 
-A refusal (exit 2) names a reason: `RECEIPTS_MISSING` (finish the chain), `MAIN_DIRTY` / `MAIN_UNTRACKED_COLLISION` / `MAIN_CHECKOUT_OFF_BRANCH` (the user's checkout needs attention; report, do not force), `MERGE_CONFLICT` (merge main into the WI branch in the worktree, re-run the affected review and audit, then re-run), `HAS_REMOTE` (use the PR path). Landed means `landed: true`; record `main_sha` as the landing evidence for `verify-promotion`, then continue at Step 5 (local variant: worktree removal only) and Step 6.
+A refusal (exit 2) names a reason: `RECEIPTS_MISSING` (finish the chain), `MAIN_DIRTY` / `MAIN_UNTRACKED_COLLISION` / `MAIN_CHECKOUT_OFF_BRANCH` (the user's checkout needs attention; report, do not force), `MERGE_CONFLICT` (merge main into the WI branch in the worktree, re-run the affected review and audit, then re-run), `HAS_REMOTE` (use the PR path). Landed means `landed: true`; record `main_sha` as the landing evidence for `verify-promotion`, then continue at Step 5 (local variant: `--cleanup`) and Step 6.
 
 ### Step 3a: Push the branch
 
@@ -376,7 +376,7 @@ git checkout main && git pull
 scripts/worktree.sh remove <branch-name>
 ```
 
-**Local project (Step 3-local):** do not run `git checkout main && git pull`. The project checkout already holds the landed main and there is no remote to pull from. From the project root, run only `scripts/worktree.sh remove <branch-name>`.
+**Local project (Step 3-local):** do not run `git checkout main && git pull`, and do not call a project-relative `scripts/worktree.sh` (a fresh user project does not have it). The project checkout already holds the landed main and there is no remote to pull from. From the project root, re-run the package-resolved entry with cleanup: `node "$SVC_ROOT"/scripts/land-local.mjs --root "$WORKTREE" --wi "$WI" --json --cleanup` (reports `already-landed`, then removes the WI worktree and its merged branch; it refuses to remove from inside the worktree or with tracked changes).
 
 This removes `.worktrees/<branch-name>` and deletes the local branch.
 

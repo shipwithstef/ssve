@@ -7,7 +7,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { advanceLocalOrigin, crossFamilyProblems } from "../../scripts/land-local.mjs";
+import { advanceLocalOrigin, crossFamilyProblems, setAside } from "../../scripts/land-local.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const LAND = path.join(ROOT, "scripts", "land-local.mjs");
@@ -170,6 +170,10 @@ test("cross-family adversarial review is mandatory: v1/v2, self-declared and sam
     assert.equal(r.status, 0, r.stderr + JSON.stringify(r.json));
   };
   const ar = (host) => ({ primary_reviewer_host: host, primary_used: true, fallback_host: host, fallback_used: false, findings: [], iteration_count: 1 });
+  for (const bad of ["not-a-version", "3", 3.5, null, NaN, undefined]) {
+    note({ schema_version: bad, reviewer_evidence: { independent: true }, self_review: { orchestrator: "claude" }, adversarial_review: ar("codex") });
+    assert.match(crossFamilyProblems(f.wt, sha, WI).join("|"), /cross-family reviewer evidence required/, `schema_version ${String(bad)}`);
+  }
   note({ schema_version: 2, self_review: { orchestrator: "claude" }, adversarial_review: ar("codex") });
   assert.match(crossFamilyProblems(f.wt, sha, WI).join("|"), /cross-family reviewer evidence required/);
   note({ schema_version: 3, reviewer_evidence: { independent: true }, self_review: { orchestrator: "claude" }, adversarial_review: ar("claude") });
@@ -178,8 +182,59 @@ test("cross-family adversarial review is mandatory: v1/v2, self-declared and sam
   assert.match(crossFamilyProblems(f.wt, sha, WI).join("|"), /not a cross-family review/);
   note({ schema_version: 3, reviewer_evidence: { independent: true }, self_review: { orchestrator: "claude" }, adversarial_review: ar("codex") });
   assert.deepEqual(crossFamilyProblems(f.wt, sha, WI), []);
+});
+
+test("a chain of self-declared reviews is refused with an evidence-specific reason before any shared check", () => {
+  const f = fixture();
+  const sha = commitInWt(f, "spec.md", "x\n");
+  const ar = { primary_reviewer_host: "codex", primary_used: true, fallback_host: "codex", fallback_used: false, findings: [], iteration_count: 1 };
+  const rec = (type, extra = {}) => ({ receipt_type: type, wi: WI, schema_version: "not-a-version", verdict: "pass", ...extra });
+  const env = {
+    "plan-manifest": rec("plan-manifest"), "exec-record": rec("exec-record"), "audit-implementation": rec("audit-implementation"),
+    "review-plan": rec("review-plan", { reviewer_evidence: { independent: true, submitter_only: false } }),
+    "review-exec": rec("review-exec", { reviewer_evidence: { independent: true, submitter_only: false }, self_review: { orchestrator: "claude" }, adversarial_review: ar }),
+  };
+  assert.equal(spawnSync("git", ["-C", f.wt, "notes", "--ref=svc-receipts", "add", "-f", "-m", JSON.stringify(env), sha], { encoding: "utf8", env: cleanEnv() }).status, 0);
+  const mainBefore = head(f.main);
   const r = land(f);
-  assert.equal(r.status, 2); // the shared checker still has to accept the rest of the chain
+  assert.equal(r.status, 2);
+  assert.equal(r.json.reason, "RECEIPTS_MISSING");
+  assert.ok(r.json.missing.some((m) => /cross-family reviewer evidence required/.test(m)), JSON.stringify(r.json.missing));
+  assert.equal(r.json.missing.includes("plan-manifest"), false, "the shared checker must not have been reached");
+  assert.equal(head(f.main), mainBefore);
+});
+
+test("setAside is all-or-nothing: a failed later move restores every earlier one", () => {
+  const f = fixture();
+  fs.writeFileSync(path.join(f.main, "one.md"), "1\n");
+  fs.mkdirSync(path.join(f.main, "d"));
+  fs.writeFileSync(path.join(f.main, "d", "two.md"), "2\n");
+  const aside = path.join(git(f.main, "rev-parse", "--absolute-git-dir"), `svc-land-local-aside-${process.pid}`);
+  fs.mkdirSync(aside, { recursive: true });
+  fs.writeFileSync(path.join(aside, "d"), "in the way"); // makes the second move's parent directory impossible
+  assert.throws(() => setAside(f.main, ["one.md", "d/two.md"]), (e) => e.reason === "ASIDE_FAILED" && /all restored/.test(e.detail));
+  assert.equal(read(f.main, "one.md"), "1\n");
+  assert.equal(read(f.main, "d/two.md"), "2\n");
+  assert.equal(fs.existsSync(aside), false);
+});
+
+test("--cleanup removes the landed worktree and branch with package-resolved git only, never from inside it", () => {
+  const f = fixture();
+  commitInWt(f, "spec.md", "line one\nline two edited\nline three\n");
+  stubReceipt(f);
+  assert.equal(land(f).status, 0);
+  const inside = spawnSync(process.execPath, [LAND, "--root", f.wt, "--wi", WI, "--json", "--cleanup"], { cwd: f.wt, encoding: "utf8", env: cleanEnv() });
+  assert.match(JSON.parse(inside.stdout).cleanup, /^skipped-cwd-inside-worktree/);
+  assert.equal(fs.existsSync(f.wt), true);
+  const out = spawnSync(process.execPath, [LAND, "--root", f.wt, "--wi", WI, "--json", "--cleanup"], { cwd: f.main, encoding: "utf8", env: cleanEnv() });
+  const json = JSON.parse(out.stdout);
+  assert.equal(out.status, 0, out.stdout + out.stderr);
+  assert.equal(json.method, "already-landed");
+  assert.equal(json.cleanup, "removed");
+  assert.equal(fs.existsSync(f.wt), false);
+  assert.equal(git(f.main, "branch", "--list", "wi/t1"), "");
+  assert.match(read(f.main, "spec.md"), /edited/);
+  assert.equal(git(f.main, "status", "--porcelain"), "");
 });
 
 test("refuses on a dirty main checkout", () => {
