@@ -833,17 +833,47 @@ test("S security-payments: a vague finding keeps the report valid but earns no c
   const withVague = await S.grade(spBuild([...epReport, vague]), "security-payments", spec);
   assert.equal(byName(withVague, "report-well-formed").pass, true, byName(withVague, "report-well-formed").detail);
   assert.equal(withVague.score, 1);
-  // no credit: the planted defect reported only vaguely is not handled
-  const only = await S.grade(spBuild([{ ...vague, severity: "CRITICAL" }, ...epReport.filter((f) => !(f.file === "src/checkout.mjs" && f.line === 7))]), "security-payments", spec);
-  assert.equal(byName(only, "report-well-formed").pass, true);
+  // no credit, and no free point: a vague-only report must not raise any stub or no-op score
+  const stub = await S.grade(prepare("security-payments"), "security-payments", spec);
+  assert.equal(stub.score, 0.25);
+  for (const report of [[{ ...vague, severity: "CRITICAL" }], [vague], []]) {
+    const d = prepare("security-payments");
+    fs.writeFileSync(path.join(d, "SECURITY.json"), JSON.stringify(report));
+    const r = await S.grade(d, "security-payments", spec);
+    assert.equal(byName(r, "report-well-formed").pass, false, "no credited finding, no report_valid point");
+    assert.equal(byName(r, "client-price-handled").pass, false);
+    assert.ok(r.score <= 0.25, `vague-only ${r.score}`);
+  }
+});
+
+test("S findings: soft denials reject whatever impact words they carry, and questions or hedges earn nothing", async () => {
+  const SOFT = [
+    "The payment defects are properly mitigated, so no attacker crashes it",
+    "Client price: the amount is already validated, a double charge cannot happen",
+    "The webhook handler is handled and safe, it would never crash or hang",
+    "Refunds are correctly protected against a race",
+  ];
+  for (const t of SOFT) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  const HEDGES = ["Client price: crashes?", "might possibly crash the handler", "could maybe let someone double charge", "Does the webhook hang? not sure", "perhaps an attacker can forge events"];
+  for (const t of HEDGES) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  assert.equal(S.affirmativeProblem("this can be mitigated by recomputing server-side; until then an attacker pays 1 cent"), null);
+  // end to end: a report saying the money defects are mitigated scores no more than the stub, on unchanged code
+  const spec = S.loadSpec("security-payments", "S");
   const stub = await S.grade(prepare("security-payments"), "security-payments", spec);
   const d = prepare("security-payments");
-  fs.writeFileSync(path.join(d, "SECURITY.json"), JSON.stringify([{ ...vague, severity: "CRITICAL" }]));
-  const vagueReport = await S.grade(d, "security-payments", spec);
-  assert.equal(byName(vagueReport, "report-well-formed").pass, true);
-  assert.equal(byName(vagueReport, "client-price-handled").pass, false);
-  for (const n of ["refund-idor-handled", "unsigned-webhook-handled", "secret-in-logs-handled", "money-defects-rated-serious"]) assert.equal(byName(vagueReport, n).pass, false, n);
-  assert.ok(vagueReport.score < 0.5 && vagueReport.score >= stub.score, `vague ${vagueReport.score} vs stub ${stub.score}`);
+  fs.writeFileSync(path.join(d, "SECURITY.json"), JSON.stringify([
+    { file: "src/checkout.mjs", line: 7, severity: "CRITICAL", issue: "The client price is properly mitigated, nothing can crash or be lost here" },
+    { file: "src/checkout.mjs", line: 14, severity: "HIGH", issue: "Refund ownership is already validated, no double refund possible" },
+    { file: "src/webhook.mjs", line: 12, severity: "CRITICAL", issue: "Unsigned events are correctly handled and safe, no 500 either" },
+    { file: "src/webhook.mjs", line: 16, severity: "HIGH", issue: "Secrets in the logs: properly protected, nothing is corrupt" },
+  ]));
+  const r = await S.grade(d, "security-payments", spec);
+  assert.ok(r.score <= stub.score, `mitigated report ${r.score} vs stub ${stub.score}`);
+  const q = prepare("security-payments");
+  fs.writeFileSync(path.join(q, "SECURITY.json"), JSON.stringify([{ file: "src/checkout.mjs", line: 7, severity: "CRITICAL", issue: "Client price: crashes?" }]));
+  const rq = await S.grade(q, "security-payments", spec);
+  assert.equal(byName(rq, "client-price-handled").pass, false);
+  assert.ok(rq.score <= stub.score);
 });
 
 test("S report_valid: structural problems and denials still invalidate, a finding without impact does not", async () => {
@@ -851,9 +881,21 @@ test("S report_valid: structural problems and denials still invalidate, a findin
   const src = { "src/a.mjs": "l1\nl2\nl3\n" };
   const run = async (report) => byName(await S.grade(put(tmp(), { ...src, "SECURITY.json": JSON.stringify(report) }), "x", spec), "valid");
   const ok = { file: "src/a.mjs", line: 2, severity: "LOW", issue: "bad code here, fix it" };
-  assert.equal((await run([ok])).pass, true);
-  assert.equal((await run([{ ...ok, issue: "tidy" }])).pass, true);
-  assert.equal((await run([{ ...ok, line: 99 }])).pass, false);
+  // a credited finding is needed beside the vague ones
+  const good = { file: "src/a.mjs", line: 3, severity: "HIGH", issue: "anyone can forge a paid event without a signature" };
+  assert.equal((await run([ok, good])).pass, true);
+  assert.equal((await run([good, { ...ok, issue: "tidy" }])).pass, true);
+  assert.equal((await run([ok])).pass, false);
+  assert.equal((await run([])).pass, false);
+  // required fields: types checked before any vague-text exemption
+  const noIssue = { file: "src/a.mjs", line: 2, severity: "LOW" };
+  assert.equal((await run([good, noIssue])).pass, false);
+  assert.equal((await run([good, { ...ok, issue: 42 }])).pass, false);
+  assert.equal((await run([good, { ...ok, issue: "   " }])).pass, false);
+  assert.equal((await run([good, { ...ok, file: 7 }])).pass, false);
+  assert.equal((await run([good, { ...ok, line: "2" }])).pass, false);
+  assert.equal((await run([good, { ...ok, line: 0 }])).pass, false);
+  assert.equal((await run([good, { ...ok, severity: undefined }])).pass, false);
   assert.equal((await run([{ ...ok, severity: "SHRUG" }])).pass, false);
   assert.equal((await run([{ ...ok, file: "../etc/passwd" }])).pass, false);
   assert.equal((await run([{ ...ok, file: "src/missing.mjs" }])).pass, false);

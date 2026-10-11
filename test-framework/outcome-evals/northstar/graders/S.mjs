@@ -138,6 +138,7 @@ function findingProblem(dir, f, c = {}) {
   if (text == null) return `names a file that does not exist: ${rel}`;
   if (!Number.isInteger(f.line) || f.line < 1 || f.line > text.split("\n").length) return `line ${f.line} is outside ${rel}`;
   if (!sev.includes(String(f.severity || "").toUpperCase())) return `severity "${f.severity}" is not one of ${sev.join("|")}`;
+  if (typeof f.issue !== "string" || !f.issue.trim()) return "is missing the required issue text";
   if (String(f.issue || "").trim().length < (c.min_issue_chars ?? 15)) return "has no real description of the attack";
   return affirmativeProblem(f.issue);
 }
@@ -164,10 +165,10 @@ const WHOLE_DENIAL = [
 //    ("is not properly validated", "never correctly checked", "without proper escaping").
 const SOFT_DENIAL = [
   /\b(?:properly|correctly|safely|securely|adequately|already)\s+(?:validated|handled|escaped|sanitised|sanitized|authenticated|authorised|authorized|verified|signed|checked|parameterised|parameterized|mitigated|protected|enforced)\b/gi,
-  /\b(?:is|are|was|were|appears|seems|looks|remains|found|deemed|considered)\s+(?:to be\s+)?(?:\w+\s+and\s+)?(?:safe|secure|fine|ok|okay|mitigated|protected|sanitised|sanitized|sound|correct|adequate)\b/gi,
+  /\b(?:is|are|was|were|appears|seems|looks|remains|found|deemed|considered)\s+(?:to be\s+)?(?:\w+\s+and\s+)?(?:safe|secure|fine|ok|okay|mitigated|validated|handled|protected|sanitised|sanitized|sound|correct|adequate)\b/gi,
   /\b(?:parameteri[sz]ed|sanitis?zed|escaped|validated)\b[^.;\n]{0,30}\b(?:and|,)\s*(?:safe|secure)\b/gi,
 ];
-const NEGATION = /\b(?:not|never|no|without|improperly|incorrectly|inadequately|insufficiently|isn'?t|aren'?t|wasn'?t|weren'?t|doesn'?t|don'?t|didn'?t|cannot|can'?t|lacks?|lacking|missing|fails? to|failed to|un\w+)\b|n't\b/i;
+const NEGATION = /\b(?:not|never|no|without|improperly|incorrectly|inadequately|insufficiently|isn'?t|aren'?t|wasn'?t|weren'?t|doesn'?t|don'?t|didn'?t|cannot|can'?t|lacks?|lacking|missing|fails? to|failed to|un(?:validated|checked|verified|saniti[sz]ed|escaped|protected|guarded|handled|safe|secured)|insecure)\b|n't\b/i;
 function softDenial(text) {
   for (const re of SOFT_DENIAL) {
     for (const m of text.matchAll(re)) {
@@ -181,27 +182,35 @@ function softDenial(text) {
 const IMPACT = /\b(?:attackers?|attack\w*|exploit\w*|forg\w+|bypass\w*|steal\w*|tamper\w*|leak\w*|expos\w+|impersonat\w+|unauthori[sz]ed|arbitrary|inject\w*|escalat\w+|replay\w*|spoof\w*|abus\w+|take ?over|anyone|any (?:user|customer|client|caller|person)|(?:another|other) (?:user|customer|account|person)s?|for free|pay(?:s|ing)? (?:less|nothing|1|a cent|only)|without (?:paying|authenticat\w+|authori[sz]\w+|a valid|any|the signature|a signature|checking)|can (?:be )?(?:read|refund\w*|obtain\w*|trigger\w*|pay|cancel\w*|reuse\w*|access\w*|modif\w+|delet\w+|overwrit\w+|forg\w+|steal\w*|see|view)|allows?|lets?|written to (?:the )?(?:logs?|console|stdout)|crash\w*|denial[- ]of[- ]service|\bdos\b|tak(?:es?|ing) (?:the )?\w*\s?(?:\w+ )?down|\bhang\w*|unhandled (?:exception|error|rejection)s?|\b500s?\b|\bstuck\b|left (?:in|with)\b[^.\n]{0,40}\bstate|never (?:rolled back|reverted|restored|released|cleaned up)|\blost\b|double[- ](?:charg\w+|refund\w*|book\w*|spen\w+|count\w*|pay\w*)|corrupt\w*|inconsisten\w+|\brace\b|\brace condition|overdr\w+|negative balance|(?:secret|signing material|credential|password|token|key|hmac)\b[^.\n]{0,60}\b(?:logs?|logged)|\blogs?\b[^.\n]{0,60}\b(?:secret|signing material|credential|password|token|key|hmac))/i;
 const DENIES = "denies a defect (it says the code is safe, mitigated or not vulnerable) instead of describing an exploit";
 const NO_IMPACT = "does not state an attack or its impact";
+const HEDGED = "is a question or a hedge, not an affirmative statement";
+const HEDGE = /\?|\b(?:maybe|perhaps|possibly|probably|unsure|not sure|i (?:think|guess|suppose)|might|could maybe|no idea)\b/i;
 export function affirmativeProblem(issue) {
   const t = String(issue || "");
   if (WHOLE_DENIAL.some((re) => re.test(t))) return DENIES;
-  if (IMPACT.test(t)) return null;
+  // "properly mitigated" and friends deny a defect whatever impact words sit beside them
   if (softDenial(t)) return DENIES;
+  if (HEDGE.test(t)) return HEDGED;
+  if (IMPACT.test(t)) return null;
   return NO_IMPACT;
 }
 const credible = (dir, findings, c) => findings.filter((f) => !findingProblem(dir, f, c)).map((f) => ({ ...f, file: insideBuild(dir, f.file) }));
-// A report is valid when it is well formed and holds no denial. A finding that states no impact
-// is only not credited (it stays out of credible()); it never invalidates the report.
-const UNCREDITED_ONLY = new Set([NO_IMPACT, "has no real description of the attack"]);
+// A report is valid when it is well formed, holds no denial and has at least one credited
+// finding. A finding that states no impact (or only hedges) is not credited and does not
+// invalidate the report, but a report with nothing credited earns no point, so a vague-only
+// report cannot raise a stub's score.
+const UNCREDITED_ONLY = new Set([NO_IMPACT, HEDGED, "has no real description of the attack"]);
 function reportValid(dir, c) {
   const rep = readReport(dir, c.file);
   if (rep.error) return check(c.name || "report_valid", false, rep.error);
+  let credited = 0;
   for (const [i, f] of rep.findings.entries()) {
     const p = findingProblem(dir, f, c);
-    if (!p) continue;
+    if (!p) { credited++; continue; }
     const denial = UNCREDITED_ONLY.has(p) && affirmativeProblem(f.issue) === DENIES;
     if (!UNCREDITED_ONLY.has(p) || denial) return check(c.name || "report_valid", false, `finding ${i + 1} ${denial ? DENIES : p}`);
   }
-  return check(c.name || "report_valid", true, `${rep.findings.length} well-formed findings`);
+  if (!credited) return check(c.name || "report_valid", false, "no finding in the report is credible (each needs a real file and line, a severity and a stated attack or impact)");
+  return check(c.name || "report_valid", true, `${rep.findings.length} findings, ${credited} credited`);
 }
 function hashTree(root, rel) {
   const base = path.join(root, rel);
