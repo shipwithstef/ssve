@@ -25,7 +25,9 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
-      "builder_sandbox": "bwrap"
+      "builder_sandbox": "bwrap",
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "empty",
@@ -50,7 +52,9 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
-      "builder_sandbox": "bwrap"
+      "builder_sandbox": "bwrap",
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "empty",
@@ -75,7 +79,9 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
-      "builder_sandbox": "bwrap"
+      "builder_sandbox": "bwrap",
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "empty",
@@ -100,7 +106,9 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
-      "builder_sandbox": "bwrap"
+      "builder_sandbox": "bwrap",
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "empty",
@@ -125,7 +133,9 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
-      "builder_sandbox": "bwrap"
+      "builder_sandbox": "bwrap",
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "empty",
@@ -150,7 +160,9 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
-      "builder_sandbox": "bwrap"
+      "builder_sandbox": "bwrap",
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     }
   ]
 }

@@ -17,6 +17,7 @@
     "R1": ["E", "S", "P", "K"],
     "R2": ["E", "S", "P", "K"]
   },
+  "overhead_task": "empty",
   "arms": ["solo", "framework"],
   "reps": 3,
   "parallel": 4,

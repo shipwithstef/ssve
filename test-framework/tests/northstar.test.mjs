@@ -8,7 +8,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
   loadBar, loadRows, decide, adopt, buildManifest, assertBalanced, dryRun, main, NorthstarError, catalogOverhead,
-  isFinished, isVoid, fakeRun, syntheticOverhead,
+  isFinished, isVoid, fakeRun, syntheticOverhead, unfinishedReason, offModel,
 } from "../../scripts/northstar.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -30,7 +30,8 @@ test("bar.json carries the pre-registration from the plan", () => {
     "security-payments": ["E", "S", "P"], "typo-readme": [], "continuity-rules": ["K"], R1: ["E", "S", "P", "K"], R2: ["E", "S", "P", "K"],
   });
   assert.deepEqual(bar.arms, ["solo", "framework"]);
-  assert.equal(bar.reps, 3); assert.equal(bar.parallel, 4); assert.equal(bar.floor_usd, 0.5);
+  assert.equal(bar.overhead_task, "empty");
+  assert.equal(bar.reps, 3); assert.equal(bar.parallel, 4); assert.equal(bar.overhead_task, "empty"); assert.equal(bar.floor_usd, 0.5);
   assert.deepEqual(bar.pass, { R_min: 2.0, delta_min: 0.2, delta_ci_low_gt: 0 });
   assert.equal(bar.min_finished_runs_per_cell_arm, 3);
   assert.deepEqual(bar.arm_limits, { time: 2, turns: 3, same_for_all_arms: true });
@@ -184,7 +185,7 @@ test("typo cost: unmeasured without an overhead file, measured net of overhead w
   assert.equal(con(small, "typo-readme", "typo_cost").status, "fail"); // 0.20 - 0.02 = 0.18 > 1.3 * 0.05
   assert.equal(small.overall, "fail");
   assert.deepEqual(catalogOverhead(fx("overhead"), bar).n, [3, 3]);
-  assert.equal(catalogOverhead(fx("overhead").filter((r) => r.arm === "solo"), bar), null);
+  assert.throws(() => catalogOverhead(fx("overhead").filter((r) => r.arm === "solo"), bar), /needs at least 3 finished, costed runs per arm/);
 });
 
 test("duplicate task/arm/rep rows are an input error naming them; the flag counts them as separate runs", () => {
@@ -233,16 +234,13 @@ test("runner termination is normalised: ok false and error/budget/turn caps are 
   near(cell(d, "yoga-studio", "E").framework.mean, (0.8 * 2) / 6);
   assert.equal(cell(d, "yoga-studio", "E").numbered, false); // 2 finished < 3
   assert.equal(fw.cost_total_usd, 0.5 + 0.6 + 4 * 1.0); // spend stays
-  assert.equal(isFinished({ stop: "error_max_budget_usd" }), false);
-  assert.equal(isFinished({ stop: "error_during_execution" }), false);
-  assert.equal(isFinished({ stop: "error_max_turns" }), false);
-  assert.equal(isFinished({ stop: "max_turns" }), false);
-  assert.equal(isFinished({ stop: "timeout" }), false);
-  assert.equal(isFinished({ stopped_by: "turns" }), false);
-  assert.equal(isFinished({ ok: false }), false);
-  assert.equal(isFinished({ stop: "success" }), true);
-  assert.equal(isFinished({ stop: "end_turn", ok: true }), true);
-  assert.equal(isFinished({}), true);
+  const ok = { model: "m", model_usage: { m: { outputTokens: 100 } } };
+  for (const stop of ["error_max_budget_usd", "error_during_execution", "error_max_turns", "max_turns", "timeout"]) assert.equal(isFinished({ ...ok, stop }), false, stop);
+  assert.equal(isFinished({ ...ok, stopped_by: "turns" }), false);
+  assert.equal(isFinished({ ...ok, ok: false }), false);
+  assert.equal(isFinished({ ...ok, stop: "success" }), true);
+  assert.equal(isFinished({ ...ok, stop: "end_turn", ok: true }), true);
+  assert.equal(isFinished(ok), true);
 });
 
 test("a row without a builder sandbox is void: excluded from scores and costs, overall incomplete", () => {
@@ -305,7 +303,7 @@ test("decide is deterministic", () => {
 
 // ---- adopt ----
 test("adopt: n >= 5 per arm, p < .05, ci low > 0, else inconclusive", () => {
-  const mk = (arm, vals) => vals.map((v, i) => ({ task: "t", arm, rep: i + 1, builder_sandbox: "bwrap", score: v, hidden_total: 10, components: { E: v } }));
+  const mk = (arm, vals) => vals.map((v, i) => ({ task: "t", arm, rep: i + 1, builder_sandbox: "bwrap", model: "m", model_usage: { m: { outputTokens: 100 } }, score: v, hidden_total: 10, components: { E: v } }));
   const rows = [...mk("cand", [0.9, 0.95, 1, 0.85, 0.9, 1]), ...mk("base", [0.1, 0.2, 0.15, 0.1, 0.2, 0.1])];
   const a = adopt(rows, { candidate: "cand", baseline: "base", component: "E" });
   assert.equal(a.decision, "adopt"); assert.equal(a.needs_holdout_confirmation, true);
@@ -424,4 +422,115 @@ test("cli adopt and usage errors", () => {
   assert.equal(cli("decide", path.join(FIX, "tie.json")).status, 1); // no --slice
   assert.equal(cli("bogus").status, 1);
   assert.equal(main(["bogus"], { out() {}, err() {} }), 1);
+});
+
+// ---- round 2 ----
+const runRow = (task, arm, rep, o = {}) => ({
+  task, arm, rep, builder_sandbox: "bwrap", model: "m", framework_sha: arm === "framework" ? "sha1" : null,
+  model_usage: { m: { inputTokens: 100, outputTokens: 100 } }, cost_usd: 1, wall_ms: 1000, turns: 5,
+  score: 1, solved: true, hidden_total: 10, hidden_pass: 10, ...o,
+});
+// yoga-studio rows from per-component arrays: { E: [..3], S: [..], P: [..], H: [..] } per arm
+const yoga = (solo, fw, extra = {}) => ["solo", "framework"].flatMap((arm) => [0, 1, 2].map((i) => {
+  const c = arm === "solo" ? solo : fw;
+  return runRow("yoga-studio", arm, i + 1, { score: c.H[i], solved: c.H[i] === 1, components: { E: c.E[i], S: c.S[i], P: c.P[i] }, ...(extra[arm] || {}) });
+}));
+const flat = (v) => [v, v, v];
+
+test("decisions compare raw values: R of 1.999975 and a typo H drop of 0.00004 do not pass", () => {
+  // solo sums 0.4 (E.2 S.1 P.1), framework sums 0.79999 -> R = 1.999975 shows as 2 when rounded to 4 places
+  const rows = yoga({ H: flat(0.9), E: flat(0.2), S: flat(0.1), P: flat(0.1) }, { H: flat(0.9), E: flat(0.5), S: flat(0.2), P: flat(0.09999) });
+  const d = decide(rows, { slice: "dev", bar });
+  assert.equal(d.headline.R.value, 2); // display rounds to 4 places
+  assert.ok(d.headline.raw.R < 2);
+  assert.equal(d.headline.checks.R, false);
+  assert.equal(d.headline.pass, false);
+  // typo H drop 0.00004: shown as 0 at 4 places, still a fail against the 0 limit
+  const typo = ["solo", "framework"].flatMap((arm) => [1, 2, 3].map((i) => runRow("typo-readme", arm, i, { score: arm === "solo" ? 1 : 0.99996, solved: arm === "solo", upstream_stages: [] })));
+  const t = decide(typo, { slice: "dev", bar });
+  const drop = con(t, "typo-readme", "h_drop");
+  assert.equal(drop.status, "fail"); assert.ok(drop.value === 0 || drop.value === 0.0000); // displayed rounded
+  // and an exact-limit case still passes: framework equals solo
+  const same = ["solo", "framework"].flatMap((arm) => [1, 2, 3].map((i) => runRow("typo-readme", arm, i, { upstream_stages: [] })));
+  assert.equal(con(decide(same, { slice: "dev", bar }), "typo-readme", "h_drop").status, "pass");
+});
+
+test("a cost ratio just over the limit fails on raw values even when it displays as the limit", () => {
+  const mk = (fwCost) => ["solo", "framework"].flatMap((arm) => [1, 2, 3].map((i) => runRow("yoga-studio", arm, i, { cost_usd: arm === "solo" ? 1 : fwCost, components: { E: 0.5, S: 0.5, P: 0.5 } })));
+  assert.equal(con(decide(mk(1.5), { slice: "dev", bar }), "yoga-studio", "cost_ratio").status, "pass");
+  const over = con(decide(mk(1.50000001), { slice: "dev", bar }), "yoga-studio", "cost_ratio");
+  assert.equal(over.status, "fail"); assert.equal(over.value, 1.5);
+});
+
+test("a finished run missing cost or wall time makes that constraint unmeasured, so overall is not PASS", () => {
+  const m = buildManifest({ model: "fake-model", maxUsd: 35, slice: "all", dryRun: true, bar });
+  const clean = dryRun(m, bar).decisions.dev;
+  assert.equal(clean.overall, "pass");
+  const rows = m.runs.map((e) => fakeRun(e, bar)).filter((r) => r.task !== "typo-readme" || true);
+  const nullCost = rows.map((r) => (r.arm === "framework" && r.task === "yoga-studio" ? { ...r, cost_usd: undefined } : r));
+  const d = decide(nullCost, { slice: "dev", bar, overheadRows: syntheticOverhead("fake-model", bar) });
+  assert.equal(con(d, "yoga-studio", "cost_ratio").status, "unmeasured");
+  assert.match(con(d, "yoga-studio", "cost_ratio").note, /cost_usd missing/);
+  assert.equal(con(d, "yoga-studio", "wall_ratio").status, "pass");
+  assert.equal(d.overall, "incomplete");
+  const nullWall = rows.map((r) => (r.arm === "framework" && r.task === "ai-quest" ? { ...r, wall_ms: null } : r));
+  const w = decide(nullWall, { slice: "dev", bar, overheadRows: syntheticOverhead("fake-model", bar) });
+  assert.equal(con(w, "ai-quest", "wall_ratio").status, "unmeasured");
+  assert.equal(w.overall, "incomplete");
+  // a typo-task cost gap blocks the typo constraint too
+  const typo = rows.map((r) => (r.arm === "framework" && r.task === "typo-readme" ? { ...r, cost_usd: null } : r));
+  assert.equal(con(decide(typo, { slice: "dev", bar, overheadRows: syntheticOverhead("fake-model", bar) }), "typo-readme", "typo_cost").status, "unmeasured");
+  // an unfinished run missing cost is not a measurement gap: it is already unfinished
+  assert.equal(d.per_task["yoga-studio"].framework.missing_cost_runs, 3);
+});
+
+test("catalog overhead must come from the registered empty task", () => {
+  assert.throws(() => dev("dev-pass", { overheadRows: fx("overhead-typo-task") }), (e) => e instanceof NorthstarError && /registered empty task "empty", got: typo-readme/.test(e.message));
+  assert.throws(() => catalogOverhead(fx("overhead-typo-task"), bar), NorthstarError);
+});
+
+test("catalog overhead needs 3 finished runs per arm", () => {
+  assert.throws(() => dev("dev-pass", { overheadRows: fx("overhead-two-runs") }), /needs at least 3 finished, costed runs per arm on "empty" \(solo 2, framework 2\)/);
+  // unfinished or uncosted overhead runs do not count toward the 3
+  const rows = fx("overhead").map((r, i) => (i === 0 ? { ...r, error: "crash" } : i === 3 ? { ...r, cost_usd: null } : r));
+  assert.throws(() => catalogOverhead(rows, bar), /solo 2, framework 2/);
+});
+
+test("catalog overhead is bound to the decided rows' model and framework sha", () => {
+  assert.throws(() => dev("dev-pass", { overheadRows: fx("overhead-other-model") }), /model mismatch/);
+  assert.throws(() => dev("dev-pass", { overheadRows: fx("overhead-other-sha") }), /framework_sha mismatch/);
+  assert.equal(dev("dev-pass", { overheadRows: fx("overhead") }).overhead.overhead_task, "empty");
+  // the CLI refuses with exit 1
+  const r = cli("decide", path.join(FIX, "dev-pass.json"), "--slice", "dev", "--overhead", path.join(FIX, "overhead-typo-task.json"));
+  assert.equal(r.status, 1); assert.match(r.stderr, /registered empty task/);
+});
+
+test("off-model work is re-validated from model_usage with the runner's rule", () => {
+  const base = { model: "claude-haiku-4-5" };
+  const usage = (other, own = 500) => ({ model_usage: { "claude-haiku-4-5": { outputTokens: own }, "claude-opus-4-8": { outputTokens: other } } });
+  assert.equal(offModel({ ...base, ...usage(9000) }), true); // > 1000 and > 5%
+  assert.equal(offModel({ ...base, ...usage(900) }), false); // under 1000: background calls tolerated
+  assert.equal(offModel({ ...base, ...usage(1001, 100000) }), false); // over 1000 but under 5% of the run
+  assert.equal(offModel({ ...base, ...usage(1001, 1000) }), true);
+  assert.equal(offModel({ model: "haiku", model_usage: { "claude-haiku-4-5": { outputTokens: 5000 } } }), false); // alias pin
+  assert.equal(offModel({ ...base, model_usage: { "claude-haiku-4-5": { output_tokens: 10 }, other: { output_tokens: 3000 } } }), true);
+  assert.equal(unfinishedReason({ ...base, ...usage(9000) }), "off-model");
+  const d = dev("off-model-silent");
+  const fw = d.per_task["yoga-studio"].framework;
+  assert.equal(fw.off_model_runs, 1); assert.equal(fw.n_finished, 3); assert.equal(fw.n_runs, 4);
+  near(cell(d, "yoga-studio", "E").framework.mean, 0.6); // the silent off-model run scores 0
+  assert.equal(fw.cost_total_usd, 4); // and its spend stays
+});
+
+test("a row with no model_usage is unfinished evidence (usage missing)", () => {
+  const row = { model: "m", cost_usd: 1 };
+  assert.equal(unfinishedReason(row), "usage missing");
+  assert.equal(unfinishedReason({ ...row, model_usage: {} }), "usage missing");
+  assert.equal(isFinished(row), false);
+  const rows = yoga({ H: flat(0.9), E: flat(0.2), S: flat(0.2), P: flat(0.2) }, { H: flat(0.9), E: flat(0.8), S: flat(0.8), P: flat(0.8) }, { framework: { model_usage: undefined } });
+  const d = decide(rows, { slice: "dev", bar });
+  assert.equal(d.per_task["yoga-studio"].framework.usage_missing_runs, 3);
+  assert.equal(cell(d, "yoga-studio", "E").numbered, false);
+  assert.equal(cell(d, "yoga-studio", "E").framework.mean, 0);
+  assert.notEqual(d.overall, "pass");
 });

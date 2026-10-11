@@ -30,7 +30,9 @@
         "E": 0.2,
         "S": 0.1,
         "P": 0.3
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "yoga-studio",
@@ -60,7 +62,9 @@
         "E": 0.2,
         "S": 0.1,
         "P": 0.3
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "yoga-studio",
@@ -90,7 +94,9 @@
         "E": 0.2,
         "S": 0.1,
         "P": 0.3
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "yoga-studio",
@@ -120,7 +126,9 @@
         "E": 0.2,
         "S": 0.1,
         "P": 0.3
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "yoga-studio",
@@ -150,7 +158,9 @@
         "E": 0.8,
         "S": 0.8,
         "P": 0.8
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "yoga-studio",
@@ -180,7 +190,9 @@
         "E": 0.8,
         "S": 0.8,
         "P": 0.8
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "yoga-studio",
@@ -210,7 +222,9 @@
         "E": 0.8,
         "S": 0.8,
         "P": 0.8
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "yoga-studio",
@@ -238,7 +252,9 @@
       "stopped_by": null,
       "budget_usd": 1,
       "builder_sandbox": "bwrap",
-      "error": "off-model work"
+      "error": "off-model work",
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     }
   ]
 }

@@ -30,7 +30,9 @@
         "E": 0.1,
         "S": 0.1,
         "P": 0.1
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "yoga-studio",
@@ -60,7 +62,9 @@
         "E": 0.1,
         "S": 0.1,
         "P": 0.1
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "yoga-studio",
@@ -90,7 +94,9 @@
         "E": 0.1,
         "S": 0.1,
         "P": 0.1
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "yoga-studio",
@@ -120,7 +126,9 @@
         "E": 0.9,
         "S": 0.9,
         "P": 0.9
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "yoga-studio",
@@ -150,7 +158,9 @@
         "E": 0.9,
         "S": 0.9,
         "P": 0.9
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "yoga-studio",
@@ -180,7 +190,9 @@
         "E": 0.9,
         "S": 0.9,
         "P": 0.9
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "waitlist-feature",
@@ -210,7 +222,9 @@
         "E": 0.1,
         "S": 0.1,
         "P": 0.1
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "waitlist-feature",
@@ -240,7 +254,9 @@
         "E": 0.1,
         "S": 0.1,
         "P": 0.1
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "waitlist-feature",
@@ -270,7 +286,9 @@
         "E": 0.1,
         "S": 0.1,
         "P": 0.1
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "waitlist-feature",
@@ -300,7 +318,9 @@
         "E": 0.9,
         "S": 0.9,
         "P": 0.9
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "waitlist-feature",
@@ -330,7 +350,9 @@
         "E": 0.9,
         "S": 0.9,
         "P": 0.9
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "waitlist-feature",
@@ -360,7 +382,9 @@
         "E": 0.9,
         "S": 0.9,
         "P": 0.9
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     }
   ]
 }

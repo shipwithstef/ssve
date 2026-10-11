@@ -28,7 +28,9 @@
       "builder_sandbox": "bwrap",
       "components": {
         "K": 0
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "continuity-rules",
@@ -56,7 +58,9 @@
       "builder_sandbox": "bwrap",
       "components": {
         "K": 0
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "continuity-rules",
@@ -84,7 +88,9 @@
       "builder_sandbox": "bwrap",
       "components": {
         "K": 0
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "continuity-rules",
@@ -112,7 +118,9 @@
       "builder_sandbox": "bwrap",
       "components": {
         "K": 1
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "continuity-rules",
@@ -140,7 +148,9 @@
       "builder_sandbox": "bwrap",
       "components": {
         "K": 0
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "continuity-rules",
@@ -168,7 +178,9 @@
       "builder_sandbox": "bwrap",
       "components": {
         "K": 1
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "continuity-rules",
@@ -196,7 +208,9 @@
       "builder_sandbox": "bwrap",
       "components": {
         "K": 1
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     }
   ]
 }

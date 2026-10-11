@@ -30,7 +30,9 @@
         "E": 0.2,
         "S": 0.1,
         "P": 0.3
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "yoga-studio",
@@ -60,7 +62,9 @@
         "E": 0.2,
         "S": 0.1,
         "P": 0.3
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "yoga-studio",
@@ -86,7 +90,9 @@
       "stopped_by": "time",
       "budget_usd": 1,
       "builder_sandbox": "bwrap",
-      "error": "timeout"
+      "error": "timeout",
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "yoga-studio",
@@ -116,7 +122,9 @@
         "E": 0.8,
         "S": 0.7,
         "P": 0.9
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "yoga-studio",
@@ -146,7 +154,9 @@
         "E": 0.8,
         "S": 0.7,
         "P": 0.9
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "yoga-studio",
@@ -176,7 +186,9 @@
         "E": 0.8,
         "S": 0.7,
         "P": 0.9
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "continuity-rules",
@@ -204,7 +216,9 @@
       "builder_sandbox": "bwrap",
       "components": {
         "K": 0.2
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "continuity-rules",
@@ -232,7 +246,9 @@
       "builder_sandbox": "bwrap",
       "components": {
         "K": 0.2
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "continuity-rules",
@@ -260,7 +276,9 @@
       "builder_sandbox": "bwrap",
       "components": {
         "K": 0.2
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
     },
     {
       "task": "continuity-rules",
@@ -288,7 +306,9 @@
       "builder_sandbox": "bwrap",
       "components": {
         "K": 1
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "continuity-rules",
@@ -316,7 +336,9 @@
       "builder_sandbox": "bwrap",
       "components": {
         "K": 1
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     },
     {
       "task": "continuity-rules",
@@ -344,7 +366,9 @@
       "builder_sandbox": "bwrap",
       "components": {
         "K": 1
-      }
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
     }
   ]
 }

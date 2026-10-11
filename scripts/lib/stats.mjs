@@ -70,15 +70,19 @@ export function compareSamples(a, b, iterations = 10000) {
 // task x component, with scores in the same run order for every component of a task. delta = mean over cells of (framework mean - solo mean); the 95%
 // interval resamples runs within task x arm and recomputes it. Cells with an empty arm
 // are skipped; returns null when no cell is usable. Values are rounded to 6 places.
-export function stratifiedDelta(cells, iterations = 10000) {
+export function stratifiedDeltaRaw(cells, iterations = 10000) {
   const usable = (cells || []).filter((c) => c?.framework?.length && c?.solo?.length);
   if (!usable.length) return null;
   const rand = rng();
   const delta = avg(usable.map((c) => avg(c.framework) - avg(c.solo)));
   const boots = bootstrapDeltas(usable.map((c) => ({ a: c.framework, b: c.solo, group: c.task })), iterations, rand);
-  const [lo, hi] = bounds(boots, iterations);
+  return { delta, ci95: bounds(boots, iterations), cells: usable.length, iterations };
+}
+export function stratifiedDelta(cells, iterations = 10000) {
+  const raw = stratifiedDeltaRaw(cells, iterations);
+  if (!raw) return null;
   const r = (x) => +x.toFixed(6);
-  return { delta: r(delta), ci95: [r(lo), r(hi)], cells: usable.length, iterations };
+  return { delta: r(raw.delta), ci95: [r(raw.ci95[0]), r(raw.ci95[1])], cells: raw.cells, iterations };
 }
 
 // Adoption rule (organism plan rev 4, section 11 item 8): n >= 5 per arm and p < .05 and a

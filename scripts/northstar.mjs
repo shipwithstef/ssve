@@ -18,13 +18,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
-import { stratifiedDelta, adoptionDecision, avg, rng } from "./lib/stats.mjs";
+import { stratifiedDeltaRaw, adoptionDecision, avg, rng } from "./lib/stats.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const BAR_PATH = path.join(ROOT, "test-framework/outcome-evals/northstar/bar.json");
 const TASKS_DIR = path.join(ROOT, "test-framework/outcome-evals/tasks");
 const DEFAULT_TOOLS = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)";
-const EPS = 1e-9;
+const EPS = 1e-12; // float slack only: decisions compare raw values, rounding is for display
 const COMPONENTS = ["H", "E", "S", "P", "K"];
 
 export class NorthstarError extends Error {}
@@ -62,8 +62,34 @@ export function terminationUnfinished(r) {
   if (r.stopped_by) return true;
   return typeof r.stop === "string" && TERMINATION_CAP.test(r.stop);
 }
-// A finished run ended on its own: no error, not stopped by a limit or cap, not skipped.
-export const isFinished = (r) => !r.error && !isSkipped(r) && !terminationUnfinished(r);
+// Off-model work, with the runner's rule: output tokens of models other than the arm's
+// pin are more than 1000 AND more than 5% of the run's output. The CLI's small background
+// calls stay under that. A pin matches a served model id by equality or substring
+// ("haiku" matches "claude-haiku-4-5").
+const outTokens = (m) => num(m?.outputTokens) ?? num(m?.output_tokens) ?? 0;
+const samePin = (served, pin) => { const a = String(served).toLowerCase(), b = String(pin).toLowerCase(); return a === b || a.includes(b) || b.includes(a); };
+export function offModel(r) {
+  const usage = r.model_usage;
+  if (!usage || typeof usage !== "object" || !r.model) return false;
+  let total = 0, other = 0;
+  for (const [id, m] of Object.entries(usage)) { const o = outTokens(m); total += o; if (!samePin(id, r.model)) other += o; }
+  return other > 1000 && other > 0.05 * total;
+}
+const hasUsage = (r) => r.model_usage && typeof r.model_usage === "object" && Object.keys(r.model_usage).length > 0;
+
+// Why a run is not finished evidence, or null. Order: error, skipped, runner termination,
+// then the usage checks that re-validate the model pin from the recorded usage itself.
+export function unfinishedReason(r) {
+  if (r.error) return "error";
+  if (isSkipped(r)) return "skipped";
+  if (terminationUnfinished(r)) return "terminated";
+  if (!hasUsage(r)) return "usage missing";
+  if (!r.model) return "model pin missing";
+  if (offModel(r)) return "off-model";
+  return null;
+}
+// A finished run ended on its own, on the arm's model, with its usage recorded.
+export const isFinished = (r) => unfinishedReason(r) == null;
 // A row with no builder sandbox is void evidence (plan section 7 item 1): it never reaches a
 // score or a cost. A skipped row never ran, so it has no sandbox and is not void.
 export const isVoid = (r) => !isSkipped(r) && !r.builder_sandbox;
@@ -116,7 +142,15 @@ const mean = (xs) => (xs.length ? avg(xs) : null);
 
 function armSummary(rows) {
   const fin = rows.filter(isFinished);
+  const mc = mean(rows.map((r) => num(r.cost_usd) ?? 0)), mw = mean(rows.map((r) => num(r.wall_ms) ?? 0)), mh = mean(rows.map((r) => runScore(r, "H").value));
   return {
+    // Unrounded means: constraints are decided on these, the fields below are for display.
+    raw: { h_mean: mh, cost_mean_usd: mc, wall_mean_ms: mw },
+    // A finished run missing a cost or time measurement cannot support a cost or wall constraint.
+    missing_cost_runs: fin.filter((r) => num(r.cost_usd) == null).length,
+    missing_wall_runs: fin.filter((r) => num(r.wall_ms) == null).length,
+    off_model_runs: rows.filter((r) => unfinishedReason(r) === "off-model").length,
+    usage_missing_runs: rows.filter((r) => unfinishedReason(r) === "usage missing").length,
     n_runs: rows.length,
     n_finished: fin.length,
     errored: rows.filter((r) => r.error).length,
@@ -126,11 +160,11 @@ function armSummary(rows) {
     // (judge_cost_usd) and never enters cost, cost ratios or the typo-overhead arithmetic.
     cost_total_usd: r4(rows.reduce((a, r) => a + (num(r.cost_usd) ?? 0), 0)),
     judge_cost_usd: r4(rows.reduce((a, r) => a + (num(r.judge_cost_usd) ?? 0), 0)),
-    cost_mean_usd: r4(mean(rows.map((r) => num(r.cost_usd) ?? 0))),
-    wall_mean_ms: rows.length ? Math.round(mean(rows.map((r) => num(r.wall_ms) ?? 0))) : null,
+    cost_mean_usd: r4(mc),
+    wall_mean_ms: rows.length ? Math.round(mw) : null,
     turns_mean: r4(mean(rows.map((r) => num(r.turns) ?? 0))),
     tokens_mean: rows.length ? Math.round(mean(rows.map((r) => tokensOf(r.model_usage)))) : null,
-    h_mean: r4(mean(rows.map((r) => runScore(r, "H").value))),
+    h_mean: r4(mh),
     solved_all: rows.length > 0 && rows.every((r) => isFinished(r) && r.solved === true),
     rules_not_loaded: rows.filter((r) => r.rules_not_loaded).length,
     fail_open: rows.reduce((a, r) => a + (num(r.fail_open) ?? 0), 0),
@@ -174,13 +208,16 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   // headline
   const headline = { tasks_without_rows: tasks.filter((t) => !rows.some((r) => r.task === t)), cells_numbered: numbered.length, cells_excluded: cells.length - numbered.length, delta: null, ci95: null, R: null, checks: {}, pass: false };
   if (numbered.length) {
-    const sd = stratifiedDelta(numbered.map((c) => c._values), iterations);
-    headline.delta = sd.delta; headline.ci95 = sd.ci95;
+    // Every pass check below compares the unrounded statistic; the r4/6-place fields are display.
+    const sd = stratifiedDeltaRaw(numbered.map((c) => c._values), iterations);
     const sumF = numbered.reduce((a, c) => a + avg(c._values.framework), 0);
     const sumS = numbered.reduce((a, c) => a + avg(c._values.solo), 0);
-    headline.R = sumS === 0 ? { defined: false, value: null, reason: "not defined: solo 0 everywhere" } : { defined: true, value: r4(sumF / sumS) };
+    const Rraw = sumS === 0 ? null : sumF / sumS;
+    headline.delta = +sd.delta.toFixed(6); headline.ci95 = sd.ci95.map((x) => +x.toFixed(6));
+    headline.raw = { delta: sd.delta, ci95: sd.ci95, R: Rraw };
+    headline.R = Rraw == null ? { defined: false, value: null, reason: "not defined: solo 0 everywhere" } : { defined: true, value: r4(Rraw) };
     headline.checks = {
-      R: headline.R.defined ? headline.R.value >= bar.pass.R_min - EPS : true,
+      R: Rraw == null ? true : Rraw >= bar.pass.R_min - EPS,
       delta: sd.delta >= bar.pass.delta_min - EPS,
       ci_low: sd.ci95[0] > bar.pass.delta_ci_low_gt + EPS,
     };
@@ -210,18 +247,24 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
       if (K.product_tasks.includes(task)) { push(task, "cost_ratio", "unmeasured", { note: why }); push(task, "wall_ratio", "unmeasured", { note: why }); }
       continue;
     }
-    const drop = t.solo.h_mean - t.framework.h_mean;
+    const drop = t.solo.raw.h_mean - t.framework.raw.h_mean;
     const hLimit = task === K.typo_task ? (K.typo_h_max_drop ?? 0) : K.h_max_drop; // typo: "H not worse"
     push(task, "h_drop", drop <= hLimit + EPS ? "pass" : "fail", { value: r4(drop), limit: hLimit });
     const missed = t.solo.solved_all ? f_unsolved(of(task, fwArm)) : 0;
     push(task, "h_miss", missed === 0 ? "pass" : "fail", { value: missed, note: t.solo.solved_all ? "solo solved every run" : "solo did not solve every run: not applicable" });
     if (K.product_tasks.includes(task)) {
-      const cr = t.solo.cost_mean_usd ? t.framework.cost_mean_usd / t.solo.cost_mean_usd : null;
-      push(task, "cost_ratio", t.framework.cost_mean_usd <= K.product_cost_ratio_max * t.solo.cost_mean_usd + EPS ? "pass" : "fail", { value: r4(cr), limit: K.product_cost_ratio_max, solo_usd: t.solo.cost_mean_usd, framework_usd: t.framework.cost_mean_usd });
-      const wr = t.solo.wall_mean_ms ? t.framework.wall_mean_ms / t.solo.wall_mean_ms : null;
-      push(task, "wall_ratio", t.framework.wall_mean_ms <= K.product_wall_ratio_max * t.solo.wall_mean_ms + EPS ? "pass" : "fail", { value: r4(wr), limit: K.product_wall_ratio_max, solo_ms: t.solo.wall_mean_ms, framework_ms: t.framework.wall_mean_ms });
+      const missing = (k) => (t.solo[k] || t.framework[k]) ? `a finished run lacks the measurement (solo ${t.solo[k]}, framework ${t.framework[k]})` : null;
+      const mcost = missing("missing_cost_runs"), mwall = missing("missing_wall_runs");
+      const sc = t.solo.raw.cost_mean_usd, fc = t.framework.raw.cost_mean_usd, sw = t.solo.raw.wall_mean_ms, fw_ = t.framework.raw.wall_mean_ms;
+      if (mcost) push(task, "cost_ratio", "unmeasured", { note: `cost_usd missing: ${mcost}` });
+      else push(task, "cost_ratio", fc <= K.product_cost_ratio_max * sc + EPS ? "pass" : "fail", { value: r4(sc ? fc / sc : null), limit: K.product_cost_ratio_max, solo_usd: t.solo.cost_mean_usd, framework_usd: t.framework.cost_mean_usd });
+      if (mwall) push(task, "wall_ratio", "unmeasured", { note: `wall_ms missing: ${mwall}` });
+      else push(task, "wall_ratio", fw_ <= K.product_wall_ratio_max * sw + EPS ? "pass" : "fail", { value: r4(sw ? fw_ / sw : null), limit: K.product_wall_ratio_max, solo_ms: t.solo.wall_mean_ms, framework_ms: t.framework.wall_mean_ms });
     }
   }
+  // Catalog overhead is validated (empty task, enough runs, same model and framework sha as
+  // the decided rows) whenever one is supplied; a refusal throws.
+  const ov = overheadRows ? catalogOverhead(overheadRows, bar, rows) : null;
   if (tasks.includes(K.typo_task) && per_task[K.typo_task]) {
     const t = per_task[K.typo_task];
     // No lane-upstream stages beyond the invariant tail: read from the optional row field
@@ -232,13 +275,14 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
     if (listed.length) push(K.typo_task, "upstream_stages", "fail", { value: listed.reduce((a, r) => a + r.upstream_stages.length, 0), limit: 0, note: `upstream stages listed: ${[...new Set(listed.flatMap((r) => r.upstream_stages))].join(", ")}` });
     else if (absent.length) push(K.typo_task, "upstream_stages", "unmeasured", { note: `upstream_stages missing on ${absent.length} framework row(s)` });
     else push(K.typo_task, "upstream_stages", "pass", { value: 0, limit: 0 });
-    const ov = overheadRows ? catalogOverhead(overheadRows, bar) : null;
-    if (!ov) push(K.typo_task, "typo_cost", "unmeasured", { note: "no catalog overhead measured (--overhead <results.json> with both arms)" });
+    if (!ov) push(K.typo_task, "typo_cost", "unmeasured", { note: "no catalog overhead measured (--overhead <results.json> from the empty task, both arms)" });
     else if (!measurable(K.typo_task)) push(K.typo_task, "typo_cost", "unmeasured", { note: `fewer than ${minFin} finished runs in an arm` });
+    else if (t.solo.missing_cost_runs || t.framework.missing_cost_runs) push(K.typo_task, "typo_cost", "unmeasured", { note: "cost_usd missing on a finished run" });
     else {
-      const net = t.framework.cost_mean_usd - ov.overhead_usd;
-      push(K.typo_task, "typo_cost", net <= K.typo_cost_ratio_max_net_overhead * t.solo.cost_mean_usd + EPS ? "pass" : "fail",
-        { value: r4(t.solo.cost_mean_usd ? net / t.solo.cost_mean_usd : null), limit: K.typo_cost_ratio_max_net_overhead, framework_usd: t.framework.cost_mean_usd, overhead_usd: ov.overhead_usd, net_usd: r4(net), solo_usd: t.solo.cost_mean_usd });
+      const net = t.framework.raw.cost_mean_usd - ov.raw_overhead_usd;
+      const solo = t.solo.raw.cost_mean_usd;
+      push(K.typo_task, "typo_cost", net <= K.typo_cost_ratio_max_net_overhead * solo + EPS ? "pass" : "fail",
+        { value: r4(solo ? net / solo : null), limit: K.typo_cost_ratio_max_net_overhead, framework_usd: t.framework.cost_mean_usd, overhead_usd: ov.overhead_usd, net_usd: r4(net), solo_usd: t.solo.cost_mean_usd });
     }
   }
 
@@ -268,20 +312,35 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
     void_by_arm: Object.fromEntries(bar.arms.map((a) => [a, voided.filter((r) => r.arm === a).length])),
     cells, per_task, cost_per_arm: arms,
     diagnostics: Object.fromEntries(bar.arms.map((a) => [a, { turns_mean: arms[a].turns_mean, tokens_mean: arms[a].tokens_mean, rules_not_loaded: arms[a].rules_not_loaded, fail_open: arms[a].fail_open, judge_cost_usd: arms[a].judge_cost_usd }])),
-    overhead: overheadRows ? catalogOverhead(overheadRows, bar) : null,
+    overhead: ov,
   };
 }
 
 const f_unsolved = (fwRows) => fwRows.filter((r) => !(isFinished(r) && r.solved === true)).length;
 
-// Measured fixed catalog overhead: mean cost of framework runs minus solo's, on an empty task.
-export function catalogOverhead(overheadRows, bar = loadBar()) {
+// Measured fixed catalog overhead: mean cost of framework runs minus solo's, on the registered
+// empty task only. Refused (NorthstarError) unless the rows come from that task, hold at least
+// min_finished_runs_per_cell_arm finished, costed runs per arm, and share the model and
+// framework sha of the rows being decided.
+export function catalogOverhead(overheadRows, bar = loadBar(), decided = null) {
   const [soloArm, fwArm] = bar.arms;
-  const usable = overheadRows.filter((r) => !isVoid(r));
+  const task = bar.overhead_task;
+  const live = overheadRows.filter((r) => !isVoid(r));
+  const wrong = [...new Set(live.filter((r) => r.task !== task).map((r) => String(r.task)))];
+  if (wrong.length) throw new NorthstarError(`catalog overhead must be measured on the registered empty task "${task}", got: ${wrong.join(", ")}`);
+  const usable = live.filter((r) => isFinished(r) && num(r.cost_usd) != null);
   const s = usable.filter((r) => r.arm === soloArm), f = usable.filter((r) => r.arm === fwArm);
-  if (!s.length || !f.length) return null;
-  const raw = mean(f.map((r) => num(r.cost_usd) ?? 0)) - mean(s.map((r) => num(r.cost_usd) ?? 0));
-  return { overhead_usd: r4(Math.max(0, raw)), raw_usd: r4(raw), n: [s.length, f.length] };
+  const need = bar.min_finished_runs_per_cell_arm;
+  if (s.length < need || f.length < need) throw new NorthstarError(`catalog overhead needs at least ${need} finished, costed runs per arm on "${task}" (solo ${s.length}, framework ${f.length})`);
+  if (decided?.length) {
+    const set = (rs, k) => [...new Set(rs.map((r) => r[k] ?? null))].sort();
+    const dm = set(decided, "model"), om = set(usable, "model");
+    if (dm.length !== 1 || JSON.stringify(dm) !== JSON.stringify(om)) throw new NorthstarError(`catalog overhead model mismatch: decided rows ${JSON.stringify(dm)}, overhead rows ${JSON.stringify(om)}`);
+    const ds = set(decided.filter((r) => r.arm === fwArm), "framework_sha"), os = set(f, "framework_sha");
+    if (JSON.stringify(ds) !== JSON.stringify(os)) throw new NorthstarError(`catalog overhead framework_sha mismatch: decided rows ${JSON.stringify(ds)}, overhead rows ${JSON.stringify(os)}`);
+  }
+  const raw = mean(f.map((r) => r.cost_usd)) - mean(s.map((r) => r.cost_usd));
+  return { overhead_task: task, overhead_usd: r4(Math.max(0, raw)), raw_overhead_usd: Math.max(0, raw), raw_usd: r4(raw), n: [s.length, f.length] };
 }
 
 export function summarizeDecision(d) {
@@ -432,7 +491,7 @@ export function fakeRun(entry, bar = loadBar()) {
   const score = 1; // synthetic H is perfect for both arms: the dry run proves the pipeline, not the framework
   const cost = +((fw ? 1.25 : 1) * (0.4 + rand() * 0.1)).toFixed(4);
   return {
-    task: entry.task, arm: entry.arm, rep: entry.rep, model: entry.model, synthetic: true, builder_sandbox: "fake",
+    task: entry.task, arm: entry.arm, rep: entry.rep, model: entry.model, framework_sha: entry.isolation.framework_sha, synthetic: true, builder_sandbox: "fake",
     ...(fw ? { upstream_stages: [] } : {}),
     cost_usd: cost, wall_ms: Math.round((fw ? 1.15 : 1) * 60000 * (1 + rand() * 0.1)), turns: fw ? 30 : 12,
     hidden_pass: Math.round(score * 10), hidden_total: 10, score, solved: score === 1,
@@ -443,8 +502,11 @@ export function fakeRun(entry, bar = loadBar()) {
 }
 
 // Synthetic catalog-overhead rows (an empty task, both arms) so the dry run can reach "pass".
-export function syntheticOverhead(model, bar = loadBar()) {
-  return bar.arms.flatMap((arm) => [1, 2, 3].map((rep) => ({ task: "empty", arm, rep, model, synthetic: true, builder_sandbox: "fake", cost_usd: arm === "framework" ? 0.18 : 0.02 })));
+export function syntheticOverhead(model, bar = loadBar(), frameworkSha = null) {
+  return bar.arms.flatMap((arm) => [1, 2, 3].map((rep) => ({
+    task: bar.overhead_task, arm, rep, model, framework_sha: arm === "framework" ? frameworkSha : null, synthetic: true, builder_sandbox: "fake",
+    cost_usd: arm === "framework" ? 0.18 : 0.02, wall_ms: 10000, model_usage: { [model]: { inputTokens: 1000, outputTokens: 100 } },
+  })));
 }
 
 export function dryRun(manifest, bar = loadBar()) {
@@ -452,7 +514,7 @@ export function dryRun(manifest, bar = loadBar()) {
   const decisions = {};
   for (const slice of ["dev", "reserve"]) {
     const inSlice = rows.filter((r) => sliceTasks(bar, slice).includes(r.task));
-    if (inSlice.length) decisions[slice] = decide(inSlice, { slice, bar, overheadRows: syntheticOverhead(manifest.model, bar) });
+    if (inSlice.length) decisions[slice] = decide(inSlice, { slice, bar, overheadRows: syntheticOverhead(manifest.model, bar, manifest.framework_sha) });
   }
   return { rows: rows.length, decisions };
 }
