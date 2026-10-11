@@ -17,6 +17,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { appendJsonlLine, writeJsonAtomic } from "./state-io.mjs";
+import { bootstrapRepo } from "./svc-bootstrap-repo.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FRAMEWORK_ROOT = path.resolve(__dirname, "..");
@@ -260,6 +261,17 @@ const head = gitOutput(["rev-parse", "--verify", "--quiet", "HEAD^{commit}"]);
 if (head && !fs.existsSync(checkpoint)) {
   writeJsonAtomic(checkpoint, { last_reconciled_sha: head, last_pr_watcher_run: null, adopted_at: new Date().toISOString(), baseline: "adoption" });
   console.log(`CREATE: ${checkpoint} (adoption baseline ${head.slice(0, 12)})`);
+}
+
+// Last: a fresh `git init` repository gets its root commit (so spec files and the ignores written
+// above are in the tree worktrees check out), a refuse chain policy and a local origin/main.
+// Idempotent; it never commits when HEAD already resolves.
+try {
+  const boot = bootstrapRepo({ repo: projectPath });
+  if (boot.ok && boot.created_root_commit) console.log(`BOOTSTRAP: root commit ${boot.head.slice(0, 12)} on ${boot.branch}${boot.identity_assumed ? " (repo-local identity assumed)" : ""}`);
+  else if (!boot.ok) console.log(`SKIP: repository bootstrap (${boot.reason})`);
+} catch (error) {
+  console.log(`WARN: repository bootstrap failed (${error.message}); run node scripts/svc-bootstrap-repo.mjs`);
 }
 
 console.log(`\nProject state initialized at: ${targetSvc}`);

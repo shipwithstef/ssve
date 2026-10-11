@@ -176,7 +176,11 @@ function getMainBranch() {
 // The branch to reconcile: origin/<main> when the project has a remote, else the local
 // branch, else HEAD. A project with no commits yet has nothing to reconcile.
 function reconcileRef(main) {
-  for (const ref of [`origin/${main}`, main, "HEAD"]) {
+  // Without an origin remote, origin/<main> is only a local stand-in written by svc-bootstrap-repo and
+  // can lag the real branch; the local branch is then the authority.
+  const hasOrigin = run("git", ["remote", "get-url", "origin"]).ok;
+  const order = hasOrigin ? [`origin/${main}`, main, "HEAD"] : [main, `origin/${main}`, "HEAD"];
+  for (const ref of order) {
     const probe = run("git", ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`]);
     if (probe.ok) return { ref };
     // A ref that does not exist exits non-zero ("error"). A timeout or spawn failure says nothing
@@ -212,6 +216,16 @@ function reconcileResponsibilityA(cp) {
     return { unaccounted: [{ sha: "git-log", missing: [`commit discovery ${discovered.result.classification}`] }], main, receipt_check: { classification: discovered.result.classification, duration_ms: discovered.result.duration_ms, mode: "discovery-failed" } };
   }
   if (!shas.length) return { unaccounted: [], main, ref: discovered.ref, receipt_check: { classification: "success", duration_ms: discovered.result.duration_ms, mode: "empty" } };
+  // A repository whose whole history is one commit made before any receipt exists (the root commit
+  // svc-bootstrap-repo creates, or an adopted single-commit project) has no work to account for.
+  // Baseline exactly that commit; the next note-less commit is ordinary receipt debt.
+  if (!cp.last_reconciled_sha && discovered.ref) {
+    const count = Number(git(["rev-list", "--count", discovered.ref]));
+    const only = count === 1 && shas.length === 1 ? shas[0] : null;
+    if (only && !git(["notes", "--ref=svc-receipts", "show", only])) {
+      return { unaccounted: [], main, ref: discovered.ref, receipt_check: { classification: "success", duration_ms: discovered.result.duration_ms, mode: "pre-svc-baseline", baseline_sha: only } };
+    }
+  }
   if (cp.last_reconciled_sha) {
     const range = `${cp.last_reconciled_sha}..${discovered.ref}`;
     const { result, parsed } = checkReceipts(["--range", range, "--consumer", "reconcile"], shas);

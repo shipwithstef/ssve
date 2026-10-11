@@ -23,6 +23,10 @@
  *   --body <path>            read receipt body from file; default is stdin
  *   --no-note                skip writing the git note (mirror only)
  *   --phase <phase-id>       optional identity phase for multi-phase receipts
+ *   --bind-staging --sha <rev>
+ *                            attach receipts staged under .svc/receipts/staging/<tree>/ to
+ *                            commit <rev> (default HEAD) when <tree> equals <rev>^{tree}.
+ *                            Needs no --type/--wi. Staged receipts for any other tree stay staged.
  *
  * Exit 0 on success, 1 on validation error, 2 on usage error.
  */
@@ -74,6 +78,7 @@ function parseArgs(argv) {
     else if (a === "--no-note") out.noNote = true;
     else if (a === "--sha") out.sha = argv[++i];
     else if (a === "--phase") out.phase = argv[++i];
+    else if (a === "--bind-staging") out.bindStaging = true;
   }
   return out;
 }
@@ -398,8 +403,46 @@ export function writeReceiptMirror({ type, wi, body, phase = null, targetShaOver
   return resolved;
 }
 
+
+// Receipts emitted while the index differs from HEAD wait in .svc/receipts/staging/<tree>/ because
+// no commit carries them yet. Once the commit with exactly that tree exists, attach them: the same
+// validation and the same note writer as a direct emission. A re-bind of identical bytes is a no-op;
+// a different body for an occupied slot still needs the supersession contract (it is refused).
+function bindStaging(shaArg) {
+  const sha = git(["rev-parse", "--verify", "--end-of-options", `${shaArg || "HEAD"}^{commit}`]);
+  if (!sha || !/^[0-9a-f]{40}$/.test(sha)) fail(`--sha '${shaArg}' is not a valid commit in git`, 2);
+  const tree = git(["rev-parse", `${sha}^{tree}`]);
+  const dir = join(".svc", "receipts", "staging", tree || "no-tree");
+  const bound = [];
+  const refused = [];
+  let names = [];
+  try { names = existsSync(dir) ? readdirSync(dir).filter((n) => n.endsWith(".json") && n.includes("--")).sort() : []; } catch {}
+  for (const name of names) {
+    const body = readJsonFileIfExists(join(dir, name));
+    if (!body || typeof body.receipt_type !== "string" || typeof body.wi !== "string") { refused.push({ file: name, reason: "unreadable staged receipt" }); continue; }
+    const type = body.receipt_type;
+    const phase = typeof body.phase === "string" && body.phase ? body.phase : null;
+    const immutablePlan = type === "plan-manifest" || type === "control-plan";
+    if (!immutablePlan) { body.target_sha = body.target_sha || sha; body.sha = body.sha || sha; }
+    const slotKey = slotKeyForIdentity({ type, wi: body.wi, targetSha: sha, phase });
+    const existingRaw = git(["notes", "--ref=svc-receipts", "show", sha]);
+    let existing = null;
+    try { existing = existingRaw ? JSON.parse(existingRaw)[slotKey] : null; } catch {}
+    if (existing && receiptDigest(existing) === receiptDigest(body)) { bound.push({ file: name, type, wi: body.wi, slot_key: slotKey, already_bound: true }); continue; }
+    const v = validateReceipt(type, body, sha, {});
+    if (!v.valid) { refused.push({ file: name, type, wi: body.wi, reason: `receipt invalid: ${v.reasons.join("; ")}` }); continue; }
+    const noteResult = writeNote(sha, type, body.wi, phase, body);
+    if (!noteResult.ok) { refused.push({ file: name, type, wi: body.wi, slot_key: noteResult.slot_key, reason: noteResult.reason }); continue; }
+    try { writeReceiptMirror({ type, wi: body.wi, body, phase, targetShaOverride: sha }); } catch (error) { refused.push({ file: name, type, wi: body.wi, reason: `note written, mirror failed: ${error.message}` }); continue; }
+    bound.push({ file: name, type, wi: body.wi, slot_key: noteResult.slot_key, already_bound: false });
+  }
+  console.log(JSON.stringify({ ok: refused.length === 0, sha, tree, staging_dir: dir, bound, refused, note: names.length ? undefined : "no staged receipts for this tree" }, null, 2));
+  process.exit(refused.length ? 1 : 0);
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
+  if (args.bindStaging) bindStaging(args.sha);
   if (!args.type) fail("--type <receipt-type> required");
   if (!args.wi) fail("--wi <wi-id> required");
   let explicitTargetSha = null;
