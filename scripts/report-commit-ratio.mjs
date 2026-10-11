@@ -3,7 +3,11 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 const FRAMEWORK = /^(hooks\/|scripts\/|test-framework\/|skills\/|skills-manifest\.json|provision\/|rules\/|_shared\/|references\/(?!knowledge\/)|[a-z0-9-]+\/SKILL\.md|FRAMEWORK-STATE)/;
 const PRODUCT = /^(docs\/specs\/(?!work-items|reviews|audit)|references\/knowledge\/|src\/|e2e\/)/;
 
@@ -42,6 +46,6 @@ function main(argv) {
     console.log(`| ${month} | ${row.n} | ${row.fw} | ${row.prod} | ${row.mixed} | ${percent}% |`);
   }
 }
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   try { main(process.argv.slice(2)); } catch (error) { console.error(`report-commit-ratio: ${error.message}`); process.exitCode = 1; }
 }

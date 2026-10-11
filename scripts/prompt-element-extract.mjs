@@ -30,7 +30,11 @@
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 function parseArgs(argv) {
   const o = {};
@@ -89,6 +93,6 @@ function main() {
   process.stdout.write(JSON.stringify(coverage(output, reqs), null, 2) + "\n");
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   try { main(); } catch (error) { process.stderr.write(`prompt-element-extract: ${error.message}\n`); process.exitCode = 2; }
 }

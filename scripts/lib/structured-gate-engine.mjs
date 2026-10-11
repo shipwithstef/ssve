@@ -27,7 +27,11 @@ import path from "node:path";
 import { execSync } from "node:child_process";
 import { appendJsonlLine } from "../state-io.mjs";
 import { validate } from "./json-schema-validator.mjs";
-import { isMain } from "./is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const KB_FRAGMENT_CAP = 2000;
 
@@ -228,7 +232,7 @@ export function readKnowledgeBase(slugs, topic, options = {}) {
 }
 
 // CLI entry: evaluate against a fixture pair, print result, exit on verdict
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   const args = Object.fromEntries(process.argv.slice(2).map((a) => {
     const [k, v] = a.replace(/^--/, "").split("=");
     return [k, v ?? true];

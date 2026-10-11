@@ -43,7 +43,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { runCheck, SUPPORTED_TYPES } from './lib/browser-checks/index.mjs';
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 const MAX_VERDICT_BYTES = 2048;
@@ -208,7 +212,7 @@ async function mainCli() {
   process.exit(verdict.pass ? 0 : 1);
 }
 
-const isDirect = isMain(import.meta.url);
+const isDirect = __svcIsMain(import.meta.url);
 if (isDirect) {
   mainCli().catch(err => {
     process.stdout.write(JSON.stringify({ pass: false, error: err.message }) + '\n');

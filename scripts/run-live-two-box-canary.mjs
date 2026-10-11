@@ -29,7 +29,11 @@ import {
 import { assertEffectiveIsolation } from "./lib/isolated-plan-analysis.mjs";
 import { parseCodexJsonl, runBoundedProcess } from "./lib/two-box-role-launch.mjs";
 import { validateControlPlan } from "./lib/control-plan-validate.mjs";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 export const FACT_MARKER = "LIVE_CANARY_FACT_MARKER_7F3A9C";
 export const INSTRUCTION_MARKER = "LIVE_CANARY_AGENTS_INSTRUCTION_MARKER_B2E8";
@@ -1114,7 +1118,7 @@ async function main(argv) {
   });
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   main(process.argv.slice(2)).catch((error) => {
     process.stderr.write(`${error.message}\n`);
     process.exitCode = 1;

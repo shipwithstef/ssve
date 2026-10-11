@@ -5,7 +5,11 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const HELPER_SOURCE = String.raw`
 #define _GNU_SOURCE
@@ -320,6 +324,6 @@ export function run(argv = process.argv.slice(2)) {
   return result.status ?? 126;
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   try { process.exitCode = run(); } catch (error) { process.stderr.write(`[svc-contained-exec] ${error.message}\n`); process.exitCode = 2; }
 }

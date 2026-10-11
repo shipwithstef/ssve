@@ -322,7 +322,11 @@ set +e
 LIVE_RESOLVE="$(env -u SVC_DISPATCH_POLICY SVC_HOST=cursor bash scripts/resolve-model.sh EXEC --json 2>&1)"
 LIVE_RESOLVE_RC=$?
 set -uo pipefail
-if echo "$LIVE_RESOLVE" | grep -qi 'claude-sonnet'; then
+if [[ "$LIVE_RESOLVE_RC" -eq 0 ]] && echo "$LIVE_RESOLVE" | grep -q '"source": "framework-default-policy"'; then
+  # No owner file on this machine: the framework default is used and labelled as such.
+  # Nothing of the owner's is remapped (docs/removals.md: fail-on-missing owner policy).
+  pass "AC-546-6: no owner dispatch policy; framework default used and labelled (no owner choice remapped)"
+elif echo "$LIVE_RESOLVE" | grep -qi 'claude-sonnet'; then
   fail "live resolve-model EXEC remapped to Sonnet: $LIVE_RESOLVE"
 elif [[ "$LIVE_RESOLVE_RC" -eq 0 ]] && echo "$LIVE_RESOLVE" | grep -Eq 'grok-4.6|cursor-grok-4.6-high'; then
   pass "AC-546-6: live resolve-model EXEC stays Grok 4.6 high (no Sonnet remap)"

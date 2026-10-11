@@ -16,7 +16,11 @@ import {
   researchDecision,
 } from "./lib/research-decision.mjs";
 import { NO_WRITE, appendJsonlLine, readJsonAtomic, updateJsonAtomic } from "./state-io.mjs";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const USAGE = "Usage: spine-gap-spawn.mjs <lane-tasks.json> <skill> <topic> [<wi>] [--question <JSONfile>]";
 
@@ -189,7 +193,7 @@ export function spineGapSpawn(rawArgv = argv.slice(2)) {
   return result;
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   try {
     spineGapSpawn(argv.slice(2));
   } catch (error) {

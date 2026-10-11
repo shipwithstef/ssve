@@ -17,7 +17,11 @@ import {
   selectValidations
 } from "./svc-execution-controller-v2.mjs";
 import { compileProductionDeliveryForecast } from "./svc-runtime-v2.mjs";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const SHA256 = /^[a-f0-9]{64}$/;
 const GIT_SHA = /^[a-f0-9]{40}$/;
@@ -426,7 +430,7 @@ export function simulateSampleShadow(fixture, options = {}) {
   };
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
     const fixtureIndex = args.indexOf("--fixture");

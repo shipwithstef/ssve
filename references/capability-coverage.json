@@ -1987,7 +1987,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-envelope-integrity.sh",
         "test-framework/evals/tier-1/validate-impact-triad.sh",
-        "test-framework/evals/tier-1/validate-quick-fix-carve-out.sh"
+        "test-framework/evals/tier-1/validate-install-symlink-entry.mjs"
       ]
     },
     {
@@ -2521,6 +2521,15 @@
       "status": "untested",
       "evidence": [],
       "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/render-coverage-matrix.mjs",
+      "kind": "engine",
+      "source": "scripts/render-coverage-matrix.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-feature-graph.sh"
+      ]
     },
     {
       "id": "engine:scripts/render-run-summary.mjs",
@@ -3302,6 +3311,15 @@
       "status": "untested",
       "evidence": [],
       "next_eval": "Used by the value audit (plan Phase 2); add a tier-1 test then"
+    },
+    {
+      "id": "engine:scripts/verify-test-ac-tags.mjs",
+      "kind": "engine",
+      "source": "scripts/verify-test-ac-tags.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-test-ac-tag-freshness.sh"
+      ]
     },
     {
       "id": "engine:scripts/verify-wi-closeout.mjs",

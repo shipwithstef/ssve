@@ -7,7 +7,11 @@ import { fileURLToPath } from "node:url";
 import { validate } from "./lib/json-schema-validator.mjs";
 import { sameGenerationBindings, validateGenerationBindings } from "./lib/generation-bindings-v2.mjs";
 import { maxParallel as planMaxParallel } from "./lib/parallelism.mjs";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 // Wave width: an explicit --max-parallel wins; otherwise the subscription plan decides
 // (SVC_PLAN, references/plan-limits.json), and with no plan set the historical 4 stands.
@@ -1310,6 +1314,6 @@ async function main() {
   }
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   process.exitCode = await main();
 }

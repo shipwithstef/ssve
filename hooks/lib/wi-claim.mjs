@@ -20,7 +20,11 @@ import {
 import { isAuthoritativeMutatingBinding } from "./authoritative-binding.mjs";
 import { normalizeClaimOwner, sessionShaped } from "./claim-owner.mjs";
 import { gitRevParse, gitWorktreeList } from "./git-query.mjs";
-import { isMain } from "../../scripts/lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 export { normalizeClaimOwner };
 
@@ -1592,7 +1596,7 @@ async function main() {
   if (!result.ok) process.exit(1);
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   main().catch((error) => {
     console.error(error.message);
     process.exit(1);

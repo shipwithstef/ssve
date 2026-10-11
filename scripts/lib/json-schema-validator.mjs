@@ -33,7 +33,11 @@
  */
 
 import fs from "node:fs";
-import { isMain } from "./is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -138,7 +142,7 @@ export function validate(schema, data, path = "$") {
   return { valid: errors.length === 0, errors };
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   const args = Object.fromEntries(process.argv.slice(2).map((a) => {
     const [k, v] = a.replace(/^--/, "").split("=");
     return [k, v ?? true];

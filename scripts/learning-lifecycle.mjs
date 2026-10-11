@@ -7,7 +7,11 @@ import { fileURLToPath } from "node:url";
 import { appendJsonlLine } from "./state-io.mjs";
 import { loadLearningsDetailed } from "../hooks/lib/learning-index.mjs";
 import { verifyReviewerEvidence } from "./lib/reviewer-evidence.mjs";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const arg = (argv, flag) => { const i = argv.indexOf(flag); return i >= 0 ? argv[i + 1] : ""; };
 function realOwnedDirectory(candidate) {
@@ -150,4 +154,4 @@ export function run(argv = process.argv.slice(2), env = process.env) {
     throw new Error("usage: learning-lifecycle.mjs <normalize|triage|capture|record|elevate|federate> --root <repo> ...");
   } catch (error) { process.stderr.write(`[learning-lifecycle] ${error.message}\n`); return 2; }
 }
-if (isMain(import.meta.url)) process.exitCode = run();
+if (__svcIsMain(import.meta.url)) process.exitCode = run();

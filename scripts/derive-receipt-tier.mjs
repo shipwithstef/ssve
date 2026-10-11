@@ -19,7 +19,11 @@ import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const LOC_FULL_THRESHOLD = 150;   // changed lines at/over this → full
@@ -164,7 +168,7 @@ async function reportStreak(minQualifying) {
   }, null, 2) + "\n");
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
     if (process.argv.includes("--streak")) {
     const min = Number.parseInt(argValue("--min") || "5", 10);
     await reportStreak(min);

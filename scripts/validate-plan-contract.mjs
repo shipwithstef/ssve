@@ -4,7 +4,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import { RISK_FLAG_SET } from "./lib/risk-flags.mjs";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const RISKY_RESOURCES = new Set(["money", "ledger", "subscription", "entitlement", "quota", "counter", "inventory", "identity", "notification"]);
 // WI-553 AC-553-4: an atomic-primitive allowlist. Freeform prose ("check if
@@ -389,4 +393,4 @@ export function run(argv = process.argv.slice(2)) {
     return 0;
   } catch (error) { process.stderr.write(`[plan-contract] ${error.message}\n`); return 2; }
 }
-if (isMain(import.meta.url)) process.exitCode = run();
+if (__svcIsMain(import.meta.url)) process.exitCode = run();

@@ -19,7 +19,11 @@ import { parseBootstrapCommand } from "./codex/lib/bootstrap-command.mjs";
 import { parseOrchestrateCommand } from "./lib/orchestrate-command.mjs";
 import { readOwnerLease } from "./codex/lib/owner-lease.mjs";
 import { isShellTool } from "./lib/shell-tools.mjs";
-import { isMain } from "../scripts/lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -386,7 +390,7 @@ async function main() {
   });
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   const operation = process.argv.includes("--check-default-commit")
     ? async () => {
         const sessionId = String(process.env.CURSOR_CONVERSATION_ID || process.env.CURSOR_SESSION_ID || process.env.SVC_SESSION_ID || process.env.GROK_SESSION_ID || process.env.OPENCODE_SESSION_ID || process.env.CODEX_THREAD_ID ||

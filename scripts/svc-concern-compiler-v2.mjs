@@ -2,7 +2,11 @@
 
 import crypto from "node:crypto";
 import fs from "node:fs";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const SEVERITIES = new Set(["CRITICAL", "HIGH", "MEDIUM", "LOW"]);
 const MODES = new Set(["shadow", "enforce"]);
@@ -134,7 +138,7 @@ function parseArgs(argv) {
   return args;
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   try {
     const args = parseArgs(process.argv.slice(2));
     if (!args.registry || !args.hits) throw new Error("usage: svc-concern-compiler-v2.mjs --registry <json> --hits <json> [--mode shadow|enforce] [--waivers <json>]");

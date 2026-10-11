@@ -127,12 +127,19 @@ fi
 # 8. Verify resolve-model.sh fail-closed behavior and owner-policy routing
 ISOLATED_HOME="$(mktemp -d)"
 chmod 700 "$ISOLATED_HOME"
-if env -u SVC_DISPATCH_POLICY -u SVC_REVIEWER_POLICY HOME="$ISOLATED_HOME" bash "$SCRIPT_DIR/scripts/resolve-model.sh" STRAT >/dev/null 2>&1; then
+# No owner file: the framework default resolves and says so (docs/removals.md). A named
+# path that is missing still refuses.
+if env -u SVC_DISPATCH_POLICY -u SVC_REVIEWER_POLICY HOME="$ISOLATED_HOME" bash "$SCRIPT_DIR/scripts/resolve-model.sh" STRAT --json 2>/dev/null | grep -q '"source": "framework-default-policy"'; then
+  pass "resolve-model.sh uses the labelled framework default when no owner dispatch policy exists"
+else
+  fail "resolve-model.sh did not fall back to the labelled framework default without an owner policy"
+fi
+if env -u SVC_REVIEWER_POLICY SVC_DISPATCH_POLICY="$ISOLATED_HOME/named-but-missing.json" HOME="$ISOLATED_HOME" bash "$SCRIPT_DIR/scripts/resolve-model.sh" STRAT >/dev/null 2>&1; then
   rm -rf "$ISOLATED_HOME"
-  fail "resolve-model.sh unexpectedly succeeded without owner dispatch policy"
+  fail "resolve-model.sh unexpectedly succeeded with a named policy path that is missing"
 else
   rm -rf "$ISOLATED_HOME"
-  pass "resolve-model.sh refuses when owner dispatch policy is missing"
+  pass "resolve-model.sh refuses a named owner policy path that is missing"
 fi
 
 POLICY_FIXTURE_DIR="$(mktemp -d)"

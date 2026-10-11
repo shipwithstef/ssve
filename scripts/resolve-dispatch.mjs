@@ -8,11 +8,16 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { validate } from './lib/json-schema-validator.mjs';
 import { cursorIndependentModelShape } from './lib/review-launch-preflight.mjs';
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DISPATCH_SCHEMA = JSON.parse(fs.readFileSync(path.join(ROOT, 'schemas/dispatch-policy.schema.json'), 'utf8'));
 const DEFAULT_DISPATCH_POLICY = path.join(os.homedir(), '.svc', 'dispatch-policy.json');
+const FRAMEWORK_DEFAULT_POLICY = fileURLToPath(new URL('../references/default-dispatch-policy.json', import.meta.url));
 const DIGEST = /^[a-f0-9]{64}$/;
 const EFFORTS = new Set(['low', 'medium', 'high', 'xhigh', 'max', 'provider-managed']);
 const STATION_KINDS = new Set(['inline-self', 'subagent', 'external']);
@@ -413,7 +418,14 @@ function normalizeDispatchContext(options = {}) {
   const sessionOverrideRequested = options.sessionOverrideRequested ?? process.env.SVC_DISPATCH_OVERRIDE_REQUESTED ?? contractOverride?.requested ?? null;
   const sessionOverrideReceiptSpec = options.sessionOverrideReceiptSpec || process.env.SVC_DISPATCH_OVERRIDE_RECEIPT
     || (typeof contractOverride?.receipt_path === 'string' ? contractOverride.receipt_path : null);
-  const globalPolicy = readProtectedJson(configPath, 'owner dispatch policy');
+  // No owner policy at the default path is a fresh install, not an error: use the
+  // framework's default (Claude-only, no release authority). An explicitly named path that
+  // is missing, or an owner file that is present but invalid, still fails closed.
+  const explicitPath = Boolean(options.configPath || process.env.SVC_DISPATCH_POLICY);
+  const useFrameworkDefault = !explicitPath && !fs.existsSync(configPath);
+  const globalPolicy = useFrameworkDefault
+    ? (() => { const bytes = fs.readFileSync(FRAMEWORK_DEFAULT_POLICY); return { absolute: FRAMEWORK_DEFAULT_POLICY, sha256: hash(bytes), document: JSON.parse(bytes), source: 'framework-default' }; })()
+    : { ...readProtectedJson(configPath, 'owner dispatch policy'), source: 'owner' };
   if (globalPolicy.document?.schema_version !== 1) {
     const error = new Error(`resolve-dispatch: unsupported policy schema_version ${globalPolicy.document?.schema_version ?? '<missing>'}`);
     error.code = 'DISPATCH_POLICY_UNSUPPORTED';
@@ -436,6 +448,7 @@ function normalizeDispatchContext(options = {}) {
   return {
     config_path: globalPolicy.absolute,
     config_sha256: globalPolicy.sha256,
+    config_source: globalPolicy.source,
     mode: selectedMode,
     mode_config: modeConfig,
     policy: effective,
@@ -524,7 +537,7 @@ export function resolveDispatchModel(options = {}) {
   applyDenyAllow(context.policy, tuple, role);
   return {
     schema_version: 1,
-    source: 'owner-dispatch-policy',
+    source: context.config_source === 'framework-default' ? 'framework-default-policy' : 'owner-dispatch-policy',
     config_path: context.config_path,
     config_sha256: context.config_sha256,
     effective_policy_sha256: hash(context.policy),
@@ -602,7 +615,7 @@ export function resolveDispatchRoleTuple(options = {}) {
   if (inherited_role) applyDenyAllow(context.policy, tuple, inherited_role);
   return {
     schema_version: 1,
-    source: 'owner-dispatch-policy',
+    source: context.config_source === 'framework-default' ? 'framework-default-policy' : 'owner-dispatch-policy',
     config_path: context.config_path,
     config_sha256: context.config_sha256,
     effective_policy_sha256: hash(context.policy),
@@ -668,7 +681,7 @@ export function resolveDispatchReviewTopology(options = {}) {
   }
   return {
     schema_version: 1,
-    source: 'owner-dispatch-policy',
+    source: context.config_source === 'framework-default' ? 'framework-default-policy' : 'owner-dispatch-policy',
     config_path: context.config_path,
     config_sha256: context.config_sha256,
     mode: context.mode,
@@ -732,7 +745,7 @@ export function resolveDispatchPolicyStatus(options = {}) {
   return {
     ok: true,
     schema_version: 1,
-    source: 'owner-dispatch-policy',
+    source: context.config_source === 'framework-default' ? 'framework-default-policy' : 'owner-dispatch-policy',
     orchestrator,
     mode: context.mode,
     phase: topology.phase,
@@ -842,7 +855,7 @@ function cli() {
   fail('usage: resolve-dispatch.mjs model|role|topology|external|policy-status ...', 'dispatch_input_invalid');
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   try {
     cli();
   } catch (error) {

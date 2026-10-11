@@ -5,7 +5,11 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { validate } from "./lib/json-schema-validator.mjs";
 import { validateGenerationBindings } from "./lib/generation-bindings-v2.mjs";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const SCHEMA_PATH = fileURLToPath(new URL("../schemas/product-improvement-protocol-v2.schema.json", import.meta.url));
 const SCHEMA = JSON.parse(fs.readFileSync(SCHEMA_PATH, "utf8"));
@@ -410,7 +414,7 @@ export function validateProductProgress(history, candidate) {
   };
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   try {
     const [command, file] = process.argv.slice(2);
     if (command !== "compile" || !file) throw new Error("usage: svc-product-improvement-protocol-v2.mjs compile <protocol.json>");

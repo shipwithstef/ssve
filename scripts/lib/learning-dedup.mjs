@@ -14,7 +14,11 @@
 // Schema baselined 2026-05-12 by WI-343 tranche 1.
 
 import fs from "node:fs";
-import { isMain } from "./is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const INSIGHT_PREFIX_LEN = 80;
 
@@ -54,7 +58,7 @@ export function dedupAgainstPaths(candidate, paths) {
 }
 
 // CLI smoke-test entrypoint (node -e or direct invocation).
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   const candidate = JSON.parse(process.argv[2] || "{}");
   const paths = process.argv.slice(3);
   const dup = dedupAgainstPaths(candidate, paths);

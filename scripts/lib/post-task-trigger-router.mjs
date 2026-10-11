@@ -23,7 +23,11 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { appendJsonlLine } from "../state-io.mjs";
-import { isMain } from "./is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const DEFAULT_DEDUPE_WINDOW = 100;
 const DEFAULT_REGISTRY = fileURLToPath(new URL("../../references/sdkg-registry.json", import.meta.url));
@@ -94,7 +98,7 @@ export function route({ taskId, subject, repoRoot = process.cwd(), registryPath,
   return { dispatched, skipped };
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   let stdin = "";
   process.stdin.on("data", (chunk) => stdin += chunk);
   process.stdin.on("end", () => {

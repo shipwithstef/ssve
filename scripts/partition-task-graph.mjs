@@ -22,7 +22,11 @@
 
 import { readFileSync } from "node:fs";
 import { disjointScopes } from "./lib/disjoint-scopes.mjs";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 // Pure: partition tasks into dependency-ordered waves; each wave is parallel ONLY
 // if its task file-sets are pairwise disjoint, else escalate-to-sequential.
@@ -63,7 +67,7 @@ export function partitionTaskGraph(tasks) {
 
 function argVal(name) { const i = process.argv.indexOf(name); return i === -1 ? null : process.argv[i + 1] || null; }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   const gp = argVal("--graph");
   if (!gp) { console.error("usage: partition-task-graph --graph <task-graph.json>"); process.exit(2); }
   let graph;

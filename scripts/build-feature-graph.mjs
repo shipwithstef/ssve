@@ -25,7 +25,11 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { execSync } from "node:child_process";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 import { writeJsonAtomic } from "./state-io.mjs";   // atomic .svc/feature-graph.json write (state-io discipline)
 
 const AC_ID_RE = /^[A-Z][A-Z0-9]*-\d+$/;          // DISC-01, US-1, AC-12
@@ -124,7 +128,7 @@ function glob(pattern) {
 }
 function readFiles(paths) { return paths.filter((p) => existsSync(p)).map((p) => ({ path: p, text: readFileSync(p, "utf8") })); }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   const cmd = process.argv[2];
   try {
     if (cmd === "build") {

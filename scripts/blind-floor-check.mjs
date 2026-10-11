@@ -34,7 +34,11 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 // Canonical binding a certification must be issued against (anti-stale/anti-replay):
 // a verdict is valid ONLY for the exact change it certifies, so a verdict reused from a
@@ -177,4 +181,4 @@ function main() {
 }
 
 // Run only as CLI (keep classify() importable + pure for tests).
-if (isMain(import.meta.url)) main();
+if (__svcIsMain(import.meta.url)) main();

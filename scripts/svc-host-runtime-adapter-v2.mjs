@@ -5,7 +5,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { appendRuntimeEvent, readRuntimeJournal, replayRuntimeJournal } from './svc-runtime-v2.mjs';
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(scriptDir, '..');
@@ -98,7 +102,7 @@ export function writeLegacyProjections(outDir, projections) {
   return { valid: true, output_digest: digest(projections), files: Object.values(names).map(name => path.join(outDir, name)) };
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   const args = Object.fromEntries(process.argv.slice(2).flatMap((token, index, all) => token.startsWith('--') ? [[token.slice(2), all[index + 1]]] : []));
   const command = process.argv[2];
   if (command === 'ingest') {

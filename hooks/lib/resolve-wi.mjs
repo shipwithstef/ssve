@@ -9,7 +9,11 @@ import { claimFreshness, normalizeClaimOwner, readClaimAbsolute } from "./wi-cla
 import { validateTaskGraphShape } from "./validate-task-graph-shape.mjs";
 import { WI_ID_RE, extractWiId, isValidWiId } from "./wi-id.mjs";
 import { gitRevParse } from "./git-query.mjs";
-import { isMain } from "../../scripts/lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 // Keep authority resolution self-contained because several supported host and
 // eval runtimes install this synchronous resolver as a deliberately minimal
@@ -502,7 +506,7 @@ function cliMain(argv) {
   process.stdout.write(`${JSON.stringify(authorityJson(hookPayload, process.env))}\n`);
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   const argv = process.argv.slice(2);
   if (argv.includes("--emit-authority-json")) {
     cliMain(argv.filter((a) => a !== "--emit-authority-json"));

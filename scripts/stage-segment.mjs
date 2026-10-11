@@ -24,7 +24,11 @@ import {createHash} from "node:crypto";
 import {isDeepStrictEqual} from "node:util";
 import { fileURLToPath } from "node:url";
 import { deriveMandatoryChainSegments, loadStageRegistry } from "./lib/stage-registry.mjs";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REGISTRY_PATH = path.join(__dirname, "..", "references", "stage-registry.json");
@@ -235,7 +239,7 @@ async function mainCli() {
   }
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   mainCli().catch((e) => {
     process.stderr.write(`${String(e && e.message || e)}\n`);
     process.exit(1);

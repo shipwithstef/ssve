@@ -30,13 +30,17 @@ export const WAVE1_SCOPES = {
 // (scripts/lib/disjoint-scopes.mjs) — one hardened, closed-loop fail-safe place
 // to audit. Re-exported here for back-compat (`disjointWaveScopes` alias).
 import { scopesIntersect, disjointScopes } from "./lib/disjoint-scopes.mjs";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 export { scopesIntersect };
 export const disjointWaveScopes = (scopesBySkill) => disjointScopes(scopesBySkill);
 
 function has(n) { return process.argv.includes(n); }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   const r = disjointWaveScopes(WAVE1_SCOPES);
   if (has("--json")) {
     process.stdout.write(JSON.stringify({

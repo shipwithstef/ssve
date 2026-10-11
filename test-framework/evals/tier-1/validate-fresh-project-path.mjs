@@ -58,3 +58,21 @@ test("a local project with no remote gets an isolated worktree from its own bran
   assert.equal(out.created, true);
   assert.ok(fs.existsSync(out.absolute_worktree));
 });
+
+test("a fresh install with no owner dispatch policy resolves models and reviewers from the framework default", () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "svc-home-"));
+  const base = { ...process.env, HOME: home, SVC_HOST: "claude", SVC_DISPATCH_POLICY: "", SVC_REVIEWER_POLICY: "" };
+  delete base.SVC_DISPATCH_POLICY; delete base.SVC_REVIEWER_POLICY;
+  const model = spawnSync("bash", [path.join(install, "scripts", "resolve-model.sh"), "EXEC", "--json"], { env: base, encoding: "utf8" });
+  assert.equal(model.status, 0, model.stderr);
+  const m = JSON.parse(model.stdout);
+  assert.equal(m.source, "framework-default-policy", "labelled as the framework default, not an owner choice");
+  const review = spawnSync(process.execPath, [path.join(install, "scripts", "run-external-review.mjs"), "--policy-status", "--orchestrator", "claude"], { env: base, encoding: "utf8" });
+  assert.equal(review.status, 0, review.stderr);
+  assert.equal(JSON.parse(review.stdout).ok, true);
+  // Fail closed where it matters: a present but invalid owner file, or a named path that is missing.
+  fs.mkdirSync(path.join(home, ".svc")); fs.writeFileSync(path.join(home, ".svc", "dispatch-policy.json"), "{bad"); fs.chmodSync(path.join(home, ".svc", "dispatch-policy.json"), 0o600);
+  assert.notEqual(spawnSync("bash", [path.join(install, "scripts", "resolve-model.sh"), "EXEC"], { env: base, encoding: "utf8" }).status, 0, "malformed owner policy fails closed");
+  const named = spawnSync("bash", [path.join(install, "scripts", "resolve-model.sh"), "EXEC"], { env: { ...base, HOME: fs.mkdtempSync(path.join(os.tmpdir(), "svc-home-")), SVC_DISPATCH_POLICY: "/nonexistent/policy.json" }, encoding: "utf8" });
+  assert.notEqual(named.status, 0, "a named policy path that is missing fails");
+});

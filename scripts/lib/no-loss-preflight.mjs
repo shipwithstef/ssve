@@ -15,7 +15,11 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isMain } from "./is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 export const BASELINE_PATH = ".svc/verify-baseline.json";
 
@@ -63,7 +67,7 @@ export function preflight({ cwd = process.cwd(), requireBaseline = true } = {}) 
 }
 
 // CLI: node scripts/lib/no-loss-preflight.mjs [--no-baseline]
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   const requireBaseline = !process.argv.includes("--no-baseline");
   const r = preflight({ requireBaseline });
   if (r.ok) {

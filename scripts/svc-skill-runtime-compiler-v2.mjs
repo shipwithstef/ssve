@@ -3,7 +3,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultRoot = path.resolve(scriptDir, '..');
@@ -59,7 +63,7 @@ export function compileSkillRuntimeContracts(repoRoot = defaultRoot) {
   return { schema_version: registry.schema_version, target_skills: TARGET_SKILLS, contracts: registry.contracts, continuation_dag: registry.continuation_dag };
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   const rootIndex = process.argv.indexOf('--root');
   const result = compileSkillRuntimeContracts(rootIndex >= 0 ? path.resolve(process.argv[rootIndex + 1]) : defaultRoot);
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

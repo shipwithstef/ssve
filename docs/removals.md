@@ -60,3 +60,12 @@ The reintroduction check is either `pattern: /regex/ in <path prefix>[, <path pr
 - **Intent now delivered by:** `scripts/lib/is-main.mjs` (compares real paths), guarded by `validate-install-symlink-entry.mjs`.
 - **Date / record:** 2026-10-11, commit fcf04a9.
 - **Reintroduction check:** pattern: /import\.meta\.url === `file:\/\/\$\{process\.argv\[1\]\}`|process\.argv\[1\] === fileURLToPath\(import\.meta\.url\)/ in scripts/, hooks/, bin/
+
+## Failing when the owner dispatch policy file is missing
+- **Kind:** removed behaviour
+- **Existed for:** making sure model routing and reviewers come only from a policy the owner wrote, never from a silent default (WI-552 "fail closed, never silently remapped").
+- **Evidence:** a fresh install has no `~/.svc/dispatch-policy.json`, so `resolve-model.sh` (execute-changeset's step 0 and route-workflow's session setup) and every review launch failed with `dispatch_missing_global_file` / `config_invalid` and zero provider calls (2026-10-11 fresh-project simulation and framework-arm eval run). No user without an owner file could run the chain or get any review.
+- **Why removed:** it blocked every new user without protecting anything an owner had chosen.
+- **Intent now delivered by:** `references/default-dispatch-policy.json`, used only when the default owner path is absent and labelled `framework-default-policy` in every answer; it carries no release authority. An owner file that is present but invalid, or a policy path that is named and missing, still fails closed (`validate-fresh-project-path.mjs`, `validate-kimi-host.sh`).
+- **Date / record:** 2026-10-11, reviewer-ladder decision step 1.
+- **Reintroduction check:** review: a change that makes resolve-dispatch or review-topology-v2 fail again when the default owner path is simply absent

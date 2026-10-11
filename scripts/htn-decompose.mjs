@@ -9,7 +9,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 /** Produce the existing five-phase scaffold without filling model-owned subtasks. */
 export function decompose(goal, context) {
@@ -58,6 +62,6 @@ function main(argv) {
   if (errors.length) throw new Error("Validation errors:\n  " + errors.join("\n  "));
   console.log(JSON.stringify(plan, null, 2));
 }
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   try { main(process.argv.slice(2)); } catch (error) { console.error(`htn-decompose: ${error.message}`); process.exitCode = 1; }
 }

@@ -6,7 +6,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateGenerationBindings } from './lib/generation-bindings-v2.mjs';
 import { appendRuntimeEvent } from './svc-runtime-v2.mjs';
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 function stable(value) {
   if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
@@ -104,7 +108,7 @@ export function appendMigrationAcceptedPrefix(paths, report, observedAt = new Da
   return { valid: true, errors: [], report_digest, appended };
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   const args = process.argv.slice(2); const at = flag => { const index = args.indexOf(flag); return index >= 0 ? args[index + 1] : null; };
   const legacy = JSON.parse(fs.readFileSync(path.resolve(at('--legacy')), 'utf8'));
   const generations = JSON.parse(fs.readFileSync(path.resolve(at('--generations')), 'utf8'));

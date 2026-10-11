@@ -10,7 +10,11 @@ import { cursorIndependentEligible, resolveDispatchExternalReviewer, resolveDisp
 
 import { validateResourcePolicy } from './lib/reviewer-resources.mjs';
 import { cursorExactRouteEvidenceValid } from './lib/review-launch-preflight.mjs';
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const DEFAULT_DISPATCH_CONFIG = path.join(os.homedir(), '.svc', 'dispatch-policy.json');
 const DEFAULT_LEGACY_CONFIG = path.join(os.homedir(), '.svc', 'reviewer-policy-v2.json');
@@ -141,8 +145,14 @@ export function writeReviewerPolicySecure(file, options) {
   return { file: absolute, policy };
 }
 
+// A fresh install has no owner config: review then runs on the framework's default policy
+// (no release authority) instead of failing. A named path that is missing still fails.
+const FRAMEWORK_DEFAULT_POLICY = fileURLToPath(new URL('../references/default-dispatch-policy.json', import.meta.url));
+
 export function loadReviewerPolicy(configPath = null) {
-  const file = reviewerPolicyPath(configPath);
+  let file = reviewerPolicyPath(configPath);
+  const explicit = Boolean(configPath || process.env.SVC_DISPATCH_POLICY || process.env.SVC_REVIEWER_POLICY);
+  if (!explicit && !fs.existsSync(file)) file = FRAMEWORK_DEFAULT_POLICY;
   let bytes;
   try { bytes = fs.readFileSync(file); } catch (error) { fail(`cannot read owner config ${file}: ${error.code || error.message}`); }
   let policy;
@@ -403,7 +413,7 @@ function args(argv) {
   return { command, options };
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   const { command, options } = args(process.argv.slice(2));
   if (command === 'create-policy') {
     if (!options.input || !options.out) fail('create-policy requires --input and --out');

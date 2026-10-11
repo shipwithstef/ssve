@@ -15,7 +15,11 @@ import { fileURLToPath } from "node:url";
 import { IsolationUnsupported, sha256Bytes, sha256Utf8, canonicalJson } from "./two-box-protocol.mjs";
 import { PLANNING_REQUEST_MAX_BYTES, freezeRequestBytes, readFrozenFile, assertArgvFits } from "./frozen-request-input.mjs";
 import { redactSecrets } from "./secret-redaction.mjs";
-import { isMain } from "./is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const CAPTURE_KEY = "SSVE_CAPTURE_KEY";
 const PROVIDER = "ssve_cap";
@@ -734,7 +738,7 @@ async function main() {
   process.stdout.write(`${JSON.stringify(publicCapture(result))}\n`);
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   main().catch((error) => {
     const message = redactSecrets(String(error.message)).slice(0, 512);
     const envelope = {

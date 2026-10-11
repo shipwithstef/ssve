@@ -14,7 +14,11 @@ import { createConsumptionLedger } from "./lib/runtime-evidence-consumption-v2.m
 import { executeReleaseEffect, runRuntimeToFreeze } from "./lib/runtime-engine-v2.mjs";
 import { BUILT_IN_EFFECT_KINDS } from "./lib/runtime-effects-v2.mjs";
 import { TASK_EVENT_TYPES, transitionTaskState } from "./lib/runtime-state-model-v2.mjs";
-import { isMain } from "./lib/is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const EVENT_SCHEMA = JSON.parse(fs.readFileSync(fileURLToPath(new URL("../schemas/runtime-journal-event-v2.schema.json", import.meta.url)), "utf8"));
 const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -565,7 +569,7 @@ async function main() {
   throw new Error(`unknown command ${command}`);
 }
 
-if (isMain(import.meta.url)) {
+if (__svcIsMain(import.meta.url)) {
   try {
     const result = await main();
     (result.valid ? process.stdout : process.stderr).write(`${JSON.stringify(result)}\n`);

@@ -38,7 +38,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { repositoryIdentity } from "./review-evidence-store.mjs";
-import { isMain } from "./is-main.mjs";
+import { realpathSync as __svcRealpath } from "node:fs";
+import { fileURLToPath as __svcToPath } from "node:url";
+// Real paths on both sides, so the entry runs through install symlinks; built-ins only,
+// so a copied subset of files still loads.
+const __svcIsMain = (url) => { try { return Boolean(process.argv[1]) && __svcRealpath(process.argv[1]) === __svcRealpath(__svcToPath(url)); } catch { return false; } };
 
 const VALID_MODES = new Set(["refuse", "warn"]);
 const AUTHORITATIVE_SOURCES = new Set(["env", "shared", "home"]);
@@ -264,7 +268,7 @@ function isMainModule() {
   try {
     return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
   } catch {
-    return isMain(import.meta.url);
+    return __svcIsMain(import.meta.url);
   }
 }
 
