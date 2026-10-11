@@ -5,10 +5,15 @@
 // runner-side answer: a unix-socket server, started per job OUTSIDE the sandbox, that executes
 // the REAL `codex` found on the runner's PATH for the framework's review and planning calls
 // ONLY. It is not a general model proxy for the builder:
-//   - an `exec` call is accepted only when it carries an --output-schema whose content hash is
-//     one of the framework's own review/planning schemas (the caller computes the allowlist
-//     from the installed framework source); anything else is refused, as is any exec call
-//     without --json (usage must be reported);
+//   - an `exec` call is accepted only as a framework request: its prompt (read from stdin) must
+//     begin with one of the framework's LOCKED reviewer or planner prompt templates (the caller
+//     derives them from the installed framework source and passes them as `policies`), its
+//     --output-schema must be the schema that template is bound to, and its phase must match
+//     (a review runs in the job's own tree, a planning role in a neutral empty directory with
+//     the job hidden). Anything else is refused, as is any exec call without --json;
+//   - what comes back is the framework's JSON and nothing else: stdout is filtered to the
+//     turn/usage events and the final message, which must parse, validate against the schema
+//     and keep every string short (a reviewer that can read source cannot return it);
 //   - the sandbox is forced to read-only; write/danger flags, sandbox/approval config and
 //     feature enabling are refused, never passed on;
 //   - the working directory must be the job's build dir, a path under the job home (the
@@ -33,11 +38,16 @@ export const RELAY_DIR = ".oe-relay";
 export const RELAY_SOCK = "s";
 export const DEFAULT_MAX_CALLS = 12;
 export const DEFAULT_CALL_TIMEOUT_MS = 1_800_000;
-export const DEFAULT_UNMEASURED_CALL_USD = 0.25;
-export const DEFAULT_MAX_CALL_USD = 5;
+export const DEFAULT_MAX_CALL_USD = 2;
+export const CTX_SENTINEL = "@@SVC_RELAY_CONTEXT_ROOT@@";
+// Returned-JSON bounds per phase: a review can read the job's source, so its strings are short;
+// a planning role sees only what its prompt supplied, so its strings may carry a plan.
+export const PHASE_LIMITS = Object.freeze({ review: { maxString: 2048, maxTotal: 65536 }, plan: { maxString: 32768, maxTotal: 262144 } });
+const CAPTURE_CAP = 16 * 1024 * 1024;
 export const DEFAULT_STDOUT_CAP = 2 * 1024 * 1024;
 export const DEFAULT_LAST_MESSAGE_CAP = 512 * 1024;
-const STDERR_CAP = 256 * 1024;
+const STDERR_CAP = 256 * 1024;       // probes
+const EXEC_STDERR_CAP = 4096;       // exec calls: a log line or two, never a data channel
 const MAX_PROBES = 60;
 const MAX_REJECT_LOG = 50;
 const MAX_STDIN = 32 * 1024 * 1024;
@@ -96,7 +106,8 @@ export function vetCodexArgv(argv) {
     if (a === "-") { positional++; out.push(a); continue; }
     if (!a.startsWith("-")) {
       if (positional === 0 && ["resume", "fork", "review", "help"].includes(a)) return refuse(`codex exec ${a} is not relayed`);
-      positional++; promptChars += a.length; out.push(a); continue;
+      // The framework's launchers send the prompt on stdin; an argument prompt is the builder's own.
+      return refuse("exec prompts come from stdin (the framework's locked templates); an argument prompt is not relayed");
     }
     if (a === "--") return refuse("`--` is not accepted");
     let name = a, val = null;
@@ -128,7 +139,6 @@ export function vetCodexArgv(argv) {
     if (kind === "last") { last = val; out.push("--output-last-message", val); continue; }
     if (kind === "color") { if (!["always", "never", "auto"].includes(val)) return refuse("--color value not accepted"); out.push("--color", val); continue; }
   }
-  if (positional > 1) return refuse("more than one prompt argument");
   if (info) return infoCall(["exec", ...out], { model });
   if (!sandboxSeen) out.unshift("-s", "read-only");
   if (!json) return refuse("--json is required so that usage is reported and charged");
@@ -252,25 +262,144 @@ export function makeIsolatedCodexHome(from = process.env.CODEX_HOME || path.join
   return d;
 }
 
+// --- request policies and output checks -------------------------------------------------
+
+// A policy binds one framework request kind: its output schema (by content hash), its phase and
+// its locked prompt text.
+//   {label, phase: "review"|"plan", schemaHash, prefixes: [text...], templateSha256}
+// review prefixes hold CTX_SENTINEL where the launcher writes the context root; plan prefixes
+// are the role instruction followed by a blank line.
+export function matchPrompt(policy, prompt, contextRoot) {
+  if (typeof prompt !== "string" || !prompt.length) return "empty prompt";
+  if (policy.phase === "review") {
+    for (const t of policy.prefixes) {
+      const head = t.split(CTX_SENTINEL).join(contextRoot);
+      if (!prompt.startsWith(head)) continue;
+      const body = prompt.slice(head.length);
+      // The launcher refuses a request that does not carry the candidate digest; so does the relay.
+      if (!/(^|[^0-9a-f])[0-9a-f]{64}([^0-9a-f]|$)/.test(body)) return "review request lacks a candidate digest";
+      return null;
+    }
+    return "prompt does not begin with the framework's locked reviewer template for this context root";
+  }
+  for (const t of policy.prefixes) {
+    if (!prompt.startsWith(t)) continue;
+    const rest = prompt.slice(t.length);
+    if (!rest.endsWith("\n")) return "planner payload is not newline terminated";
+    let doc; try { doc = JSON.parse(rest); } catch { return "planner payload is not JSON"; }
+    return doc && typeof doc === "object" && !Array.isArray(doc) ? null : "planner payload is not a JSON object";
+  }
+  return "prompt does not begin with the framework's locked planner template for this role";
+}
+
+// A small JSON-Schema checker for the keywords the framework's review and planning schemas
+// use (plus anyOf/oneOf/const/$ref): the relay cannot trust a model's output to be valid.
+export function validateAgainstSchema(value, schema, root = schema, where = "$") {
+  const errs = [];
+  if (schema === true || schema == null) return errs;
+  if (schema.$ref) {
+    const ref = String(schema.$ref); const target = ref.startsWith("#/") ? ref.slice(2).split("/").reduce((o, k) => o?.[k.replace(/~1/g, "/").replace(/~0/g, "~")], root) : null;
+    return target ? validateAgainstSchema(value, target, root, where) : [`${where}: unresolved ${ref}`];
+  }
+  for (const key of ["anyOf", "oneOf"]) if (schema[key]) { if (!schema[key].some((b) => validateAgainstSchema(value, b, root, where).length === 0)) return [`${where}: no ${key} branch matched`]; }
+  if (schema.allOf) for (const b of schema.allOf) errs.push(...validateAgainstSchema(value, b, root, where));
+  if ("const" in schema && JSON.stringify(value) !== JSON.stringify(schema.const)) errs.push(`${where}: not the const`);
+  const actual = value === null ? "null" : Array.isArray(value) ? "array" : Number.isInteger(value) ? "integer" : typeof value;
+  const types = Array.isArray(schema.type) ? schema.type : schema.type ? [schema.type] : [];
+  if (types.length && !types.some((t) => t === actual || (t === "number" && actual === "integer"))) return [...errs, `${where}: expected ${types.join("|")}, got ${actual}`];
+  if (schema.enum && !schema.enum.some((e) => JSON.stringify(e) === JSON.stringify(value))) errs.push(`${where}: outside enum`);
+  if (typeof value === "string") {
+    if (Number.isInteger(schema.minLength) && value.trim().length < schema.minLength) errs.push(`${where}: shorter than ${schema.minLength}`);
+    if (Number.isInteger(schema.maxLength) && value.length > schema.maxLength) errs.push(`${where}: longer than ${schema.maxLength}`);
+    if (schema.pattern && !new RegExp(schema.pattern).test(value)) errs.push(`${where}: pattern mismatch`);
+  }
+  if (typeof value === "number") {
+    if (typeof schema.minimum === "number" && value < schema.minimum) errs.push(`${where}: below minimum`);
+    if (typeof schema.maximum === "number" && value > schema.maximum) errs.push(`${where}: above maximum`);
+  }
+  if (Array.isArray(value)) {
+    if (Number.isInteger(schema.minItems) && value.length < schema.minItems) errs.push(`${where}: fewer than ${schema.minItems} items`);
+    if (Number.isInteger(schema.maxItems) && value.length > schema.maxItems) errs.push(`${where}: more than ${schema.maxItems} items`);
+    if (schema.items && !Array.isArray(schema.items)) value.forEach((v, k) => errs.push(...validateAgainstSchema(v, schema.items, root, `${where}[${k}]`)));
+  }
+  if (actual === "object") {
+    for (const k of schema.required || []) if (!Object.hasOwn(value, k)) errs.push(`${where}: missing ${k}`);
+    const props = schema.properties || {};
+    if (schema.additionalProperties === false) for (const k of Object.keys(value)) if (!Object.hasOwn(props, k)) errs.push(`${where}: unexpected ${k}`);
+    for (const [k, sub] of Object.entries(props)) if (Object.hasOwn(value, k)) errs.push(...validateAgainstSchema(value[k], sub, root, `${where}.${k}`));
+    if (schema.additionalProperties && typeof schema.additionalProperties === "object") for (const [k, v] of Object.entries(value)) if (!Object.hasOwn(props, k)) errs.push(...validateAgainstSchema(v, schema.additionalProperties, root, `${where}.${k}`));
+  }
+  return errs;
+}
+
+// Every string in the value is at most maxString characters and all of them together at most
+// maxTotal. Returns an error text or null.
+export function boundStrings(value, { maxString, maxTotal }) {
+  let total = 0;
+  const walk = (v, where) => {
+    if (typeof v === "string") { total += v.length; return v.length > maxString ? `${where}: string of ${v.length} characters exceeds ${maxString}` : null; }
+    if (Array.isArray(v)) { for (let k = 0; k < v.length; k++) { const e = walk(v[k], `${where}[${k}]`); if (e) return e; } return null; }
+    if (v && typeof v === "object") { for (const [k, x] of Object.entries(v)) { const e = walk(x, `${where}.${k}`); if (e) return e; } }
+    return null;
+  };
+  const e = walk(value, "$");
+  return e || (total > maxTotal ? `returned strings total ${total} characters, over ${maxTotal}` : null);
+}
+
+// The framework's answer as text: parsed, schema-valid and short, or an error.
+export function checkAnswer(text, schema, limits) {
+  let doc; try { doc = JSON.parse(text); } catch { return "answer is not JSON"; }
+  const bad = validateAgainstSchema(doc, schema);
+  if (bad.length) return `answer is not schema-valid (${bad[0]})`;
+  return boundStrings(doc, limits);
+}
+
+// Events a sandbox may see from an exec call. Tool output (file contents a reviewer read),
+// reasoning and every other item type are dropped; only the final answer survives, and only if
+// it passed checkAnswer.
+const KEEP_EVENTS = new Set(["thread.started", "turn.started", "turn.completed", "turn.failed", "error"]);
+export function filterEvents(stdoutText, onAnswer) {
+  const kept = []; let badAnswer = null;
+  for (const line of stdoutText.split("\n")) {
+    if (!line.trim()) continue;
+    let e; try { e = JSON.parse(line); } catch { continue; }
+    if (!e || typeof e !== "object") continue;
+    if (e.type === "item.completed" && e.item?.type === "agent_message") {
+      const bad = onAnswer(String(e.item.text ?? ""));
+      if (bad) { badAnswer = bad; continue; }
+      kept.push(JSON.stringify({ type: e.type, item: { id: e.item.id, type: "agent_message", text: e.item.text } }));
+    } else if (KEEP_EVENTS.has(e.type)) {
+      const slim = { type: e.type };
+      if (e.thread_id) slim.thread_id = String(e.thread_id).slice(0, 100);
+      if (e.usage && typeof e.usage === "object") slim.usage = e.usage;
+      if (e.error && typeof e.error === "object") slim.error = { message: String(e.error.message ?? "").slice(0, 1000) };
+      if (typeof e.message === "string") slim.message = e.message.slice(0, 1000);
+      kept.push(JSON.stringify(slim));
+    }
+  }
+  return { text: kept.length ? `${kept.join("\n")}\n` : "", badAnswer };
+}
+
 // startRelay({ jobHome, buildDir, ... }) -> relay handle. Options:
-//   allowedSchemaHashes  sha256 hex of each --output-schema an exec call may carry (a Set or
-//                        array); without it no exec call is accepted
+//   policies       the framework's locked requests (see matchPrompt); without any, no exec call is accepted
 //   codexBin       the real codex (default: first `codex` on pathEnv)
 //   maxCalls       per-job cap on exec calls (default 12)
 //   callTimeoutMs  per-call deadline (default 30 minutes)
 //   deadlineAt     epoch ms after which no call may start and a running one is cut short
 //   price(model, usage) -> {usd, known, basis}   prices one call's usage
-//   unmeasuredCallUsd  estimate charged (and reserved while running) for a call that reports no usage
-//   maxCallUsd     a call whose accrued cost passes this is stopped
-//   stdoutCap / lastMessageCap   bytes returned to the sandbox per call
-//   confine(ctx) -> argv prefix (e.g. a bwrap command) to run codex under; ctx = {cwd, scratch, neutral, codexHome}
+//   maxCallUsd     the most a call may cost: while it runs and has reported no usage, this whole
+//                  amount is counted against the job; a call whose reported usage passes it is stopped
+//   unmeasuredCallUsd  charged for a finished call that reported no usage (default maxCallUsd)
+//   stdoutCap      bytes of probe output returned to the sandbox
+//   confine(ctx) -> argv prefix (e.g. a bwrap command) to run codex under;
+//                  ctx = {cwd, logicalCwd, phase, scratch, neutral, codexHome, codexBin, info}
 //   codexHomeFrom  where the runner's codex login lives (default CODEX_HOME or ~/.codex); the job gets an isolated copy of auth.json only
 //   env            environment for codex (default: the runner's, minus SVC_* variables)
-export async function startRelay({ jobHome, buildDir, allowedSchemaHashes = null, codexBin = null, pathEnv = process.env.PATH, maxCalls = DEFAULT_MAX_CALLS, callTimeoutMs = DEFAULT_CALL_TIMEOUT_MS, deadlineAt = null, price = null, unmeasuredCallUsd = DEFAULT_UNMEASURED_CALL_USD, maxCallUsd = DEFAULT_MAX_CALL_USD, stdoutCap = DEFAULT_STDOUT_CAP, lastMessageCap = DEFAULT_LAST_MESSAGE_CAP, confine = null, codexHomeFrom = undefined, env = null } = {}) {
+export async function startRelay({ jobHome, buildDir, policies = [], codexBin = null, pathEnv = process.env.PATH, maxCalls = DEFAULT_MAX_CALLS, callTimeoutMs = DEFAULT_CALL_TIMEOUT_MS, deadlineAt = null, price = null, maxCallUsd = DEFAULT_MAX_CALL_USD, unmeasuredCallUsd = undefined, stdoutCap = DEFAULT_STDOUT_CAP, confine = null, codexHomeFrom = undefined, env = null } = {}) {
   if (!jobHome || !buildDir) throw new Error("startRelay needs jobHome and buildDir");
   const bin = codexBin || findOnPath("codex", pathEnv);
   if (!bin) throw new Error("no codex binary on the runner's PATH");
-  const allowed = new Set([...(allowedSchemaHashes || [])]);
+  const charge = unmeasuredCallUsd ?? maxCallUsd;
   const dir = path.join(jobHome, RELAY_DIR);
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   const socketPath = path.join(dir, RELAY_SOCK);
@@ -294,7 +423,7 @@ export async function startRelay({ jobHome, buildDir, allowedSchemaHashes = null
 
   async function handle(sock) {
     let buf = Buffer.alloc(0), gotRequest = false, child = null, stdinBytes = 0, finished = false;
-    const pendingIn = []; let inEnded = false;
+    const inChunks = []; let inEnded = false; let inWaiter = null;
     const send = (type, payload) => { if (!sock.destroyed && sock.writable) sock.write(frame(type, payload)); };
     const finish = (rec, exit, lastMessage = null) => {
       if (finished) return; finished = true;
@@ -308,41 +437,54 @@ export async function startRelay({ jobHome, buildDir, allowedSchemaHashes = null
       send("E", `codex: ${reason}\n`);
       finish({ argv_sanitized: sanitizeArgv(argv), exit: 126, wall_ms: 0, usage: null, rejected: reason }, 126);
     };
+    const stdinAll = () => (inEnded ? Promise.resolve(Buffer.concat(inChunks)) : new Promise((res) => { inWaiter = res; }));
     async function start(req) {
       const argv = req.argv;
       const vet = vetCodexArgv(argv);
       if (!vet.ok) return reject(argv, vet.reason);
       if (closed) return reject(argv, "the review relay is closed");
-      let schemaLabel = null;
-      if (vet.info) {
-        if (probes >= MAX_PROBES) return reject(argv, "too many probe calls");
-      } else {
+      if (vet.info) { if (probes >= MAX_PROBES) return reject(argv, "too many probe calls"); }
+      else {
         if (used >= maxCalls) return reject(argv, `review call cap reached (${maxCalls} per job)`);
         if (deadlineAt != null && Date.now() >= deadlineAt) return reject(argv, "the job's time is spent");
         if (typeof req.schema !== "string") return reject(argv, "--output-schema file was not provided");
-        const h = sha256Hex(Buffer.from(req.schema, "utf8"));
-        if (!allowed.has(h)) return reject(argv, "--output-schema is not one of the framework's review or planning schemas; free-form generation is not relayed");
-        schemaLabel = h.slice(0, 12);
       }
-      // Working directory. Info probes and neutral dirs run in a fresh empty directory; exec
-      // calls must be in the build dir or the job home.
-      let cwd = null, mappedCd = null, neutralCwd = vet.info, neutralCd = false;
+      // Which framework request is this? Exec calls must be one: the schema picks the candidates,
+      // the prompt must carry the locked template of one of them, and the phase fixes where it runs.
+      let policy = null, schemaDoc = null, prompt = null;
       if (!vet.info) {
-        const reqCwd = typeof req.cwd === "string" ? req.cwd : "";
+        const h = sha256Hex(Buffer.from(req.schema, "utf8"));
+        const cands = policies.filter((p) => p.schemaHash === h);
+        if (!cands.length) return reject(argv, "--output-schema is not one of the framework's review or planning schemas; free-form generation is not relayed");
+        try { schemaDoc = JSON.parse(req.schema); } catch { return reject(argv, "--output-schema is not JSON"); }
+        prompt = (await stdinAll()).toString("utf8");
+        const sandboxCwd = path.resolve(typeof req.cwd === "string" ? req.cwd : "/", vet.cwdArg ?? ".");
+        const reasons = [];
+        for (const c of cands) { const why = matchPrompt(c, prompt, sandboxCwd); if (!why) { policy = c; break; } reasons.push(why); }
+        if (!policy) return reject(argv, `not a framework request: ${reasons[0]}`);
+      }
+      // Working directory. Info probes and planning calls run in a fresh empty directory; a review runs in the job.
+      let cwd = null, mappedCd = null, neutralCwd = vet.info, neutralCd = false;
+      const reqCwd = typeof req.cwd === "string" ? req.cwd : "";
+      const logicalCwd = path.resolve(reqCwd || "/", vet.cwdArg ?? ".");
+      if (!vet.info) {
         cwd = mapSandboxDir(reqCwd, { jobHome, buildDir });
         if (!cwd) {
           if (isNeutralSandboxDir(reqCwd, { buildDir })) neutralCwd = true;
           else return reject(argv, `working directory ${reqCwd || "<none>"} is outside the job (allowed: the build dir, the job home, or a neutral temp dir)`);
         }
         if (vet.cwdArg != null) {
-          const abs = path.resolve(reqCwd, vet.cwdArg);
-          mappedCd = mapSandboxDir(abs, { jobHome, buildDir });
+          mappedCd = mapSandboxDir(logicalCwd, { jobHome, buildDir });
           if (!mappedCd) {
-            if (isNeutralSandboxDir(abs, { buildDir })) neutralCd = true;
+            if (isNeutralSandboxDir(logicalCwd, { buildDir })) neutralCd = true;
             else return reject(argv, `-C ${vet.cwdArg} is outside the job (allowed: the build dir, the job home, or a neutral temp dir)`);
           }
         }
+        const neutralNow = vet.cwdArg != null ? neutralCd : neutralCwd;
+        if (policy.phase === "plan" && !neutralNow) return reject(argv, "planning calls run from a neutral directory, not in the job");
+        if (policy.phase === "review" && neutralNow) return reject(argv, "review calls run in the job's own tree");
       }
+      const phase = vet.info ? "info" : policy.phase;
       if (vet.info) probes++; else used++;
       const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "oe-relay-"));
       const args = [...vet.args];
@@ -364,15 +506,16 @@ export async function startRelay({ jobHome, buildDir, allowedSchemaHashes = null
         }
         if (mappedCd) args.splice(1, 0, "-C", mappedCd);
       } catch (e) { fs.rmSync(scratch, { recursive: true, force: true }); return reject(argv, e.message); }
-      const prefix = confine ? confine({ cwd: mappedCd || cwd, scratch, neutral, codexHome, info: vet.info }) : [];
+      const prefix = confine ? confine({ cwd: mappedCd || cwd, logicalCwd, phase, scratch, neutral, codexHome, codexBin: bin, info: vet.info }) : [];
       const cmd = prefix.length ? prefix[0] : bin;
       const cmdArgs = prefix.length ? [...prefix.slice(1), bin, ...args] : args;
       const t0 = Date.now();
       let timedOut = false, stopped = null;
       const limit = Math.max(1, Math.min(callTimeoutMs, deadlineAt != null ? deadlineAt - Date.now() : Infinity));
-      const usageLines = []; let partial = "", sentOut = 0, sentErr = 0, truncatedOut = false;
-      // A running exec call is charged an estimate until it reports usage.
-      const cur = vet.info ? null : { cost: unmeasuredCallUsd };
+      const usageLines = []; let partial = "", sentOut = 0, sentErr = 0, truncatedOut = false, captured = 0;
+      const chunks = [];
+      // A running exec call counts its whole ceiling until it reports usage.
+      const cur = vet.info ? null : { cost: maxCallUsd };
       if (cur) running.add(cur);
       const model = () => vet.model || null;
       try { child = spawn(cmd, cmdArgs, { cwd, env: childEnv, stdio: ["pipe", "pipe", "pipe"], detached: true }); }
@@ -398,12 +541,14 @@ export async function startRelay({ jobHome, buildDir, allowedSchemaHashes = null
       };
       child.stdout.on("data", (c) => {
         absorb(c);
-        // Output past the cap is read (for usage) but not returned to the sandbox.
-        const room = stdoutCap - sentOut;
-        if (room > 0) { const part = c.length > room ? c.subarray(0, room) : c; sentOut += part.length; send("O", part); }
-        if (c.length > room && !truncatedOut) { truncatedOut = true; send("E", `codex: output beyond ${stdoutCap} bytes is not returned to the sandbox\n`); }
+        if (vet.info) {
+          // Probe output streams back, capped.
+          const room = stdoutCap - sentOut;
+          if (room > 0) { const part = c.length > room ? c.subarray(0, room) : c; sentOut += part.length; send("O", part); }
+          if (c.length > room && !truncatedOut) { truncatedOut = true; send("E", `codex: output beyond ${stdoutCap} bytes is not returned to the sandbox\n`); }
+        } else if (captured <= CAPTURE_CAP) { captured += c.length; chunks.push(c); }
       });
-      child.stderr.on("data", (c) => { const room = STDERR_CAP - sentErr; if (room > 0) { const part = c.length > room ? c.subarray(0, room) : c; sentErr += part.length; send("E", part); } });
+      child.stderr.on("data", (c) => { const room = (vet.info ? STDERR_CAP : EXEC_STDERR_CAP) - sentErr; if (room > 0) { const part = c.length > room ? c.subarray(0, room) : c; sentErr += part.length; send("E", part); } });
       child.stdin.on("error", () => {});
       child.on("error", (e) => send("E", `codex: ${e.code || e.message}\n`));
       child.on("close", (code, signal) => {
@@ -413,29 +558,37 @@ export async function startRelay({ jobHome, buildDir, allowedSchemaHashes = null
         if (timedOut) { exit = 124; send("E", `codex: review call exceeded its ${Math.round(limit / 1000)}s limit and was stopped\n`); }
         else if (stopped === "call-budget") { exit = 125; send("E", `codex: review call stopped at its spend ceiling ($${maxCallUsd})\n`); }
         const usage = vet.info ? null : parseCodexUsage(usageLines);
-        let rec;
+        let rec, last = null;
         if (vet.info) rec = { argv_sanitized: sanitizeArgv(argv), exit, wall_ms: Date.now() - t0, usage: null, probe: true };
         else {
           const p = usage ? priceUsage(model() || usage.observed_models[0] || null, usage) : null;
-          rec = { argv_sanitized: sanitizeArgv(argv), exit, wall_ms: Date.now() - t0, usage, schema: schemaLabel,
+          rec = { argv_sanitized: sanitizeArgv(argv), exit, wall_ms: Date.now() - t0, usage, request: policy.label, phase: policy.phase, template_sha256: policy.templateSha256 || null,
             model: model() || usage?.observed_models?.[0] || null,
-            ...(p ? { cost_usd: p.usd, priced: { known: p.known, basis: p.basis } } : { cost_usd: unmeasuredCallUsd, unmeasured: true, priced: { known: false, basis: "estimate: no usage reported" } }),
+            ...(p ? { cost_usd: p.usd, priced: { known: p.known, basis: p.basis } } : { cost_usd: charge, unmeasured: true, priced: { known: false, basis: "estimate: no usage reported" } }),
+            ...(p && p.usd > maxCallUsd ? { over_ceiling: true } : {}),
             ...(timedOut ? { timed_out: true } : {}), ...(stopped === "call-budget" ? { stopped: "call-budget" } : {}) };
-        }
-        let last = null;
-        if (lastFile) {
-          try {
-            const b = fs.readFileSync(lastFile);
-            if (b.length > lastMessageCap) { send("E", `codex: the last message (${b.length} bytes) exceeds the ${lastMessageCap}-byte cap and is not returned\n`); if (exit === 0) exit = 125; rec.exit = exit; rec.output_capped = true; }
-            else last = b.toString("base64");
-          } catch { /* none written */ }
+          // What the sandbox gets back: the framework's answer, valid and short, and the turn events.
+          const limits = PHASE_LIMITS[policy.phase];
+          const answerBad = (text) => checkAnswer(text, schemaDoc, limits);
+          let violation = null;
+          if (captured > CAPTURE_CAP) violation = "output beyond the capture cap";
+          const filtered = filterEvents(Buffer.concat(chunks).toString("utf8"), (t) => { const bad = answerBad(t); if (bad && !violation) violation = bad; return bad; });
+          if (filtered.text) send("O", filtered.text);
+          if (lastFile) {
+            try {
+              const text = fs.readFileSync(lastFile, "utf8");
+              const bad = answerBad(text);
+              if (bad) violation = violation || bad; else last = Buffer.from(text).toString("base64");
+            } catch { /* none written */ }
+          }
+          if (violation) { send("E", `codex: output not returned: ${violation}\n`); if (exit === 0) exit = 125; rec.exit = exit; rec.output_refused = violation; }
         }
         if (cur) running.delete(cur);
         fs.rmSync(scratch, { recursive: true, force: true });
         finish(rec, exit, last);
       });
-      if (pendingIn.length) { for (const c of pendingIn) child.stdin.write(c); pendingIn.length = 0; }
-      if (inEnded) child.stdin.end();
+      for (const c of inChunks) child.stdin.write(c);
+      child.stdin.end();
     }
     sock.on("data", (chunk) => {
       buf = Buffer.concat([buf, chunk]);
@@ -451,14 +604,14 @@ export async function startRelay({ jobHome, buildDir, allowedSchemaHashes = null
           start(req).catch((e) => { try { reject(req?.argv, `relay error: ${e.message}`); } catch { sock.destroy(); } });
         } else if (type === "I") {
           stdinBytes += body.length;
-          if (stdinBytes > MAX_STDIN) { if (child) child.kill("SIGKILL"); sock.destroy(); return; }
-          if (child) child.stdin.write(body); else pendingIn.push(Buffer.from(body));
+          if (stdinBytes > MAX_STDIN) { sock.destroy(); return; }
+          inChunks.push(Buffer.from(body));
         } else if (type === "Z") {
-          inEnded = true; if (child) child.stdin.end();
+          inEnded = true; if (inWaiter) { inWaiter(Buffer.concat(inChunks)); inWaiter = null; }
         }
       }
     });
-    sock.on("close", () => { if (child && child.exitCode == null && child.signalCode == null) { try { process.kill(-child.pid, "SIGKILL"); } catch { /* gone */ } } });
+    sock.on("close", () => { inEnded = true; if (inWaiter) { inWaiter(Buffer.concat(inChunks)); inWaiter = null; } if (child && child.exitCode == null && child.signalCode == null) { try { process.kill(-child.pid, "SIGKILL"); } catch { /* gone */ } } });
     sock.on("error", () => {});
   }
 
@@ -473,10 +626,12 @@ export async function startRelay({ jobHome, buildDir, allowedSchemaHashes = null
     codexHome,
     calls: () => log.slice(),
     execCalls: () => used,
-    // Spend so far: finished calls plus every running call (its reported usage, or the reserve).
+    // Spend so far: finished calls plus every running call (its reported usage, or its whole ceiling).
     costUsd: () => sumLedger() + runningCost(),
     summary() {
-      const measured = ledger.filter((c) => !c.unmeasured);
+      // Measured: every exec call reported usage AND was priced at a listed rate. Anything else
+      // is an estimate and the row's cost cannot be compared.
+      const measured = ledger.filter((c) => !c.unmeasured && c.priced?.known);
       const unmeasured = ledger.length - measured.length;
       const modelUsage = {};
       for (const c of ledger) {
@@ -489,7 +644,7 @@ export async function startRelay({ jobHome, buildDir, allowedSchemaHashes = null
       return {
         reviewer_calls: log.slice(),
         reviewer_cost_usd: ledger.length === 0 ? 0 : +sumLedger().toFixed(6),
-        reviewer_cost_basis: ledger.length === 0 ? null : "estimate",
+        reviewer_cost_basis: ledger.length === 0 ? null : unmeasured ? "estimate" : "list_price",
         reviewer_accounting: unmeasured ? "unmeasured" : "measured",
         reviewer_unpriced_calls: unmeasured,
         reviewer_rejected_calls: rejectedTotal,

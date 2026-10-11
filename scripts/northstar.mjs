@@ -74,7 +74,9 @@ export function terminationUnfinished(r) {
 const outTokens = (m) => num(m?.outputTokens) ?? num(m?.output_tokens) ?? 0;
 const samePin = (served, pin) => { const a = String(served).toLowerCase(), b = String(pin).toLowerCase(); return a === b || a.includes(b) || b.includes(a); };
 export function offModel(r) {
-  const usage = r.model_usage;
+  // A framework row also records its relayed reviewer's tokens (another family, by design) in
+  // model_usage; the model pin is judged on the builder's own usage when the runner recorded it.
+  const usage = r.builder_model_usage && typeof r.builder_model_usage === "object" ? r.builder_model_usage : r.model_usage;
   if (!usage || typeof usage !== "object" || !r.model) return false;
   let total = 0, other = 0;
   for (const [id, m] of Object.entries(usage)) { const o = outTokens(m); total += o; if (!samePin(id, r.model)) other += o; }
@@ -98,6 +100,9 @@ export const isFinished = (r) => unfinishedReason(r) == null;
 // A row with no builder sandbox is void evidence (plan section 7 item 1): it never reaches a
 // score or a cost. A skipped row never ran, so it has no sandbox and is not void.
 export const isVoid = (r) => !isSkipped(r) && !r.builder_sandbox;
+// A framework run that did not walk its task's intended journey is void evidence (plan §11): it
+// reaches no score or cost. Only framework rows carry row.journey; a checker error is not a verdict.
+export const isNonconformant = (r) => !isSkipped(r) && Boolean(r.builder_sandbox) && Boolean(r.journey) && typeof r.journey === "object" && r.journey.conformant === false;
 
 // H evidence on a row: the graded score, else hidden_pass / hidden_total. A finished run with
 // neither has no H evidence (null), never a measured 0.
@@ -139,9 +144,11 @@ export function checkDuplicates(rows, { allowDuplicateReps = false } = {}) {
 // Void-evidence split plus the duplicate check: the rows every decision is computed from.
 export function usableRows(rawRows, { allowDuplicateReps = false } = {}) {
   const voided = rawRows.filter(isVoid);
-  const rows = rawRows.filter((r) => !isVoid(r));
-  checkDuplicates(rows, { allowDuplicateReps });
-  return { rows, voided };
+  const sandboxed = rawRows.filter((r) => !isVoid(r));
+  const nonconformant = sandboxed.filter(isNonconformant);
+  const rows = sandboxed.filter((r) => !isNonconformant(r));
+  checkDuplicates(sandboxed, { allowDuplicateReps });
+  return { rows, voided, nonconformant };
 }
 
 function tokensOf(usage) {
@@ -164,7 +171,9 @@ function armSummary(rows) {
     raw: { h_mean: mh, cost_mean_usd: mc, wall_mean_ms: mw },
     // Every attempted run (skipped-for-budget excepted), finished or not, must carry cost_usd
     // and wall_ms; a gap there cannot be read as 0 in a cost or wall constraint.
-    missing_cost_runs: rows.filter((r) => !isSkipped(r) && num(r.cost_usd) == null).length,
+    // A framework run whose relayed reviewer spend is an estimate (usage unreported or no listed
+    // rate) has no comparable cost either.
+    missing_cost_runs: rows.filter((r) => !isSkipped(r) && (num(r.cost_usd) == null || r.reviewer_accounting === "unmeasured")).length,
     missing_wall_runs: rows.filter((r) => !isSkipped(r) && num(r.wall_ms) == null).length,
     // Finished runs without H evidence (no score / hidden counts) or without a solved verdict.
     h_missing_runs: fin.filter((r) => hScore(r) == null).length,
@@ -227,7 +236,7 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   const minFin = bar.min_finished_runs_per_cell_arm;
   const [soloArm, fwArm] = bar.arms;
   const inSlice = rawRows.filter((r) => tasks.includes(r.task) && bar.arms.includes(r.arm));
-  const { rows, voided } = usableRows(inSlice, { allowDuplicateReps });
+  const { rows, voided, nonconformant } = usableRows(inSlice, { allowDuplicateReps });
   requireCommonPins(rows, bar);
   if (slice === "reserve" && verifyReserve) verifyReserveRows(rows, bar);
   const of = (task, arm) => rows.filter((r) => r.task === task && r.arm === arm);
@@ -355,6 +364,7 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   const incEv = cells.filter((c) => c.incomplete_evidence).length;
   if (incEv) incomplete_reasons.push(`${incEv} cell(s) with incomplete evidence (finished runs lack a component score)`);
   if (voided.length) incomplete_reasons.push(`${voided.length} void run(s) (no builder sandbox) excluded from scores and costs`);
+  if (nonconformant.length) incomplete_reasons.push(`${nonconformant.length} framework run(s) did not walk the task's intended journey: void, excluded from scores and costs (${nonconformant.map((r) => `${r.task}#${r.rep}`).join(", ")})`);
   if (unmeasured.length) incomplete_reasons.push(`${unmeasured.length} constraint(s) unmeasured`);
   // A failing headline is a "fail" only when numbered cells back it; with no numbered cell
   // there is nothing to fail on yet, so the slice is "incomplete".
@@ -362,7 +372,7 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   if (!numbered.length) incomplete_reasons.push("no cell has a number");
   const overall = headlineFailed || failed.length ? "fail" : incomplete_reasons.length ? "incomplete" : "pass";
 
-  const journey = journeySection(rows, tasks, fwArm);
+  const journey = journeySection([...rows, ...nonconformant], tasks, fwArm);
   const arms = {};
   for (const arm of bar.arms) arms[arm] = armSummary(rows.filter((r) => r.arm === arm));
   return {
@@ -370,10 +380,10 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
     headline, pass: headline.pass,
     constraints, constraints_failed: failed.length, constraints_unmeasured: unmeasured.length,
     overall, incomplete_reasons,
-    void_runs: voided.length,
+    void_runs: voided.length + nonconformant.length,
     journey,
     void_nonconformant: journey.void_nonconformant,
-    void_by_arm: Object.fromEntries(bar.arms.map((a) => [a, voided.filter((r) => r.arm === a).length])),
+    void_by_arm: Object.fromEntries(bar.arms.map((a) => [a, [...voided, ...nonconformant].filter((r) => r.arm === a).length])),
     cells, per_task, cost_per_arm: arms,
     diagnostics: Object.fromEntries(bar.arms.map((a) => [a, { turns_mean: arms[a].turns_mean, tokens_mean: arms[a].tokens_mean, rules_not_loaded: arms[a].rules_not_loaded, fail_open: arms[a].fail_open, judge_cost_usd: arms[a].judge_cost_usd }])),
     overhead: ov,

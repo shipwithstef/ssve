@@ -3931,7 +3931,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
-        "test-framework/tests/two-box-executor-scorer.test.mjs"
+        "test-framework/tests/review-relay.test.mjs"
       ]
     },
     {

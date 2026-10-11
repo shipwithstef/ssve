@@ -35,7 +35,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
 import { dirSha } from "./lib/dir-sha.mjs";
-import { startRelay, writeRelayShim, sha256Hex } from "./lib/review-relay.mjs";
+import { startRelay, writeRelayShim, sha256Hex, CTX_SENTINEL } from "./lib/review-relay.mjs";
 import { ARM_TOOLS, armTools } from "./lib/arm-tools.mjs";
 import { reserveFrozenCheck } from "./lib/reserve-frozen.mjs";
 import { writeJsonAtomic } from "./state-io.mjs";
@@ -344,6 +344,28 @@ export function foreignCliMasks(pathEnv = process.env.PATH, { hidden = () => fal
   return out;
 }
 const SHIM_DIR = path.posix.join(SANDBOX_HOME, ".oe-shims");
+// The local Codex model catalog the framework's two-box planning reads from <HOME>/.codex.
+// The runner's REAL file is copied, read-only, into a relay-enabled job home (only that file:
+// never the login, config, history or sessions). Nothing is ever fabricated: with no real
+// catalog on the runner the relay status is "catalog-missing" and the run refuses to start.
+export function codexCatalogSource({ env = process.env, home = os.homedir() } = {}) {
+  for (const base of [path.join(home, ".codex"), env.CODEX_HOME].filter(Boolean)) {
+    const f = path.join(base, "models_cache.json");
+    try { const doc = JSON.parse(fs.readFileSync(f, "utf8")); if (doc && Array.isArray(doc.models)) return f; } catch { /* next */ }
+  }
+  return null;
+}
+export function installCodexCatalog(jobHome, source) {
+  const d = path.join(jobHome, ".codex");
+  fs.mkdirSync(d, { recursive: true });
+  const to = path.join(d, "models_cache.json");
+  fs.rmSync(to, { force: true });
+  fs.copyFileSync(source, to);
+  fs.chmodSync(to, 0o444);
+  return to;
+}
+export const CATALOG_MISSING_MESSAGE = "the runner has no local Codex model catalog (~/.codex/models_cache.json): the framework's two-box planning and external review cannot run without it, and it is never faked. Install or update Codex on the runner (run it once) and start again";
+
 // relay: the framework arm's `codex` is the client of the runner's review relay (lib/review-relay.mjs)
 // instead of a blocked shim; every other foreign CLI stays blocked. Cross-family review is a
 // framework requirement, so the arm that has a reviewer to call gets exactly that one door.
@@ -448,7 +470,7 @@ export function sandboxMasks({ dir, framework = null, extraMaskRoots = [], expos
 //   build       the agent (credentials bound, claude on PATH)
 //   grade       hidden tests run against builder code: private empty home, no credentials
 //   components  component graders: as grade, with the northstar graders and the one task visible
-export function builderWrap(dir, { jobHome = null, framework = null, model = null, extraMaskRoots = [], exposeRoot = false, credentials = undefined, hookMode = null, workRoot = path.dirname(dir), hideRoots = [], role = "build", task = null, northstar = NORTHSTAR, reviewRelay = false } = {}) {
+export function builderWrap(dir, { jobHome = null, framework = null, model = null, extraMaskRoots = [], exposeRoot = false, credentials = undefined, hookMode = null, workRoot = path.dirname(dir), hideRoots = [], role = "build", task = null, northstar = NORTHSTAR, reviewRelay = false, codexCatalog = undefined } = {}) {
   if (!hasBwrap()) throw new Error("no builder sandbox: bubblewrap (bwrap) is not available");
   const needsCreds = role === "build";
   if (needsCreds && credentials === undefined) credentials = realCredentialsFile();
@@ -463,7 +485,13 @@ export function builderWrap(dir, { jobHome = null, framework = null, model = nul
     fs.rmSync(placeholder, { force: true });
     fs.writeFileSync(placeholder, "", { mode: 0o600 });
   }
-  writeForeignShims(home, { relay: Boolean(reviewRelay && framework && role === "build") });
+  const relayOn = Boolean(reviewRelay && framework && role === "build");
+  writeForeignShims(home, { relay: relayOn });
+  let catalog = null;
+  if (relayOn) {
+    const source = codexCatalog === undefined ? codexCatalogSource() : codexCatalog;
+    if (source) { installCodexCatalog(home, source); catalog = "installed"; } else catalog = "catalog-missing";
+  }
   if (framework) {
     const bad = verifyInstalledRoot(home, framework.src);
     if (bad.length) throw new Error(`installed root is not its archive: ${bad.slice(0, 3).join("; ")}`);
@@ -486,7 +514,7 @@ export function builderWrap(dir, { jobHome = null, framework = null, model = nul
   if (pw.browsers) env.PLAYWRIGHT_BROWSERS_PATH = pw.browsers;
   if (model) { env.CLAUDE_CODE_SUBAGENT_MODEL = model; env.ANTHROPIC_SMALL_FAST_MODEL = model; }
   if (framework) { env.SVC_HOOK_MODE = hookMode || "advisory"; if (framework.checkpoint_mode === "eval-profile") env.SVC_DELIVERY_PROFILE = "eval"; }
-  return { name: "bwrap", argv, env, job_home: home, role, foreign_cli: reviewRelay && framework && role === "build" ? "blocked-except-codex-relay" : "blocked", ...(framework ? { framework_home: home, slot_pin: framework.slot_pin } : {}) };
+  return { name: "bwrap", argv, env, job_home: home, role, foreign_cli: relayOn ? "blocked-except-codex-relay" : "blocked", catalog, ...(framework ? { framework_home: home, slot_pin: framework.slot_pin } : {}) };
 }
 
 // The command the relay runs the real codex under, so a reviewer (whose prompt the builder
@@ -505,39 +533,85 @@ export function reviewerConfinement({ dir, jobHome, workRoot = path.dirname(dir)
   let codexState = [];
   try { codexState = fs.readdirSync(realCodexHome).filter((n) => n !== "packages").map((n) => path.join(realCodexHome, n)); } catch { /* none */ }
   const denied = [...homeDeny, ...codexState];
+  // Host temp space is hidden whole, wherever --work-root is: other jobs' homes, builds and
+  // isolated Codex homes live there. Only this call's own paths come back.
+  const tmpRoots = uniq(["/tmp", os.tmpdir()]).filter((t) => t !== "/");
   const dirs = uniq([...masks, ...denied.filter((x) => statOf(x)?.isDirectory()), ...hideRoots.filter((h) => fs.existsSync(h)), ...(fs.existsSync(workRoot) ? [workRoot] : [])])
     .filter((m) => m !== "/");
   const files = denied.filter((x) => statOf(x)?.isFile());
-  return ({ cwd, scratch, neutral = null, codexHome = null }) => {
+  // ctx.logicalCwd is the path the caller saw from inside the builder sandbox. The job's home is
+  // shown at SANDBOX_HOME and a neutral directory at its sandbox path, so codex reports the same
+  // working directory the framework's launcher checks against.
+  return ({ logicalCwd = null, phase = "review", scratch, neutral = null, codexHome = null, codexBin = null }) => {
     const a = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent"];
+    for (const t of tmpRoots) a.push("--tmpfs", t);
     for (const m of dirs) a.push("--tmpfs", m);
     for (const f of files) a.push("--ro-bind", "/dev/null", f);
-    for (const k of [dir, jobHome]) a.push("--ro-bind", k, k);
+    // A review reads the job's tree. A planning role or a probe sees none of it.
+    if (phase === "review") {
+      a.push("--ro-bind", dir, dir, "--ro-bind", jobHome, jobHome, "--ro-bind", jobHome, SANDBOX_HOME);
+    }
     if (codexHome && fs.existsSync(codexHome)) a.push("--bind", codexHome, codexHome);
     a.push("--bind", scratch, scratch);
+    // The codex binary, when it lives in host temp space (it normally lives under the home).
+    if (codexBin) { try { const d = path.dirname(fs.realpathSync(codexBin)); if (tmpRoots.some((t) => isUnder(d, t))) a.push("--ro-bind", d, d); } catch { /* not there */ } }
     // A neutral working directory is empty and stays read-only to codex.
-    if (neutral) a.push("--ro-bind", neutral, neutral);
+    let cwd = logicalCwd;
+    if (neutral) {
+      a.push("--ro-bind", neutral, neutral);
+      if (logicalCwd && isUnder(logicalCwd, "/tmp") && !isUnder(logicalCwd, SANDBOX_HOME)) a.push("--ro-bind", neutral, logicalCwd);
+      else cwd = neutral;
+    }
+    if (cwd) a.push("--chdir", cwd);
     a.push("--");
     return a;
   };
 }
 
-// The review and planning output schemas the framework at this source tree passes to codex:
-// the external-review findings schema (as shipped) and the six two-box planning role schemas
-// (as the planner writes them). The relay accepts an exec call only when its --output-schema
-// hashes to one of these; the hashes come from the job's own installed source, never from the
-// sandbox. Returns {hashes: Set, labels: {hash12: name}}.
-export function reviewSchemaAllowlist(src) {
-  const hashes = new Set(), labels = {};
-  const add = (h, name) => { hashes.add(h); labels[h.slice(0, 12)] = name; };
-  try { add(sha256Hex(fs.readFileSync(path.join(src, "schemas", "external-review-findings.schema.json"))), "external-review-findings"); } catch { /* absent at this sha */ }
-  const proto = path.join(src, "scripts", "lib", "two-box-protocol.mjs");
-  if (fs.existsSync(proto)) {
-    const code = `import crypto from "node:crypto"; const m = await import(${JSON.stringify(pathToFileURL(proto).href)}); const o = {}; for (const r of m.PLANNING_ROLES) o[r] = crypto.createHash("sha256").update(Buffer.from(JSON.stringify(m.outputSchemaForCall(r)) + "\\n")).digest("hex"); process.stdout.write(JSON.stringify(o));`;
-    const r = spawnSync(process.execPath, ["--input-type=module", "-e", code], { cwd: src, env: { PATH: process.env.PATH }, encoding: "utf8", timeout: 30000 });
-    if (r.status === 0) { try { for (const [role, h] of Object.entries(JSON.parse(r.stdout))) add(h, `two-box:${role}`); } catch { /* none */ } }
+// The framework's locked review and planning requests, derived from the installed source tree
+// at job start (never from the sandbox). One policy per request kind: the output schema's hash,
+// the phase, and the prompt text the framework's own launcher puts first:
+//   - external review: schemas/external-review-findings.schema.json, with the reviewer
+//     instructions run-external-review.mjs prepends (agenticReviewInstructions, for each round);
+//   - two-box planning: each role's schema as the planner writes it, with that role's instruction
+//     from two-box-role-launch.mjs (read by rendering the real prompt, not by copying text).
+// The relay accepts an exec call only when its schema, prompt and phase match one of these.
+// Returns {policies, labels}.
+export function reviewPolicies(src) {
+  const policies = [], labels = {};
+  const digest = (xs) => sha256Hex(Buffer.from(xs.join("\n\u0000\n")));
+  const add = (pol) => { policies.push(pol); labels[pol.schemaHash.slice(0, 12)] = pol.label; };
+  let findings = null;
+  try { findings = sha256Hex(fs.readFileSync(path.join(src, "schemas", "external-review-findings.schema.json"))); } catch { /* absent at this sha */ }
+  const j = (f) => pathToFileURL(path.join(src, f)).href;
+  const code = `
+import crypto from "node:crypto";
+const out = { review: null, roles: {} };
+try { const m = await import(${JSON.stringify(j("scripts/run-external-review.mjs"))}); out.review = [1, 2, null].map((r) => m.agenticReviewInstructions(${JSON.stringify(CTX_SENTINEL)}, r)); } catch (e) { out.review_error = String(e.message).slice(0, 200); }
+try {
+  const proto = await import(${JSON.stringify(j("scripts/lib/two-box-protocol.mjs"))});
+  const launch = await import(${JSON.stringify(j("scripts/lib/two-box-role-launch.mjs"))});
+  const cand = { ref: "r", output: {} };
+  const stubs = {
+    open_box: { bindings: {}, requirements: {}, facts: {} },
+    contract_box: { bindings: {}, requirements: {}, facts: {}, constraints: {} },
+    scout_forward: { bindings: {}, initial_contract: cand, assignment: { ref: "a", value: { excerpts: [] } } },
+    scout_reverse: { bindings: {}, initial_contract: cand, assignment: { ref: "a", value: { excerpts: [] } } },
+    contract_revise: { bindings: {}, requirements: {}, facts: {}, constraints: {}, initial_contract: cand, scout_reports: [cand, cand] },
+    assessor: { bindings: {}, requirements: {}, facts: {}, original_open: cand, original_contract: cand, revised_contract: cand, scout_reports: [cand, cand], open_paragraphs: {} },
+  };
+  for (const role of proto.PLANNING_ROLES) {
+    const prompt = launch.renderRolePrompt({ role, payload: stubs[role] });
+    const instruction = prompt.slice(0, prompt.indexOf("\\n\\n"));
+    out.roles[role] = { instruction, schemaHash: crypto.createHash("sha256").update(Buffer.from(JSON.stringify(proto.outputSchemaForCall(role)) + "\\n")).digest("hex") };
   }
-  return { hashes, labels };
+} catch (e) { out.roles_error = String(e.message).slice(0, 200); }
+process.stdout.write(JSON.stringify(out));`;
+  const r = spawnSync(process.execPath, ["--input-type=module", "-e", code], { cwd: src, env: { PATH: process.env.PATH }, encoding: "utf8", timeout: 60000 });
+  let got = null; try { got = r.status === 0 ? JSON.parse(r.stdout) : null; } catch { /* none */ }
+  if (findings && got?.review) add({ label: "external-review", phase: "review", schemaHash: findings, prefixes: got.review, templateSha256: digest(got.review) });
+  for (const [role, v] of Object.entries(got?.roles || {})) add({ label: `two-box:${role}`, phase: "plan", schemaHash: v.schemaHash, prefixes: [`${v.instruction}\n\n`], templateSha256: sha256Hex(Buffer.from(v.instruction)) });
+  return { policies, labels, errors: [got?.review_error, got?.roles_error].filter(Boolean) };
 }
 
 // Reviewer (Codex) token prices. The model table above is Anthropic-only, so reviewer usage is
@@ -549,11 +623,16 @@ export function reviewerRates(id, table = JSON.parse(fs.readFileSync(REVIEWER_RA
   const hit = table.models?.[id];
   const r = hit || table.fallback;
   const per = (x) => (Number(x) || 0) / 1e6;
-  return { input: per(r.input_per_m), cacheRead: per(r.cached_input_per_m), output: per(r.output_per_m), known: Boolean(hit), basis: "estimate" };
+  return { input: per(r.input_per_m), cacheRead: per(r.cached_input_per_m), output: per(r.output_per_m), cacheWriteMult: Number(r.cache_write_multiplier) || 1, longContext: r.long_context || null, known: Boolean(hit), basis: hit ? "list_price" : "estimate" };
 }
 export function priceReviewerUsage(id, u, table) {
   const r = reviewerRates(id, table);
-  return { usd: (u.inputTokens || 0) * r.input + (u.outputTokens || 0) * r.output + (u.cacheReadInputTokens || 0) * r.cacheRead + (u.cacheCreationInputTokens || 0) * r.input, known: r.known, basis: r.basis };
+  const totalIn = (u.inputTokens || 0) + (u.cacheReadInputTokens || 0) + (u.cacheCreationInputTokens || 0);
+  // A request over the long-context threshold is billed at higher rates for the whole request;
+  // a call's summed usage is priced that way when it passes the threshold (the safe side).
+  const lc = r.longContext && totalIn > r.longContext.threshold_tokens ? r.longContext : null;
+  const inMult = lc?.input_multiplier || 1, outMult = lc?.output_multiplier || 1;
+  return { usd: ((u.inputTokens || 0) * r.input + (u.cacheReadInputTokens || 0) * r.cacheRead + (u.cacheCreationInputTokens || 0) * r.input * r.cacheWriteMult) * inMult + (u.outputTokens || 0) * r.output * outMult, known: r.known, basis: r.basis };
 }
 
 // Where an eval tree keeps its answers: the tasks (graders, references), recorded results and
@@ -1421,6 +1500,7 @@ async function runAll({ argv, opt, parallel, workRoot, workBase, keepRoot, tasks
     if (!sha) { process.stderr.write("the framework arm requires --framework-sha <sha> (the install is built from git archive of that commit)\n"); return 2; }
     try { framework = buildFrameworkHome(sha, { repo: opt("--framework-repo", ROOT), cacheRoot: opt("--framework-cache", undefined) }); }
     catch (e) { process.stderr.write(`framework install: ${e.message}\n`); return 2; }
+    if (process.env.OE_NO_REVIEW_RELAY !== "1" && !codexCatalogSource()) { process.stderr.write(`reviewer relay preflight: ${CATALOG_MISSING_MESSAGE}\n`); return 2; }
     process.stderr.write(`framework ${framework.sha.slice(0, 12)}: checkpoints ${framework.checkpoint_mode}, fail-open counter ${framework.has_fail_open_counter ? "present" : "absent"}\n`);
   }
   const jobs = [];
@@ -1513,6 +1593,9 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
     wrap = builderWrap(dir, { framework: fw, model, workRoot, hideRoots, exposeRoot: job.arm === "bounded", reviewRelay: Boolean(fw) && ctx.reviewRelay !== false && process.env.OE_NO_REVIEW_RELAY !== "1" });
     jobHome = wrap.job_home;
   } catch (e) { cleanup(); return { ...job, builder_sandbox: null, error: e.message }; }
+  // No real Codex catalog on the runner: the framework's planning preflight would fail inside the
+  // job. The row is void (no scored evidence), with the reason, not a framework failure.
+  if (wrap.catalog === "catalog-missing") { cleanup(); return { ...job, builder_sandbox: null, reviewer_relay: "catalog-missing", error: `reviewer relay preflight: ${CATALOG_MISSING_MESSAGE}` }; }
   // Multi-step scenarios run each step as a fresh session in the same directory: only
   // what an earlier session left on disk carries over, as between real sessions.
   let agent = { cost_usd: 0, turns: 0, duration_ms: 0, steps: 0 };
@@ -1535,7 +1618,9 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
       relay = await startRelay({
         jobHome, buildDir: dir, maxCalls: ctx.reviewerMaxCalls, callTimeoutMs: ctx.reviewerCallTimeoutMs,
         deadlineAt: Date.now() + cfg.timeout_ms * lim.time * prompts.length,
-        allowedSchemaHashes: reviewSchemaAllowlist(fw.src).hashes,
+        policies: reviewPolicies(fw.src).policies,
+        // The most one call may cost; while a call has reported nothing, all of it counts against the job.
+        maxCallUsd: claim.usd != null ? Math.max(0.05, Math.min(2, +(claim.usd * 0.25).toFixed(2))) : 2,
         price: (id, u) => priceReviewerUsage(id || "unknown", u),
         confine: reviewerConfinement({ dir, jobHome, workRoot, hideRoots, framework: fw }),
       });
@@ -1572,7 +1657,7 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
   agent.outer_cost_usd = agent.cost_usd;
   agent.cost_usd = +((agent.cost_usd || 0) + nested.usd + (rv?.reviewer_cost_usd || 0)).toFixed(6);
   // The end of each step's final reply, so a run that wrote nothing still says why.
-  const row = { ...job, ...(claim.usd != null ? { budget_usd: +claim.usd.toFixed(2) } : {}), builder_sandbox: wrap?.name ?? null, model, ...(effort ? { effort } : {}), task_sha256: taskSha256(job.task), pillar: cfg.pillar, prompt_sha: sha, started_at: new Date(t).toISOString(), wall_ms: Date.now() - t, ...agent, stopped_by: agent.stopped_by ?? null, model_usage: usage, nested_cost_usd: nested.usd, nested_sessions: nested.sessions, ...(nested.unpriced.length ? { nested_unpriced_models: nested.unpriced } : {}), foreign_cli: wrap.foreign_cli ?? null, ...(fw ? { reviewer_relay: relay ? "codex" : (relayNote ? `unavailable: ${relayNote}` : "off"), reviewer_confinement: relay ? "bwrap" : null, builder_model_usage: builderUsage, ...(rv ? (({ reviewer_model_usage, ...rest }) => rest)(rv) : {}) } : {}), step_replies: replies };
+  const row = { ...job, ...(claim.usd != null ? { budget_usd: +claim.usd.toFixed(2) } : {}), builder_sandbox: wrap?.name ?? null, model, ...(effort ? { effort } : {}), task_sha256: taskSha256(job.task), pillar: cfg.pillar, prompt_sha: sha, started_at: new Date(t).toISOString(), wall_ms: Date.now() - t, ...agent, stopped_by: agent.stopped_by ?? null, model_usage: usage, nested_cost_usd: nested.usd, nested_sessions: nested.sessions, ...(nested.unpriced.length ? { nested_unpriced_models: nested.unpriced } : {}), foreign_cli: wrap.foreign_cli ?? null, ...(fw ? { reviewer_relay: relay ? "codex" : (relayNote ? `unavailable: ${relayNote}` : "off"), reviewer_catalog: wrap.catalog ?? null, reviewer_confinement: relay ? "bwrap" : null, builder_model_usage: builderUsage, ...(rv ? (({ reviewer_model_usage, ...rest }) => rest)(rv) : {}) } : {}), step_replies: replies };
   if (fw) {
     Object.assign(row, { framework_sha: fw.sha, checkpoint_mode: fw.checkpoint_mode, slot_pin: wrap.slot_pin, ...readFailOpen(dir, fw), ...countReceipts(dir), ...chainFacts(dir, fw, fw.src, jobHome) });
   }

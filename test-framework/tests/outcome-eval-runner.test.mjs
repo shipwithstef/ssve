@@ -284,7 +284,7 @@ function runEval(args, { mode = "ok", counter = "", extraEnv = {}, workBase = nu
   const bin = path.join(base, "bin"); fs.mkdirSync(bin);
   fakeClaude(bin);
   const out = path.join(base, "out.json");
-  const env = { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, OE_CREDENTIALS: creds(), FAKE_MODE: mode, FAKE_REAL_HOME: os.homedir(), SVC_ROOT: "/should/not/leak", ...(counter !== "" ? { FAKE_COUNTER: counter } : {}), ...extraEnv };
+  const env = { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, OE_CREDENTIALS: creds(), OE_NO_REVIEW_RELAY: "1", FAKE_MODE: mode, FAKE_REAL_HOME: os.homedir(), SVC_ROOT: "/should/not/leak", ...(counter !== "" ? { FAKE_COUNTER: counter } : {}), ...extraEnv };
   const r = spawnSync(process.execPath, [script, "run", "--judge", "none", "--reps", "1", "--model", "haiku", "--keep", path.join(base, "kept"), "--work-root", workBase || path.join(base, "work"), "--out", out, ...args], { env, encoding: "utf8", timeout: 240000 });
   const result = fs.existsSync(out) ? JSON.parse(fs.readFileSync(out, "utf8")) : null;
   return { r, result, base };
