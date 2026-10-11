@@ -495,13 +495,16 @@ export function journeySpecPath(task, dir = JOURNEYS) { return path.join(dir, `$
 export function loadJourneySpec(task, dir = JOURNEYS) {
   const f = journeySpecPath(task, dir);
   if (!fs.existsSync(f)) return null;
-  return JSON.parse(fs.readFileSync(f, "utf8"));
+  const spec = JSON.parse(fs.readFileSync(f, "utf8"));
+  // A file that exists is a spec: a non-object is an error, never "no spec".
+  if (spec === null || typeof spec !== "object" || Array.isArray(spec)) throw new Error(`journey spec for ${task} is not a JSON object`);
+  return spec;
 }
 export function journeyProblems(tasks, dir = JOURNEYS) {
   const out = [];
   for (const task of new Set(tasks)) {
     let spec;
-    try { spec = loadJourneySpec(task, dir); } catch (e) { out.push(`journey spec for ${task} is not valid JSON: ${e.message}`); continue; }
+    try { spec = loadJourneySpec(task, dir); } catch (e) { out.push(`journey spec for ${task} is invalid: ${e.message}`); continue; }
     if (!spec) continue;
     if (spec.task !== task) out.push(`journey spec for ${task} names task ${JSON.stringify(spec.task)}`);
     for (const p of validateSpec(spec)) out.push(`journey spec ${task}: ${p}`);

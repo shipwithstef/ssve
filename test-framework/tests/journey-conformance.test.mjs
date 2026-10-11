@@ -249,7 +249,7 @@ test("preflightRun refuses a bad journey spec for the run's tasks and ignores ot
   const args = { arms: ["solo", "framework"], reps: 1, maxUsd: null, bar: { floor_usd: 0.5, reserve: [] }, dirOf: () => null, journeysDir: dir };
   assert.match(oe.preflightRun({ ...args, tasks: ["bad"] }).error, /refusing to start: .*journey spec bad: .*unknown predicate key "skil"/);
   assert.match(oe.preflightRun({ ...args, tasks: ["wrongname"] }).error, /names task "other"/);
-  assert.match(oe.preflightRun({ ...args, tasks: ["junk"] }).error, /not valid JSON/);
+  assert.match(oe.preflightRun({ ...args, tasks: ["junk"] }).error, /is invalid: .*JSON/);
   assert.equal(oe.preflightRun({ ...args, tasks: ["good"] }).error, undefined);
   assert.equal(oe.preflightRun({ ...args, tasks: ["no-spec-task"] }).error, undefined, "a task without a spec is fine");
   assert.equal(oe.preflightRun({ ...args, tasks: ["good", "bad"] }).error === undefined, false);
@@ -290,4 +290,13 @@ test("decide reports a journey section and counts non-conformant runs without to
   assert.deepEqual(d.headline, base.headline, "headline math unchanged");
   assert.equal(d.overall, base.overall);
   assert.equal(d.rows_used, base.rows_used);
+});
+
+test("an existing spec file holding null, false, 0, \"\" or an array is refused, not treated as absent", () => {
+  for (const body of ["null", "false", "0", '""', "[]"]) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "jspec-"));
+    fs.writeFileSync(path.join(dir, "t1.json"), body);
+    const p = oe.journeyProblems(["t1"], dir);
+    assert.equal(p.length, 1, body); assert.match(p[0], /journey spec for t1 is invalid: .*not a JSON object/, body);
+  }
 });
