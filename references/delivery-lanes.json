@@ -39,6 +39,9 @@
     "(^|/)docs(/|$)",
     "(^|/)README(\\.[^/]*)?$"
   ],
+  "executable_paths": [
+    "\\.(js|jsx|mjs|cjs|ts|tsx|py|go|rs|rb|java|kt|php|sh|bash|sql|prisma|graphql|json|ya?ml|toml)$"
+  ],
   "conditions": {
     "ui": {
       "match": "code-and-config-only",

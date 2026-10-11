@@ -45,6 +45,7 @@ const DELIVERY_CHAIN = JSON.parse(readFileSync(new URL("../references/delivery-l
 const LANE_BASE_SKILLS = DELIVERY_CHAIN.lanes;
 const INVARIANT_TAIL = new Set(DELIVERY_CHAIN.invariant_tail);
 const DOC_PATHS = (DELIVERY_CHAIN.doc_paths || []).map((pattern) => new RegExp(pattern, "i"));
+const EXECUTABLE_PATHS = (DELIVERY_CHAIN.executable_paths || []).map((pattern) => new RegExp(pattern, "i"));
 
 // Bounded planning (docs/decisions/2026-10-10-bounded-delivery.md). For a prototype or
 // MVP profile the upstream design skills fold into a one-page brief: analyze-domain names
@@ -63,7 +64,15 @@ export function irreversibleZones(plannedFiles = [], riskFlags = []) {
   ]);
 }
 
+// A docs/ directory holds prose, but a source or config file there is still code.
+// Classifying docs/payments/webhook.js as documentation would hide it from the
+// security condition and from the contradictory-docs check.
+function isExecutablePath(file) {
+  return EXECUTABLE_PATHS.some((pattern) => pattern.test(String(file)));
+}
+
 function isDocPath(file) {
+  if (isExecutablePath(file)) return false;
   return DOC_PATHS.some((pattern) => pattern.test(String(file)));
 }
 
@@ -661,6 +670,8 @@ function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrat
     return clone;
   });
   reopenBehindMovedPrerequisites(out, pairs, position, notes);
+  const deactivated = new Set();
+  const retained = [];
   for (const prev of existing) {
     if (matched.has(prev.id)) continue;
     // Retain completed evidence and unrelated work. Unstarted research that is
@@ -675,10 +686,23 @@ function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrat
       continue;
     }
     // Lane and conditional tasks the compiler no longer emits are archived.
-    // Completed research and unrelated work stay on the graph.
+    // Completed research stays only while its requester is still a live task.
     if (skill !== "research" && /: delivery graph required step$/.test(String(prev.subject || ""))) {
+      deactivated.add(prev.id);
       notes.archived ||= [];
       notes.archived.push({ task: structuredClone(prev), disposition: "compiler task deactivated; archived, not executable" });
+      continue;
+    }
+    retained.push(prev);
+  }
+  for (const prev of retained) {
+    const skill = prev.metadata?.skill || prev.skill;
+    const requesterId = prev.metadata?.requesting_task_id;
+    // A completed research task whose requester was just deactivated has nobody
+    // to block. Archiving it avoids "research has no valid requesting task".
+    if (skill === "research" && requesterId != null && deactivated.has(requesterId)) {
+      notes.archived ||= [];
+      notes.archived.push({ task: structuredClone(prev), disposition: "research requester deactivated; archived, not executable" });
       continue;
     }
     out.push(structuredClone(prev));
@@ -739,28 +763,45 @@ function receiptHolds(row) {
   } catch { return false; }
 }
 
-// A completed execute-changeset that gains a required process step has not done that step:
-// reopen it and every started or completed stage downstream until a digest-bound process
-// receipt exists. In-progress dependents go back to pending so none is active but blocked.
-function reopenForNewProcessSteps(out, pairs, notes) {
-  const pair = pairs.find(({ task }) => task.metadata?.skill === "execute-changeset");
-  if (!pair?.prev || pair.prev.status !== "completed") return;
-  const had = (pair.prev.metadata?.required_process_steps || []);
-  const missing = (pair.clone.metadata?.required_process_steps || []).filter((step) =>
+// Any completed task that gains a required process step has not done that step.
+// Reopen it and every started or completed dependent until a digest-bound process
+// receipt exists. review-security lands on audit-implementation, so a payment file
+// added to a finished graph reopens audit, land and promotion, not only execute.
+// In-progress dependents go back to pending so none is active but blocked.
+function unmetProcessSteps(pair) {
+  if (!pair?.prev || pair.prev.status !== "completed") return [];
+  const had = pair.prev.metadata?.required_process_steps || [];
+  return (pair.clone.metadata?.required_process_steps || []).filter((step) =>
     !had.some((old) => old.skill === step.skill && String(old.mode || "") === String(step.mode || "")) &&
     !(pair.clone.process_receipts || []).some((row) => row?.skill === step.skill && String(row?.mode || "") === String(step.mode || "") && receiptHolds(row)));
-  if (!missing.length) return;
-  const why = `required process evidence missing: ${missing.map((step) => step.skill + (step.mode ? "/" + step.mode : "")).join(", ")}`;
-  const downstream = new Set([pair.clone.id]);
+}
+
+function reopenForNewProcessSteps(out, pairs, notes) {
+  const origins = [];
+  for (const pair of pairs) {
+    const missing = unmetProcessSteps(pair);
+    if (!missing.length) continue;
+    origins.push({
+      id: pair.clone.id,
+      why: `required process evidence missing: ${missing.map((step) => step.skill + (step.mode ? "/" + step.mode : "")).join(", ")}`,
+    });
+  }
+  if (!origins.length) return;
+  const whyFor = new Map(origins.map((row) => [row.id, row.why]));
+  const downstream = new Set(whyFor.keys());
   for (let grew = true; grew;) {
     grew = false;
-    for (const task of out) if (!downstream.has(task.id) && (task.blocked_by || []).some((id) => downstream.has(id))) { downstream.add(task.id); grew = true; }
+    for (const task of out) {
+      if (downstream.has(task.id)) continue;
+      if ((task.blocked_by || []).some((id) => downstream.has(id))) { downstream.add(task.id); grew = true; }
+    }
   }
   for (const task of out) {
     if (!downstream.has(task.id) || !["completed", "in_progress"].includes(task.status)) continue;
     const previous = task.status;
     task.status = "pending";
     task.metadata ||= {};
+    const why = whyFor.get(task.id) || (task.blocked_by || []).map((id) => whyFor.get(id)).find(Boolean) || origins[0].why;
     task.metadata.reopened = { reason: why, previous, at: new Date().toISOString() };
     notes.reopened.push({ id: task.id, skill: task.metadata.skill, reason: why });
   }
@@ -982,7 +1023,22 @@ export function compileDeliveryGraph(input) {
 
   const notes = { reopened: [], migrated: [], required: new Map(), archived: [] };
   const remap = { ...(existingGraph?.delivery_graph?.research?.requester_remap || {}) };
-  const tasks = attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph, notes), questions, (() => {
+  const merged = applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph, notes);
+  const archivedResearchDecisions = new Set(
+    notes.archived
+      .filter((row) => (row.task?.metadata?.skill || row.task?.skill) === "research")
+      .map((row) => row.task?.metadata?.requesting_decision_id)
+      .filter(Boolean),
+  );
+  for (const row of notes.archived) {
+    const decisionId = row.task?.metadata?.requesting_decision_id;
+    if ((row.task?.metadata?.skill || row.task?.skill) !== "research" || !decisionId) continue;
+    const question = questions.find((item) => item.id === decisionId);
+    if (question) row.question = structuredClone(question);
+  }
+  const liveQuestions = questions.filter((item) => !archivedResearchDecisions.has(item.id));
+  deliveryGraph.research.questions = liveQuestions;
+  const tasks = attachResearchRequestors(merged, liveQuestions, (() => {
     for (const row of notes.migrated) remap[String(row.task.id)] = "execute-changeset";
     return remap;
   })());

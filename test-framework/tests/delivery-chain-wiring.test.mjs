@@ -3,12 +3,15 @@
 // Commands are the T2, T3 and T4 rows in docs/analysis/2026-10-11-organism-plan.md.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { compileDeliveryGraph } from "../../scripts/compile-delivery-graph.mjs";
 import { checkLaneLayers } from "../../scripts/framework-coherence.mjs";
+import { validateResearchGraph } from "../../scripts/lib/research-decision.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const COMPILER = path.join(ROOT, "scripts/compile-delivery-graph.mjs");
@@ -299,6 +302,159 @@ test("docs-only conditional insertions do not schedule track-visuals or design-t
   ]);
   assert.ok(appearances(code, "track-visuals") >= 1);
   assert.equal(skills(code).includes("design-tech"), true);
+});
+
+function completeGraph(graph) {
+  const done = structuredClone(graph);
+  for (const task of done.tasks) task.status = "completed";
+  done.status = "completed";
+  return done;
+}
+
+function skillTask(graph, skill) {
+  return graph.tasks.find((task) => task.metadata.skill === skill);
+}
+
+test("a finished production graph reopens audit, land and promotion when a payment file adds review-security", () => {
+  const base = {
+    wi: "WI-T",
+    user_intent: "ship the game loop",
+    lane: "bugfix",
+    delivery_profile: "production",
+    change_type: "bugfix",
+    planned_files: ["src/game.js"],
+  };
+  const done = completeGraph(compileDeliveryGraph(base));
+  assert.equal(appearances(done, "review-security"), 0);
+  const next = compileDeliveryGraph({
+    ...base,
+    planned_files: ["src/payments/webhook.ts"],
+    existing_graph: done,
+  });
+  assert.equal(appearances(next, "review-security"), 1);
+  assert.equal(next.status, "pending");
+  for (const skill of ["audit-implementation", "land-changeset", "verify-promotion"]) {
+    const task = skillTask(next, skill);
+    assert.equal(task.status, "pending", skill);
+    assert.match(task.metadata.reopened.reason, /review-security/, skill);
+  }
+  assert.equal(skillTask(next, "review-exec").status, "completed");
+  assert.ok(next.delivery_graph.mutation_history.some((row) => row.action === "reopen_for_process_steps"));
+
+  const proof = "review-security ran";
+  const dir = mkdtempSync(path.join(tmpdir(), "sec-rcpt-"));
+  const file = path.join(dir, "review-security.txt");
+  writeFileSync(file, proof);
+  const held = completeGraph(compileDeliveryGraph(base));
+  skillTask(held, "audit-implementation").process_receipts = [{
+    skill: "review-security",
+    evidence: { type: "file", path: file, sha256: createHash("sha256").update(proof).digest("hex") },
+  }];
+  const kept = compileDeliveryGraph({
+    ...base,
+    planned_files: ["src/payments/webhook.ts"],
+    existing_graph: held,
+  });
+  assert.equal(appearances(kept, "review-security"), 1);
+  assert.equal(kept.status, "completed");
+  for (const skill of ["audit-implementation", "land-changeset", "verify-promotion"]) {
+    assert.equal(skillTask(kept, skill).status, "completed", skill);
+  }
+});
+
+test("executable code under docs/ is not documentation and cannot skip security", () => {
+  const code = {
+    wi: "WI-T",
+    user_intent: "webhook checked in under docs",
+    lane: "bugfix",
+    delivery_profile: "production",
+    planned_files: ["docs/payments/webhook.js"],
+  };
+  assert.throws(
+    () => compileDeliveryGraph({ ...code, change_type: "docs", risk_flags: ["docs-only", "auth-sensitive"] }),
+    /contradictory documentation classification/,
+  );
+  const live = compileDeliveryGraph({ ...code, change_type: "bugfix", risk_flags: [] });
+  assert.equal(live.delivery_graph.activation.security, true);
+  assert.equal(appearances(live, "review-security"), 1);
+  assert.equal(beforeLand(live, "review-security"), true);
+  const prose = compileDeliveryGraph({
+    ...code,
+    change_type: "docs",
+    user_intent: "prose about the webhook",
+    planned_files: ["docs/payments/webhook.md"],
+    risk_flags: ["docs-only", "auth-sensitive"],
+  });
+  assert.equal(prose.delivery_graph.activation.security, false);
+  assert.equal(appearances(prose, "review-security"), 0);
+  const helper = compileDeliveryGraph({
+    ...code,
+    change_type: "docs",
+    user_intent: "a helper checked in under docs",
+    planned_files: ["docs/notes/helper.js"],
+    risk_flags: ["docs-only"],
+  });
+  assert.equal(helper.delivery_graph.activation.security, false);
+  assert.deepEqual(skills(helper), TAIL);
+});
+
+test("feature to docs archives completed research whose requester was deactivated", () => {
+  const question = {
+    id: "design-q",
+    claim: "Does the booking API need a new client?",
+    evidence: [],
+    consequential: true,
+    external_resolvable: true,
+    confidence: 6,
+    explicit_request: false,
+    freshness_required: false,
+    requesting_skill: "design-tech",
+  };
+  const feature = compileDeliveryGraph({
+    wi: "WI-T",
+    user_intent: "add a booking screen",
+    lane: "brownfield-feature",
+    delivery_profile: "production",
+    change_type: "feature",
+    planned_files: ["src/app/page.tsx"],
+    risk_flags: ["user-facing"],
+    questions: [question],
+  });
+  const research = skillTask(feature, "research");
+  const design = skillTask(feature, "design-tech");
+  assert.equal(research.metadata.requesting_task_id, design.id);
+  research.status = "completed";
+  assert.deepEqual(validateResearchGraph(feature), []);
+  const resumed = compileDeliveryGraph({
+    wi: "WI-T",
+    user_intent: "add a booking screen",
+    lane: "brownfield-feature",
+    delivery_profile: "production",
+    change_type: "feature",
+    planned_files: ["src/app/page.tsx"],
+    risk_flags: ["user-facing"],
+    existing_graph: feature,
+  });
+  assert.equal(skillTask(resumed, "research").metadata.requesting_task_id, skillTask(resumed, "design-tech").id);
+  assert.deepEqual(validateResearchGraph(resumed), []);
+  const docs = compileDeliveryGraph({
+    wi: "WI-T",
+    user_intent: "fix typo in README",
+    lane: "brownfield-feature",
+    delivery_profile: "production",
+    change_type: "docs",
+    planned_files: ["README.md"],
+    risk_flags: ["docs-only"],
+    existing_graph: feature,
+  });
+  assert.equal(docs.tasks.some((task) => task.metadata.skill === "research"), false);
+  assert.equal(docs.tasks.some((task) => task.metadata.skill === "design-tech"), false);
+  const archivedResearch = docs.delivery_graph.archived_compiler_tasks.find((row) => row.task.metadata.skill === "research");
+  assert.equal(archivedResearch.disposition, "research requester deactivated; archived, not executable");
+  assert.equal(archivedResearch.question.id, question.id);
+  assert.ok(docs.delivery_graph.archived_compiler_tasks.some((row) => row.task.metadata.skill === "design-tech"));
+  assert.equal(docs.delivery_graph.research.questions.some((item) => item.id === question.id), false);
+  assert.deepEqual(validateResearchGraph(docs), []);
 });
 
 test("checkLaneLayers reads delivery lane data, so a missing refactor design-tech is visible", () => {
