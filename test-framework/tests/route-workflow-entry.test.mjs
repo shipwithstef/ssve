@@ -48,12 +48,19 @@ test("classification table covers every lane class", () => {
   }
 });
 
-test("every referenced script exists, except the two supplied by sibling packages", () => {
+test("every referenced script exists; the two sibling-package scripts are checked whenever present", () => {
+  // svc-next.mjs (organism/w-next) and svc-bootstrap-repo.mjs (organism/w-fresh) land before this
+  // entry is merged; until they are on the branch they are exempt, once present they must be real.
   const supplied = new Set(["svc-next", "svc-bootstrap-repo"]);
   const names = new Set([...body.matchAll(/scripts\/([a-z0-9-]+)\.mjs/g)].map((m) => m[1]));
   for (const name of names) {
-    if (supplied.has(name)) continue;
-    assert.ok(fs.existsSync(path.join(root, "scripts", `${name}.mjs`)), `scripts/${name}.mjs is missing`);
+    const file = path.join(root, "scripts", `${name}.mjs`);
+    if (supplied.has(name) && !fs.existsSync(file)) continue;
+    assert.ok(fs.existsSync(file), `scripts/${name}.mjs is missing`);
+    if (supplied.has(name)) {
+      const check = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
+      assert.equal(check.status, 0, `${name}.mjs does not parse: ${check.stderr}`);
+    }
   }
 });
 
@@ -162,7 +169,7 @@ test("R3-2: only the exact one-task placeholder is overwritten; legacy and compi
     // One task that is not route-workflow is not the placeholder either.
     fs.writeFileSync(abs, JSON.stringify({ wi, lane: "bugfix", tasks: [{ id: 1, status: "pending", skill: "diagnose-bug" }] }));
     assert.equal(classify(rel, wt), "legacy");
-    assert.match(body, /`compiled` or `legacy`: do not compile/);
+    assert.match(body, /`legacy`: keep the graph as is/);
     assert.match(body, /`placeholder`: compile with `--force`/);
   } finally { cleanup(); }
 });
@@ -244,4 +251,64 @@ test("R3-5: WI ids from concurrent same-second allocations are unique and valid"
   assert.doesNotMatch(body, /%y%m%d%H%M%S/);
   assert.match(body, /Reuse an id only to continue work/);
   assert.doesNotMatch(body, /\bWI-(FIX|FEAT|SEC|DOCS|1)\b/);
+});
+
+// ---- Round 4 regressions ----
+
+test("R4-2: a resumed bootstrap placeholder takes its classification from the route record", () => {
+  assert.match(body, /synthetic lane `framework` and no change_type/);
+  assert.match(body, /take lane, change_type, risk_flags and intent from that record/);
+  assert.match(body, /class, wi, lane, change_type, risk_flags, intent, assumptions, post_deploy_proof/);
+  const wi = "WI-NEW-R4A";
+  const { env, wt, cleanup } = freshWorktree(wi);
+  try {
+    const rel = `.svc/lane-tasks-${wi}.json`;
+    assert.equal(classify(rel, wt), "placeholder");
+    const placeholder = JSON.parse(fs.readFileSync(path.join(wt, rel), "utf8"));
+    assert.equal(placeholder.lane, "framework");
+    // The record written before the interrupted compile carries the original classification.
+    const record = { class: "greenfield", wi, lane: "greenfield", change_type: "feature", risk_flags: ["user-facing"], intent: "build the game", assumptions: [] };
+    fs.writeFileSync(path.join(wt, ".svc/route-record.json"), JSON.stringify(record));
+    const bad = spawnSync(process.execPath, [path.join(root, "scripts/compile-delivery-graph.mjs"), "--wi", wi, "--lane", placeholder.lane, "--intent", "x", "--repo-mode", "bootstrap", "--out", rel, "--force"], { cwd: wt, env, encoding: "utf8" });
+    assert.notEqual(bad.status, 0, "inheriting the placeholder's lane and missing change_type fails");
+    assert.match(bad.stderr, /change_type/);
+    const rec = JSON.parse(fs.readFileSync(path.join(wt, ".svc/route-record.json"), "utf8"));
+    const good = spawnSync(process.execPath, [path.join(root, "scripts/compile-delivery-graph.mjs"), "--wi", rec.wi, "--lane", rec.lane, "--change-type", rec.change_type,
+      "--intent", rec.intent, "--repo-mode", "bootstrap", "--risk-flags", rec.risk_flags.join(","), "--out", rel, "--force"], { cwd: wt, env, encoding: "utf8" });
+    assert.equal(good.status, 0, good.stderr);
+    const g = JSON.parse(fs.readFileSync(path.join(wt, rel), "utf8"));
+    assert.equal(g.lane, "greenfield");
+    assert.equal(g.delivery_graph.user_intent, "build the game");
+  } finally { cleanup(); }
+});
+
+test("R4-3: a live-proof correction recompiles the compiled graph with progress kept and deploy evidence required", () => {
+  const wi = "WI-NEW-R4B";
+  const { env, wt, cleanup } = freshWorktree(wi);
+  try {
+    const rel = `.svc/lane-tasks-${wi}.json`;
+    const c = spawnSync(process.execPath, [...compileBase(wi, ["--risk-flags", "user-facing"]), "--force"], { cwd: wt, env, encoding: "utf8" });
+    assert.equal(c.status, 0, c.stderr);
+    const graph = JSON.parse(fs.readFileSync(path.join(wt, rel), "utf8"));
+    assert.equal(graph.delivery_graph.evidence_families.deploy, "n/a");
+    graph.tasks[0].status = "completed";
+    graph.tasks[0].evidence_marker = "kept";
+    fs.writeFileSync(path.join(wt, rel), JSON.stringify(graph, null, 2));
+    assert.equal(classify(rel, wt), "compiled");
+    // Run the documented recompile steps verbatim.
+    const m = /first `(node -e '[^`]*?)` FLAG`/.exec(body) || /first `(node -e '.*?\.svc\/lane-tasks-WI\.json FLAG)`/.exec(body);
+    assert.ok(m, "entry documents the progress-keeping recompile");
+    const gen = m[1].replace(".svc/lane-tasks-WI.json FLAG", `${rel} deploy-affecting`);
+    const r1 = spawnSync("bash", ["-c", gen], { cwd: wt, env, encoding: "utf8" });
+    assert.equal(r1.status, 0, r1.stderr);
+    assert.match(body, /compile-delivery-graph\.mjs --input \.svc\/recompile\.json --out \.svc\/lane-tasks-WI\.json --force/);
+    const r2 = spawnSync(process.execPath, [path.join(root, "scripts/compile-delivery-graph.mjs"), "--input", ".svc/recompile.json", "--out", rel, "--force"], { cwd: wt, env, encoding: "utf8" });
+    assert.equal(r2.status, 0, r2.stderr);
+    const after = JSON.parse(fs.readFileSync(path.join(wt, rel), "utf8"));
+    assert.equal(after.delivery_graph.evidence_families.deploy, "required");
+    assert.ok(after.delivery_graph.risk_flags.includes("deploy-affecting") && after.delivery_graph.risk_flags.includes("user-facing"));
+    assert.equal(after.tasks[0].status, "completed", "progress is kept");
+    assert.equal(after.tasks[0].evidence_marker, "kept", "evidence is kept");
+    assert.equal(after.tasks[0].id, graph.tasks[0].id);
+  } finally { cleanup(); }
 });
