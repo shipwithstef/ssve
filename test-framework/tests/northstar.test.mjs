@@ -24,7 +24,8 @@ const near = (a, b, eps = 1e-3) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b
 // ---- bar.json ----
 test("bar.json carries the pre-registration from the plan", () => {
   assert.deepEqual(bar.dev, ["yoga-studio", "ai-quest", "waitlist-feature", "bugfix-rootcause", "security-payments", "typo-readme", "continuity-rules"]);
-  assert.deepEqual(bar.reserve, [{ task: "R1", grader_sha256: null }, { task: "R2", grader_sha256: null }]);
+  assert.deepEqual(bar.reserve.map((r) => r.task), ["R1", "R2"]);
+  for (const r of bar.reserve) assert.match(r.grader_sha256, /^[0-9a-f]{64}$/, `${r.task} is frozen by its task hash`);
   assert.deepEqual(bar.matrix, {
     "yoga-studio": ["E", "S", "P"], "ai-quest": ["E", "P", "K"], "waitlist-feature": ["E", "S", "P"], "bugfix-rootcause": ["E", "P"],
     "security-payments": ["E", "S", "P"], "typo-readme": [], "continuity-rules": ["K"], R1: ["E", "S", "P", "K"], R2: ["E", "S", "P", "K"],
