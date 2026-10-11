@@ -84,7 +84,8 @@
         "review": [
           "exec",
           "--skip-git-repo-check",
-          "--dangerously-bypass-approvals-and-sandbox",
+          "--sandbox",
+          "read-only",
           "--ephemeral",
           "--ignore-user-config",
           "--ignore-rules",
@@ -127,7 +128,6 @@
           "--config",
           "--strict-config",
           "--model",
-          "--dangerously-bypass-approvals-and-sandbox",
           "--skip-git-repo-check",
           "--ephemeral",
           "--ignore-user-config",
@@ -140,7 +140,7 @@
         ]
       },
       "source": "scripts/run-external-review.mjs:1311; scripts/lib/isolated-plan-analysis.mjs:9-21",
-      "notes": "Effort is a config override (-c model_reasoning_effort=...), not a flag. Hooks need the hooks feature flag in ~/.codex/config.toml."
+      "notes": "Effort is a config override (-c model_reasoning_effort=...), not a flag. Hooks need the hooks feature flag in ~/.codex/config.toml. The review role runs in the read-only sandbox so a reviewer cannot write; never add a sandbox-bypass flag to a review role. Known gap: scripts/run-external-review.mjs still launches Codex with the VM bypass and relies on a post-run tree snapshot to detect writes; aligning it with this role is a separate change (test-framework/tests/harness-playbook-review-sandbox.test.mjs)."
     },
     "agy": {
       "name": "Antigravity / Gemini via the agy dispatcher",
@@ -264,7 +264,7 @@
           "--model",
           "{model}",
           "--sandbox",
-          "disabled",
+          "enabled",
           "--workspace",
           "{cwd}",
           "--trust"

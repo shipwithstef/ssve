@@ -37,12 +37,15 @@ Current models already know how to write a good prompt, and they follow instruct
 > **This is the LEAN design (owner-locked).** v1 = rubric + best-of-2 floor (~2-3 model calls). It deliberately does not run the token-heavy optimizer (generate-N, run-on-many-inputs, train/test, leveling ledger, DSPy/OPRO): the model already knows the craft, so a giant search doesn't earn its tokens. Those are designed-and-deferred behind a ≥20-shadow-run bar.
 
 ## Arming (v1: WARN/shadow, default OFF)
-Run the floor only when `node scripts/prompt-floor-route.mjs` returns `run:true` — armed via `.svc/chain-policy.json` opt-in, non-trivial, no `.svc/prompt-craft.off` kill-switch, and the user explicitly asked to craft/optimize/beat a prompt. Otherwise emit the rubric-crafted prompt without the floor and say so. In v1 the floor is WARN-only: it logs and emits the receipt but blocks nothing; `prompt-floor` is not in `REQUIRED_TYPES_FULL`.
+Run the floor only when `node scripts/prompt-floor-route.mjs --orchestrator-family <host-family>` returns `run:true` — armed via `.svc/chain-policy.json` opt-in, non-trivial, no `.svc/prompt-craft.off` kill-switch, and the user explicitly asked to craft/optimize/beat a prompt. Otherwise emit the rubric-crafted prompt without the floor and say so. In v1 the floor is WARN-only: it logs and emits the receipt but blocks nothing; `prompt-floor` is not in `REQUIRED_TYPES_FULL`.
+
+## Orchestrator family (required, never defaulted)
+Every floor script takes `--orchestrator-family <host-family>`: the family of the host that is authoring the work right now (`claude`/`anthropic`, `codex`/`openai`, `gemini`/`google`, `grok`/`xai`). Read it from your own host identity and pass it on every call. A missing or unrecognised value is a hard error (exit 2), and a reviewer of the same family, or one whose family cannot be derived, is never certified as independent. Do not guess it and do not copy it from an example.
 
 ## Process — best-of-2 floor
 
 ### P0 — route-gate + judge availability
-`node scripts/prompt-floor-route.mjs --task <class> --size <S|M|L>` decides run/skip. Read the probe-free tuple policy with `bash scripts/resolve-adversarial-reviewer.sh`. The floor package goes through `scripts/run-external-review.mjs`, whose primary call is the availability probe. A missing required capability hard-fails with a receipt rather than silently shipping an unreviewed baseline.
+`node scripts/prompt-floor-route.mjs --task <class> --size <S|M|L> --orchestrator-family <host-family>` decides run/skip. Read the probe-free tuple policy with `bash scripts/resolve-adversarial-reviewer.sh`. The floor package goes through `scripts/run-external-review.mjs`, whose primary call is the availability probe. A missing required capability hard-fails with a receipt rather than silently shipping an unreviewed baseline.
 
 ### P1 — baseline B (immutable)
 B = the user's hand-crafted/"sheep" prompt. If none is given, synthesize the obvious bare one-line prompt as B so the floor still runs. Keep B and F as independent candidates — editing B into F is intrinsic self-correction, which degrades quality (Huang et al. ICLR 2024; OAgents −6.62% on hard tasks).
@@ -57,7 +60,7 @@ Author F with `references/authoring-rubric.md`: a clear, direct task; the contex
 Run B and F once each on the representative input and capture both outputs.
 
 ### P5 — floor (the never-worse guarantee)
-`node scripts/prompt-element-extract.mjs` turns each OUTPUT into requirement-coverage `{elements:[{key,content}]}` with **objective-first keys** (word-count, CTA-present, format-block-present, forbidden-words-absent), authored once from the task brief and applied **symmetrically** to B-output and F-output. `node scripts/blind-floor-check.mjs --blind B.json --merged F.json` (reused verbatim from WI-410) isolates any requirement B covered that F dropped; `bash scripts/prompt-floor-judge.sh` (cross-family, OUTPUT-FIRST, "longer is NOT better", default-REJECT) certifies subjective rows **on the outputs, not the prompt's looks**. Re-run the check with `--verdicts`: ship **F** (`floor_verdict=pass`) iff there are zero uncertified dropped requirements; otherwise ship **B verbatim** (`--adopt-blind` → `floor_verdict=blind-adopted`). Launcher, capability, authentication, quota, network, timeout or schema failures halt with the canonical receipt and never become `blind-adopted`.
+`node scripts/prompt-element-extract.mjs` turns each OUTPUT into requirement-coverage `{elements:[{key,content}]}` with **objective-first keys** (word-count, CTA-present, format-block-present, forbidden-words-absent), authored once from the task brief and applied **symmetrically** to B-output and F-output. `node scripts/blind-floor-check.mjs --blind B.json --merged F.json --orchestrator-family <host-family>` (reused verbatim from WI-410) isolates any requirement B covered that F dropped; `bash scripts/prompt-floor-judge.sh --blind B.json --merged F.json --rows rows.json --orchestrator-family <host-family>` (cross-family, OUTPUT-FIRST, "longer is NOT better", default-REJECT) certifies subjective rows **on the outputs, not the prompt's looks**. Re-run the check with `--verdicts V.json --orchestrator-family <host-family>`: ship **F** (`floor_verdict=pass`) iff there are zero uncertified dropped requirements; otherwise ship **B verbatim** (`--adopt-blind --orchestrator-family <host-family>` → `floor_verdict=blind-adopted`). Launcher, capability, authentication, quota, network, timeout or schema failures halt with the canonical receipt and never become `blind-adopted`.
 
 ### P6 — emit receipt
 `node scripts/emit-receipt.mjs --type prompt-floor` (floor_verdict, element_ledger, judge family, tree_hash). `blind-adopted` is a logged **negative-ROI** signal — the craft did not beat the baseline here.
@@ -80,7 +83,7 @@ Run B and F once each on the representative input and capture both outputs.
 
 **Red Flags — stop if you catch yourself doing any of these:**
 - You shipped F without running both prompts on a real input → you have no evidence F beats B; run the floor or ship B.
-- You wrote `floor_verdict=pass` without a cross-family certified verdict → that's a forged self-cert; the check rejects `reviewer_family==anthropic`.
+- You wrote `floor_verdict=pass` without a cross-family certified verdict → that's a forged self-cert; the check rejects any certification whose `reviewer_family` equals the `--orchestrator-family` you passed.
 - The crafted prompt contains last-turn assistant prefill → unsupported on recent Claude models (returns 400); remove it.
 - You claimed "this beats the viral prompt" in prose → unprovable; say "judge-certified-improvement" or "blind-adopted" only.
 
@@ -96,5 +99,5 @@ source of truth: `.svc/lane-tasks-<WI>.json`. Read and update `.svc/lane-tasks-<
 | 1 | Rubric applied | the emitted prompt states the task directly, gives context and reasons, has a literal output_format block and checkable constraints; a role line and 1-2 diverse examples appear where they help (or their omission is deliberate) | |
 | 2 | 2026 anti-patterns clean | no last-turn prefill; no caps-lock "critical / you must / always" over-prompting; `effort` not `budget_tokens` | |
 | 3 | Floor ran (when armed) | `bash test-framework/evals/tier-1/validate-prompt-floor.sh` green and canonical-launcher failure remains a hard stop rather than `blind-adopted` | |
-| 4 | Judge independence | any pass/refined certification carries `reviewer_family != anthropic` (cross-family); self-certs and stale `for_content_sha` rejected | |
+| 4 | Judge independence | any pass/refined certification carries a `reviewer_family` different from the `--orchestrator-family` the host passed (cross-family); self-certs and stale `for_content_sha` rejected | |
 | 5 | Honest bound respected | the receipt/output claims only `blind-adopted` or `judge-certified-improvement` — never "beats the sheep" as fact | |
