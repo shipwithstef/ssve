@@ -171,19 +171,24 @@ export const A11Y_TOOL = { name: "ns-dom-rules", version: "1", rules: ["html-has
 //              not the document load event.
 // frame p95    the 95th percentile of animation-frame intervals while a seeded click workload
 //              runs for `playS` seconds, so frames are sampled under use, not at rest.
+// Milliseconds from navigation start until the readiness signal holds on `page`, or Infinity.
+async function awaitReady(page, ready) {
+  const sel = ready.selector || "button, a[href], input, [data-action]";
+  return page.waitForFunction(({ sel, js }) => {
+    const el = [...document.querySelectorAll(sel)].find((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+    if (!el) return false;
+    if (js && !new Function(`return (${js});`)()) return false;
+    return Math.round(performance.now());
+  }, { sel, js: ready.js || null }, { timeout: 10000, polling: "raf" }).then((h) => h.jsonValue(), () => Infinity);
+}
+
 export async function webMetrics(browser, base, route = "/", { ready = {}, playS = 3 } = {}) {
   const out = { tool: { a11y: A11Y_TOOL, browser: `chromium ${browser.version()}` } };
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await ctx.newPage();
   const watch = attachWatch(page, base);
   await page.goto(base + route, { waitUntil: "load", timeout: 15000 });
-  const sel = ready.selector || "button, a[href], input, [data-action]";
-  out.ready_ms = await page.waitForFunction(({ sel, js }) => {
-    const el = [...document.querySelectorAll(sel)].find((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
-    if (!el) return false;
-    if (js && !new Function(`return (${js});`)()) return false;
-    return Math.round(performance.now());
-  }, { sel, js: ready.js || null }, { timeout: 10000, polling: "raf" }).then((h) => h.jsonValue(), () => Infinity);
+  out.ready_ms = await awaitReady(page, ready);
   out.js_kb = await page.evaluate(() => Math.round(performance.getEntriesByType("resource").filter((r) => r.initiatorType === "script" || /\.m?js(\?|$)/.test(r.name)).reduce((a, r) => a + (r.transferSize || r.encodedBodySize || 0), 0) / 1024));
   out.body_font_px = await page.evaluate(() => {
     const blocks = [...document.querySelectorAll("p, li, dd, td, blockquote, pre, div, span, label, button")].filter((e) => e.offsetParent !== null && [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 20));
@@ -204,25 +209,39 @@ export async function webMetrics(browser, base, route = "/", { ready = {}, playS
     return +(Math.min(seen.size, total) / total).toFixed(2);
   });
   // The prescribed workload: seeded clicks for playS seconds with a frame recorder running.
-  // The recorder is re-armed after every navigation (a click may submit a form) and drained into
-  // this process on each pass, so frames from every page the workload visits are counted.
-  const arm = () => page.evaluate(() => { if (window.__ns_rec) return; window.__ns_rec = true; window.__ns_f = []; let prev = performance.now(); const tick = (n) => { window.__ns_f.push(n - prev); prev = n; requestAnimationFrame(tick); }; requestAnimationFrame(tick); }).catch(() => {});
-  const drain = () => page.evaluate(() => { const f = window.__ns_f || []; window.__ns_f = []; return f; }).catch(() => []);
-  const all = [];
-  await arm();
+  // Frame samples survive navigation: an init script installs the recorder in every document and
+  // pushes batches (and the remainder as the page is hidden) through a binding that outlives
+  // documents; the buffer is also flushed before each click.
+  const all = []; const docs = new Set(); let recording = false;
+  await page.exposeFunction("__ns_push", (doc, frames) => { if (recording) { docs.add(doc); all.push(...frames); } });
+  await page.addInitScript(() => {
+    const doc = Math.random().toString(36).slice(2);
+    let buf = [], prev = performance.now();
+    const flush = () => { if (buf.length) { const b = buf; buf = []; try { window.__ns_push(doc, b); } catch {} } };
+    window.__ns_flush = flush;
+    const tick = (n) => { buf.push(n - prev); prev = n; if (buf.length >= 6) flush(); requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+    addEventListener("pagehide", flush); addEventListener("visibilitychange", flush);
+  });
+  await page.reload({ waitUntil: "load" });
+  recording = true;
   const pick = rng(4242);
   const end = Date.now() + playS * 1000;
   let clicks = 0;
   while (Date.now() < end) {
     if (!page.url().startsWith(base)) await page.goBack().catch(() => {});
-    await arm();
     const ctl = page.locator(CONTROLS);
     const n = await ctl.count().catch(() => 0);
+    await page.evaluate(() => window.__ns_flush && window.__ns_flush()).catch(() => {});
     if (n) { await ctl.nth(pick(n)).click({ timeout: 800 }).then(() => clicks++, () => {}); }
     await sleep(60);
-    all.push(...(await drain()));
   }
+  await page.evaluate(() => window.__ns_flush && window.__ns_flush()).catch(() => {});
+  await sleep(50);
+  recording = false;
   const frames = all.slice(8).sort((a, b) => a - b);
+  out.frame_samples = all.length;
+  out.frame_docs = docs.size;
   out.workload_clicks = clicks;
   out.frame_p95_ms = frames.length ? +frames[Math.floor(frames.length * 0.95)].toFixed(1) : Infinity;
   out.console_errors = watch.errors.length;
@@ -232,6 +251,7 @@ export async function webMetrics(browser, base, route = "/", { ready = {}, playS
   const phone = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const pp = await phone.newPage();
   await pp.goto(base + route, { waitUntil: "load", timeout: 15000 });
+  out.phone_ready = Number.isFinite(await awaitReady(pp, ready));
   out.overflow_px = await pp.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   const targets = await pp.evaluate(() => [...document.querySelectorAll("button,a[href],input,select,textarea,[data-action],[role=button]")].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0).map((r) => Math.min(r.width, r.height)));
   out.tap_small_share = targets.length ? +(targets.filter((m) => m < 44).length / targets.length).toFixed(2) : null;

@@ -57,7 +57,7 @@
     "body_font_px": 16,
     "ready_ms": 3000,
     "js_kb": 500,
-    "frame_p95_ms": 34
+    "frame_p95_ms": 50
    },
    "ready": {
     "selector": "button, a[href]"

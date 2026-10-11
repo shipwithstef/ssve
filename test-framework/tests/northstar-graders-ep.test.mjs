@@ -1,4 +1,5 @@
 // @organism-suite
+// @organism-suite
 // Unit tests for the northstar E and P graders: scoring, spec parsing, the component
 // dispatcher, the case runner, report checks, and one reference-versus-stub proof.
 import test from "node:test";
@@ -13,7 +14,15 @@ import * as E from "../outcome-evals/northstar/graders/E.mjs";
 import * as P from "../outcome-evals/northstar/graders/P.mjs";
 import { checkTask, verdict, MATRIX_EP } from "../outcome-evals/northstar/graders/check.mjs";
 import { webMetrics, A11Y_TOOL } from "../outcome-evals/northstar/graders/ui-ep.mjs";
-import { spawnSync } from "node:child_process";
+import { spawnSync, spawn } from "node:child_process";
+
+// Tests that run artifact code need a verified sandbox; tests that drive a page need a browser.
+// Without them these tests skip with the reason printed, and the rest still run. A grader never
+// passes silently without them: it scores 0 with the error (see the "no sandbox" test below).
+const SBX = lib.sandboxStatus();
+const BROWSER = SBX.ok ? lib.browserStatus() : { ok: false, reason: "needs the sandbox as well" };
+const needSandbox = SBX.ok ? {} : { skip: `no sandbox: ${SBX.reason}` };
+const needBrowser = SBX.ok && BROWSER.ok ? {} : { skip: SBX.ok ? `no browser: ${BROWSER.reason}` : `no sandbox: ${SBX.reason}` };
 
 const tmp = (name) => fs.mkdtempSync(path.join(os.tmpdir(), `ns-test-${name}-`));
 const write = (dir, rel, text) => { fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true }); fs.writeFileSync(path.join(dir, rel), text); };
@@ -68,7 +77,7 @@ test("gradeComponents imports only requested modules; a missing module, a missin
   assert.match(nospec.details.E.error, /no E spec/);
 });
 
-test("the case runner reports ok, a wrong value, an unclean crash and a missing export", () => {
+test("the case runner reports ok, a wrong value, an unclean crash and a missing export", { ...needSandbox }, () => {
   const dir = tmp("lib");
   write(dir, "m.mjs", `export const add = (a, b) => a + b;
 export const boom = () => { throw new Error("nope"); };
@@ -90,7 +99,7 @@ export const srv = async () => (await import("node:http")).createServer((q, r) =
   assert.match(run([{ fn: "srv", save: "srv" }, { op: "listen", target: "srv" }, { op: "http", path: "/x", status: 200 }]).detail, /answered 404/);
 });
 
-test("the case runner stops a case that never returns", () => {
+test("the case runner stops a case that never returns", { ...needSandbox }, () => {
   const dir = tmp("hang");
   write(dir, "m.mjs", "export const spin = () => { for (;;) {} };");
   const r = lib.runCase(dir, { steps: [{ fn: "spin" }], timeout_ms: 1500 }, { module: "m.mjs" });
@@ -168,7 +177,7 @@ test("check verdicts: a reference needs >= 0.8, a stub <= 0.4", () => {
   assert.equal(verdict("stub", 0.41), false);
 });
 
-test("bugfix-rootcause: the reference scores high and the unchanged repository scores low on E and P", { timeout: 240000 }, async () => {
+test("bugfix-rootcause: the reference scores high and the unchanged repository scores low on E and P", { timeout: 240000 , ...needSandbox }, async () => {
   const rows = await checkTask("bugfix-rootcause", ["E", "P"]);
   for (const r of rows) assert.ok(r.ok, `${r.kind} ${r.component} scored ${r.score}: ${r.checks.filter((c) => (r.kind === "ref" ? !c.pass : c.pass)).map((c) => c.name).join(", ")}`);
   assert.ok(rows.find((r) => r.kind === "ref" && r.component === "E").score >= 0.8);
@@ -178,7 +187,7 @@ test("bugfix-rootcause: the reference scores high and the unchanged repository s
 
 const pgrep = (marker) => spawnSync("pgrep", ["-f", marker], { encoding: "utf8" }).stdout.trim();
 
-test("artifact subprocesses get a private HOME and npm cache and no host environment", () => {
+test("artifact subprocesses get a private HOME and npm cache and no host environment", { ...needSandbox }, () => {
   const dir = tmp("jail");
   process.env.NS_TEST_SECRET = "leak";
   try {
@@ -211,7 +220,7 @@ function depBuild(extraTest = true) {
   return d;
 }
 
-test("installs run with --ignore-scripts, and mutation keeps the installed dependencies", { timeout: 240000 }, async () => {
+test("installs run with --ignore-scripts, and mutation keeps the installed dependencies", { timeout: 240000 , ...needSandbox }, async () => {
   const d = depBuild();
   const w = lib.workCopy(d);
   try {
@@ -224,7 +233,7 @@ test("installs run with --ignore-scripts, and mutation keeps the installed depen
   assert.equal(r.checks[0].pass, true, r.checks[0].detail);
 });
 
-test("README run-path: documented allowlisted commands only; no README or no documented command fails", async () => {
+test("README run-path: documented allowlisted commands only; no README or no documented command fails", { ...needSandbox }, async () => {
   const spec = { component: "P", checks: [{ type: "clean_run", commands: { install: ["npm install"], test: ["npm test", "node --test"] } }] };
   const d = depBuild();
   const ok = await P.grade(d, "t", spec);
@@ -256,18 +265,19 @@ http.createServer((q, r) => {
   return d;
 }
 
-test("sign-in is verified: a rejected login is reported as not authenticated, an accepted one as signed in", { timeout: 240000 }, async () => {
+test("sign-in is verified: a rejected login is reported as not authenticated, an accepted one as signed in", { timeout: 240000 , ...needBrowser }, async () => {
   const spec = { component: "P", start: "node server.mjs", ready: "/", checks: [{ type: "occlusion", pages: ["/"], login: "auto" }] };
   const rejected = await P.grade(authApp(false), "t", spec);
   assert.match(rejected.checks[0].detail, /NOT AUTHENTICATED/, rejected.checks[0].detail);
-  assert.doesNotMatch(rejected.checks[0].detail, /signed in/);
+  assert.doesNotMatch(rejected.checks[0].detail, /signed in, verified/);
+  assert.equal(rejected.checks[0].pass, false, "an unverified sign-in never passes on anonymous screens");
   const accepted = await P.grade(authApp(true), "t", spec);
   assert.match(accepted.checks[0].detail, /signed in, verified by \/api\/me/, accepted.checks[0].detail);
   assert.equal(accepted.checks[0].pass, true, accepted.checks[0].detail);
 });
 
 // A page whose controls only appear 700 ms after load, so load and readiness differ.
-test("readiness waits for the task's signal and frames are sampled under the click workload", { timeout: 120000 }, async () => {
+test("readiness waits for the task's signal and frames are sampled under the click workload", { timeout: 120000 , ...needBrowser }, async () => {
   const d = tmp("late");
   write(d, "package.json", JSON.stringify({ type: "module", scripts: { start: "node server.mjs" } }));
   write(d, "server.mjs", `import http from "node:http";
@@ -280,6 +290,8 @@ http.createServer((q, r) => { r.writeHead(200, { "content-type": "text/html" });
     assert.ok(m.ready_ms >= 650, `ready_ms ${m.ready_ms} must include the 700 ms the controls took`);
     assert.ok(m.workload_clicks > 3, `${m.workload_clicks} clicks during the workload`);
     assert.ok(Number.isFinite(m.frame_p95_ms));
+    assert.equal(m.phone_ready, true, "the phone page waited for the same readiness signal");
+    assert.notEqual(m.tap_small_share, null, "tap targets were measured after the controls appeared, not before");
     assert.deepEqual(m.tool.a11y, A11Y_TOOL);
     assert.match(m.tool.browser, /^chromium /);
     const never = await lib.withBrowser((b) => webMetrics(b, app.base, "/", { ready: { selector: "#nothing-here" }, playS: 0.3 }));
@@ -287,7 +299,7 @@ http.createServer((q, r) => { r.writeHead(200, { "content-type": "text/html" });
   } finally { app.stop(); }
 });
 
-test("accessibility is always the pinned DOM-rule subset, and the tool is recorded on the checks", { timeout: 120000 }, async () => {
+test("accessibility is always the pinned DOM-rule subset, and the tool is recorded on the checks", { timeout: 120000 , ...needBrowser }, async () => {
   const spec = { component: "P", start: "node server.mjs", ready: "/", checks: [{ type: "web", play_s: 0.5, thresholds: { a11y_serious_critical: 0, contrast: 0 } }] };
   const r = await P.grade(authApp(false), "t", spec);
   for (const c of r.checks) {
@@ -299,7 +311,7 @@ test("accessibility is always the pinned DOM-rule subset, and the tool is record
   }
 });
 
-test("chaos: bodies and requests are bounded, a probe past its deadline is killed with everything it started", { timeout: 180000 }, async () => {
+test("chaos: bodies and requests are bounded, a probe past its deadline is killed with everything it started", { timeout: 180000 , ...needSandbox }, async () => {
   // A server that streams forever on every request still lets the probe finish.
   const d = tmp("endless");
   write(d, "package.json", JSON.stringify({ type: "module" }));
@@ -316,12 +328,77 @@ http.createServer((q, r) => { r.writeHead(200, { "content-type": "text/plain" })
   const h = tmp("hang");
   write(h, "package.json", JSON.stringify({ type: "module" }));
   const marker = `NSMARK${process.pid}${Date.now()}`;
-  write(h, "server.mjs", `import { spawn } from "node:child_process"; spawn("sleep", ["600", "${marker}"], { stdio: "ignore", detached: true }); setInterval(() => {}, 1000);`);
+  // A valid long-lived detached child carrying the marker, which the app keeps after the probe dies.
+  write(h, "server.mjs", `import { spawn } from "node:child_process"; spawn(process.execPath, ["-e", "setTimeout(() => {}, 600000)", "${marker}"], { stdio: "ignore", detached: true }); setInterval(() => {}, 1000);`);
   const t1 = Date.now();
-  const k = await E.grade(h, "t", { component: "E", start: `node server.mjs # ${marker}`, ready: "/", checks: [{ type: "chaos", faults: ["restart"], deadline_ms: 3000 }] });
+  const running = E.grade(h, "t", { component: "E", start: "node server.mjs", ready: "/", checks: [{ type: "chaos", faults: ["restart"], deadline_ms: 4000 }] });
+  let alive = "";
+  for (let i = 0; i < 20 && !alive; i++) { await new Promise((r) => setTimeout(r, 250)); alive = pgrep(marker); }
+  assert.notEqual(alive, "", "the long-lived child is running before the cleanup is triggered");
+  const k = await running;
   assert.ok(Date.now() - t1 < 30000, "returned shortly after the deadline");
   assert.equal(k.checks[0].pass, false);
   assert.match(k.checks[0].detail, /deadline/);
   await new Promise((r) => setTimeout(r, 500));
   assert.equal(pgrep(marker), "", "nothing the probe started is left running");
+});
+
+test("without a verified sandbox, artifact code is refused and the component scores 0 with 'no sandbox'", async () => {
+  const before = process.env.OE_NO_BUILDER_SANDBOX;
+  process.env.OE_NO_BUILDER_SANDBOX = "1";
+  lib.resetSandboxProbe();
+  try {
+    assert.equal(lib.sandboxStatus().ok, false);
+    assert.throws(() => lib.runContainedSync(tmp("x"), ["true"], {}), /no sandbox/);
+    assert.throws(() => lib.spawnContained(tmp("x"), ["true"], {}), /no sandbox/);
+    assert.throws(() => lib.workCopy(depBuild()), /no sandbox/, "installs are refused too");
+    const dir = tmp("nosbx");
+    write(dir, "m.mjs", "export const f = () => 1;");
+    const specs = tmp("nosbx-specs");
+    write(specs, "t/E.json", JSON.stringify({ component: "E", checks: [{ type: "cases", module: "m.mjs", cases: [{ name: "c", steps: [{ fn: "f" }] }] }] }));
+    write(specs, "t/P.json", JSON.stringify({ component: "P", checks: [{ type: "mutation" }] }));
+    const r = await gradeComponents(dir, "t", { components: ["E", "P"], specsDir: specs });
+    assert.equal(r.E, 0);
+    assert.equal(r.P, 0);
+    assert.match(r.details.E.error, /no sandbox/);
+    assert.match(r.details.P.error, /no sandbox/);
+    // A report-only spec runs no artifact code and is unaffected.
+    write(dir, "src/a.mjs", "1\n2\n3\n");
+    write(dir, "SECURITY.json", JSON.stringify([{ file: "src/a.mjs", line: 2, severity: "LOW", issue: "twenty characters or more of text" }]));
+    const ok = await E.grade(dir, "t", { component: "E", checks: [{ type: "report_wellformed", src: "src" }] });
+    assert.equal(ok.score, 1);
+  } finally {
+    if (before === undefined) delete process.env.OE_NO_BUILDER_SANDBOX; else process.env.OE_NO_BUILDER_SANDBOX = before;
+    lib.resetSandboxProbe();
+  }
+});
+
+test("readiness needs a 2xx or 3xx: a 404 route is not ready", { ...needSandbox }, async () => {
+  const d = tmp("ready404");
+  write(d, "package.json", JSON.stringify({ type: "module" }));
+  write(d, "server.mjs", `import http from "node:http";
+http.createServer((q, r) => { if (q.url === "/redir") { r.writeHead(302, { location: "/ok" }).end(); } else if (q.url === "/ok") r.writeHead(200).end("ok"); else r.writeHead(404).end("missing"); }).listen(Number(process.env.PORT || 3000));`);
+  const missing = await lib.startApp(d, { start: "node server.mjs", ready: "/", waitMs: 1500 });
+  assert.equal(missing.up, false, "a server answering 404 on the ready route is not up");
+  missing.stop();
+  const redirect = await lib.startApp(d, { start: "node server.mjs", ready: "/redir", waitMs: 5000 });
+  assert.equal(redirect.up, true);
+  redirect.stop();
+  const ok = await lib.startApp(d, { start: "node server.mjs", ready: "/ok", waitMs: 5000 });
+  assert.equal(ok.up, true);
+  ok.stop();
+});
+
+test("frame samples survive navigation across document lifetimes", { ...needBrowser, timeout: 120000 }, async () => {
+  const d = tmp("nav");
+  write(d, "package.json", JSON.stringify({ type: "module" }));
+  write(d, "server.mjs", `import http from "node:http";
+http.createServer((q, r) => { const other = q.url === "/two" ? "/" : "/two"; r.writeHead(200, { "content-type": "text/html" }); r.end('<!doctype html><html lang="en"><meta name="viewport" content="width=device-width"><title>nav</title><body><main><h1>Page ' + q.url + ' with enough text to count as a heading</h1><a href="' + other + '" style="display:inline-block;min-height:48px;padding:12px">Next page</a></main></body></html>'); }).listen(Number(process.env.PORT || 3000));`);
+  const app = await lib.startApp(d, { start: "node server.mjs" });
+  try {
+    const m = await lib.withBrowser((b) => webMetrics(b, app.base, "/", { ready: { selector: "a" }, playS: 1.5 }));
+    assert.ok(m.workload_clicks >= 3, `${m.workload_clicks} navigating clicks`);
+    assert.ok(m.frame_docs >= 3, `frames came from ${m.frame_docs} documents; each click loads a new one`);
+    assert.ok(m.frame_samples > 30, `${m.frame_samples} frame samples`);
+  } finally { app.stop(); }
 });

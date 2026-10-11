@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
-  HERE, REPO_ROOT, check, scoreChecks, validateSpec, workCopy, withApp, withBrowser, startApp,
+  requireSandboxFor, HERE, REPO_ROOT, check, scoreChecks, validateSpec, workCopy, withApp, withBrowser, startApp,
   discoverPages, runCase, readFindings, findingMatches, listFiles, runNodeContained, runContainedSync, boundedFetch, jailHome,
 } from "./lib-ep.mjs";
 import { uiWalk, uiBadInput, uiOffline } from "./ui-ep.mjs";
@@ -14,6 +14,7 @@ const DEFAULT_STEADY = (ready) => `node -e "fetch(process.env.BASE_URL+'${ready}
 
 export async function grade(dir, task, spec) {
   validateSpec(spec, `${task}/E.json`);
+  requireSandboxFor(spec); // throws "no sandbox: ...": the component scores 0 with that error
   const checks = [];
   let work = null;
   let ui = null; // lazily started app + browser shared by every UI check
@@ -122,9 +123,9 @@ export async function grade(dir, task, spec) {
       for (const p of c.paths || ["/__no_such_page__", "/%E0%A4%A", "/a/b/c/../../../../etc/passwd", `/${"x".repeat(3000)}`]) {
         codes.push((await boundedFetch(app.base + p, {}, { ms: 4000, bytes: 200000 })).status);
       }
-      const after = (await boundedFetch(app.base + opts.ready, {}, { ms: 3000, bytes: 200000 })).status;
+      const after = (await boundedFetch(app.base + opts.ready, { redirect: "manual" }, { ms: 3000, bytes: 200000 })).status;
       const bad = codes.filter((s) => s === 0 || s >= 500);
-      return [check("unknown_route", !bad.length && after > 0 && after < 500, bad.length ? `statuses ${codes.join(",")}` : `statuses ${codes.join(",")}; app still serves ${opts.ready}`)];
+      return [check("unknown_route", !bad.length && after >= 200 && after < 400, bad.length ? `statuses ${codes.join(",")}` : `statuses ${codes.join(",")}; app still serves ${opts.ready}`)];
     });
   }
 

@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import {
-  REPO_ROOT, TASKS, check, scoreChecks, validateSpec, workCopy, startApp, withBrowser, ensureStartScript,
+  requireSandboxFor, REPO_ROOT, TASKS, check, scoreChecks, validateSpec, workCopy, startApp, withBrowser, ensureStartScript,
   ensureBrowser, findReadme, documentedCommand, runShell, countPassed, countCases, testFiles, listFiles, hasDependencies,
   discoverPages, loginAuto, runNodeContained, jailHome, readFindings, findingMatches, SEVERITY_RANK,
 } from "./lib-ep.mjs";
@@ -18,6 +18,7 @@ const importScript = (rel) => import(pathToFileURL(path.join(REPO_ROOT, rel)).hr
 
 export async function grade(dir, task, spec) {
   validateSpec(spec, `${task}/P.json`);
+  requireSandboxFor(spec); // throws "no sandbox: ...": the component scores 0 with that error
   const checks = [];
   let work = null;
   const workDir = () => (work ??= workCopy(dir));
@@ -179,12 +180,12 @@ export async function grade(dir, task, spec) {
         contrast: [contrast <= t.contrast, `${contrast} text elements below WCAG AA contrast (${tool})`],
         console_errors: [m.console_errors <= t.console_errors, `${m.console_errors} console or page errors${m.console_sample.length ? `: ${m.console_sample.join("; ")}` : ""}`],
         tab_reach: [m.tab_reach !== null && m.tab_reach >= t.tab_reach, m.tab_reach === null ? "no interactive controls" : `${m.tab_reach} of controls reachable by Tab`],
-        phone_overflow: [m.overflow_px <= 1, `${m.overflow_px} px of horizontal overflow at 390 px`],
-        tap_targets_44: [m.tap_small_share !== null && m.tap_small_share <= t.tap_targets_44, m.tap_small_share === null ? "no tap targets" : `${m.tap_small_share} of tap targets under 44 px at 390 px`],
+        phone_overflow: [m.phone_ready && m.overflow_px <= 1, m.phone_ready ? `${m.overflow_px} px of horizontal overflow at 390 px` : "the readiness signal never held on the phone page, so it was not measured"],
+        tap_targets_44: [m.phone_ready && m.tap_small_share !== null && m.tap_small_share <= t.tap_targets_44, !m.phone_ready ? "the readiness signal never held on the phone page, so it was not measured" : m.tap_small_share === null ? "no tap targets" : `${m.tap_small_share} of tap targets under 44 px at 390 px`],
         body_font_px: [m.body_font_px !== null && m.body_font_px >= t.body_font_px, `${m.body_font_px} px median body text`],
         ready_ms: [m.ready_ms <= t.ready_ms, Number.isFinite(m.ready_ms) ? `${m.ready_ms} ms until ${c.ready?.selector || "a control"} was visible${c.ready?.js ? ` and ${c.ready.js}` : ""}` : "the readiness signal never held within 10 s"],
         js_kb: [m.js_kb <= t.js_kb, `${m.js_kb} KB of script`],
-        frame_p95_ms: [m.frame_p95_ms <= t.frame_p95_ms, `${m.frame_p95_ms} ms frame interval p95 over ${c.play_s ?? 3} s of seeded clicking (${m.workload_clicks} clicks)`],
+        frame_p95_ms: [m.frame_p95_ms <= t.frame_p95_ms, `${m.frame_p95_ms} ms frame interval p95 over ${c.play_s ?? 3} s of seeded clicking (${m.workload_clicks} clicks, ${m.frame_samples} frames across ${m.frame_docs} documents)`],
       };
       return names.map((n) => check(`web:${n}`, val[n][0], val[n][1], { tool: m.tool }));
     } finally { w.cleanup(); }
@@ -199,6 +200,7 @@ export async function grade(dir, task, spec) {
       const vp = c.viewport || { width: 390, height: 844 };
       const results = [];
       let session = "anonymous only (this product has no sign-in form)";
+      let auth_attempted = false, auth_ok = false;
       await withBrowser(async (browser) => {
         const ctx = await browser.newContext({ viewport: vp, isMobile: true, hasTouch: true });
         const page = await ctx.newPage();
@@ -213,17 +215,20 @@ export async function grade(dir, task, spec) {
         await scan("anonymous", paths);
         if (c.login === "auto") {
           const auth = await loginAuto(ctx, page, app.base, { verify: c.verify });
+          auth_attempted = auth.attempted; auth_ok = auth.authenticated;
           if (auth.authenticated) {
             // Routes are discovered in this same signed-in context.
             const found = await discoverPages(browser, app.base, { max: 4, ctx });
             await scan("signed in", [...new Set([...paths, ...found.pages])].slice(0, 4));
             session = `signed in, verified by ${auth.via} answering 200 to this session and refusing an anonymous one`;
-          } else if (auth.attempted) session = "NOT AUTHENTICATED: a sign-in form was found and submitted, but no protected route accepted the session; anonymous screens only";
+          } else if (auth.attempted) session = "NOT AUTHENTICATED: a sign-in form was found and submitted, but no protected route accepted the session, so the signed-in screens were not checked (fails)";
         }
         await ctx.close();
       });
       const bad = results.filter((r) => !r.pass);
-      return [check("mobile_occlusion", results.length > 0 && !bad.length, `${session}. ${bad.length ? bad.slice(0, 2).map((r) => `${r.label}: ${r.detail}`).join("; ") : `${results.length} screens clear at ${vp.width}x${vp.height}`}`)];
+      // A sign-in that was attempted but not verified cannot pass on anonymous screens alone.
+      const unverified = auth_attempted && !auth_ok;
+      return [check("mobile_occlusion", results.length > 0 && !bad.length && !unverified, `${session}. ${bad.length ? bad.slice(0, 2).map((r) => `${r.label}: ${r.detail}`).join("; ") : `${results.length} screens clear at ${vp.width}x${vp.height}`}`)];
     } finally { app.stop(); w.cleanup(); }
   }
 

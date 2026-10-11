@@ -51,8 +51,33 @@ const jails = new Map(); // work dir -> private home
 const liveGroups = new Set();
 const TOOLING_ENV = ["PATH", "LANG", "LC_ALL", "TERM"];
 
-export function bwrapAvailable() {
-  return process.env.OE_NO_BUILDER_SANDBOX !== "1" && spawnSync("sh", ["-c", "command -v bwrap"]).status === 0;
+// Artifact code never runs without a verified containment backend. The backend is probed once
+// with a real bubblewrap launch (installed is not enough: unprivileged user namespaces may be
+// disabled). OE_NO_BUILDER_SANDBOX=1 disables it, which means artifact code does not run at all.
+let sandboxProbe = null;
+export function resetSandboxProbe() { sandboxProbe = null; }
+export function sandboxStatus() {
+  if (sandboxProbe) return sandboxProbe;
+  if (process.env.OE_NO_BUILDER_SANDBOX === "1") return (sandboxProbe = { ok: false, backend: null, reason: "the sandbox is disabled (OE_NO_BUILDER_SANDBOX=1) and artifact code is not run uncontained" });
+  const which = spawnSync("sh", ["-c", "command -v bwrap"], { encoding: "utf8" });
+  if (which.status !== 0) return (sandboxProbe = { ok: false, backend: null, reason: "bubblewrap (bwrap) is not installed" });
+  const t = spawnSync("bwrap", ["--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent", "--", "true"], { encoding: "utf8", timeout: 15000 });
+  if (t.status !== 0) return (sandboxProbe = { ok: false, backend: null, reason: `bubblewrap cannot start a sandbox here: ${`${t.stderr || t.error?.message || ""}`.trim().slice(0, 140)}` });
+  return (sandboxProbe = { ok: true, backend: "bwrap", reason: null });
+}
+export const bwrapAvailable = () => sandboxStatus().ok;
+export class NoSandboxError extends Error {
+  constructor(reason) { super(`no sandbox: ${reason}`); this.name = "NoSandboxError"; this.code = "NO_SANDBOX"; }
+}
+export function requireSandbox() {
+  const st = sandboxStatus();
+  if (!st.ok) throw new NoSandboxError(st.reason);
+  return st;
+}
+// Check types that run the build's own code; the others only read files.
+export const RUNS_ARTIFACT = new Set(["chaos", "unknown_route", "ui_bad_input", "ui_offline", "ui_walk", "game_bad_input", "game_deadends", "cases", "clean_run", "mutation", "tests_fail_on_baseline", "web", "occlusion"]);
+export function requireSandboxFor(spec) {
+  if (spec.checks.some((c) => RUNS_ARTIFACT.has(c.type))) requireSandbox();
 }
 
 export function jailHome(workDir) {
@@ -72,11 +97,11 @@ export function releaseJail(workDir) {
 
 // The command line and environment for running argv inside the jail of workDir.
 export function containedCommand(workDir, argv, { env = {}, rw = [] } = {}) {
+  requireSandbox();
   const home = jailHome(workDir);
   const work = path.resolve(workDir);
   const base = Object.fromEntries(TOOLING_ENV.filter((k) => process.env[k] !== undefined).map((k) => [k, process.env[k]]));
-  const full = { ...base, HOME: home, npm_config_cache: path.join(home, ".npm"), XDG_CACHE_HOME: path.join(home, ".cache"), TMPDIR: bwrapAvailable() ? "/tmp" : path.join(home, "tmp"), CI: "1", ...env };
-  if (!bwrapAvailable()) return { bin: argv[0], args: argv.slice(1), env: full, sandbox: null };
+  const full = { ...base, HOME: home, npm_config_cache: path.join(home, ".npm"), XDG_CACHE_HOME: path.join(home, ".cache"), TMPDIR: "/tmp", CI: "1", ...env };
   const mask = fs.existsSync(TASKS) && !work.startsWith(TASKS) ? ["--tmpfs", TASKS] : [];
   const binds = [work, home, ...rw].flatMap((d) => ["--bind", d, d]);
   return { bin: "bwrap", args: ["--ro-bind", "/", "/", "--tmpfs", "/tmp", ...binds, ...mask, "--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent", "--chdir", work, "--", ...argv], env: full, sandbox: "bwrap" };
@@ -183,7 +208,7 @@ export async function waitReady(base, readyPath = "/", ms = 20000, child = null)
   const end = Date.now() + ms;
   while (Date.now() < end) {
     if (child && child.exitCode !== null) return false;
-    try { const r = await fetch(base + readyPath, { signal: AbortSignal.timeout(2000) }); if (r.status < 500) return true; } catch {}
+    try { const r = await fetch(base + readyPath, { signal: AbortSignal.timeout(2000), redirect: "manual" }); await r.body?.cancel().catch(() => {}); if (r.status >= 200 && r.status < 400) return true; } catch {}
     await sleep(150);
   }
   return false;
@@ -222,24 +247,35 @@ export function playwrightEntry() {
 // Playwright wants one exact browser revision. When the machine has the package but only other
 // revisions of the same browser, a temporary browsers directory links the expected name to the
 // newest installed one. On a machine whose browser matches this does nothing.
-let browserReady = false;
+let browserProbe = null;
+const launchProbe = () => spawnSync(process.execPath, ["--input-type=module", "-e", `const pw = await import(${JSON.stringify(playwrightEntry())}); const b = await pw.chromium.launch(); await b.close();`], { encoding: "utf8", timeout: 60000 });
+const firstLine = (r) => { const lines = `${r.stderr || r.stdout || r.error?.message || ""}`.split("\n").map((l) => l.trim()).filter((l) => l && !/^[╔║╚]/.test(l)); return lines.find((l) => /Error|Cannot find|doesn't exist|ERR_/.test(l)) || lines[0] || "unknown error"; };
+// { ok, reason }: whether a headless Chromium can be launched here. Tests that need one skip
+// with this reason; graders turn it into failed checks, never into a pass.
+export function browserStatus() {
+  if (browserProbe) return browserProbe;
+  let probe = launchProbe();
+  if (probe.status !== 0) {
+    const m = /Executable doesn't exist at (\S+)/.exec(`${probe.stderr}${probe.stdout}`);
+    const at = m ? m[1].indexOf("/ms-playwright/") : -1;
+    if (m && at >= 0) {
+      const root = m[1].slice(0, at + "/ms-playwright".length);
+      const dirName = m[1].slice(root.length + 1).split("/")[0];
+      const prefix = dirName.replace(/-\d+$/, "");
+      const have = fs.existsSync(root) ? fs.readdirSync(root).filter((n) => n.startsWith(`${prefix}-`)).sort((a, b) => Number(b.split("-").pop()) - Number(a.split("-").pop())) : [];
+      if (have.length) {
+        const shim = fs.mkdtempSync(path.join(os.tmpdir(), "ns-pw-"));
+        fs.symlinkSync(path.join(root, have[0]), path.join(shim, dirName));
+        process.env.PLAYWRIGHT_BROWSERS_PATH = shim;
+        probe = launchProbe();
+      }
+    }
+  }
+  return (browserProbe = probe.status === 0 ? { ok: true, reason: null } : { ok: false, reason: `Playwright cannot launch Chromium: ${firstLine(probe).slice(0, 160)}` });
+}
 export function ensureBrowser() {
-  if (browserReady) return;
-  browserReady = true;
-  const probe = spawnSync(process.execPath, ["--input-type=module", "-e", `const pw = await import(${JSON.stringify(playwrightEntry())}); const b = await pw.chromium.launch(); await b.close();`], { encoding: "utf8", timeout: 60000 });
-  if (probe.status === 0) return;
-  const m = /Executable doesn't exist at (\S+)/.exec(`${probe.stderr}${probe.stdout}`);
-  if (!m) return;
-  const at = m[1].indexOf("/ms-playwright/");
-  if (at < 0) return;
-  const root = m[1].slice(0, at + "/ms-playwright".length);
-  const dirName = m[1].slice(root.length + 1).split("/")[0];
-  const prefix = dirName.replace(/-\d+$/, "");
-  const have = fs.readdirSync(root).filter((n) => n.startsWith(`${prefix}-`)).sort((a, b) => Number(b.split("-").pop()) - Number(a.split("-").pop()));
-  if (!have.length) return;
-  const shim = fs.mkdtempSync(path.join(os.tmpdir(), "ns-pw-"));
-  fs.symlinkSync(path.join(root, have[0]), path.join(shim, dirName));
-  process.env.PLAYWRIGHT_BROWSERS_PATH = shim;
+  const st = browserStatus();
+  if (!st.ok) throw new Error(`no browser: ${st.reason}`);
 }
 
 export async function withBrowser(fn) {
