@@ -522,39 +522,35 @@ export function builderWrap(dir, { jobHome = null, framework = null, model = nul
 // the live repository, the real credentials, every other job's directory and the runner's own
 // Codex conversations, sessions and login are empty or absent; the build dir and the job home
 // come back read-only; only the call's isolated CODEX_HOME (a copy of the login, nothing else)
-// and its scratch directory are writable. Confinement is not optional for a scored run. A
-// deny-list for the home directory: codex's own binary lives under ~/.codex/packages, so that
-// directory cannot be hidden as a whole; everything else in it is.
+// and its scratch directory are writable. Confinement is not optional for a scored run.
+//
+// The mount plan never depends on what a host directory holds at that moment. The runner's
+// ~/.codex is live (other Codex sessions create and delete SQLite files in it while a job runs),
+// so it is hidden WHOLE by an empty tmpfs and the only thing brought back is the release
+// directory of the codex binary being run. Every hidden path is checked for existence when the
+// call is built, not when the job started.
 export function reviewerConfinement({ dir, jobHome, workRoot = path.dirname(dir), hideRoots = [], framework = null, extraMaskRoots = [], realHome = os.homedir(), realCodexHome = process.env.CODEX_HOME || path.join(os.homedir(), ".codex"), repoRoot = ROOT, northstar = NORTHSTAR }) {
   const masks = sandboxMasks({ dir, framework, extraMaskRoots, exposeRoot: false, role: "build", northstar, keepRo: [], realHome: "/nonexistent-oe-home", repoRoot, kept: path.join(realHome, ".svc", "outcome-eval-artifacts") }).maskRoots;
   const statOf = (x) => { try { return fs.statSync(x); } catch { return null; } };
-  const homeDeny = [".svc", ".claude", ".ssh", ".aws", ".gnupg", ".config/gh", ".git-credentials", ".netrc", ".npmrc"].map((x) => path.join(realHome, x)).filter((x) => fs.existsSync(x));
-  // The runner's Codex state: every entry but the installed binary's package directory.
-  let codexState = [];
-  try { codexState = fs.readdirSync(realCodexHome).filter((n) => n !== "packages").map((n) => path.join(realCodexHome, n)); } catch { /* none */ }
-  const denied = [...homeDeny, ...codexState];
+  const homeDeny = [".svc", ".claude", ".ssh", ".aws", ".gnupg", ".config/gh", ".git-credentials", ".netrc", ".npmrc"].map((x) => path.join(realHome, x));
   // Host temp space is hidden whole, wherever --work-root is: other jobs' homes, builds and
   // isolated Codex homes live there. Only this call's own paths come back.
   const tmpRoots = uniq(["/tmp", os.tmpdir()]).filter((t) => t !== "/");
-  const dirs = uniq([...masks, ...denied.filter((x) => statOf(x)?.isDirectory()), ...hideRoots.filter((h) => fs.existsSync(h)), ...(fs.existsSync(workRoot) ? [workRoot] : [])])
-    .filter((m) => m !== "/");
-  const files = denied.filter((x) => statOf(x)?.isFile());
-  // ctx.logicalCwd is the path the caller saw from inside the builder sandbox. The job's home is
-  // shown at SANDBOX_HOME and a neutral directory at its sandbox path, so codex reports the same
-  // working directory the framework's launcher checks against.
+  const dirCandidates = uniq([...masks, realCodexHome, ...homeDeny, ...hideRoots, workRoot]).filter((m) => m !== "/");
+  // The directory to bring back for a binary: its release directory (the parent of bin/), else its own directory.
+  const releaseDir = (bin) => { try { const real = fs.realpathSync(bin); const d = path.dirname(real); return path.basename(d) === "bin" ? path.dirname(d) : d; } catch { return null; } };
   return ({ logicalCwd = null, phase = "review", scratch, neutral = null, codexHome = null, codexBin = null }) => {
     const a = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent"];
     for (const t of tmpRoots) a.push("--tmpfs", t);
-    for (const m of dirs) a.push("--tmpfs", m);
-    for (const f of files) a.push("--ro-bind", "/dev/null", f);
+    const hidden = [];
+    for (const m of dirCandidates) { const st = statOf(m); if (!st) continue; if (st.isDirectory()) { a.push("--tmpfs", m); hidden.push(m); } else a.push("--ro-bind", "/dev/null", m); }
+    // The codex binary, when it lives under a hidden directory (normally ~/.codex/packages) or in host temp space.
+    const rel = codexBin ? releaseDir(codexBin) : null;
     // A review reads the job's tree. A planning role or a probe sees none of it.
-    if (phase === "review") {
-      a.push("--ro-bind", dir, dir, "--ro-bind", jobHome, jobHome, "--ro-bind", jobHome, SANDBOX_HOME);
-    }
+    if (phase === "review") a.push("--ro-bind", dir, dir, "--ro-bind", jobHome, jobHome, "--ro-bind", jobHome, SANDBOX_HOME);
+    if (rel && (hidden.some((h) => isUnder(rel, h)) || tmpRoots.some((t) => isUnder(rel, t)))) a.push("--ro-bind", rel, rel);
     if (codexHome && fs.existsSync(codexHome)) a.push("--bind", codexHome, codexHome);
     a.push("--bind", scratch, scratch);
-    // The codex binary, when it lives in host temp space (it normally lives under the home).
-    if (codexBin) { try { const d = path.dirname(fs.realpathSync(codexBin)); if (tmpRoots.some((t) => isUnder(d, t))) a.push("--ro-bind", d, d); } catch { /* not there */ } }
     // A neutral working directory is empty and stays read-only to codex.
     let cwd = logicalCwd;
     if (neutral) {

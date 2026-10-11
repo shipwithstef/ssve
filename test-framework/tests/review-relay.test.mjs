@@ -52,7 +52,12 @@ const runnerCodexHome = () => { const d = tmp("rr-codexhome-"); fs.writeFileSync
 // Triggers in the prompt: EXIT n, SLEEP, NOUSAGE, BIGSTR (a 5000-char summary), BADJSON, BADSCHEMA,
 // STDERRBIG, LS, CODEXHOME, CAT=path, TOUCH. FAKE_OUT sets the output tokens.
 function fakeCodex(binDir, logFile) {
-  const f = path.join(binDir, "codex");
+  // Laid out like a real install: <root>/v1/bin/codex, reached through a symlink on the PATH.
+  const rel = path.join(fs.mkdtempSync(path.join(path.dirname(binDir), "codex-release-")), "v1", "bin");
+  fs.mkdirSync(rel, { recursive: true });
+  const f = path.join(rel, "codex");
+  fs.rmSync(path.join(binDir, "codex"), { force: true });
+  fs.symlinkSync(f, path.join(binDir, "codex"));
   fs.writeFileSync(f, `#!/usr/bin/env node
 const fs = require("fs"); const args = process.argv.slice(2);
 const cwd = () => fs.realpathSync(process.cwd());
@@ -708,30 +713,72 @@ test("catalog: the runner's REAL models_cache.json is copied read-only into a re
 
 // ---- confinement ----------------------------------------------------------------------------
 
-test("reviewer confinement argv: host /tmp hidden whole, answers and other jobs hidden, the runner's Codex state hidden, a review sees the job read-only, a plan or probe sees none of it", () => {
+test("reviewer confinement argv: host /tmp and the runner's ~/.codex hidden WHOLE (no per-entry plan), only the binary's release dir comes back; a review sees the job read-only, a plan or probe none of it", () => {
   const base = fs.realpathSync(tmp("rr-conf-"));
   const work = path.join(base, "work"), dir = path.join(work, "b"), jobHome = path.join(work, "h"), codex = path.join(base, "isolated"), real = path.join(base, "home", ".codex");
-  for (const d of [dir, jobHome, codex, path.join(base, "home", ".svc"), path.join(base, "home", ".ssh"), path.join(real, "sessions"), path.join(real, "packages")]) fs.mkdirSync(d, { recursive: true });
-  fs.writeFileSync(path.join(real, "history.jsonl"), "h"); fs.writeFileSync(path.join(real, "auth.json"), "a");
+  const release = path.join(real, "packages", "standalone", "releases", "v1");
+  for (const d of [dir, jobHome, codex, path.join(base, "home", ".svc"), path.join(base, "home", ".ssh"), path.join(real, "sessions"), path.join(release, "bin")]) fs.mkdirSync(d, { recursive: true });
+  fs.writeFileSync(path.join(real, "history.jsonl"), "h"); fs.writeFileSync(path.join(release, "bin", "codex"), "#!/bin/sh\n");
   const f = oe.reviewerConfinement({ dir, jobHome, workRoot: work, realHome: path.join(base, "home"), realCodexHome: real });
-  const argsOf = (ctx) => f({ scratch: "/scratch/x", codexHome: codex, ...ctx });
+  const argsOf = (ctx) => f({ scratch: "/scratch/x", codexHome: codex, codexBin: path.join(release, "bin", "codex"), ...ctx });
   const has = (a, ...xs) => a.some((_, i) => xs.every((x, j) => a[i + j] === x));
   const r = argsOf({ phase: "review", logicalCwd: dir });
   assert.equal(r[0], "bwrap"); assert.deepEqual(r.slice(1, 4), ["--ro-bind", "/", "/"]); assert.equal(r[r.length - 1], "--");
-  assert.ok(has(r, "--tmpfs", "/tmp"), "host /tmp is hidden whole, so other jobs' homes and codex homes cannot be read");
-  for (const m of [work, path.join(base, "home", ".svc"), path.join(base, "home", ".ssh"), path.join(real, "sessions")]) assert.ok(has(r, "--tmpfs", m), m);
-  assert.ok(has(r, "--ro-bind", "/dev/null", path.join(real, "history.jsonl")) && has(r, "--ro-bind", "/dev/null", path.join(real, "auth.json")));
-  assert.ok(!has(r, "--tmpfs", path.join(real, "packages")));
+  assert.ok(has(r, "--tmpfs", "/tmp"), "host /tmp is hidden whole");
+  for (const m of [work, path.join(base, "home", ".svc"), path.join(base, "home", ".ssh"), real]) assert.ok(has(r, "--tmpfs", m), m);
+  assert.ok(!r.some((x) => x.startsWith(path.join(real, "sessions")) || x.startsWith(path.join(real, "history"))), "nothing inside ~/.codex is named: the plan does not depend on its contents");
+  assert.ok(has(r, "--ro-bind", release, release), "the binary's release directory comes back");
+  assert.ok(r.indexOf(release) > r.indexOf(real), "after the hide");
   assert.ok(has(r, "--ro-bind", dir, dir) && has(r, "--ro-bind", jobHome, jobHome) && has(r, "--ro-bind", jobHome, "/tmp/oe-home"), "the job's home is shown at the sandbox HOME");
   assert.ok(has(r, "--bind", codex, codex) && has(r, "--bind", "/scratch/x", "/scratch/x"));
   assert.ok(has(r, "--chdir", dir));
-  assert.ok(r.indexOf("--tmpfs") < r.indexOf("--ro-bind", 4 + 3), "masks come before the binds that restore the call's own paths");
   const p = argsOf({ phase: "plan", logicalCwd: "/tmp/ssve-openbox-preflight-abc", neutral: "/scratch/x/neutral" });
   assert.ok(!has(p, "--ro-bind", dir, dir) && !has(p, "--ro-bind", jobHome, jobHome), "a planning role cannot read the job");
-  assert.ok(has(p, "--ro-bind", "/scratch/x/neutral", "/tmp/ssve-openbox-preflight-abc"), "the neutral directory appears at the path the planner checks");
+  assert.ok(has(p, "--ro-bind", "/scratch/x/neutral", "/tmp/ssve-openbox-preflight-abc"));
   assert.ok(has(p, "--chdir", "/tmp/ssve-openbox-preflight-abc"));
   const i = argsOf({ phase: "info", logicalCwd: "/etc", neutral: "/scratch/x/neutral" });
   assert.ok(has(i, "--chdir", "/scratch/x/neutral"), "a probe from a non-/tmp directory runs in the empty one");
+  // a hidden path that is gone when the call is built is skipped, not named
+  fs.rmSync(path.join(base, "home", ".ssh"), { recursive: true });
+  assert.ok(!has(argsOf({ phase: "info" }), "--tmpfs", path.join(base, "home", ".ssh")));
+});
+
+test("W5 the mount plan does not race with live files in the runner's ~/.codex: transient SQLite files appear and vanish while many confined calls start, none fail, and a real-layout binary still runs", { skip: !bwrapOk }, async () => {
+  const base = fs.realpathSync(tmp("rr-churn-")); const work = path.join(base, "work");
+  const dir = path.join(work, "build"), jobHome = path.join(work, "home");
+  for (const d of [dir, jobHome]) fs.mkdirSync(d, { recursive: true });
+  // a fake host ~/.codex shaped like the real one: packages/standalone/releases/v1/bin/codex plus a `current` link
+  const realHome = path.join(base, "home"); const realCodex = path.join(realHome, ".codex");
+  const rel = path.join(realCodex, "packages", "standalone", "releases", "v1");
+  fs.mkdirSync(path.join(rel, "bin"), { recursive: true });
+  fs.symlinkSync(rel, path.join(realCodex, "packages", "standalone", "current"));
+  const pathBin = path.join(base, "pathbin"); fs.mkdirSync(pathBin);
+  fs.writeFileSync(path.join(rel, "bin", "codex"), '#!/usr/bin/env node\nconsole.log("codex-cli 0.0.0-fake");\n', { mode: 0o755 });
+  fs.symlinkSync(path.join(realCodex, "packages", "standalone", "current", "bin", "codex"), path.join(pathBin, "codex"));
+  // churn: files and directories appear and disappear in ~/.codex the whole time
+  let stop = false; const names = ["memories_1.sqlite", "memories_1.sqlite-shm", "memories_1.sqlite-wal", "goals_1.sqlite-shm", "logs_2.sqlite-wal"];
+  const churn = (async () => { let n = 0; while (!stop) { const f = path.join(realCodex, names[n++ % names.length]); try { fs.writeFileSync(f, "x"); } catch { /* raced */ } await new Promise((r) => setImmediate(r)); try { fs.rmSync(f, { force: true }); } catch { /* raced */ } if (n % 7 === 0) { const d = path.join(realCodex, `session-${n}`); try { fs.mkdirSync(d); fs.rmSync(d, { recursive: true }); } catch { /* raced */ } } } })();
+  const r = await relay.startRelay({ jobHome, buildDir: dir, pathEnv: pathBin, policies: POLICIES, codexHomeFrom: runnerCodexHome(), confine: oe.reviewerConfinement({ dir, jobHome, workRoot: work, realHome, realCodexHome: realCodex }) });
+  try {
+    const results = [];
+    for (let batch = 0; batch < 6; batch++) results.push(...await Promise.all(Array.from({ length: 5 }, () => client(r.socketPath, ["--version"], { cwd: dir }))));
+    for (const res of results) { assert.equal(res.code, 0, res.err); assert.match(res.out, /codex-cli 0.0.0-fake/); }
+    assert.equal(results.length, 30);
+    assert.ok(r.calls().every((c) => c.exit === 0));
+  } finally { stop = true; await churn; await r.close(); }
+});
+
+// Opt-in (one free `codex --version`): OE_REAL_CODEX_PROBE=1.
+test("W5 (real codex, opt-in) `codex --version` through the confined relay inside a framework-arm wrap succeeds", { skip: !bwrapOk || process.env.OE_REAL_CODEX_PROBE !== "1" }, async () => {
+  const work = tmp("rr-realv-"); const dir = path.join(work, "build"); fs.mkdirSync(dir);
+  const w = oe.builderWrap(dir, { credentials: creds(), framework: frameworkFixture(), model: "haiku", workRoot: work, reviewRelay: true });
+  const r = await relay.startRelay({ jobHome: w.job_home, buildDir: dir, policies: oe.reviewPolicies(oeRoot()).policies, confine: oe.reviewerConfinement({ dir, jobHome: w.job_home, workRoot: work, framework: { src: oeRoot() } }) });
+  try {
+    const res = await inSandbox(w, 'codex --version; echo "exit=$?"');
+    assert.match(res.stdout, /codex-cli \d/, res.stderr);
+    assert.match(res.stdout, /exit=0/);
+    assert.doesNotMatch(res.stderr, /bwrap:/);
+  } finally { await r.close(); }
 });
 
 test("F2 (round 2) confinement at run time: a sibling job's directory and another job's codex home under /tmp are invisible; the build is read-only; a planning role cannot see the job; the neutral dir has its logical path", { skip: !bwrapOk }, async () => {

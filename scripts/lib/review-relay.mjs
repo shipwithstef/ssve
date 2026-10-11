@@ -516,9 +516,13 @@ export async function startRelay({ jobHome, buildDir, policies = [], codexBin = 
         if (args[0] === "exec") args.splice(1, 0, ...RELAY_CONFIG);
         else if (args[0] === "debug") args.splice(2, 0, ...RELAY_CONFIG);
       } catch (e) { fs.rmSync(scratch, { recursive: true, force: true }); return reject(argv, e.message); }
-      const prefix = confine ? confine({ cwd: mappedCd || cwd, logicalCwd, phase, scratch, neutral, codexHome, codexBin: bin, info: vet.info }) : [];
+      // Inside a confinement the binary is run by its real path: a symlink such as ~/.codex/packages/
+      // standalone/current points into a directory the confinement hides. Resolved when the call is built.
+      let runBin = bin;
+      if (confine) { try { runBin = fs.realpathSync(bin); } catch { /* run as given */ } }
+      const prefix = confine ? confine({ cwd: mappedCd || cwd, logicalCwd, phase, scratch, neutral, codexHome, codexBin: runBin, info: vet.info }) : [];
       const cmd = prefix.length ? prefix[0] : bin;
-      const cmdArgs = prefix.length ? [...prefix.slice(1), bin, ...args] : args;
+      const cmdArgs = prefix.length ? [...prefix.slice(1), runBin, ...args] : args;
       const t0 = Date.now();
       let timedOut = false, stopped = null;
       const limit = Math.max(1, Math.min(callTimeoutMs, deadlineAt != null ? deadlineAt - Date.now() : Infinity));
