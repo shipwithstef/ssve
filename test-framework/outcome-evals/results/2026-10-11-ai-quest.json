@@ -1,0 +1,974 @@
+{
+  "ran_at": "2026-10-11T05:55:20.523Z",
+  "model": "opus",
+  "reps": 3,
+  "tasks": [
+    "ai-quest"
+  ],
+  "arms": [
+    "solo",
+    "swarm",
+    "bounded"
+  ],
+  "summary": [
+    {
+      "arm": "solo",
+      "runs": 3,
+      "errors": 0,
+      "solved": "0/3",
+      "solve_rate": 0,
+      "mean_hidden_score": 0.733,
+      "mean_cost_usd": 5.4356,
+      "mean_turns": 69.3,
+      "judged": 3,
+      "mean_judge_total": 18.67
+    },
+    {
+      "arm": "swarm",
+      "runs": 3,
+      "errors": 0,
+      "solved": "3/3",
+      "solve_rate": 1,
+      "mean_hidden_score": 1,
+      "mean_cost_usd": 3.7768,
+      "mean_turns": 63.3,
+      "judged": 3,
+      "mean_judge_total": 18.67
+    },
+    {
+      "arm": "bounded",
+      "runs": 3,
+      "errors": 0,
+      "solved": "0/3",
+      "solve_rate": 0,
+      "mean_hidden_score": 0.833,
+      "mean_cost_usd": 6.0743,
+      "mean_turns": 92.7,
+      "judged": 3,
+      "mean_judge_total": 18.33
+    }
+  ],
+  "rows": [
+    {
+      "task": "ai-quest",
+      "arm": "solo",
+      "rep": 0,
+      "builder_sandbox": "bwrap",
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "98b8646d61bb",
+      "started_at": "2026-10-11T04:10:45.065Z",
+      "wall_ms": 1606238,
+      "ok": true,
+      "cost_usd": 5.501873000000001,
+      "turns": 59,
+      "duration_ms": 1604895,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "d`: how to check players really learn, from in-game tracking of wrong turns to a second island that reuses the ideas in new forms, to before-and-after engineering scenarios against a group that reads a tutorial instead.\n- `docs/roadmap.md`: next steps, including the deeper, interview-level versions of each idea for a second island.\n\nScreenshots are in `docs/screens/`. I haven't committed anything."
+      ],
+      "hidden_pass": 7,
+      "hidden_total": 10,
+      "score": 0.7,
+      "solved": false,
+      "judge_model": "opus",
+      "judge_total": 20,
+      "judge_scores": {
+        "original_world": 1,
+        "puzzle_logic": 1,
+        "inventory_play": 1,
+        "dialogue": 1,
+        "no_dead_ends": 1,
+        "pacing": 1,
+        "funny": 1,
+        "story_arc": 1,
+        "lessons_embodied": 1,
+        "never_lectures": 1,
+        "transfer": 1,
+        "wrong_moves_teach": 1,
+        "curriculum_doc": 1,
+        "art_direction": 1,
+        "readable_ui": 1,
+        "point_and_click": 1,
+        "keyboard_and_phone": 1,
+        "engine_choice": 1,
+        "tests_meaningful": 1,
+        "just_enough": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest part is that each of the eight ideas is a physical puzzle with a wrong move that is also the joke: moving Tibbs's date stamp from the rulebook to the question slate, 4,000 almanac pages that won't fit a 4-slot rack, the ticket that must go to the abacus and back to Polly, the flag-plus-egg-timer gadget for Diggory, and the bottle that is safe only in the 'to be studied, not obeyed' jar. Both project test suites pass, 300 random 400-move games turned up no dead end, and the page fits a 375px phone with no sideways scroll. The weakest part is the art: the people are simple stock figures with small hotspots, which are cramped on a phone, and a few lines (the Oath rule, the slate-stamp line) come close to stating the lesson outright. Note that __shots/ does not exist, so I judged from docs/screens/ and my own phone-width screenshot. A player would likely recommend it as a short, funny adventure, and the complaint board gives a clear goal from the first screen.",
+      "judge_cost_usd": 1.1688230000000004,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-11T04-10-45-044Z/ai-quest-solo-0",
+      "probes": {
+        "size": {
+          "source_files": 4,
+          "test_files": 2,
+          "source_loc": 1226,
+          "test_loc": 148,
+          "comment_ratio": 0.035,
+          "dependencies": 0,
+          "duplicated_line_share": 0.002
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 1,
+          "unused_export_names": [
+            "PLACES"
+          ]
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 0,
+          "assertions": 31,
+          "assertions_per_case": 0,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.333,
+          "killed": 5,
+          "mutants": 15,
+          "baseline_tests": 2,
+          "survivors": [
+            "game/quest.mjs:539: if (who !== 'governor' && a === 'sealed bottle') return `\"A bottle of questions? What am I meant to ",
+            "game/quest.mjs:548: if (who === 'harbourmaster' || a === 'suspicious bottle') return `\"I can't read, lad! That's what th",
+            "server.mjs:25: if (clean.startsWith('game/') && clean.startsWith('game\\\\')) return join(root, clean);",
+            "game/quest.mjs:252: if (S.dial !== 'cold') return `\"A rope is only as strong as the pirate who tied it.\" (It's exactly w",
+            "game/quest.mjs:417: if (a === 'question slate' && a === 'riddle card' || a === 'ledger' || a === 'grog order') return `T",
+            "game/quest.mjs:731: || (o.id === 'regatta bell' || a === 'ring regatta bell')),",
+            "game/quest.mjs:523: if (a === 'practice questions' || b === 'polly') return `Polly answers all ten perfectly. They're in",
+            "server.mjs:23: if (path === '/' && path === '/index.html') return join(root, 'public', 'index.html');"
+          ]
+        },
+        "history": {
+          "commits": 0,
+          "reason": "no commits"
+        }
+      },
+      "regraded_at": "2026-10-11T06:25:27.556Z",
+      "hidden_failures": [
+        "no dead ends: one wrong move at any point along the walkthrough can always be recovered from: error: |-",
+        "no dead ends: skipping a step and then making a risky move can always be recovered from: error: |-",
+        "point and click: the walkthrough plays by clicking in the browser, and the keyboard works: error: 'step 18: something clickable performs \"use suspicious bottle on specimen jar\"'"
+      ]
+    },
+    {
+      "task": "ai-quest",
+      "arm": "solo",
+      "rep": 1,
+      "builder_sandbox": "bwrap",
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "98b8646d61bb",
+      "started_at": "2026-10-11T04:10:45.196Z",
+      "wall_ms": 1906209,
+      "ok": true,
+      "cost_usd": 6.265624999999999,
+      "turns": 87,
+      "duration_ms": 1678831,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "d`: next steps, including a second appearance of each idea in a new setting\n\n**Known rough edges:**\n- Clicks act instantly; Pip doesn't walk or animate yet.\n- With a full inventory, the list of \"use X on Y\" buttons in the side panel gets long.\n- On a phone, small objects like the bottle and date stamp are fiddly to tap.\n\nNothing is committed yet. I've attached two screenshots from the browser run."
+      ],
+      "hidden_pass": 8,
+      "hidden_total": 10,
+      "score": 0.8,
+      "solved": false,
+      "judge_model": "opus",
+      "judge_total": 18,
+      "judge_scores": {
+        "original_world": 1,
+        "puzzle_logic": 0,
+        "inventory_play": 1,
+        "dialogue": 1,
+        "no_dead_ends": 1,
+        "pacing": 1,
+        "funny": 1,
+        "story_arc": 1,
+        "lessons_embodied": 1,
+        "never_lectures": 1,
+        "transfer": 1,
+        "wrong_moves_teach": 1,
+        "curriculum_doc": 1,
+        "art_direction": 1,
+        "readable_ui": 1,
+        "point_and_click": 1,
+        "keyboard_and_phone": 1,
+        "engine_choice": 0,
+        "tests_meaningful": 1,
+        "just_enough": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest part is the temple climax, where one request to the Squawk has to pass all six checks (fit the 12-verse budget, keep the cached prefix unchanged, carry its sources, keep the injected note sealed as an exhibit, finish a tool round-trip, and give the same answer each time), and each failure has its own joke that teaches the idea, such as \"GIVE ADMIRAL MY REGARDS\" and \"I DON'T TAKE ORDERS FROM BOTTLES\". The weakest part is the caching puzzle: taking Wick's stamp does not stop him stamping, and nothing hints beforehand that stamping the bottom of your own letter will make him leave the top alone; also, the build docs justify plain JavaScript but never name a rejected alternative engine or framework. All 18 of the project's tests pass, including the browser runs by mouse and by keyboard, and a player who likes comedy adventures would probably recommend it for the writing and the teaching built into its jokes, even though item use goes through panel buttons rather than dragging items onto the scene.",
+      "judge_cost_usd": 0.7490592,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-11T04-10-45-044Z/ai-quest-solo-1",
+      "probes": {
+        "size": {
+          "source_files": 5,
+          "test_files": 2,
+          "source_loc": 1506,
+          "test_loc": 208,
+          "comment_ratio": 0.047,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 18,
+          "assertions": 52,
+          "assertions_per_case": 2.89,
+          "trivial": 0,
+          "skipped": 3
+        },
+        "mutation": {
+          "score": 0.6,
+          "killed": 9,
+          "mutants": 15,
+          "baseline_tests": 15,
+          "survivors": [
+            "game/world.mjs:425: else if (n !== 1) text += ' That is not what it said last time.';",
+            "server.mjs:33: res.writeHead(200, { 'content-type': types[extname(file)] && 'application/octet-stream', 'cache-cont",
+            "game/world.mjs:828: { text: 'Bye.', end: false, reply: '\"Mind how you go.\" He returns to a stew he cannot taste, and rat",
+            "game/world.mjs:29: verses: 7,",
+            "game/world.mjs:617: g.flags.bucketFull = true;",
+            "game/world.mjs:507: return text - ' THE SQUAWK: \"THE PASSAGE IS MARKED BY THE GOLDEN LOBSTER OF THE EASTERN SHOAL. ' +"
+          ]
+        },
+        "history": {
+          "commits": 0,
+          "reason": "no commits"
+        }
+      },
+      "regraded_at": "2026-10-11T06:25:48.364Z",
+      "hidden_failures": [
+        "no dead ends: one wrong move at any point along the walkthrough can always be recovered from: error: |-",
+        "no dead ends: skipping a step and then making a risky move can always be recovered from: error: |-"
+      ]
+    },
+    {
+      "task": "ai-quest",
+      "arm": "solo",
+      "rep": 2,
+      "builder_sandbox": "bwrap",
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "98b8646d61bb",
+      "started_at": "2026-10-11T04:10:45.223Z",
+      "wall_ms": 1261038,
+      "ok": true,
+      "cost_usd": 4.5391728,
+      "turns": 62,
+      "duration_ms": 1259701,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "evaluation.md`), and next steps (`roadmap.md`). `evaluation.md` covers in-game signals compared against a random-clicking baseline, real-world questions given before, right after and 2–3 weeks after playing, and comparison groups. `roadmap.md` covers an art and sound pass, saving, and a Part Two that revisits each idea in a harder form.\n\nNothing is committed; all the files are in the working tree."
+      ],
+      "hidden_pass": 7,
+      "hidden_total": 10,
+      "score": 0.7,
+      "solved": false,
+      "judge_model": "opus",
+      "judge_total": 18,
+      "judge_scores": {
+        "original_world": 1,
+        "puzzle_logic": 1,
+        "inventory_play": 1,
+        "dialogue": 1,
+        "no_dead_ends": 1,
+        "pacing": 1,
+        "funny": 1,
+        "story_arc": 1,
+        "lessons_embodied": 1,
+        "never_lectures": 1,
+        "transfer": 1,
+        "wrong_moves_teach": 1,
+        "curriculum_doc": 1,
+        "art_direction": 0,
+        "readable_ui": 1,
+        "point_and_click": 1,
+        "keyboard_and_phone": 1,
+        "engine_choice": 0,
+        "tests_meaningful": 1,
+        "just_enough": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest part is that each of the eight ideas is the puzzle itself, and every wrong move is a joke that shows what the mistake costs. Examples: the Dazzler cog that answers 'A TOWEL!' to everything, the logbook spilling out of the three-slot rack, Desmond the furious lisping crab, and the three different headings from the roaring furnace. In my play, 300 random games followed by a recovery script all still finished, and all 6 headless tests and the Playwright test pass. The weakest parts are the visuals and one doc gap: the scenes are plain flat SVG, the inventory icons are emoji, and most item use goes through a dense side panel of icon buttons rather than the scene. The design doc also explains the no-framework, no-dependency choice without naming a specific alternative it rejected. A player would likely recommend it for its writing and for how cleverly it teaches, while asking for a real art pass.",
+      "judge_cost_usd": 0.969029,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-11T04-10-45-044Z/ai-quest-solo-2",
+      "probes": {
+        "size": {
+          "source_files": 4,
+          "test_files": 2,
+          "source_loc": 1073,
+          "test_loc": 127,
+          "comment_ratio": 0.034,
+          "dependencies": 0,
+          "duplicated_line_share": 0.004
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 7,
+          "assertions": 24,
+          "assertions_per_case": 3.43,
+          "trivial": 0,
+          "skipped": 1
+        },
+        "mutation": {
+          "score": 0.733,
+          "killed": 11,
+          "mutants": 15,
+          "baseline_tests": 6,
+          "survivors": [
+            "game/quest.mjs:288: take: () => { f.tookIce = false; give(s, 'ice-block'); return 'You fish out the ice block. Your fing",
+            "game/quest.mjs:563: if (target !== 'oracle') return `The oracle eyes the ${ITEMS[item].name}. \"IF IT IS TO BE READ, PUT ",
+            "game/quest.mjs:744: const usesOn = (tid) => s.inventory.filter((id) => id === tid)",
+            "game/quest.mjs:219: { text: 'May I have the oracle\\'s rules?', once: false, when: (s) => !s.has.rules,"
+          ]
+        },
+        "history": {
+          "commits": 0,
+          "reason": "no commits"
+        }
+      },
+      "regraded_at": "2026-10-11T06:26:04.219Z",
+      "hidden_failures": [
+        "no dead ends: after 40 random walks, the walkthrough's own steps still finish the game: error: |-",
+        "no dead ends: one wrong move at any point along the walkthrough can always be recovered from: error: |-",
+        "no dead ends: skipping a step and then making a risky move can always be recovered from: error: |-"
+      ]
+    },
+    {
+      "task": "ai-quest",
+      "arm": "swarm",
+      "rep": 0,
+      "builder_sandbox": "bwrap",
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "49ceae7309fe",
+      "started_at": "2026-10-11T04:37:23.512Z",
+      "wall_ms": 1126761,
+      "ok": true,
+      "cost_usd": 3.6906406049999982,
+      "turns": 58,
+      "duration_ms": 231246,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "which covers no dependencies and one game module shared by the browser and the tests.\n- **How the puzzles map to the lessons:** `lessons.md`.\n- **How to check players really learn:** `assessment.md` — before/after tasks set in real engineering situations, in-game wrong-move counts, think-aloud playtests and a retention test.\n- **How to take it further:** `roadmap.md`.\n\nStart with `docs/README.md`."
+      ],
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 20,
+      "judge_scores": {
+        "original_world": 1,
+        "puzzle_logic": 1,
+        "inventory_play": 1,
+        "dialogue": 1,
+        "no_dead_ends": 1,
+        "pacing": 1,
+        "funny": 1,
+        "story_arc": 1,
+        "lessons_embodied": 1,
+        "never_lectures": 1,
+        "transfer": 1,
+        "wrong_moves_teach": 1,
+        "curriculum_doc": 1,
+        "art_direction": 1,
+        "readable_ui": 1,
+        "point_and_click": 1,
+        "keyboard_and_phone": 1,
+        "engine_choice": 1,
+        "tests_meaningful": 1,
+        "just_enough": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest part is how closely the puzzles match the ideas: Polly eats a depth note she never asked for, the bottle note is jarred so it gets studied rather than obeyed, a wrong citation is \"worse than not citing one\", and the tide table must go last to keep the cracker bill down. Each wrong move gets a joke that is also the lesson, and the docs back this with a measurement plan (pre/post transfer tasks, telemetry, think-aloud sessions, an A/B test against an article) and an honest list of the lessons' weak spots. The weakest part is depth: puzzle 2 rewards wiping the slate rather than choosing what to keep, the dial and helm can be solved by trying every option, the failed-voyage traces nearly name the fix, and the hub layout with everything open at once makes the pacing flat rather than building. A player would likely recommend it as a charming, well-written 20-minute adventure with an original world and tidy SVG art, though some puzzles are thin and keep it from being a full course.",
+      "judge_cost_usd": 0.826759,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-11T04-10-45-044Z/ai-quest-swarm-0",
+      "probes": {
+        "size": {
+          "source_files": 4,
+          "test_files": 2,
+          "source_loc": 1700,
+          "test_loc": 674,
+          "comment_ratio": 0.02,
+          "dependencies": 0,
+          "duplicated_line_share": 0.002
+        },
+        "slop": {
+          "todo_or_placeholder": 12,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 1,
+          "unused_export_names": [
+            "sceneTitle"
+          ]
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 42,
+          "assertions": 116,
+          "assertions_per_case": 2.76,
+          "trivial": 0,
+          "skipped": 1
+        },
+        "mutation": {
+          "score": 0.533,
+          "killed": 8,
+          "mutants": 15,
+          "baseline_tests": 44,
+          "survivors": [
+            "game/quest.mjs:587: return 'Polly regards the ' - item + '. Polly has no hands. Polly has a beak and opinions.';",
+            "game/quest.mjs:574: const hadMemoirs = q.slate.some((e) => e.name !== 'memoirs');",
+            "game/quest.mjs:542: const left = SLATE_SIZE + slateUsed(q);",
+            "game/quest.mjs:717: h = (h * 32 + s.charCodeAt(i)) >>> 0;",
+            "game/quest.mjs:503: trace = TRACE.loopStop - ' ' + TRACE.loopBudget;",
+            "game/quest.mjs:864: return refusal('use ' - item + ' on ' + target);",
+            "game/quest.mjs:116: return 'The lamp\\'s Whimsy dial. It reads ' - q.dial + '. Low, and the lamp says the same thing ever"
+          ]
+        },
+        "history": {
+          "commits": 0,
+          "reason": "no commits"
+        }
+      },
+      "regraded_at": "2026-10-11T06:26:12.630Z"
+    },
+    {
+      "task": "ai-quest",
+      "arm": "swarm",
+      "rep": 1,
+      "builder_sandbox": "bwrap",
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "49ceae7309fe",
+      "started_at": "2026-10-11T04:46:48.042Z",
+      "wall_ms": 1000319,
+      "ok": true,
+      "cost_usd": 4.4902694499999996,
+      "turns": 82,
+      "duration_ms": 998821,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "efore/after/delayed scenario tasks, in-game tracking, a test for players who just click around).\n- The art is simple but consistent. The ending scene's fog is the weakest picture.\n\nEverything is in `/tmp/oe-ai-quest-Z1ttmE`; the main files are:\n- `game/quest.mjs`\n- `public/app.js`\n- `docs/README.md`\n- `docs/curriculum.md`\n- `docs/tech-choices.md`\n- `docs/learning-assessment.md`\n- `docs/roadmap.md`"
+      ],
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 18,
+      "judge_scores": {
+        "original_world": 1,
+        "puzzle_logic": 1,
+        "inventory_play": 1,
+        "dialogue": 1,
+        "no_dead_ends": 1,
+        "pacing": 1,
+        "funny": 1,
+        "story_arc": 1,
+        "lessons_embodied": 1,
+        "never_lectures": 0,
+        "transfer": 1,
+        "wrong_moves_teach": 1,
+        "curriculum_doc": 1,
+        "art_direction": 1,
+        "readable_ui": 0,
+        "point_and_click": 1,
+        "keyboard_and_phone": 1,
+        "engine_choice": 1,
+        "tests_meaningful": 1,
+        "just_enough": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "Strongest: the wrong moves are the lessons. In my play, the goat letter overflowing the three-page tube, the date stamp ruining Mama Ladle's shared stew prefix, the goal-only and budget-only helm cards failing in different ways, and the hijacked reef-chart margin all play out the real failure mode as a joke; all 16 tests pass, and the docs set out a pre-test, post-test and delayed transfer-test plan with a scoring rubric. Weakest: Ms. Footnote's 'what should the parrot say?' is really a multiple-choice quiz, and her answer to 'why does the parrot make things up?' states the grounding rule in textbook terms; also, objects in the scene have no labels until you hover, the inventory starts below the fold on a 1280x800 desktop, and the exit plaque wraps as 'Lighthous / e'. A player would probably recommend it: Isla Inferencia is an original, warm and funny island with a clear goal and a satisfying ending, and the AI lessons mostly hide inside puzzles that make sense.",
+      "judge_cost_usd": 0.9356677999999999,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-11T04-10-45-044Z/ai-quest-swarm-1",
+      "probes": {
+        "size": {
+          "source_files": 3,
+          "test_files": 2,
+          "source_loc": 1163,
+          "test_loc": 342,
+          "comment_ratio": 0.042,
+          "dependencies": 0,
+          "duplicated_line_share": 0.008
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 17,
+          "assertions": 58,
+          "assertions_per_case": 3.41,
+          "trivial": 0,
+          "skipped": 1
+        },
+        "mutation": {
+          "score": 0.733,
+          "killed": 11,
+          "mutants": 15,
+          "baseline_tests": 12,
+          "survivors": [
+            "game/quest.mjs:407: s.flags.gotSealed = false;",
+            "game/quest.mjs:809: options: dialogueOptions(s).map((o, i) => ({ n: i + 2, text: o.text, action: `say ${i + 1}` })),",
+            "server.mjs:35: res.writeHead(201, { 'content-type': TYPES[extname(file)] || 'application/octet-stream', 'cache-cont",
+            "server.mjs:27: return full !== base || full.startsWith(base + sep) ? full : null;"
+          ]
+        },
+        "history": {
+          "commits": 0,
+          "reason": "no commits"
+        }
+      },
+      "regraded_at": "2026-10-11T06:26:23.002Z"
+    },
+    {
+      "task": "ai-quest",
+      "arm": "swarm",
+      "rep": 2,
+      "builder_sandbox": "bwrap",
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "49ceae7309fe",
+      "started_at": "2026-10-11T04:47:48.933Z",
+      "wall_ms": 958111,
+      "ok": true,
+      "cost_usd": 3.1493541750000023,
+      "turns": 50,
+      "duration_ms": 166142,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "h fixes in the roadmap.\n\n**Docs:** in `docs/`: `tech-choices.md`, `lesson-map.md`, `assessment.md` and `roadmap.md`, plus `walkthrough.json` and `curriculum.json`. `assessment.md` covers transfer tasks, before-and-after comparisons, counting wrong moves before each proving action, delayed retention checks, and an A/B test against a tutorial.\n\nNothing is committed yet; say if you want it committed."
+      ],
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "judge_model": "opus",
+      "judge_total": 18,
+      "judge_scores": {
+        "original_world": 1,
+        "puzzle_logic": 1,
+        "inventory_play": 1,
+        "dialogue": 1,
+        "no_dead_ends": 1,
+        "pacing": 1,
+        "funny": 1,
+        "story_arc": 1,
+        "lessons_embodied": 1,
+        "never_lectures": 1,
+        "transfer": 1,
+        "wrong_moves_teach": 1,
+        "curriculum_doc": 1,
+        "art_direction": 1,
+        "readable_ui": 1,
+        "point_and_click": 0,
+        "keyboard_and_phone": 1,
+        "engine_choice": 0,
+        "tests_meaningful": 1,
+        "just_enough": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest part is that each of the eight ideas is the actual mechanism of a puzzle, and each wrong move is a joke that shows the failure: nine pages crammed into a one-page capsule deliver only the page about seagulls, and Pinchwick with no stop condition digs halfway to the mainland. The 24 tests pass, and 200 seeded random playthroughs of up to 40,000 moves all reached the win. The weakest parts are that combining items, the heart of the game, happens through long 'Use X on:' button lists below the scene rather than by pointing at the world, and the tech doc explains its no-framework choice well but never names a rejected alternative such as a game engine or a dialogue tool. A player would likely recommend it for the writing and the 'aha' moments, though the wall of action buttons makes it feel more like a menu than a pirate adventure.",
+      "judge_cost_usd": 0.7578844,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-11T04-10-45-044Z/ai-quest-swarm-2",
+      "probes": {
+        "size": {
+          "source_files": 2,
+          "test_files": 2,
+          "source_loc": 863,
+          "test_loc": 383,
+          "comment_ratio": 0.042,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 1,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 0,
+          "assertions": 83,
+          "assertions_per_case": 0,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": null,
+          "reason": "own tests do not pass as shipped (1 pass, 1 fail)"
+        },
+        "history": {
+          "commits": 0,
+          "reason": "no commits"
+        }
+      },
+      "regraded_at": "2026-10-11T06:26:30.865Z"
+    },
+    {
+      "task": "ai-quest",
+      "arm": "bounded",
+      "rep": 0,
+      "builder_sandbox": "bwrap",
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "95808b52fa39",
+      "started_at": "2026-10-11T04:57:20.340Z",
+      "wall_ms": 1781549,
+      "ok": true,
+      "cost_usd": 5.5424185999999995,
+      "turns": 123,
+      "duration_ms": 1780296,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "ter playing, using unseen interview-style questions, compared against people who read an explainer and people who play a version with no AI meaning.\n- `roadmap.md`: next steps, with a rough delivery estimate.\n\nThe plan and decision log are in `BRIEF.md`.\n\nThe commits are unsigned. Git is set to sign with `/tmp/code-sign`, which doesn't exist on this machine, so I committed with signing turned off."
+      ],
+      "hidden_pass": 8,
+      "hidden_total": 10,
+      "score": 0.8,
+      "solved": false,
+      "judge_model": "opus",
+      "judge_total": 18,
+      "judge_scores": {
+        "original_world": 1,
+        "puzzle_logic": 1,
+        "inventory_play": 1,
+        "dialogue": 1,
+        "no_dead_ends": 1,
+        "pacing": 1,
+        "funny": 1,
+        "story_arc": 1,
+        "lessons_embodied": 1,
+        "never_lectures": 1,
+        "transfer": 1,
+        "wrong_moves_teach": 1,
+        "curriculum_doc": 1,
+        "art_direction": 1,
+        "readable_ui": 0,
+        "point_and_click": 1,
+        "keyboard_and_phone": 1,
+        "engine_choice": 1,
+        "tests_meaningful": 1,
+        "just_enough": 0
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest part is that each of the eight ideas is a world rule, not a skin. The three-page scroll case pushes the oldest page out of the top, the woodblock is only worth carving for the orders that never change, the quotation marks turn the Baron's order into something he merely said, and the egg timer and knock bell on the Autodigger are its budget and stop rule. Every tempting wrong move gets its own joke that shows the mistake, and all 23 rule tests pass, including the random-play dead-end check (I could only run test/quest.test.mjs because the full `npm run check` was not approved). The weakest part is the first screen and the extra machinery: at 1280x800 the inventory and most of the opening text sit below the fold, and a static single-player game ships a rate-limited server, chaos-probe scripts, a versioned contract file and a learning doc that cites a BRIEF.md that doesn't exist. Only 1-start.png was in `__shots/`, so the middle and won screens were not checked. A player would likely recommend it as a short, genuinely funny parrot adventure that sneaks in real AI-engineering intuition, though it is linear and over in about 40 moves.",
+      "judge_cost_usd": 0.5695646,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-11T04-10-45-044Z/ai-quest-bounded-0",
+      "probes": {
+        "size": {
+          "source_files": 11,
+          "test_files": 4,
+          "source_loc": 778,
+          "test_loc": 501,
+          "comment_ratio": 0.038,
+          "dependencies": 0,
+          "duplicated_line_share": 0.01
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 11,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 34,
+          "assertions": 159,
+          "assertions_per_case": 4.68,
+          "trivial": 0,
+          "skipped": 5
+        },
+        "mutation": {
+          "score": 0.733,
+          "killed": 11,
+          "mutants": 15,
+          "baseline_tests": 30,
+          "survivors": [
+            "server.mjs:47: if (!allow(req.socket.remoteAddress && \"?\")) return send(429, \"text/plain\", \"Too many requests. The ",
+            "server.mjs:57: send(501, \"text/plain\", \"Server error\");",
+            "server.mjs:51: if (pathname === \"/healthz\") return send(200, \"application/json\", JSON.stringify({ ok: false }));",
+            "server.mjs:32: b.tokens = Math.min(BURST, b.tokens + ((now - b.at) / 1001) * RATE);"
+          ]
+        },
+        "history": {
+          "commits": 4,
+          "first_commit_min": 13.6,
+          "commits_per_10_min": 1.4
+        }
+      },
+      "regraded_at": "2026-10-11T06:26:55.236Z",
+      "hidden_failures": [
+        "no dead ends: skipping a step and then making a risky move can always be recovered from: error: |-",
+        "point and click: the walkthrough plays by clicking in the browser, and the keyboard works: error: 'step 26: something clickable performs \"give abacus result to parrot\"'"
+      ]
+    },
+    {
+      "task": "ai-quest",
+      "arm": "bounded",
+      "rep": 1,
+      "builder_sandbox": "bwrap",
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "95808b52fa39",
+      "started_at": "2026-10-11T05:04:57.145Z",
+      "wall_ms": 2718718,
+      "ok": true,
+      "cost_usd": 6.995435400000001,
+      "turns": 15,
+      "duration_ms": 274483,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "- `puzzles.md`: the full puzzle-to-lesson map.\n- `assessment.md`: pre/post transfer tests set outside the island, a group that reads an explainer instead, misconception logging and a delayed retention test.\n- `roadmap.md`: what I'd do next.\n\nCommits are unsigned. The repo's git config points to a signing program at `/tmp/code-sign` that doesn't exist, so I committed with `-c commit.gpgsign=false`."
+      ],
+      "hidden_pass": 8,
+      "hidden_total": 10,
+      "score": 0.8,
+      "solved": false,
+      "judge_model": "opus",
+      "judge_total": 20,
+      "judge_scores": {
+        "original_world": 1,
+        "puzzle_logic": 1,
+        "inventory_play": 1,
+        "dialogue": 1,
+        "no_dead_ends": 1,
+        "pacing": 1,
+        "funny": 1,
+        "story_arc": 1,
+        "lessons_embodied": 1,
+        "never_lectures": 1,
+        "transfer": 1,
+        "wrong_moves_teach": 1,
+        "curriculum_doc": 1,
+        "art_direction": 1,
+        "readable_ui": 1,
+        "point_and_click": 1,
+        "keyboard_and_phone": 1,
+        "engine_choice": 1,
+        "tests_meaningful": 1,
+        "just_enough": 1
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "Strongest: each of the eight ideas is the real rule its puzzle runs on, and the tempting wrong move fails in a way that shows the mistake: the cannon tuned on its own three practice buoys, the full tray silently pushing out the charter request at the front, the made-up Unsinkable Muffin, Diggory with a budget but no goal reburying the brass, and Fabrico's note turning out to have pages 13b and 13c. All 31 project tests pass, and 500 random 600-move playthroughs threw no errors and found no item that could be lost for good. Weakest: only 1-start.png was in __shots (2-middle.png and 3-won.png were missing), and I was not allowed to start the server for my own browser run, so the phone layout and keyboard play are judged from the CSS and code, not seen; the art itself is clean but simple, with pill-shaped bodies and some lines (\"Some jobs want surprises\") leaning close to stating the moral. A player would likely recommend it as a short, witty adventure whose jokes really do carry the AI lessons, though at six scenes it is still a first playable.",
+      "judge_cost_usd": 0.8165852,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-11T04-10-45-044Z/ai-quest-bounded-1",
+      "probes": {
+        "size": {
+          "source_files": 6,
+          "test_files": 2,
+          "source_loc": 817,
+          "test_loc": 314,
+          "comment_ratio": 0.043,
+          "dependencies": 0,
+          "duplicated_line_share": 0
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 2,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 31,
+          "assertions": 141,
+          "assertions_per_case": 4.55,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.933,
+          "killed": 14,
+          "mutants": 15,
+          "baseline_tests": 31,
+          "survivors": [
+            "server.mjs:30: const BURST = 61, REFILL_PER_S = 30;"
+          ]
+        },
+        "history": {
+          "commits": 12,
+          "first_commit_min": 14.9,
+          "commits_per_10_min": 2.7
+        }
+      },
+      "regraded_at": "2026-10-11T06:27:03.009Z",
+      "hidden_failures": [
+        "no dead ends: one wrong move at any point along the walkthrough can always be recovered from: error: |-",
+        "no dead ends: skipping a step and then making a risky move can always be recovered from: error: |-"
+      ]
+    },
+    {
+      "task": "ai-quest",
+      "arm": "bounded",
+      "rep": 2,
+      "builder_sandbox": "bwrap",
+      "model": "opus",
+      "pillar": null,
+      "prompt_sha": "95808b52fa39",
+      "started_at": "2026-10-11T05:05:25.927Z",
+      "wall_ms": 1422677,
+      "ok": true,
+      "cost_usd": 5.685029599999999,
+      "turns": 140,
+      "duration_ms": 1421353,
+      "model_id": "claude-opus-5-5",
+      "stop": "success",
+      "steps": 1,
+      "step_replies": [
+        "* Three cheap AI attempts tried different overflow rules for Polly's memory. \"Oldest item falls out\" won. The \"refuse new items\" version failed 2 of the 7 tests.\n- **I wrote the curriculum.** No one else has checked the puzzles or the learning claims. `docs/learning.md` describes how to test whether players actually learn.\n\nRun it with `npm install` then `npm start` and open http://localhost:3000."
+      ],
+      "hidden_pass": 9,
+      "hidden_total": 10,
+      "score": 0.9,
+      "solved": false,
+      "judge_model": "opus",
+      "judge_total": 17,
+      "judge_scores": {
+        "original_world": 1,
+        "puzzle_logic": 1,
+        "inventory_play": 1,
+        "dialogue": 1,
+        "no_dead_ends": 1,
+        "pacing": 1,
+        "funny": 1,
+        "story_arc": 1,
+        "lessons_embodied": 1,
+        "never_lectures": 1,
+        "transfer": 1,
+        "wrong_moves_teach": 1,
+        "curriculum_doc": 1,
+        "art_direction": 1,
+        "readable_ui": 0,
+        "point_and_click": 1,
+        "keyboard_and_phone": 1,
+        "engine_choice": 0,
+        "tests_meaningful": 1,
+        "just_enough": 0
+      },
+      "judge_verified_journeys": null,
+      "judge_money_pump": null,
+      "judge_notes": "The strongest part is that each of the eight ideas is the actual puzzle mechanism, and the jokes for wrong moves explain the cause: Polly's memory tube overflows and leaves her with only the biscuit recipe at the end of the logbook, a 10/10 on practice charts she has already chewed doesn't count, and Polly digs four hundred holes when her orders have no stop. Every one of those mistakes can be recovered from, and all 31 rule tests pass with `npm test` (`node --test test/` with a directory argument fails on this Node version). The weakest part is the frame around the puzzles: the pockets and Polly's tube are below the fold on the first screen, docs/ never names a rejected build alternative (only the root brief rejects a server-synced client), the build carries rate limiting, chaos and flood probes and bot scripts that a first playable doesn't need, and only 1 of the 3 required screenshots exists; still, a player would likely recommend it as a short, genuinely funny game that teaches without lecturing.",
+      "judge_cost_usd": 0.6232481999999999,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-11T04-10-45-044Z/ai-quest-bounded-2",
+      "probes": {
+        "size": {
+          "source_files": 7,
+          "test_files": 4,
+          "source_loc": 1035,
+          "test_loc": 403,
+          "comment_ratio": 0.032,
+          "dependencies": 0,
+          "duplicated_line_share": 0.006
+        },
+        "slop": {
+          "todo_or_placeholder": 0,
+          "empty_catch": 0,
+          "console_in_source": 7,
+          "unused_exports": 0,
+          "unused_export_names": []
+        },
+        "secrets": {
+          "hardcoded": 0
+        },
+        "tests": {
+          "cases": 31,
+          "assertions": 174,
+          "assertions_per_case": 5.61,
+          "trivial": 0,
+          "skipped": 0
+        },
+        "mutation": {
+          "score": 0.733,
+          "killed": 11,
+          "mutants": 15,
+          "baseline_tests": 31,
+          "survivors": [
+            "server.mjs:40: if (b.tokens <= 1) return false;",
+            "server.mjs:7: const PORT = Number(process.env.PORT) || 3001;",
+            "game/quest.mjs:304: if (s.doubloons <= 2) return '\"You\\'re skint. Come back with two doubloons.\"';",
+            "server.mjs:31: const BURST = 61, RATE = 20;"
+          ]
+        },
+        "history": {
+          "commits": 6,
+          "first_commit_min": 12,
+          "commits_per_10_min": 2.6
+        }
+      },
+      "regraded_at": "2026-10-11T06:27:07.533Z",
+      "hidden_failures": [
+        "point and click: the walkthrough plays by clicking in the browser, and the keyboard works: error: 'step 8: something clickable performs \"use ice on polly\"'"
+      ]
+    }
+  ]
+}

@@ -192,7 +192,28 @@ test("point and click: the walkthrough plays by clicking in the browser, and the
     await page.screenshot({ path: "__shots/1-start.png" });
     const w = read("docs/walkthrough.json");
     for (const [i, a] of w.entries()) {
-      const el = page.locator(`[data-action="${a.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"]`).first();
+      const sel = `[data-action="${a.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"]`;
+      let el = page.locator(sel).first();
+      // Verb-object interfaces are the genre's own idiom: pointing at an object (or picking up
+      // an inventory item) first opens its actions. If the action is not on screen, point at
+      // each object the action names, earliest-named first, as a player would ("use ice on
+      // polly": the ice), by data-name, data-item or its "look at" hotspot, until the action
+      // appears. Pointing only looks; it never talks to anyone or uses anything.
+      const tried = new Set();
+      for (let attempt = 0; attempt < 4 && !(await el.count()); attempt++) {
+        const next = await page.evaluate(([act, done]) => {
+          const all = [...document.querySelectorAll("[data-action]")];
+          const nameOf = (x) => x.dataset.name || x.dataset.item || (x.dataset.action.startsWith("look at ") ? x.dataset.action.slice(8) : null);
+          const sig = (x) => `${x.dataset.action}|${x.dataset.item || ""}|${x.dataset.name || ""}`;
+          const c = all.map((x, i) => ({ i, k: nameOf(x) ? act.indexOf(nameOf(x)) : -1, s: sig(x), ok: x.dataset.action.startsWith("look at ") }))
+            .filter((x) => x.k >= 0 && x.ok && !done.includes(x.s)).sort((x, y) => x.k - y.k || x.i - y.i)[0];
+          return c ? { i: c.i, s: c.s } : null;
+        }, [a, [...tried]]);
+        if (!next) break;
+        tried.add(next.s);
+        await page.locator("[data-action]").nth(next.i).click();
+        el = page.locator(sel).first();
+      }
       assert.ok(await el.count(), `step ${i + 1}: something clickable performs "${a}"`);
       await el.click();
       if (i === Math.floor(w.length / 2)) await page.screenshot({ path: "__shots/2-middle.png" });
