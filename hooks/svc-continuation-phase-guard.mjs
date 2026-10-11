@@ -10,7 +10,7 @@
 // baton are completely unaffected (fail open by absence, not by default).
 
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,6 +34,7 @@ if (disabled()) process.exit(0);
 
 const call = readHookPayload();
 if (!call) process.exit(0);
+failOpenAt({ cwd: call.cwd });
 if (call.toolName !== "Skill") process.exit(0);
 
 const skillName = call.toolInput?.skill || call.toolInput?.name || "";

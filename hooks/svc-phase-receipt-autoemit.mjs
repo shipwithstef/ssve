@@ -5,7 +5,7 @@
  * unrecorded in declaration order). Judgment phases never auto-fire.
  * Fail-open; sync (Stop-guard reads receipts immediately after). */
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
@@ -103,6 +103,7 @@ function main() {
   const target = evaluateAutoemitTarget(call);
   if (!target) process.exit(0);
   const cwd = target.cwd;
+  failOpenAt({ cwd });
   let touched = target.touched;
 
   const act = activeGraph(cwd);

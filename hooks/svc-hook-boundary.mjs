@@ -9,7 +9,7 @@ import { lexSimpleCommand } from "./codex/lib/argv-lex.mjs";
 import { resolveHookMode, hookPolicyWarning, repoOptOut } from "./lib/hook-policy.mjs";
 import { diagnosticReason, steeringReason } from "./lib/advisory-diagnostic.mjs";
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 
 const MAX_INPUT = 8 * 1024 * 1024;
 const MAX_OUTPUT = 1024 * 1024;
@@ -50,6 +50,20 @@ export function isBlockingPayload(payload) {
   return [payload.decision, payload.permission, payload.permissionDecision, nested.permissionDecision]
     .some((value) => BLOCK_VALUES.has(String(value || "").toLowerCase()))
     || payload.continue === false || payload.allow === false;
+}
+
+// A confirmed policy denial: exit 2, no signal/timeout/overflow, and a well-formed deny
+// decision, either a blocking JSON payload on stdout or the machine denial record
+// ({svc_denial:true, hook_id, reason_code, cause}) a blocking hook writes on stderr.
+export function isPolicyDenial(result) {
+  if (result.code !== 2 || result.signal || result.timedOut || result.oversized || result.spawnError) return false;
+  const parse = (text) => { try { return JSON.parse(text); } catch { return null; } };
+  const out = parse(result.stdout.toString("utf8").trim());
+  if (isBlockingPayload(out)) return true;
+  return result.stderr.toString("utf8").split("\n").some((line) => {
+    const record = line.trim().startsWith("{") ? parse(line.trim()) : null;
+    return record?.svc_denial === true && ["hook_id", "reason_code", "cause"].every((k) => typeof record[k] === "string" && record[k].trim());
+  });
 }
 
 export function advisoryPayload(payload, message, { rewritten = false } = {}) {
@@ -308,9 +322,10 @@ async function main() {
   }
   if (result.timedOut || result.oversized || result.spawnError || result.code !== 0) {
     const cause = result.timedOut ? "timed out" : result.oversized ? "output limit exceeded" : result.spawnError ? result.spawnError.message : `exited ${result.code}`;
-    // Exit 2 is a deliberate deny turned advisory; anything else is the child failing.
-    if (result.timedOut || result.oversized || result.spawnError || result.code !== 2) {
-      open(result.timedOut ? { name: "Timeout" } : result.oversized ? { name: "OutputLimit" } : result.spawnError || { name: `Exit${result.code}` });
+    // Only a confirmed policy denial is a decision; every other failure (a crash, a signal,
+    // a bare exit 2, an svc-enforce internal error) is the child failing, so it is counted.
+    if (!isPolicyDenial(result)) {
+      open(result.timedOut ? { name: "Timeout" } : result.oversized ? { name: "OutputLimit" } : result.spawnError || (result.signal ? { name: `Signal${result.signal}` } : { name: `Exit${result.code}` }));
     }
     if (!visible(diagnostic(result.stderr.toString("utf8") || cause))) return;
     process.stderr.write(warning(marker, steering(cause)) + "\n");

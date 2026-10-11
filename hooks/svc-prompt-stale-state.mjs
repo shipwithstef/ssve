@@ -5,7 +5,7 @@
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { writeActiveIntentState } from "./lib/active-intent.mjs";
 
 let inputRaw = "";
@@ -27,6 +27,7 @@ if (lifecycleHost === "codex") {
   } catch {}
 }
 
+failOpenAt({ cwd: lifecycleCwd });
 try {
   const result = writeActiveIntentState({ rawInput: inputRaw, cwd: lifecycleCwd, env: process.env });
   if (result.status === "suppressed") {

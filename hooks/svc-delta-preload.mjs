@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -27,6 +27,7 @@ try {
   const payload = rawPayload ? JSON.parse(rawPayload) : {};
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new Error("invalid payload");
   const cwd = path.resolve(payload.cwd || payload.working_directory || payload.workspace?.current_dir || process.cwd());
+  failOpenAt({ cwd });
   // Nothing to report until verify-promotion has indexed a promotion: skip the
   // git and indexer spawns when the index does not exist.
   const stateRoot = path.resolve(process.env.SVC_STATE_HOME || path.join(os.homedir(), ".svc"));

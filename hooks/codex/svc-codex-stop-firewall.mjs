@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("../lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("../lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -28,8 +28,10 @@ function claimPathFor(repoRoot, target) {
 
 const raw = fs.readFileSync(0, "utf8");
 const payload = parseHookInput(raw);
+failOpenAt({ cwd: payload?.cwd });
 let ctx;
 try { ctx = hookContext(payload); } catch (error) { failOpen("svc-codex-stop-firewall", error); allow(); process.exit(0); }
+failOpenAt({ root: ctx.repo_root });
 if (!ctx.repo_root || !ctx.session_id || !ctx.turn_id || !ctx.session_dir) { allow(); process.exit(0); }
 const authority = readJson(authorityPath(ctx));
 const ttlMs = Math.max(1, Number(process.env.SVC_CODEX_AUTHORITY_TTL_MIN || 1440)) * 60_000;

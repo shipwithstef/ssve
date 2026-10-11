@@ -37,7 +37,7 @@
  */
 
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { evaluatePreToolObservation } from "./lib/pretool-decision-engine.mjs";
 import { findingSession } from "./lib/session-findings.mjs";
 import fs from "node:fs";
@@ -240,6 +240,7 @@ async function main() {
 
   const call = readHookPayload();
   if (!call || evaluatePreToolObservation(call.raw)) process.exit(0);
+  failOpenAt({ cwd: call.session_cwd || call.cwd });
 
   const { toolName, toolInput } = call;
   if (!/^(Edit|Write|WriteFile|StrReplaceFile)$/.test(toolName) && !isShellTool(toolName)) {

@@ -30,7 +30,7 @@
  */
 
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1052,6 +1052,7 @@ async function main() {
   const call = readHookPayload();
   // Fail open on empty/unparseable payloads — blocking on ambiguous input is a regression.
   if (!call) process.exit(0);
+  failOpenAt({ cwd: call.session_cwd || call.cwd });
 
   const operationHost = call.raw?.host || process.env.SVC_HOST ||
     (process.env.CLAUDE_PLUGIN_ROOT || process.env.CLAUDE_CODE_REMOTE || process.env.CLAUDE_PROJECT_DIR ? "claude" :

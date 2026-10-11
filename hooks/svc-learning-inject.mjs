@@ -22,7 +22,7 @@
 // hooks/svc-* file past the config-protection guard, for WI-384.
 
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { join } from "node:path";   // node builtin — safe at module top level
 import path from "node:path";
 import fs from "node:fs";
@@ -33,6 +33,8 @@ const MAX_INJECT = 3;
 
 // Returns the context text to inject for this call, or "" (never throws).
 export async function learningContext(call) {
+  let root;   // the project the telemetry targets; counted against it, not process.cwd()
+  const open = (error) => failOpen("svc-learning-inject", error, root ? { root } : { cwd: call?.cwd || undefined });
   try {
     const { resolveHookOperation } = await import("./lib/hook-payload.mjs");
     const { loadLearningsDetailed, matchByPath, matchByCommand, renderInjection } = await import("./lib/learning-index.mjs");
@@ -46,6 +48,7 @@ export async function learningContext(call) {
     // WI-452: only inject/persist within an svc-governed repo; never seed .svc in /tmp or a foreign cwd.
     const svcDir = resolveSvcStateDir(cwd);
     if (!svcDir) return "";
+    root = path.dirname(svcDir);
     const tool = call.toolName;
     const ti = call.toolInput || {};
 
@@ -58,7 +61,7 @@ export async function learningContext(call) {
 
     const normalized = loadLearningsDetailed(cwd);
     const learnings = normalized.learnings;
-    for (const finding of normalized.findings) { try { appendJsonlLine(join(svcDir, "learning-lifecycle.jsonl"), { ts: new Date().toISOString(), event: "malformed", ...finding }); } catch {} }
+    for (const finding of normalized.findings) { try { appendJsonlLine(join(svcDir, "learning-lifecycle.jsonl"), { ts: new Date().toISOString(), event: "malformed", ...finding }); } catch (error) { open(error); } }
     if (!learnings.length) return "";
 
     let matched = [];
@@ -74,7 +77,7 @@ export async function learningContext(call) {
     const memoPath = join(svcDir, `learning-injections-${session}.json`);
     const firesPath = join(svcDir, "learning-fires.jsonl");
     let memo = {};
-    try { memo = readJsonAtomic(memoPath) || {}; } catch { memo = {}; }
+    try { memo = readJsonAtomic(memoPath) || {}; } catch (error) { open(error); memo = {}; }
     const fresh = matched.filter((m) => !memo[m.key]);
     if (!fresh.length) return "";
 
@@ -82,13 +85,13 @@ export async function learningContext(call) {
     // even if the fires-ledger append fails (else the same learning re-fires every
     // keystroke). Fires are best-effort, each in its own try.
     for (const m of fresh) memo[m.key] = "fired";
-    try { writeJsonAtomic(memoPath, memo); } catch { /* memo best-effort */ }
+    try { writeJsonAtomic(memoPath, memo); } catch (error) { open(error); /* memo best-effort */ }
     const ts = new Date().toISOString();
-    for (const m of fresh) { try { appendJsonlLine(firesPath, { ts, key: m.key, origin: m.origin, session }); } catch { /* fires best-effort */ } }
+    for (const m of fresh) { try { appendJsonlLine(firesPath, { ts, key: m.key, origin: m.origin, session }); } catch (error) { open(error); /* fires best-effort */ } }
 
     return renderInjection(fresh).slice(0, CAP);
   } catch (error) {
-    failOpen("svc-learning-inject", error);
+    open(error);
     return "";                                       // any error → fail open
   }
 }

@@ -6,7 +6,7 @@
  * Cursor uses the adapter, not this process.
  */
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { readFileSync, appendFileSync } from "node:fs";
 import { frameworkRoot, frameworkRootContext } from "../scripts/lib/framework-root.mjs";
 import {
@@ -40,6 +40,7 @@ let raw = "";
 try { raw = readFileSync(0, "utf8"); } catch { empty(); }
 let payload = {};
 try { payload = JSON.parse(raw || "{}"); } catch { payload = {}; }
+failOpenAt({ cwd: payload.cwd || process.cwd() });
 
 // Session start, every host: say where the framework's files are, so a project session
 // runs its scripts from the install instead of concluding they are missing.

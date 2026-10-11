@@ -10,7 +10,6 @@
 // (error.code || error.name || "Error"), never the message.
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { withStateLock } from "../state-io.mjs";
 import { isMain } from "./is-main.mjs";
 
@@ -26,15 +25,22 @@ export function errorClass(error) {
   return "Error";
 }
 
-function git(cwd, args) {
-  try {
-    return execFileSync("git", args, { cwd, encoding: "utf8", timeout: 2000, stdio: ["ignore", "pipe", "ignore"] }).trim();
-  } catch { return ""; }
+// The nearest ancestor holding a .git entry (directory, or the file a linked worktree has).
+// A filesystem walk, not a git spawn: this runs on a failure path, often under load, and
+// a timed-out spawn would silently drop the count.
+function gitTopLevel(start) {
+  let dir = path.resolve(start);
+  for (;;) {
+    if (fs.existsSync(path.join(dir, ".git"))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) return "";
+    dir = parent;
+  }
 }
 
 // The project root a hook resolves: git toplevel of cwd, else cwd itself.
 export function resolveRoot(cwd = process.cwd()) {
-  return git(cwd, ["rev-parse", "--show-toplevel"]) || path.resolve(cwd);
+  return gitTopLevel(cwd) || path.resolve(cwd);
 }
 
 export function counterPath(root) {
@@ -62,7 +68,7 @@ export function recordFailOpen(hookName, error, { root, cwd } = {}) {
     const dir = path.join(base, ".svc");
     if (!fs.existsSync(dir)) {
       // Only a git work tree gets a fresh .svc/; anywhere else stay out of the way.
-      if (git(base, ["rev-parse", "--is-inside-work-tree"]) !== "true") return;
+      if (!gitTopLevel(base)) return;
       fs.mkdirSync(dir, { recursive: true });
     }
     const file = path.join(dir, COUNTER_FILE);

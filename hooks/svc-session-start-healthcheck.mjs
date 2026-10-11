@@ -14,7 +14,7 @@
 // WI-186: made the healthcheck host-aware; it now resolves skills/config paths
 // from provision/hosts/<host>.json instead of checking Claude only.
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, lstatSync, realpathSync, statSync, mkdirSync, chmodSync } from "node:fs";
 import { basename, dirname, join } from "node:path";

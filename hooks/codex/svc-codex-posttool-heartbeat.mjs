@@ -9,7 +9,7 @@
 // failed or denied calls extend nothing. This hook can never authorize — it
 // only continues authority PreToolUse already established.
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("../lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("../lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -66,6 +66,7 @@ function emit(value) {
 
 async function main() {
   const payload = parsePayload(fs.readFileSync(0, "utf8"));
+  failOpenAt({ cwd: payload?.cwd || payload?.working_directory });
   const advisory = resolveHookMode().mode === "advisory";
   // Bounded housekeeping first: stale receipts are swept safely by owner+age.
   try { sweepExpiredReceipts({ env: process.env }); } catch {}

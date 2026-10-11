@@ -23,7 +23,7 @@
  */
 
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { firstSessionFinding, findingSession } from "./lib/session-findings.mjs";
 import { isShellTool } from "./lib/shell-tools.mjs";
 import { evaluatePreToolObservation } from "./lib/pretool-decision-engine.mjs";
@@ -204,6 +204,7 @@ function ruleContext(call) {
 async function main() {
   const call = readHookPayload();              // {toolName, toolInput, sessionId, cwd, raw} (PLAN-002)
   if (!call) return;
+  failOpenAt({ cwd: call.cwd });
   const event = call.raw.hook_event_name || call.raw.hookEventName || "";
   const disabled = new Set(String(process.env.SVC_DISABLED_HOOKS || "").split(",").map((s) => s.trim()).filter(Boolean));
   const tool = call.toolName;

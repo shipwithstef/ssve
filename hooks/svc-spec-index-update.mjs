@@ -12,7 +12,7 @@
  */
 
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
@@ -48,6 +48,7 @@ function findRepoRoot(start) {
     failOpen("svc-spec-index-update", error);
     process.exit(0);
   }
+  if (typeof payload?.cwd === "string") failOpenAt({ cwd: payload.cwd });
 
   // Claude Code PostToolUse payload shape: { tool_input: { file_path }, ... }
   // Defensive: handle multiple shapes across hosts.
@@ -77,11 +78,17 @@ function findRepoRoot(start) {
   if (!existsSync(builder)) process.exit(0);
 
   // Best-effort incremental update. Suppress all output unless it errors.
-  spawnSync("node", [builder, "--incremental", filePath], {
+  failOpenAt({ root: repoRoot });
+  const built = spawnSync("node", [builder, "--incremental", filePath], {
     cwd: repoRoot,
     stdio: ["ignore", "ignore", "ignore"],
     timeout: 5000
   });
+  // A spawn error (including the timeout), a signal or a non-zero exit means the index
+  // was not updated; the hook still allows the edit, so it is counted.
+  if (built.error || built.signal || built.status !== 0) {
+    failOpen("svc-spec-index-update", built.error || { name: built.signal ? `Signal${built.signal}` : `Exit${built.status}` });
+  }
 
   process.exit(0);
 })().catch((error) => { failOpen("svc-spec-index-update", error); process.exit(0); });

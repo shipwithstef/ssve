@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -96,6 +96,7 @@ function companyStateMayExist(cwd) {
 try {
   const payload = readPayload();
   const cwd = payloadCwd(payload);
+  failOpenAt({ cwd });
   if (!companyStateMayExist(cwd)) { emit(""); process.exit(0); }
   const context = JSON.parse(runCompanyState(["resolve", "--repo", cwd, "--json"]));
   const stateDir = fs.realpathSync(context.stateDir);

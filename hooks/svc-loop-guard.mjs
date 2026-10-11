@@ -20,7 +20,7 @@
  */
 
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -182,6 +182,7 @@ async function main() {
   const call = readHookPayload();
   // Fail open on unparseable/empty payloads.
   if (!call) process.exit(0);
+  failOpenAt({ cwd: call.session_cwd || call.cwd });
 
   const { toolName, toolInput } = call;
   if (!toolName) process.exit(0);
@@ -204,6 +205,7 @@ async function main() {
     : (call.session_cwd || call.cwd || process.cwd());
   const svcDir = resolveSvcStateDir(stateRoot);
   if (!svcDir) process.exit(0);
+  failOpenAt({ root: path.dirname(svcDir) });
 
   const fp = fingerprint(toolName, toolInput);
   const stateFile = stateFileFor(svcDir, call.sessionId);

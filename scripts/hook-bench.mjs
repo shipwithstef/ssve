@@ -24,6 +24,7 @@ import path from "node:path";
 import { spawn, spawnSync, execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
+import { readFailOpen } from "./lib/fail-open-counter.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -39,6 +40,20 @@ export function ifMatches(rule, tool, filePath) {
   else if (!pat.startsWith("/")) pat = "**/" + pat;
   const re = pat.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*\*\//g, "\u0000").replace(/\*\*/g, ".*").replace(/\*/g, "[^/]*").replace(/\u0000/g, "(?:.*/)?");
   return new RegExp(`^${re}$`).test(filePath);
+}
+
+// Wired hooks run behind the advisory boundary, which exits 0 even when a child crashed.
+// The fail-open counter is the evidence of such a crash: what grew between two snapshots
+// is a hook that failed open during the call.
+export function counterGrowth(before, after) {
+  const grown = [];
+  for (const [hook, classes] of Object.entries(after.by_hook || {})) {
+    for (const [cls, n] of Object.entries(classes)) {
+      const was = before.by_hook?.[hook]?.[cls] || 0;
+      if (n > was) grown.push({ hook, cls, n: n - was });
+    }
+  }
+  return grown;
 }
 
 const median = (a) => [...a].sort((x, y) => x - y)[a.length >> 1];
@@ -122,9 +137,13 @@ export async function bench({ runs = 5, budgets, env: explicitEnv = {}, mutateHo
       const walls = [], per = handlers.map(() => []);
       // A handler that crashed is not evidence of speed: failures are reported and fail the run.
       for (let r = 0; r < runs; r++) {
+        const counterBefore = readFailOpen(ctx.repo);
         const t = process.hrtime.bigint();
         const results = await Promise.all(handlers.map((h) => run(h.command, ctx.repo, payload, ctx.env)));
         walls.push(Number(process.hrtime.bigint() - t) / 1e6);
+        for (const g of counterGrowth(counterBefore, readFailOpen(ctx.repo))) {
+          failures.push({ handler: g.hook, event: tool ? `${event}:${tool}` : event, exit: `failed open (${g.cls}${g.n > 1 ? ` x${g.n}` : ""})` });
+        }
         results.forEach((x, i) => { per[i].push(x.ms); if (x.code !== 0) failures.push({ handler: handlers[i].name, event: tool ? `${event}:${tool}` : event, exit: x.code }); });
       }
       const key = tool ? `${event}:${tool}` : event;
@@ -149,7 +168,7 @@ async function main(argv) {
   argv.forEach((a, i) => { if (a === "--env" && /^[A-Za-z_][A-Za-z0-9_]*=/.test(argv[i + 1] || "")) { const v = argv[i + 1]; env[v.slice(0, v.indexOf("="))] = v.slice(v.indexOf("=") + 1); } });
   const result = await bench({ runs: Number(opt("--runs", 5)), budgets, env });
   if (!result.ok) {
-    for (const f of result.failures) process.stderr.write(`FAIL ${f.event}: ${f.handler} exited ${f.exit}\n`);
+    for (const f of result.failures) process.stderr.write(`FAIL ${f.event}: ${f.handler} ${typeof f.exit === "number" ? `exited ${f.exit}` : f.exit}\n`);
     process.stderr.write(`hook-bench: ${result.failures.length} benchmarked hook(s) failed; no timings are reported because a failing hook is not a measurement.\n`);
     if (argv.includes("--json")) process.stdout.write(JSON.stringify({ ok: false, failures: result.failures }, null, 2) + "\n");
     return 1;

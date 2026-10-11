@@ -21,7 +21,7 @@
 // hooks/svc-* file past the config-protection guard, for WI-392.
 
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { join } from "node:path";   // node builtin — safe at module top level
 import path from "node:path";
 import fs from "node:fs";
@@ -33,6 +33,8 @@ const MEMO_LOCK_MS = 250;   // Codex G6 F1: bound the memo write — never spin 
 
 // Returns the context text to inject for this call, or "" (never throws).
 export async function ownerContext(call) {
+  let root;   // the project the telemetry targets; counted against it, not process.cwd()
+  const open = (error) => failOpen("svc-owner-inject", error, root ? { root } : { cwd: call?.cwd || undefined });
   try {
     const { extractCommand, extractFilePath, resolveHookOperation } = await import("./lib/hook-payload.mjs");
     const { loadOwners, matchOwners, renderInjection } = await import("./lib/owner-index.mjs");
@@ -46,6 +48,7 @@ export async function ownerContext(call) {
     // WI-452: only inject/persist within an svc-governed repo; never seed .svc in /tmp or a foreign cwd.
     const svcDir = resolveSvcStateDir(cwd);
     if (!svcDir) return "";
+    root = path.dirname(svcDir);
     const tool = call.toolName;
     const ti = call.toolInput || {};
 
@@ -69,7 +72,7 @@ export async function ownerContext(call) {
     const session = String(call.sessionId || "nosession").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 48);
     const memoPath = join(svcDir, `owner-injections-${session}.json`);
     let memo = {};
-    try { memo = readJsonAtomic(memoPath) || {}; } catch { memo = {}; }
+    try { memo = readJsonAtomic(memoPath) || {}; } catch (error) { open(error); memo = {}; }
     const keyOf = (o) => o.task_class + "|" + o.owner;
     const fresh = matched.filter((o) => !memo[keyOf(o)]);
     if (!fresh.length) return "";
@@ -79,11 +82,11 @@ export async function ownerContext(call) {
     // if it can't persist — emitting after a failed/slow write would re-fire the
     // same reminder on every command. Fail-open + no-hang + no-spam.
     for (const o of fresh) memo[keyOf(o)] = "fired";
-    try { writeJsonAtomic(memoPath, memo, { timeoutMs: MEMO_LOCK_MS }); } catch { return ""; }
+    try { writeJsonAtomic(memoPath, memo, { timeoutMs: MEMO_LOCK_MS }); } catch (error) { open(error); return ""; }
 
     return renderInjection(fresh).slice(0, CAP);
   } catch (error) {
-    failOpen("svc-owner-inject", error);
+    open(error);
     return "";                                       // any error → fail open
   }
 }

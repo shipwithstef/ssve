@@ -3,7 +3,7 @@
 // Observe-only hook: never blocks, never writes tracked learning files.
 
 // Optional: a bundle without the counter simply does not count.
-const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -88,6 +88,7 @@ function main() {
   try { payload = JSON.parse(readStdin() || "{}"); } catch { payload = {}; }
   const root = loadRepoRoot(payload);
   if (!root) return;
+  failOpenAt({ root });
   // Only a repo that opted in (an existing .svc/ from init-project-state, or the
   // framework repo itself) is touched. A fresh repo stays untouched: no .svc/,
   // no git calls, no output.
