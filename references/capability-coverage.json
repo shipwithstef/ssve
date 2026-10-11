@@ -2838,6 +2838,15 @@
       ]
     },
     {
+      "id": "engine:scripts/standing-rules.mjs",
+      "kind": "engine",
+      "source": "scripts/standing-rules.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/standing-rules.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/state-io.mjs",
       "kind": "engine",
       "source": "scripts/state-io.mjs",
