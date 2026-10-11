@@ -271,7 +271,7 @@ export function withGradeSandbox(dir, sandbox, fn) {
   try { return fn(w); } finally { fs.rmSync(w.job_home, { recursive: true, force: true }); }
 }
 
-export const promptSha = (arm, task) => crypto.createHash("sha256").update(task && isPillarArm(arm) ? armPrompts(task, arm).join("\n\0\n") : ARMS[arm]).digest("hex").slice(0, 12);
+export const promptSha = (arm, task) => crypto.createHash("sha256").update(task ? armPrompts(task, arm).join("\n\0\n") : ARMS[arm]).digest("hex").slice(0, 12);
 
 // A task is either greenfield (ref.mjs is the reference solution.mjs) or brownfield
 // (repo/ is the starting codebase and ref/ overlays the reference change on it).

@@ -4,6 +4,7 @@
 // exactly Skill, and no judge means the builder gets the whole share. No model is called.
 import test from "node:test";
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -201,4 +202,13 @@ test("solo and framework get every session instruction of a multi-session dev ta
   }
   assert.ok(bar.dev.some((t) => oe.taskConfig(t).steps && !oe.taskConfig(t).copy_spec), "a multi-session dev task exists");
   assert.throws(() => oe.armPrompts("continuity-rules", "plain"), /cannot run multi-session/);
+});
+
+test("promptSha hashes the prompts a multi-session task actually sends, and is unchanged for one-prompt tasks", () => {
+  const h = (s) => crypto.createHash("sha256").update(s).digest("hex").slice(0, 12);
+  for (const arm of ["solo", "framework"]) {
+    assert.equal(oe.promptSha(arm, "continuity-rules"), h(oe.armPrompts("continuity-rules", arm).join("\n\0\n")));
+    assert.notEqual(oe.promptSha(arm, "continuity-rules"), h(oe.ARMS[arm]));
+    assert.equal(oe.promptSha(arm, "yoga-studio"), h(oe.ARMS[arm]));
+  }
 });
