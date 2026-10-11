@@ -2,6 +2,8 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { rebuildReopenedEdges } from "./lib/reopened-edges.mjs";
 import { writeJsonAtomic } from "./state-io.mjs";
 import { injectMandatoryDeliveryChain, validateMandatoryDeliveryChain } from "./lib/mandatory-delivery-chain.mjs";
 import {
@@ -419,6 +421,61 @@ function buildTaskSteps(baseSkills, conditionals) {
   return steps;
 }
 
+// Prerequisite stages must come before the authority chain's late stages in every lane and
+// profile (T3, review 6108295955). The chain is one contiguous transition, so a prerequisite
+// either sits upstream of plan-changeset or, when it needs the implementation, becomes a
+// required, evidence-backed process step of execute-changeset that runs before review-gate
+// (the same shape as the visual diff). Which skills are compiled is not changed here.
+const UPSTREAM_PREREQUISITES = { "build-personas": ["write-spec"], "write-journeys": ["design-ux"], "design-tech": [] };
+const EXECUTION_PREREQUISITES = ["write-e2e", "test-journeys"];
+
+function orderPrerequisites(steps) {
+  const at = (skill) => steps.findIndex((step) => step.skill === skill);
+  // Research a stage asked for runs before that stage, so it moves with it.
+  const takeResearch = (skills) => {
+    const taken = [];
+    for (let i = steps.length - 1; i >= 0; i -= 1) {
+      if (steps[i].skill === "research" && skills.includes(steps[i].before)) taken.unshift(...steps.splice(i, 1));
+    }
+    return taken;
+  };
+  for (const [skill, anchors] of Object.entries(UPSTREAM_PREREQUISITES)) {
+    const plan = at("plan-changeset");
+    const from = at(skill);
+    if (plan === -1 || from === -1 || from < plan) continue;
+    const [entry] = steps.splice(from, 1);
+    const research = takeResearch([skill]);
+    const anchor = anchors.map(at).find((i) => i !== -1 && i < plan);
+    steps.splice(anchor ?? at("plan-changeset"), 0, ...research, entry);
+  }
+  const execute = steps.find((step) => step.skill === "execute-changeset");
+  if (!execute) return steps;
+  // Research asked for by a folded stage is now asked for by execute-changeset. The chain
+  // must stay contiguous, so it runs upstream of plan-changeset.
+  const folded = takeResearch(EXECUTION_PREREQUISITES);
+  if (folded.length) steps.splice(at("plan-changeset"), 0, ...folded);
+  for (const skill of EXECUTION_PREREQUISITES) {
+    const k = at(skill);
+    if (k === -1) continue;
+    const [entry] = steps.splice(k, 1);
+    const present = (execute.required_process_steps || []).some((step) => step.skill === skill);
+    if (!present) execute.required_process_steps = [...(execute.required_process_steps || []), { skill, before: "review-gate", evidence_required: true, signal: entry.signal }];
+  }
+  return steps;
+}
+
+// Same derivation task-graph applies (and its validator requires): the graph status follows
+// the tasks, so it is recomputed after every reopen, reset and block.
+function deriveStatus(tasks) {
+  if (tasks.length === 0) return "pending";
+  if (tasks.every((task) => task.status === "completed")) return "completed";
+  if (tasks.some((task) => task.status === "in_progress")) return "in_progress";
+  if (tasks.some((task) => task.status === "pending")) return "pending";
+  if (tasks.some((task) => task.status === "blocked")) return "blocked";
+  if (tasks.every((task) => task.status === "skipped")) return "skipped";
+  return "completed";
+}
+
 function taskList(steps, solutionConfidence) {
   const tasks = steps.map((step, index) => ({
     id: index + 1,
@@ -473,7 +530,7 @@ function taskMatchKey(task) {
   return skill + ":" + String(task.metadata?.mode || "");
 }
 
-function applyExistingGraph(tasks, existingGraph) {
+function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrated: [], required: new Map() }) {
   const existing = Array.isArray(existingGraph?.tasks) ? existingGraph.tasks : [];
   if (!existing.length) return tasks;
   const reserved = new Set();
@@ -485,7 +542,8 @@ function applyExistingGraph(tasks, existingGraph) {
     if (!queues.has(key)) queues.set(key, []);
     queues.get(key).push(task);
   }
-  let nextId = Math.max(...reserved) + 1;
+  const migratedIds = (existingGraph?.delivery_graph?.migrated_prerequisites || []).map((row) => row?.task?.id).filter(Number.isInteger);
+  let nextId = Math.max(...reserved, ...migratedIds) + 1;
   const remap = new Map(), matched = new Set(), pairs = [];
   for (const task of tasks) {
     const prev = queues.get(taskMatchKey(task))?.shift();
@@ -507,27 +565,114 @@ function applyExistingGraph(tasks, existingGraph) {
     }
     pairs.push({ task, prev, clone });
   }
-  const out = pairs.map(({ task, prev, clone }) => {
+  // Edges are rebuilt when a task moved earlier: an inherited edge to a task that now
+  // comes later would make a cycle (a persona task that used to trail verify-promotion
+  // and now precedes write-spec).
+  const position = new Map(pairs.map(({ clone }, index) => [clone.id, index]));
+  const out = pairs.map(({ task, prev, clone }, index) => {
     const required = (task.blocked_by || []).map(id => remap.get(id));
-    clone.blocked_by = prev?.status === "completed"
-      ? [...(prev.blocked_by || [])]
-      : [...new Set([...(prev?.blocked_by || []), ...required])];
+    notes.required?.set(clone.id, required);
+    const inherited = [...(prev?.blocked_by || [])];
+    const stale = inherited.filter(id => position.has(id) && position.get(id) >= index);
+    if (stale.length) clone.blocked_by = [...new Set([...inherited.filter(id => !stale.includes(id)), ...required])];
+    else clone.blocked_by = prev?.status === "completed" ? inherited : [...new Set([...inherited, ...required])];
     return clone;
   });
+  reopenBehindMovedPrerequisites(out, pairs, position, notes);
   for (const prev of existing) {
     if (matched.has(prev.id)) continue;
     // Retain completed evidence and unrelated work. Unstarted research that is
     // no longer needed is archived separately, never marked completed.
     if ((prev.metadata?.skill || prev.skill) === "research" && prev.status !== "completed") continue;
+    // E2E and journey tasks from an older graph are now process steps of
+    // execute-changeset. Their runnable tasks go; what they recorded is kept as history
+    // only, because a task-level status is not a digest-bound process receipt.
+    if (EXECUTION_PREREQUISITES.includes(prev.metadata?.skill || prev.skill)) {
+      notes.migrated.push({ task: structuredClone(prev), disposition: "folded into an execute-changeset process step; historical evidence only, not executable" });
+      continue;
+    }
     out.push(structuredClone(prev));
   }
   const ids = new Set(out.map(task => task.id));
   const retired = new Set(existing.filter(task => !ids.has(task.id)).map(task => task.id));
   for (const task of out) task.blocked_by = (task.blocked_by || []).filter(id => !retired.has(id));
+  reopenForNewProcessSteps(out, pairs, notes);
   return out;
 }
 
-function attachResearchRequestors(tasks, questions) {
+// An unfinished prerequisite that is new, or moved ahead of planning, now precedes stages that
+// may already be started or done. Those stages did not run behind it: they depend on it again
+// and go back to pending, so the scheduler cannot select land-changeset ahead of it.
+function reopenBehindMovedPrerequisites(out, pairs, position, notes) {
+  const first = pairs.findIndex(({ task, prev, clone }) =>
+    Object.hasOwn(UPSTREAM_PREREQUISITES, task.metadata?.skill) && clone.status !== "completed" &&
+    (!prev || (prev.blocked_by || []).some((id) => position.has(id) && position.get(id) >= position.get(clone.id))));
+  if (first === -1) return;
+  const why = `unfinished prerequisite ${pairs[first].task.metadata.skill} now precedes this stage`;
+  pairs.forEach(({ task, clone }, index) => {
+    if (index <= first || !["completed", "in_progress"].includes(clone.status)) return;
+    const previous = clone.status;
+    clone.status = "pending";
+    clone.metadata ||= {};
+    clone.metadata.reopened = { reason: why, previous, at: new Date().toISOString() };
+    const required = (task.blocked_by || []).map((id) => pairs.find((row) => row.task.id === id)?.clone.id).filter((id) => id != null);
+    clone.blocked_by = [...new Set([...(clone.blocked_by || []), ...required])];
+    notes.reopened.push({ id: clone.id, skill: clone.metadata.skill, reason: why });
+  });
+}
+
+// A process receipt counts only when it names a digest-bound evidence file that still
+// exists with the recorded contents (the same test task-graph applies on completion).
+function receiptHolds(row) {
+  const evidence = row?.evidence;
+  if (!evidence || typeof evidence.path !== "string" || !/^[0-9a-f]{64}$/.test(String(evidence.sha256 || ""))) return false;
+  try {
+    const file = resolve(evidence.path);
+    return createHash("sha256").update(readFileSync(file)).digest("hex") === evidence.sha256;
+  } catch { return false; }
+}
+
+// A completed execute-changeset that gains a required process step has not done that step:
+// reopen it and every started or completed stage downstream until a digest-bound process
+// receipt exists. In-progress dependents go back to pending so none is active but blocked.
+function reopenForNewProcessSteps(out, pairs, notes) {
+  const pair = pairs.find(({ task }) => task.metadata?.skill === "execute-changeset");
+  if (!pair?.prev || pair.prev.status !== "completed") return;
+  const had = (pair.prev.metadata?.required_process_steps || []);
+  const missing = (pair.clone.metadata?.required_process_steps || []).filter((step) =>
+    !had.some((old) => old.skill === step.skill && String(old.mode || "") === String(step.mode || "")) &&
+    !(pair.clone.process_receipts || []).some((row) => row?.skill === step.skill && String(row?.mode || "") === String(step.mode || "") && receiptHolds(row)));
+  if (!missing.length) return;
+  const why = `required process evidence missing: ${missing.map((step) => step.skill + (step.mode ? "/" + step.mode : "")).join(", ")}`;
+  const downstream = new Set([pair.clone.id]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const task of out) if (!downstream.has(task.id) && (task.blocked_by || []).some((id) => downstream.has(id))) { downstream.add(task.id); grew = true; }
+  }
+  for (const task of out) {
+    if (!downstream.has(task.id) || !["completed", "in_progress"].includes(task.status)) continue;
+    const previous = task.status;
+    task.status = "pending";
+    task.metadata ||= {};
+    task.metadata.reopened = { reason: why, previous, at: new Date().toISOString() };
+    notes.reopened.push({ id: task.id, skill: task.metadata.skill, reason: why });
+  }
+}
+
+function assertAcyclic(tasks) {
+  const byId = new Map(tasks.map((task) => [task.id, task]));
+  const state = new Map();
+  const visit = (id, trail) => {
+    if (state.get(id) === 2 || !byId.has(id)) return;
+    if (state.get(id) === 1) throw new Error(`compiled graph has a dependency cycle: ${[...trail, id].join(" -> ")}`);
+    state.set(id, 1);
+    for (const dep of byId.get(id).blocked_by || []) visit(dep, [...trail, id]);
+    state.set(id, 2);
+  };
+  for (const task of tasks) visit(task.id, []);
+}
+
+function attachResearchRequestors(tasks, questions, remap = {}) {
   const defaultRequestor = tasks.find(task => task.metadata?.skill === "design-tech")
     || tasks.find(task => task.metadata?.skill === "explore-solutions")
     || tasks.find(task => task.metadata?.skill === "plan-changeset");
@@ -542,8 +687,16 @@ function attachResearchRequestors(tasks, questions) {
     if (task.metadata?.skill !== "research") continue;
     const question = questions.find(item => item.id === task.metadata.requesting_decision_id);
     const requestedId = question?.requesting_task_id ?? task.metadata.requesting_task_id;
-    const requestor = requestedId != null ? tasks.find(item => item.id === requestedId)
+    // A stage folded into execute-changeset (e2e, journey proof) no longer has its own task;
+    // research it asked for is requested by execute-changeset. The remapping is stored in
+    // the graph, so a later resume resolves the same old id the same way.
+    const remappedSkill = requestedId != null ? remap[String(requestedId)] : undefined;
+    let requestor = remappedSkill ? tasks.find(item => item.metadata?.skill === remappedSkill)
+      : requestedId != null ? tasks.find(item => item.id === requestedId)
       : question?.requesting_skill ? tasks.find(item => item.metadata?.skill === question.requesting_skill) : defaultRequestor;
+    if (!requestor && EXECUTION_PREREQUISITES.includes(question?.requesting_skill)) {
+      requestor = tasks.find(item => item.metadata?.skill === "execute-changeset");
+    }
     if (!requestor || requestor === task) throw new Error("research has no valid requesting task");
     task.metadata.requesting_task_id = requestor.id;
     if (task.status === "completed" && !researchInputMatches(question, task) && researchDecision(question) === EXTERNAL_RESEARCH_REQUIRED) {
@@ -666,24 +819,7 @@ export function compileDeliveryGraph(input) {
   const conditionals = conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence, researchInsertions });
   const requiredSkills = unique([...laneSkills, ...conditionals.map((item) => item.skill)]);
   const requiredSteps = buildTaskSteps(laneSkills, conditionals);
-  // Without the design skills as anchors, persona coverage would trail the chain; in a
-  // bounded plan it feeds the brief, so it runs before plan-changeset.
-  if (planning.mode === "bounded") {
-    const i = requiredSteps.findIndex((step) => step.skill === "build-personas");
-    const plan = requiredSteps.findIndex((step) => step.skill === "plan-changeset");
-    if (i > plan && plan !== -1) requiredSteps.splice(plan, 0, ...requiredSteps.splice(i, 1));
-    // Without the design skills as anchors, e2e and journey proof would trail the chain
-    // and run after promotion. The chain must stay contiguous, so they become required,
-    // evidence-backed process steps of execute-changeset that run before review-gate
-    // (the same shape as the visual diff).
-    const execute = requiredSteps.find((step) => step.skill === "execute-changeset");
-    if (execute) for (const skill of ["write-e2e", "test-journeys"]) {
-      const k = requiredSteps.findIndex((step) => step.skill === skill);
-      if (k === -1) continue;
-      const [entry] = requiredSteps.splice(k, 1);
-      execute.required_process_steps = [...(execute.required_process_steps || []), { skill, before: "review-gate", evidence_required: true, signal: entry.signal }];
-    }
-  }
+  orderPrerequisites(requiredSteps);
   const chainValidation = validateMandatoryDeliveryChain(requiredSteps.map((step) => step.skill));
   if (!chainValidation.pass) {
     throw new Error(`compiler produced an invalid mandatory delivery chain: ${chainValidation.errors.join("; ")}`);
@@ -732,9 +868,23 @@ export function compileDeliveryGraph(input) {
     closeout_classification_required: true,
   };
 
-  const tasks = attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph), questions);
+  const notes = { reopened: [], migrated: [], required: new Map() };
+  const remap = { ...(existingGraph?.delivery_graph?.research?.requester_remap || {}) };
+  const tasks = attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph, notes), questions, (() => {
+    for (const row of notes.migrated) remap[String(row.task.id)] = "execute-changeset";
+    return remap;
+  })());
+  assertAcyclic(tasks);
+  if (Object.keys(remap).length) deliveryGraph.research.requester_remap = remap;
+  deliveryGraph.migrated_prerequisites = [...(existingGraph?.delivery_graph?.migrated_prerequisites || []), ...notes.migrated];
+  if (notes.reopened.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "reopen_for_process_steps", reason: "A prerequisite moved upstream or gained a required process step; execution and downstream stages reopened until it is done and its evidence exists (per-task reasons below).", tasks: notes.reopened });
   const reopened = applyPlanningDepth(tasks, planning);
   if (reopened.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "reopen_for_depth", reason: "Planning depth increased; lighter completed stages reopened.", tasks: reopened });
+  // A reopened stage waits for what the CURRENT obligations require, not for the edges the
+  // lighter plan left on it. Research requestor edges stay with the research wiring.
+  const edgeChanges = rebuildReopenedEdges(tasks, notes.required);
+  if (edgeChanges.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "rebuild_reopened_edges", reason: "Reopened stages re-pointed at the edges their current obligations require.", edges: edgeChanges });
+  assertAcyclic(tasks);
   const superseded = [...(existingGraph?.delivery_graph?.research?.superseded_tasks || []),
     ...existingTasks.filter(task => !tasks.some(current => current.id === task.id)).map(task => ({
       task: structuredClone(task), disposition: "research no longer required; no completion receipt issued",
@@ -744,7 +894,7 @@ export function compileDeliveryGraph(input) {
     wi,
     lane,
     created: existingGraph?.created || new Date().toISOString(),
-    status: existingGraph?.status === "completed" && tasks.some(task => task.status !== "completed") ? "in_progress" : existingGraph?.status || "pending",
+    status: deriveStatus(tasks),
     delivery_graph: deliveryGraph,
     tasks,
   };

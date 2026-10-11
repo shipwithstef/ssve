@@ -1,0 +1,261 @@
+{
+  "schema": "outcome-eval-results",
+  "fixture": "void-sandbox",
+  "rows": [
+    {
+      "task": "yoga-studio",
+      "arm": "solo",
+      "rep": 1,
+      "cost_usd": 1,
+      "wall_ms": 100000,
+      "turns": 10,
+      "hidden_pass": 9,
+      "hidden_total": 10,
+      "score": 0.9,
+      "solved": false,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap",
+      "components": {
+        "E": 0.2,
+        "S": 0.1,
+        "P": 0.3
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
+    },
+    {
+      "task": "yoga-studio",
+      "arm": "solo",
+      "rep": 2,
+      "cost_usd": 1,
+      "wall_ms": 100000,
+      "turns": 10,
+      "hidden_pass": 9,
+      "hidden_total": 10,
+      "score": 0.9,
+      "solved": false,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap",
+      "components": {
+        "E": 0.2,
+        "S": 0.1,
+        "P": 0.3
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
+    },
+    {
+      "task": "yoga-studio",
+      "arm": "solo",
+      "rep": 3,
+      "cost_usd": 1,
+      "wall_ms": 100000,
+      "turns": 10,
+      "hidden_pass": 9,
+      "hidden_total": 10,
+      "score": 0.9,
+      "solved": false,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap",
+      "components": {
+        "E": 0.2,
+        "S": 0.1,
+        "P": 0.3
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
+    },
+    {
+      "task": "yoga-studio",
+      "arm": "solo",
+      "rep": 4,
+      "cost_usd": 1,
+      "wall_ms": 100000,
+      "turns": 10,
+      "hidden_pass": 9,
+      "hidden_total": 10,
+      "score": 0.9,
+      "solved": false,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap",
+      "components": {
+        "E": 0.2,
+        "S": 0.1,
+        "P": 0.3
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
+    },
+    {
+      "task": "yoga-studio",
+      "arm": "framework",
+      "rep": 1,
+      "cost_usd": 1,
+      "wall_ms": 100000,
+      "turns": 10,
+      "hidden_pass": 9,
+      "hidden_total": 10,
+      "score": 0.9,
+      "solved": false,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap",
+      "components": {
+        "E": 0.8,
+        "S": 0.8,
+        "P": 0.8
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
+    },
+    {
+      "task": "yoga-studio",
+      "arm": "framework",
+      "rep": 2,
+      "cost_usd": 1,
+      "wall_ms": 100000,
+      "turns": 10,
+      "hidden_pass": 9,
+      "hidden_total": 10,
+      "score": 0.9,
+      "solved": false,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap",
+      "components": {
+        "E": 0.8,
+        "S": 0.8,
+        "P": 0.8
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
+    },
+    {
+      "task": "yoga-studio",
+      "arm": "framework",
+      "rep": 3,
+      "cost_usd": 7,
+      "wall_ms": 100000,
+      "turns": 10,
+      "hidden_pass": 9,
+      "hidden_total": 10,
+      "score": 0.9,
+      "solved": false,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "components": {
+        "E": 0.8,
+        "S": 0.8,
+        "P": 0.8
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
+    },
+    {
+      "task": "yoga-studio",
+      "arm": "framework",
+      "rep": 4,
+      "cost_usd": 9,
+      "wall_ms": 100000,
+      "turns": 10,
+      "hidden_pass": 9,
+      "hidden_total": 10,
+      "score": 0.9,
+      "solved": false,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "builder_sandbox": null,
+      "components": {
+        "E": 0.8,
+        "S": 0.8,
+        "P": 0.8
+      },
+      "model": "claude-haiku-4-5",
+      "framework_sha": "dc358c0"
+    }
+  ]
+}
