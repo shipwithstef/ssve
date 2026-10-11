@@ -2275,6 +2275,15 @@
       ]
     },
     {
+      "id": "engine:scripts/k-preload.mjs",
+      "kind": "engine",
+      "source": "scripts/k-preload.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/k-preload.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/kimi-e2e-test.mjs",
       "kind": "engine",
       "source": "scripts/kimi-e2e-test.mjs",
@@ -2291,6 +2300,15 @@
       "status": "untested",
       "evidence": [],
       "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/land-local.mjs",
+      "kind": "engine",
+      "source": "scripts/land-local.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/land-local.test.mjs"
+      ]
     },
     {
       "id": "engine:scripts/lane-stop-guard.mjs",
