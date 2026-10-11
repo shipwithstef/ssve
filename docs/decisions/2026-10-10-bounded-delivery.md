@@ -401,3 +401,39 @@ Measured on this host:
 - Workers ran `node` inside the sandbox. A requested write to `/root` did not happen.
 
 Pilot rounds 1–3 ran before this change, without the sandbox.
+
+## Design, performance and security measured, 2026-10-11
+
+`scripts/web-probes.mjs` measures a built web app in a real browser.
+- Every metric is a number, or null with a reason.
+- `web-probes.mjs prove` shows that each metric scores a planted good build better than a planted bad one.
+
+Grounding for the metrics:
+- **Accessibility:** axe-core, against WCAG 2 A/AA.
+- **Performance:** the RAIL model's frame and response budgets.
+- **Security:** OWASP Top 10 classes: injection/XSS, broken access control, misconfiguration, missing rate limits.
+
+All 14 kept RPG builds were scored (`test-framework/outcome-evals/results/2026-10-11-rpg-web-probes.json`).
+
+| | Opus alone (5) | Swarm (3) | Bounded original (3) | Bounded revised (3) |
+|---|---|---|---|---|
+| axe violations (serious+critical) | 0.4 | 0 | 0 | 0 |
+| Controls reachable by keyboard | 0.89 | 0.94 | 1.00 | 1.00 |
+| Load to playable | 147 ms | 126 ms | 64 ms | 63 ms |
+| JavaScript shipped | 47 KB | 26 KB | 8 KB | 5 KB |
+| Frame p95 with 4 players | 16.7 ms | 38.9 ms | 16.8 ms | 16.7 ms |
+| Security headers (of 3) | 3.0 | 1.0 | 0.7 | 0.3 |
+| A player can act as another | 0/5 | 0/3 | 1/3 | 0/3 |
+| A request flood is throttled | 1/5 | 0/3 | 0/3 | 1/3 |
+| Distinct colours on screen | 101 | 107 | 33 | 28 |
+
+What it says:
+- **Bounded:** the leanest, fastest-loading and most accessible builds.
+  - It leaves hardening undone (headers, throttling, and one impersonation hole in an original-method build).
+  - It uses a narrow palette, consistent with the judge's art-direction misses.
+- **Swarm:** its builds jank under load.
+- **Opus alone:** it hardens by habit.
+
+Next for the bounded brief: security headers, throttling and the web probes as done-when checks, and a look-and-feel pass with a screenshot critique in the harden step.
+
+One bug in the probe was found and fixed while scoring: the axe audit is injected with CSP bypassed. Before the fix, the builds with the strictest Content-Security-Policy were marked down for an error the probe itself caused.

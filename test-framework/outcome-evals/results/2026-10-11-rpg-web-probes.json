@@ -1,0 +1,1201 @@
+{
+  "ran_at": "2026-10-11T03:40:49.667Z",
+  "play_s": 20,
+  "rows": [
+    {
+      "source": "2026-10-10-rpg-pilot.json",
+      "arm": "solo",
+      "rep": 0,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-04-30-788Z/rpg-founder-solo-0",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-04-30-788Z/rpg-founder-solo-0",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 0,
+          "contrast_failures": 0,
+          "rules": []
+        },
+        "keyboard": {
+          "value": 1,
+          "reachable": 6,
+          "controls": 6
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 98
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 134
+        },
+        "js_kb": {
+          "value": 47
+        },
+        "frame_p95_1p": {
+          "value": 16.7
+        },
+        "frame_p95_4p": {
+          "value": 16.7
+        },
+        "server_p95_ms": {
+          "value": 6,
+          "samples": 131
+        },
+        "memory_growth_mb": {
+          "value": -3.6,
+          "start_mb": 136,
+          "end_mb": 132.4
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 3,
+          "of": 3,
+          "present": [
+            "content-security-policy",
+            "x-content-type-options",
+            "framing"
+          ]
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url",
+            "1 text inputs"
+          ]
+        },
+        "impersonation": {
+          "value": false,
+          "replayed": 0,
+          "note": "the client never sends its own id; identity is bound to the connection"
+        },
+        "throttled": {
+          "value": false,
+          "target": "GET /",
+          "statuses": [
+            200
+          ]
+        }
+      }
+    },
+    {
+      "source": "2026-10-10-rpg-pilot.json",
+      "arm": "swarm",
+      "rep": 0,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-04-30-788Z/rpg-founder-swarm-0",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-04-30-788Z/rpg-founder-swarm-0",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 0,
+          "contrast_failures": 0,
+          "rules": []
+        },
+        "keyboard": {
+          "value": 0.83,
+          "reachable": 5,
+          "controls": 6
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 95
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 113
+        },
+        "js_kb": {
+          "value": 25
+        },
+        "frame_p95_1p": {
+          "value": 16.7
+        },
+        "frame_p95_4p": {
+          "value": 50
+        },
+        "server_p95_ms": {
+          "value": 8,
+          "samples": 131
+        },
+        "memory_growth_mb": {
+          "value": 0.1,
+          "start_mb": 127.7,
+          "end_mb": 127.8
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 1,
+          "of": 3,
+          "present": [
+            "x-content-type-options"
+          ]
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url"
+          ],
+          "note": "only the URL was tried: the page has no text inputs or text actions"
+        },
+        "impersonation": {
+          "value": false,
+          "replayed": 0,
+          "note": "the client never sends its own id; identity is bound to the connection"
+        },
+        "throttled": {
+          "value": false,
+          "target": "POST /api/join",
+          "statuses": [
+            200
+          ]
+        }
+      }
+    },
+    {
+      "source": "2026-10-10-rpg-pilot.json",
+      "arm": "bounded",
+      "rep": 0,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-04-30-788Z/rpg-founder-bounded-0",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-04-30-788Z/rpg-founder-bounded-0",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 0,
+          "contrast_failures": 0,
+          "rules": []
+        },
+        "keyboard": {
+          "value": 1,
+          "reachable": 4,
+          "controls": 4
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 35
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 71
+        },
+        "js_kb": {
+          "value": 6
+        },
+        "frame_p95_1p": {
+          "value": 16.7
+        },
+        "frame_p95_4p": {
+          "value": 16.8
+        },
+        "server_p95_ms": {
+          "value": 7,
+          "samples": 131
+        },
+        "memory_growth_mb": {
+          "value": 15.1,
+          "start_mb": 129,
+          "end_mb": 144.1
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 2,
+          "of": 3,
+          "present": [
+            "content-security-policy",
+            "x-content-type-options"
+          ]
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url"
+          ],
+          "note": "only the URL was tried: the page has no text inputs or text actions"
+        },
+        "impersonation": {
+          "value": false,
+          "replayed": 0,
+          "note": "the client never sends its own id; identity is bound to the connection"
+        },
+        "throttled": {
+          "value": false,
+          "target": "POST /api/join",
+          "statuses": [
+            200
+          ]
+        }
+      }
+    },
+    {
+      "source": "2026-10-10-rpg-pilot-r2.json",
+      "arm": "solo",
+      "rep": 0,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-solo-0",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-solo-0",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 0,
+          "contrast_failures": 0,
+          "rules": []
+        },
+        "keyboard": {
+          "value": 1,
+          "reachable": 6,
+          "controls": 6
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 110
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 102
+        },
+        "js_kb": {
+          "value": 51
+        },
+        "frame_p95_1p": {
+          "value": 16.7
+        },
+        "frame_p95_4p": {
+          "value": 16.8
+        },
+        "server_p95_ms": {
+          "value": 5,
+          "samples": 131
+        },
+        "memory_growth_mb": {
+          "value": 4.1,
+          "start_mb": 136.1,
+          "end_mb": 140.2
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 3,
+          "of": 3,
+          "present": [
+            "content-security-policy",
+            "x-content-type-options",
+            "framing"
+          ]
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url",
+            "2 text inputs"
+          ]
+        },
+        "impersonation": {
+          "value": false,
+          "replayed": 1
+        },
+        "throttled": {
+          "value": false,
+          "target": "GET /",
+          "statuses": [
+            200
+          ]
+        }
+      }
+    },
+    {
+      "source": "2026-10-10-rpg-pilot-r2.json",
+      "arm": "solo",
+      "rep": 1,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-solo-1",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-solo-1",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 0,
+          "contrast_failures": 0,
+          "rules": []
+        },
+        "keyboard": {
+          "value": 1,
+          "reachable": 6,
+          "controls": 6
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 101
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 197
+        },
+        "js_kb": {
+          "value": 68
+        },
+        "frame_p95_1p": {
+          "value": 16.8
+        },
+        "frame_p95_4p": {
+          "value": 16.7
+        },
+        "server_p95_ms": {
+          "value": 5,
+          "samples": 132
+        },
+        "memory_growth_mb": {
+          "value": -4.2,
+          "start_mb": 134.8,
+          "end_mb": 130.6
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 3,
+          "of": 3,
+          "present": [
+            "content-security-policy",
+            "x-content-type-options",
+            "framing"
+          ]
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url",
+            "2 text inputs"
+          ]
+        },
+        "impersonation": {
+          "value": false,
+          "replayed": 0,
+          "note": "the client never sends its own id; identity is bound to the connection"
+        },
+        "throttled": {
+          "value": true,
+          "target": "POST /api/session",
+          "statuses": [
+            200,
+            429
+          ]
+        }
+      }
+    },
+    {
+      "source": "2026-10-10-rpg-pilot-r2.json",
+      "arm": "swarm",
+      "rep": 0,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-swarm-0",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-swarm-0",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 0,
+          "contrast_failures": 0,
+          "rules": []
+        },
+        "keyboard": {
+          "value": 1,
+          "reachable": 6,
+          "controls": 6
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 103
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 118
+        },
+        "js_kb": {
+          "value": 23
+        },
+        "frame_p95_1p": {
+          "value": 16.8
+        },
+        "frame_p95_4p": {
+          "value": 16.8
+        },
+        "server_p95_ms": {
+          "value": 6,
+          "samples": 131
+        },
+        "memory_growth_mb": {
+          "value": 1.2,
+          "start_mb": 134.5,
+          "end_mb": 135.7
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 1,
+          "of": 3,
+          "present": [
+            "x-content-type-options"
+          ]
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url"
+          ],
+          "note": "only the URL was tried: the page has no text inputs or text actions"
+        },
+        "impersonation": {
+          "value": false,
+          "replayed": 0,
+          "note": "the client never sends its own id; identity is bound to the connection"
+        },
+        "throttled": {
+          "value": false,
+          "target": "GET /",
+          "statuses": [
+            200
+          ]
+        }
+      }
+    },
+    {
+      "source": "2026-10-10-rpg-pilot-r2.json",
+      "arm": "swarm",
+      "rep": 1,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-swarm-1",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-swarm-1",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 0,
+          "contrast_failures": 0,
+          "rules": []
+        },
+        "keyboard": {
+          "value": 1,
+          "reachable": 14,
+          "controls": 14
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 123
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 148
+        },
+        "js_kb": {
+          "value": 31
+        },
+        "frame_p95_1p": {
+          "value": 16.8
+        },
+        "frame_p95_4p": {
+          "value": 50
+        },
+        "server_p95_ms": {
+          "value": 5,
+          "samples": 132
+        },
+        "memory_growth_mb": {
+          "value": 1.4,
+          "start_mb": 135.2,
+          "end_mb": 136.6
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 1,
+          "of": 3,
+          "present": [
+            "x-content-type-options"
+          ]
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url",
+            "1 text inputs"
+          ]
+        },
+        "impersonation": {
+          "value": false,
+          "replayed": 0,
+          "note": "the client never sends its own id; identity is bound to the connection"
+        },
+        "throttled": {
+          "value": false,
+          "target": "GET /",
+          "statuses": [
+            200
+          ]
+        }
+      }
+    },
+    {
+      "source": "2026-10-10-rpg-pilot-r2.json",
+      "arm": "bounded",
+      "rep": 0,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-bounded-0",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-bounded-0",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 0,
+          "contrast_failures": 0,
+          "rules": []
+        },
+        "keyboard": {
+          "value": 1,
+          "reachable": 4,
+          "controls": 4
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 36
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 68
+        },
+        "js_kb": {
+          "value": 14
+        },
+        "frame_p95_1p": {
+          "value": 16.8
+        },
+        "frame_p95_4p": {
+          "value": 16.8
+        },
+        "server_p95_ms": {
+          "value": 5,
+          "samples": 132
+        },
+        "memory_growth_mb": {
+          "value": 6.4,
+          "start_mb": 119.5,
+          "end_mb": 125.9
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 0,
+          "of": 3,
+          "present": []
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url"
+          ],
+          "note": "only the URL was tried: the page has no text inputs or text actions"
+        },
+        "impersonation": {
+          "value": true,
+          "replayed": 1
+        },
+        "throttled": {
+          "value": false,
+          "target": "POST /join",
+          "statuses": [
+            200
+          ]
+        }
+      }
+    },
+    {
+      "source": "2026-10-10-rpg-pilot-r2.json",
+      "arm": "bounded",
+      "rep": 1,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-bounded-1",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T22-41-33-349Z/rpg-founder-bounded-1",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 0,
+          "contrast_failures": 0,
+          "rules": []
+        },
+        "keyboard": {
+          "value": 1,
+          "reachable": 4,
+          "controls": 4
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 29
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 52
+        },
+        "js_kb": {
+          "value": 5
+        },
+        "frame_p95_1p": {
+          "value": 16.7
+        },
+        "frame_p95_4p": {
+          "value": 16.7
+        },
+        "server_p95_ms": {
+          "value": 3,
+          "samples": 132
+        },
+        "memory_growth_mb": {
+          "value": 6.2,
+          "start_mb": 119.8,
+          "end_mb": 126
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 0,
+          "of": 3,
+          "present": []
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url"
+          ],
+          "note": "only the URL was tried: the page has no text inputs or text actions"
+        },
+        "impersonation": {
+          "value": false,
+          "replayed": 20
+        },
+        "throttled": {
+          "value": false,
+          "target": "POST /api/join",
+          "statuses": [
+            200
+          ]
+        }
+      }
+    },
+    {
+      "source": "2026-10-10-rpg-pilot-r3-bounded.json",
+      "arm": "bounded",
+      "rep": 0,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T23-24-20-295Z/rpg-founder-bounded-0",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T23-24-20-295Z/rpg-founder-bounded-0",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 0,
+          "contrast_failures": 0,
+          "rules": []
+        },
+        "keyboard": {
+          "value": 1,
+          "reachable": 4,
+          "controls": 4
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 26
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 65
+        },
+        "js_kb": {
+          "value": 5
+        },
+        "frame_p95_1p": {
+          "value": 16.8
+        },
+        "frame_p95_4p": {
+          "value": 16.7
+        },
+        "server_p95_ms": {
+          "value": 2,
+          "samples": 132
+        },
+        "memory_growth_mb": {
+          "value": 6.3,
+          "start_mb": 120.3,
+          "end_mb": 126.6
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 1,
+          "of": 3,
+          "present": [
+            "x-content-type-options"
+          ]
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url"
+          ],
+          "note": "only the URL was tried: the page has no text inputs or text actions"
+        },
+        "impersonation": {
+          "value": false,
+          "replayed": 0,
+          "note": "the client never sends its own id; identity is bound to the connection"
+        },
+        "throttled": {
+          "value": true,
+          "target": "POST /api/join",
+          "statuses": [
+            200,
+            429
+          ]
+        }
+      }
+    },
+    {
+      "source": "2026-10-10-rpg-pilot-r3-bounded.json",
+      "arm": "bounded",
+      "rep": 1,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T23-24-20-295Z/rpg-founder-bounded-1",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T23-24-20-295Z/rpg-founder-bounded-1",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 0,
+          "contrast_failures": 0,
+          "rules": []
+        },
+        "keyboard": {
+          "value": null,
+          "reason": "no interactive controls on the page"
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 34
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 61
+        },
+        "js_kb": {
+          "value": 5
+        },
+        "frame_p95_1p": {
+          "value": 16.8
+        },
+        "frame_p95_4p": {
+          "value": 16.7
+        },
+        "server_p95_ms": {
+          "value": 3,
+          "samples": 132
+        },
+        "memory_growth_mb": {
+          "value": 1.6,
+          "start_mb": 126,
+          "end_mb": 127.6
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 0,
+          "of": 3,
+          "present": []
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url"
+          ],
+          "note": "only the URL was tried: the page has no text inputs or text actions"
+        },
+        "impersonation": {
+          "value": false,
+          "replayed": 0,
+          "note": "the client never sends its own id; identity is bound to the connection"
+        },
+        "throttled": {
+          "value": false,
+          "target": "POST /api/join",
+          "statuses": [
+            200
+          ]
+        }
+      }
+    },
+    {
+      "source": "2026-10-10-rpg-pilot-r3-bounded.json",
+      "arm": "bounded",
+      "rep": 2,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T23-24-20-295Z/rpg-founder-bounded-2",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T23-24-20-295Z/rpg-founder-bounded-2",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 0,
+          "contrast_failures": 0,
+          "rules": []
+        },
+        "keyboard": {
+          "value": 1,
+          "reachable": 4,
+          "controls": 4
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 25
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 62
+        },
+        "js_kb": {
+          "value": 5
+        },
+        "frame_p95_1p": {
+          "value": 16.8
+        },
+        "frame_p95_4p": {
+          "value": 16.7
+        },
+        "server_p95_ms": {
+          "value": 3,
+          "samples": 132
+        },
+        "memory_growth_mb": {
+          "value": 7.3,
+          "start_mb": 120.2,
+          "end_mb": 127.5
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 0,
+          "of": 3,
+          "present": []
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url"
+          ],
+          "note": "only the URL was tried: the page has no text inputs or text actions"
+        },
+        "impersonation": {
+          "value": false,
+          "replayed": 0,
+          "note": "the client never sends its own id; identity is bound to the connection"
+        },
+        "throttled": {
+          "value": false,
+          "target": "POST /api/join",
+          "statuses": [
+            200
+          ]
+        }
+      }
+    },
+    {
+      "source": "2026-10-10-rpg-pilot-r3-solo.json",
+      "arm": "solo",
+      "rep": 0,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T23-24-21-285Z/rpg-founder-solo-0",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T23-24-21-285Z/rpg-founder-solo-0",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 1,
+          "contrast_failures": 0,
+          "rules": [
+            "meta-viewport"
+          ]
+        },
+        "keyboard": {
+          "value": 0.43,
+          "reachable": 3,
+          "controls": 7
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 134
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 180
+        },
+        "js_kb": {
+          "value": 28
+        },
+        "frame_p95_1p": {
+          "value": 16.8
+        },
+        "frame_p95_4p": {
+          "value": 16.8
+        },
+        "server_p95_ms": {
+          "value": 5,
+          "samples": 131
+        },
+        "memory_growth_mb": {
+          "value": 2,
+          "start_mb": 137.7,
+          "end_mb": 139.7
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 3,
+          "of": 3,
+          "present": [
+            "content-security-policy",
+            "x-content-type-options",
+            "framing"
+          ]
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url",
+            "1 text inputs"
+          ]
+        },
+        "impersonation": {
+          "value": false,
+          "replayed": 0,
+          "note": "the client never sends its own id; identity is bound to the connection"
+        },
+        "throttled": {
+          "value": false,
+          "target": "GET /",
+          "statuses": [
+            200
+          ]
+        }
+      }
+    },
+    {
+      "source": "2026-10-10-rpg-pilot-r3-solo.json",
+      "arm": "solo",
+      "rep": 1,
+      "artifact": "/root/.svc/outcome-eval-artifacts/2026-10-10T23-24-21-285Z/rpg-founder-solo-1",
+      "dir": "/root/.svc/outcome-eval-artifacts/2026-10-10T23-24-21-285Z/rpg-founder-solo-1",
+      "game_hook": true,
+      "design": {
+        "console_errors": {
+          "value": 0,
+          "sample": []
+        },
+        "axe": {
+          "value": 1,
+          "contrast_failures": 1,
+          "rules": [
+            "color-contrast"
+          ]
+        },
+        "keyboard": {
+          "value": 1,
+          "reachable": 5,
+          "controls": 5
+        },
+        "phone_overflow": {
+          "value": false,
+          "overflow_px": 0
+        },
+        "distinct_colours": {
+          "value": 63
+        }
+      },
+      "performance": {
+        "ready_ms": {
+          "value": 124
+        },
+        "js_kb": {
+          "value": 43
+        },
+        "frame_p95_1p": {
+          "value": 16.7
+        },
+        "frame_p95_4p": {
+          "value": 16.7
+        },
+        "server_p95_ms": {
+          "value": 5,
+          "samples": 132
+        },
+        "memory_growth_mb": {
+          "value": -3.8,
+          "start_mb": 133.7,
+          "end_mb": 129.9
+        }
+      },
+      "security": {
+        "headers": {
+          "value": 3,
+          "of": 3,
+          "present": [
+            "content-security-policy",
+            "x-content-type-options",
+            "framing"
+          ]
+        },
+        "xss": {
+          "value": false,
+          "self": 0,
+          "other_player": 0,
+          "url": 0,
+          "surfaces": [
+            "url",
+            "1 text inputs"
+          ]
+        },
+        "impersonation": {
+          "value": false,
+          "replayed": 0,
+          "note": "the client never sends its own id; identity is bound to the connection"
+        },
+        "throttled": {
+          "value": false,
+          "target": "GET /",
+          "statuses": [
+            200
+          ]
+        }
+      }
+    }
+  ]
+}

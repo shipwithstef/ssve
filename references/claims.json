@@ -367,6 +367,21 @@
       ],
       "json": "bounded_minus_solo",
       "max": 0
+    },
+    {
+      "id": "web-probes-separate-planted-defects",
+      "claim": "Each of the 10 web-probe metrics (axe, contrast, phone overflow, console errors, frame time, memory growth, XSS, impersonation, security headers, throttling) scores a planted good build better than a planted bad one",
+      "source": "scripts/web-probes.mjs",
+      "command": ["node", "scripts/web-probes.mjs", "prove"],
+      "exit": 0
+    },
+    {
+      "id": "rpg-bounded-lean-but-unhardened",
+      "claim": "On the kept RPG builds, the revised bounded method ships far less JavaScript than Opus alone (5 vs 47 KB) but sets fewer security headers (0.3 vs 3.0 of 3)",
+      "source": "docs/decisions/2026-10-10-bounded-delivery.md",
+      "command": ["node", "-e", "const r=require('./test-framework/outcome-evals/results/2026-10-11-rpg-web-probes.json');const g=(f)=>r.rows.filter(f);const m=(xs,k)=>xs.reduce((a,x)=>a+x.performance[k].value,0)/xs.length;const h=(xs)=>xs.reduce((a,x)=>a+x.security.headers.value,0)/xs.length;const b=g(x=>x.source.includes('r3-bounded'));const o=g(x=>x.arm==='solo');console.log(JSON.stringify({bounded_minus_opus_js_kb:+(m(b,'js_kb')-m(o,'js_kb')).toFixed(1),bounded_minus_opus_headers:+(h(b)-h(o)).toFixed(2)}))"],
+      "json": "bounded_minus_opus_headers",
+      "max": -1
     }
   ]
 }

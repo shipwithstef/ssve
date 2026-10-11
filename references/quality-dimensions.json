@@ -18,6 +18,10 @@
     "aigamedev-engines": "https://www.reddit.com/r/aigamedev/comments/1wzjxmi/",
     "mutation-testing": "DeMillo, Lipton and Sayward, Hints on Test Data Selection (1978); Papadakis et al., Mutation Testing Advances (2019)",
     "chaos-engineering": "https://principlesofchaos.org/",
+    "axe-core": "https://github.com/dequelabs/axe-core",
+    "wcag-2-2": "https://www.w3.org/TR/WCAG22/",
+    "rail": "https://web.dev/articles/rail",
+    "owasp-top-10": "https://owasp.org/Top10/",
     "funsearch": "https://www.nature.com/articles/s41586-023-06924-6",
     "alphaevolve": "https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/",
     "opus-haiku-demos-2026-10": "https://x.com/ClaudeDevs/status/2107895955144208813 and https://x.com/IndependentEco/status/2109011691576975632 (egg drop; EcoBench sprint)"
@@ -51,7 +55,7 @@
       "id": "authz",
       "layer": "production",
       "class": "gate",
-      "measure": "judge claim + planted probes (review-security pillar): no route acts on another user's data",
+      "measure": "scripts/web-probes.mjs security.impersonation (replaying a player's own requests and socket frames with another player's id moves the other player) + judge claim",
       "better": "true",
       "source": "rocket-production"
     },
@@ -203,7 +207,7 @@
       "id": "frame-time",
       "layer": "efficiency",
       "class": "gate",
-      "measure": "browser probe: p95 frame interval under 20 ms while playing",
+      "measure": "scripts/web-probes.mjs performance.frame_p95_1p and frame_p95_4p (ms, p95 rAF interval while bots play)",
       "better": "lower",
       "source": "aigamedev-engines"
     },
@@ -211,7 +215,7 @@
       "id": "startup",
       "layer": "efficiency",
       "class": "efficiency",
-      "measure": "browser probe: page interactive",
+      "measure": "scripts/web-probes.mjs performance.ready_ms (load to first game state)",
       "better": "lower",
       "source": "aigamedev-engines"
     },
@@ -219,7 +223,7 @@
       "id": "zero-console-errors",
       "layer": "product",
       "class": "gate",
-      "measure": "browser probe: no page or console errors while used",
+      "measure": "scripts/web-probes.mjs design.console_errors (page and console errors while used)",
       "better": "0",
       "source": "opus-5-5"
     },
@@ -235,7 +239,7 @@
       "id": "accessible",
       "layer": "product",
       "class": "gate",
-      "measure": "judge claims: labelled controls, keyboard operable, visible focus, readable contrast",
+      "measure": "scripts/web-probes.mjs design.axe (serious+critical WCAG 2 A/AA violations, incl. contrast) and design.keyboard (share of controls reachable by Tab); judge claims for the rest",
       "better": "true",
       "source": "rocket-production"
     },
@@ -362,6 +366,70 @@
       "measure": "share of tokens spent on plans, reviews and receipts rather than on code and checks",
       "better": "lower",
       "source": "alphaevolve"
+    },
+    {
+      "id": "phone-fit",
+      "layer": "product",
+      "class": "gate",
+      "measure": "scripts/web-probes.mjs design.phone_overflow (horizontal overflow at 390 px)",
+      "better": "false",
+      "source": "wcag-2-2"
+    },
+    {
+      "id": "palette-breadth",
+      "layer": "product",
+      "class": "taste",
+      "measure": "scripts/web-probes.mjs design.distinct_colours (distinct quantised colours in computed styles and canvas pixels); a signal next to the judge's taste claims, not a target",
+      "better": "higher",
+      "source": "opus-5-5"
+    },
+    {
+      "id": "js-weight",
+      "layer": "efficiency",
+      "class": "efficiency",
+      "measure": "scripts/web-probes.mjs performance.js_kb (script bytes transferred on load)",
+      "better": "lower",
+      "source": "rail"
+    },
+    {
+      "id": "server-latency",
+      "layer": "efficiency",
+      "class": "gate",
+      "measure": "scripts/web-probes.mjs performance.server_p95_ms (GET / p95 while four players act; RAIL response budget 100 ms)",
+      "better": "lower",
+      "source": "rail"
+    },
+    {
+      "id": "memory-growth",
+      "layer": "production",
+      "class": "gate",
+      "measure": "scripts/web-probes.mjs performance.memory_growth_mb (server resident memory growth over the play period)",
+      "better": "lower",
+      "source": "rail"
+    },
+    {
+      "id": "no-xss",
+      "layer": "production",
+      "class": "gate",
+      "measure": "scripts/web-probes.mjs security.xss (a script payload in every text input, text action and URL parameter never runs, for the sender or another player)",
+      "better": "0",
+      "source": "owasp-top-10"
+    },
+    {
+      "id": "security-headers",
+      "layer": "production",
+      "class": "gate",
+      "measure": "scripts/web-probes.mjs security.headers (CSP, nosniff, framing protection on /)",
+      "better": "higher",
+      "source": "owasp-top-10"
+    },
+    {
+      "id": "rate-limited",
+      "layer": "production",
+      "class": "gate",
+      "measure": "scripts/web-probes.mjs security.throttled (a 300-request flood on the app's own endpoint gets 429 or 503)",
+      "better": "true",
+      "source": "owasp-top-10"
     }
   ]
 }

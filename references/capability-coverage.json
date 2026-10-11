@@ -3284,6 +3284,15 @@
       ]
     },
     {
+      "id": "engine:scripts/web-probes.mjs",
+      "kind": "engine",
+      "source": "scripts/web-probes.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-web-probes.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/wire-codex-hooks.mjs",
       "kind": "engine",
       "source": "scripts/wire-codex-hooks.mjs",
