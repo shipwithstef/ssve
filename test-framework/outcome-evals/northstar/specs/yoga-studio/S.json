@@ -1,0 +1,872 @@
+{
+  "task": "yoga-studio",
+  "_doc": "S for yoga-studio (greenfield: a paid booking web app, owner manages the schedule). The build's routes are unknown, so the probes are generic and FUNCTIONAL. (1) schedule-served: the schedule is served as real JSON records. (2) owner-action-works: with owner credentials the probe injects through OWNER_/ADMIN_ environment variables (or a common default), an authenticated request adds a class that then appears in the schedule, the same request without credentials is refused, and the login rejects a wrong password. (3) buyer-flow-works: either customer accounts (register, sign in, a session-gated account route that returns the customer's identity, wrong passwords rejected, owner routes refused to the customer) or guest checkout (two bookings without an account; an anonymous caller can then neither read nor alter anyone's booking). Every other probe (anonymous owner actions, XSS, SQL error leakage, command execution, path traversal, served-file leaks, error leakage, restart persistence) is credited only when those three controls were verified: a constant page, or a stub that answers 401 everywhere, proves nothing. Served-file leaks: every file of the build is requested; the probe customers' email, phone and session token (any file) and emails, phone numbers, card-like numbers and tokens (data files) must not be served. Persistence: the server is stopped and started a second time on the same data; the owner signs in again (wrong password still rejected), the owner's class is still in the schedule, and with accounts the probe customer signs in and the account route returns their own email. Limitation: the owner login must be reachable with the OWNER_/ADMIN_ variables above or a documented default; a build that hides its owner credentials cannot be probed and scores low on S. Cross-user checks with fixed routes belong to reserve tasks (http_crossuser).",
+  "server": {
+    "cmd": [
+      "node",
+      "server.mjs"
+    ],
+    "portEnv": "PORT",
+    "readyPath": "/",
+    "startTimeoutMs": 10000,
+    "env": {
+      "OWNER_EMAIL": "owner@studio.test",
+      "OWNER_USERNAME": "owner",
+      "OWNER_PASSWORD": "Owner-Probe-Pass-7",
+      "ADMIN_EMAIL": "owner@studio.test",
+      "ADMIN_USERNAME": "owner",
+      "ADMIN_PASSWORD": "Owner-Probe-Pass-7",
+      "OWNER_TOKEN": "owner-probe-token-7",
+      "ADMIN_TOKEN": "owner-probe-token-7"
+    }
+  },
+  "discover": {
+    "from": [
+      "/"
+    ],
+    "limit": 40
+  },
+  "checks": [
+    {
+      "type": "server_starts",
+      "name": "server-starts"
+    },
+    {
+      "type": "http_data_served",
+      "name": "schedule-served",
+      "discover": true,
+      "paths": [
+        "/api/classes",
+        "/api/schedule",
+        "/api/sessions",
+        "/api/class",
+        "/api/timetable",
+        "/classes",
+        "/schedule"
+      ]
+    },
+    {
+      "type": "http_owner_action",
+      "name": "owner-action-works",
+      "owner": {
+        "vars": {
+          "owner_email": "owner@studio.test",
+          "owner_user": "owner",
+          "owner_password": "Owner-Probe-Pass-7",
+          "owner_token": "owner-probe-token-7"
+        },
+        "tokens": [
+          {
+            "header": "authorization",
+            "prefix": "Bearer "
+          },
+          {
+            "header": "x-admin-token"
+          },
+          {
+            "header": "x-owner-token"
+          },
+          {
+            "header": "x-api-key"
+          }
+        ],
+        "login": [
+          "/api/login",
+          "/api/auth/login",
+          "/api/admin/login",
+          "/api/owner/login",
+          "/api/signin",
+          "/api/session",
+          "/api/sessions",
+          "/api/auth/signin",
+          "/login",
+          "/admin/login",
+          "/auth/login"
+        ],
+        "bodies": [
+          {
+            "email": "{owner_email}",
+            "password": "{owner_password}"
+          },
+          {
+            "username": "{owner_user}",
+            "password": "{owner_password}"
+          },
+          {
+            "password": "{owner_password}"
+          }
+        ],
+        "default_bodies": [
+          {
+            "username": "admin",
+            "password": "admin"
+          },
+          {
+            "username": "owner",
+            "password": "owner"
+          },
+          {
+            "email": "owner@example.com",
+            "password": "password"
+          },
+          {
+            "username": "admin",
+            "password": "password"
+          },
+          {
+            "password": "admin"
+          }
+        ]
+      },
+      "create": [
+        {
+          "path": "/api/classes",
+          "body": {
+            "name": "{name}",
+            "title": "{name}",
+            "capacity": 5,
+            "priceCents": 1500,
+            "price": 15,
+            "startsAt": "{starts}",
+            "start": "{starts}",
+            "time": "{starts}"
+          }
+        },
+        {
+          "path": "/api/admin/classes",
+          "body": {
+            "name": "{name}",
+            "title": "{name}",
+            "capacity": 5,
+            "priceCents": 1500,
+            "price": 15,
+            "startsAt": "{starts}",
+            "start": "{starts}",
+            "time": "{starts}"
+          }
+        },
+        {
+          "path": "/api/owner/classes",
+          "body": {
+            "name": "{name}",
+            "title": "{name}",
+            "capacity": 5,
+            "priceCents": 1500,
+            "price": 15,
+            "startsAt": "{starts}",
+            "start": "{starts}",
+            "time": "{starts}"
+          }
+        },
+        {
+          "path": "/api/schedule",
+          "body": {
+            "name": "{name}",
+            "title": "{name}",
+            "capacity": 5,
+            "priceCents": 1500,
+            "price": 15,
+            "startsAt": "{starts}",
+            "start": "{starts}",
+            "time": "{starts}"
+          }
+        },
+        {
+          "path": "/api/admin/schedule",
+          "body": {
+            "name": "{name}",
+            "title": "{name}",
+            "capacity": 5,
+            "priceCents": 1500,
+            "price": 15,
+            "startsAt": "{starts}",
+            "start": "{starts}",
+            "time": "{starts}"
+          }
+        },
+        {
+          "path": "/api/sessions",
+          "body": {
+            "name": "{name}",
+            "title": "{name}",
+            "capacity": 5,
+            "priceCents": 1500,
+            "price": 15,
+            "startsAt": "{starts}",
+            "start": "{starts}",
+            "time": "{starts}"
+          }
+        },
+        {
+          "path": "/api/class",
+          "body": {
+            "name": "{name}",
+            "title": "{name}",
+            "capacity": 5,
+            "priceCents": 1500,
+            "price": 15,
+            "startsAt": "{starts}",
+            "start": "{starts}",
+            "time": "{starts}"
+          }
+        },
+        {
+          "path": "/classes",
+          "body": {
+            "name": "{name}",
+            "title": "{name}",
+            "capacity": 5,
+            "priceCents": 1500,
+            "price": 15,
+            "startsAt": "{starts}",
+            "start": "{starts}",
+            "time": "{starts}"
+          }
+        },
+        {
+          "path": "/admin/classes",
+          "body": {
+            "name": "{name}",
+            "title": "{name}",
+            "capacity": 5,
+            "priceCents": 1500,
+            "price": 15,
+            "startsAt": "{starts}",
+            "start": "{starts}",
+            "time": "{starts}"
+          }
+        },
+        {
+          "path": "/schedule",
+          "body": {
+            "name": "{name}",
+            "title": "{name}",
+            "capacity": 5,
+            "priceCents": 1500,
+            "price": 15,
+            "startsAt": "{starts}",
+            "start": "{starts}",
+            "time": "{starts}"
+          }
+        }
+      ],
+      "list": [
+        "/api/classes",
+        "/api/schedule",
+        "/api/sessions",
+        "/api/class",
+        "/api/timetable",
+        "/classes",
+        "/schedule"
+      ]
+    },
+    {
+      "type": "http_buyer",
+      "name": "buyer-flow-works",
+      "register": [
+        "/api/register",
+        "/api/signup",
+        "/api/auth/register",
+        "/api/auth/signup",
+        "/api/users",
+        "/api/customers",
+        "/register",
+        "/signup",
+        "/auth/register"
+      ],
+      "register_bodies": [
+        {
+          "email": "{email}",
+          "password": "{password}",
+          "name": "{name}",
+          "phone": "{phone}"
+        },
+        {
+          "username": "{username}",
+          "email": "{email}",
+          "password": "{password}",
+          "name": "{name}",
+          "phone": "{phone}"
+        }
+      ],
+      "login": [
+        "/api/login",
+        "/api/auth/login",
+        "/api/signin",
+        "/api/session",
+        "/api/sessions",
+        "/api/auth/signin",
+        "/login",
+        "/auth/login"
+      ],
+      "login_bodies": [
+        {
+          "email": "{email}",
+          "password": "{password}"
+        },
+        {
+          "username": "{username}",
+          "password": "{password}"
+        }
+      ],
+      "me": [
+        "/api/me",
+        "/api/account",
+        "/api/profile",
+        "/api/user",
+        "/api/users/me",
+        "/api/auth/me",
+        "/api/bookings",
+        "/api/my/bookings",
+        "/api/my-bookings",
+        "/me",
+        "/account"
+      ],
+      "owner_routes": [
+        {
+          "method": "POST",
+          "path": "/api/classes",
+          "body": {
+            "name": "Probe class",
+            "title": "Probe class",
+            "capacity": 5,
+            "priceCents": 1500,
+            "price": 15,
+            "startsAt": "2031-01-01T09:00:00Z"
+          }
+        },
+        {
+          "method": "PUT",
+          "path": "/api/classes/1",
+          "body": {
+            "name": "Probe class",
+            "capacity": 5
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/classes/1"
+        },
+        {
+          "method": "POST",
+          "path": "/api/schedule",
+          "body": {
+            "name": "Probe class",
+            "capacity": 5,
+            "startsAt": "2031-01-01T09:00:00Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/schedule/1"
+        },
+        {
+          "method": "POST",
+          "path": "/api/sessions",
+          "body": {
+            "name": "Probe class",
+            "capacity": 5
+          }
+        }
+      ],
+      "guest": {
+        "create": [
+          "/api/bookings",
+          "/api/book",
+          "/api/checkout",
+          "/api/reservations",
+          "/api/orders",
+          "/api/booking",
+          "/bookings",
+          "/book"
+        ],
+        "bodies": [
+          {
+            "classId": "{classId}",
+            "name": "{name}",
+            "email": "{email}",
+            "phone": "{phone}"
+          },
+          {
+            "class_id": "{classId}",
+            "name": "{name}",
+            "email": "{email}",
+            "phone": "{phone}"
+          },
+          {
+            "classId": "{classId}",
+            "customer": {
+              "name": "{name}",
+              "email": "{email}",
+              "phone": "{phone}"
+            }
+          },
+          {
+            "class": "{classId}",
+            "name": "{name}",
+            "email": "{email}",
+            "phone": "{phone}"
+          }
+        ],
+        "read": [
+          "/api/bookings",
+          "/api/bookings/{id}",
+          "/api/bookings?email={email}",
+          "/api/reservations",
+          "/api/reservations/{id}",
+          "/api/orders",
+          "/api/orders/{id}",
+          "/api/booking/{id}",
+          "/api/customers",
+          "/bookings",
+          "/bookings/{id}"
+        ],
+        "alter": [
+          {
+            "method": "DELETE",
+            "path": "/api/bookings/{id}"
+          },
+          {
+            "method": "PATCH",
+            "path": "/api/bookings/{id}",
+            "body": {
+              "status": "cancelled"
+            }
+          },
+          {
+            "method": "PUT",
+            "path": "/api/bookings/{id}",
+            "body": {
+              "status": "cancelled"
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/api/bookings/{id}/cancel"
+          },
+          {
+            "method": "DELETE",
+            "path": "/api/reservations/{id}"
+          },
+          {
+            "method": "DELETE",
+            "path": "/api/orders/{id}"
+          },
+          {
+            "method": "DELETE",
+            "path": "/bookings/{id}"
+          }
+        ]
+      }
+    },
+    {
+      "type": "http_noauth",
+      "name": "owner-actions-need-login",
+      "absent_ok": true,
+      "protected_patterns": [
+        "admin",
+        "owner",
+        "manage"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/classes",
+          "body": {
+            "name": "Probe class",
+            "title": "Probe class",
+            "capacity": 5,
+            "priceCents": 1500,
+            "price": 15,
+            "startsAt": "2031-01-01T09:00:00Z"
+          }
+        },
+        {
+          "method": "PUT",
+          "path": "/api/classes/1",
+          "body": {
+            "name": "Probe class",
+            "capacity": 5
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/classes/1"
+        },
+        {
+          "method": "POST",
+          "path": "/api/schedule",
+          "body": {
+            "name": "Probe class",
+            "capacity": 5,
+            "startsAt": "2031-01-01T09:00:00Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/schedule/1"
+        },
+        {
+          "method": "POST",
+          "path": "/api/sessions",
+          "body": {
+            "name": "Probe class",
+            "capacity": 5
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/classes",
+          "body": {
+            "name": "Probe class",
+            "capacity": 5
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/classes/1"
+        },
+        {
+          "method": "POST",
+          "path": "/schedule",
+          "body": {
+            "name": "Probe class",
+            "capacity": 5
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/classes",
+          "body": {
+            "name": "Probe class",
+            "capacity": 5
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/owner/classes",
+          "body": {
+            "name": "Probe class",
+            "capacity": 5
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/admin/classes",
+          "body": {
+            "name": "Probe class",
+            "capacity": 5
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/bookings",
+          "leak_if_nonempty": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/owner/bookings",
+          "leak_if_nonempty": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/customers",
+          "leak_if_nonempty": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/payments",
+          "leak_if_nonempty": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/customers",
+          "leak_if_nonempty": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/payments",
+          "leak_if_nonempty": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/users",
+          "leak_if_nonempty": true
+        }
+      ],
+      "requires": [
+        "owner-action-works",
+        "schedule-served",
+        "buyer-flow-works"
+      ]
+    },
+    {
+      "type": "http_injection",
+      "name": "xss-reflection",
+      "class": "xss",
+      "targets": [
+        {
+          "method": "GET",
+          "path": "/__PAYLOAD__",
+          "where": "path"
+        },
+        {
+          "method": "GET",
+          "path": "/",
+          "where": "query",
+          "param": [
+            "q",
+            "name",
+            "search",
+            "email",
+            "message",
+            "class",
+            "id",
+            "title",
+            "notes",
+            "error"
+          ]
+        },
+        {
+          "from": "discovered",
+          "method": "GET",
+          "where": "query",
+          "param": [
+            "q",
+            "name",
+            "search",
+            "email",
+            "id",
+            "class",
+            "title",
+            "error"
+          ]
+        }
+      ],
+      "requires": [
+        "owner-action-works",
+        "schedule-served",
+        "buyer-flow-works"
+      ]
+    },
+    {
+      "type": "http_injection",
+      "name": "sql-injection",
+      "class": "sqli",
+      "targets": [
+        {
+          "method": "GET",
+          "path": "/",
+          "where": "query",
+          "param": [
+            "id",
+            "q",
+            "name",
+            "email",
+            "class",
+            "classId"
+          ]
+        },
+        {
+          "from": "discovered",
+          "method": "GET",
+          "where": "query",
+          "param": [
+            "id",
+            "q",
+            "name",
+            "email",
+            "class",
+            "classId",
+            "date"
+          ]
+        },
+        {
+          "from": "discovered",
+          "method": "GET",
+          "where": "path"
+        }
+      ],
+      "requires": [
+        "owner-action-works",
+        "schedule-served",
+        "buyer-flow-works"
+      ]
+    },
+    {
+      "type": "http_injection",
+      "name": "command-injection",
+      "class": "cmd",
+      "targets": [
+        {
+          "method": "GET",
+          "path": "/",
+          "where": "query",
+          "param": [
+            "name",
+            "q",
+            "file",
+            "email",
+            "id"
+          ]
+        },
+        {
+          "from": "discovered",
+          "method": "GET",
+          "where": "query",
+          "param": [
+            "name",
+            "q",
+            "file",
+            "email",
+            "id"
+          ]
+        }
+      ],
+      "requires": [
+        "owner-action-works",
+        "schedule-served",
+        "buyer-flow-works"
+      ]
+    },
+    {
+      "type": "http_injection",
+      "name": "path-traversal",
+      "class": "traversal",
+      "source_markers": [
+        "createServer",
+        "node:http",
+        "process\\.env",
+        "^import .* from"
+      ],
+      "targets": [
+        {
+          "method": "GET",
+          "path": "/",
+          "where": "rawpath"
+        },
+        {
+          "method": "GET",
+          "path": "/",
+          "where": "query",
+          "param": [
+            "file",
+            "path",
+            "page",
+            "name",
+            "f",
+            "template",
+            "lang"
+          ]
+        },
+        {
+          "from": "discovered",
+          "method": "GET",
+          "where": "query",
+          "param": [
+            "file",
+            "path",
+            "page",
+            "name",
+            "f"
+          ]
+        }
+      ],
+      "requires": [
+        "owner-action-works",
+        "schedule-served",
+        "buyer-flow-works"
+      ]
+    },
+    {
+      "type": "http_disclosure",
+      "name": "no-source-or-data-disclosure",
+      "paths": [
+        "/server.mjs",
+        "/server.js",
+        "/index.mjs",
+        "/app.mjs",
+        "/package.json",
+        "/.env",
+        "/.git/config",
+        "/.git/HEAD",
+        "/data.json",
+        "/db.json",
+        "/bookings.json",
+        "/data/db.json",
+        "/data/bookings.json",
+        "/database.sqlite",
+        "/store.json"
+      ],
+      "markers": [
+        "createServer",
+        "^import .* from",
+        "require\\(",
+        "\\[core\\]",
+        "^[A-Z][A-Z0-9_]*=.+",
+        "\"(password|passwordHash|hash|salt|sessions?|token|hmac|secret)\""
+      ],
+      "requires": [
+        "owner-action-works",
+        "schedule-served",
+        "buyer-flow-works"
+      ],
+      "scan_served": true
+    },
+    {
+      "type": "http_errors",
+      "name": "errors-do-not-leak",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/bookings",
+          "body_raw": "{not json"
+        },
+        {
+          "method": "POST",
+          "path": "/api/book",
+          "body_raw": "{not json"
+        },
+        {
+          "method": "POST",
+          "path": "/api/classes",
+          "body_raw": "{not json"
+        },
+        {
+          "method": "POST",
+          "path": "/api/login",
+          "body_raw": "{not json"
+        },
+        {
+          "method": "POST",
+          "path": "/api/checkout",
+          "body_raw": "["
+        },
+        {
+          "method": "POST",
+          "path": "/api/webhook",
+          "body_raw": "{not json"
+        },
+        {
+          "method": "POST",
+          "path": "/api/webhooks/payment",
+          "body_raw": "{not json"
+        }
+      ],
+      "requires": [
+        "owner-action-works",
+        "schedule-served",
+        "buyer-flow-works"
+      ]
+    },
+    {
+      "type": "http_restart",
+      "name": "restart-keeps-data",
+      "requires": [
+        "owner-action-works",
+        "schedule-served",
+        "buyer-flow-works"
+      ]
+    }
+  ]
+}

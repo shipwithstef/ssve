@@ -1,0 +1,85 @@
+{
+  "task": "security-payments",
+  "_doc": "S for security-payments, a review task: the artifact is SECURITY.json beside an untouched src/. Each planted defect counts as handled when SECURITY.json reports it at its line, or when src/ was fixed and the probe proves the exploit no longer works. The report must be well formed, the reviewed code must be left alone (the instruction says so), and the two money-moving defects must be rated HIGH or CRITICAL.",
+  "baseline": "repo",
+  "reviewed": [
+    "src"
+  ],
+  "checks": [
+    {
+      "type": "report_valid",
+      "name": "report-well-formed",
+      "file": "SECURITY.json"
+    },
+    {
+      "type": "files_unchanged",
+      "name": "reviewed-code-untouched",
+      "paths": [
+        "src"
+      ]
+    },
+    {
+      "type": "script",
+      "name": "client-price-handled",
+      "file": "probes/price-tamper.mjs",
+      "report_file": "SECURITY.json",
+      "or_reported": {
+        "file": "checkout.mjs",
+        "line": 7,
+        "words": "amount|price|client|tamper|any (price|amount)|pay (less|nothing|1)|trust"
+      }
+    },
+    {
+      "type": "script",
+      "name": "refund-idor-handled",
+      "file": "probes/refund-idor.mjs",
+      "report_file": "SECURITY.json",
+      "or_reported": {
+        "file": "checkout.mjs",
+        "line": 14,
+        "words": "owner|another|other (user|customer)|idor|authoriz|belong|any booking|any user"
+      }
+    },
+    {
+      "type": "script",
+      "name": "unsigned-webhook-handled",
+      "file": "probes/webhook-unsigned.mjs",
+      "report_file": "SECURITY.json",
+      "or_reported": {
+        "file": "webhook.mjs",
+        "line": 12,
+        "words": "missing|absent|without|no signature|omit|unsigned|forg|bypass|optional"
+      }
+    },
+    {
+      "type": "script",
+      "name": "secret-in-logs-handled",
+      "file": "probes/webhook-secret-log.mjs",
+      "report_file": "SECURITY.json",
+      "or_reported": {
+        "file": "webhook.mjs",
+        "line": 16,
+        "words": "secret|log|leak|expos"
+      }
+    },
+    {
+      "type": "report_severity",
+      "name": "money-defects-rated-serious",
+      "file": "SECURITY.json",
+      "must": [
+        {
+          "file": "checkout.mjs",
+          "line": 7,
+          "words": "amount|price|client|tamper|any (price|amount)|pay (less|nothing|1)|trust",
+          "min": "HIGH"
+        },
+        {
+          "file": "webhook.mjs",
+          "line": 12,
+          "words": "missing|absent|without|no signature|omit|unsigned|forg|bypass|optional",
+          "min": "HIGH"
+        }
+      ]
+    }
+  ]
+}

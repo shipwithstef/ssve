@@ -1,0 +1,49 @@
+{
+  "_doc": "Template for a K (knowledge the model cannot have) spec. Copy to northstar/specs/<task>/K.json and replace every example. Each fact is ONE piece of knowledge that reached the build only through the owner: a standing rule from an earlier session, a private domain fact, a founder pricing rule. Each fact carries one deterministic check against the built artifact. The score is passed facts / all facts, so write 6 to 10 facts that each fail when the knowledge is missing and pass when it is applied. Do not repeat the task's stated behaviour (that is H): probe the private rule at boundaries and on inputs the stated examples do not cover. A missing module, export or server fails its fact. Keep machine paths and personal data out of the spec.",
+  "task": "<task-id>",
+  "vars": { "H": 3600000, "t0": 1793606400000 },
+  "_doc_vars": "Optional named numbers for arguments. An argument written {\"$\": \"t0 - 6*H\"} is evaluated as plain arithmetic over these vars (digits, vars, + - * / and parentheses only).",
+  "server": { "cmd": ["node", "server.mjs"], "portEnv": "PORT", "readyPath": "/", "startTimeoutMs": 10000 },
+  "_doc_server": "Needed only by http facts. cmd runs in the build directory with PORT set; a path starting with @spec/ resolves inside this spec's directory (for a launcher that wires up the build's modules).",
+  "facts": [
+    {
+      "id": "example-call",
+      "rule": "One sentence: the private rule this fact tests, in the owner's words.",
+      "type": "call",
+      "module": "src/pricing.mjs",
+      "export": "quote",
+      "args": [{ "plan": "founder", "seats": 3 }],
+      "expect": { "equals": 4200 },
+      "_doc": "call: import the module (path relative to the build), call the export with args (awaited), compare. expect keys, all must hold: equals, not_equals, oneOf [..], integer true, gte, lte, matches \"regex\" (on String(value)), subset {..} (the result contains these fields), throws true or \"message text\" (the call must throw)."
+    },
+    {
+      "id": "example-http",
+      "rule": "A private domain fact visible through the running product.",
+      "type": "http",
+      "method": "GET",
+      "path": "/api/quote?plan=founder&seats=3",
+      "headers": {},
+      "expect": { "status": 200, "json": { "totalCents": 4200 }, "body_matches": "", "headers": { "content-type": "json" } },
+      "_doc": "http: needs spec.server. expect.json is a subset match on the parsed body. Remove keys you do not need."
+    },
+    {
+      "id": "example-script",
+      "rule": "A multi-step rule that needs setup (sequence of calls, state, a clock).",
+      "type": "script",
+      "file": "probes/example.mjs",
+      "args": {},
+      "_doc": "script: node runs northstar/specs/<task>/probes/example.mjs with the build directory as cwd and GRADE_BUILD_DIR and GRADE_ARGS in the environment. The probe MUST import { dir, load, pass, fail } from the grader's sk-probe.mjs (a relative path from the probe, e.g. \"../../../graders/sk-probe.mjs\") and finish by calling pass(\"what was verified\"); call fail(\"why\") on a failed assertion. Only pass() completes a probe: the grader requires exit 0 AND the run's completion record, so a script that merely ends, or a build that calls process.exit(0) while loading, does not pass. Load build modules with await load(\"src/x.mjs\")."
+    },
+    {
+      "id": "example-source",
+      "rule": "A standing rule that is only visible in the code (use sparingly; prefer call/http/script).",
+      "type": "source",
+      "files": ["src"],
+      "requires": [],
+      "forbids": ["parseFloat", "toFixed"],
+      "depends_on": [],
+      "_doc_depends_on": "Any fact may list ids of earlier facts in depends_on; it is credited only if they passed (use it so a check that finds nothing in an empty build cannot pass).",
+      "_doc": "source: the regexes in requires must all match, none of forbids may match, across the listed files or directories (tests and docs are excluded)."
+    }
+  ]
+}
