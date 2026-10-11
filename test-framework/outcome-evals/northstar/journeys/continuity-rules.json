@@ -1,0 +1,318 @@
+{
+  "task": "continuity-rules",
+  "version": 1,
+  "steps": [
+    {
+      "id": "s1-route",
+      "kind": "skill",
+      "name": "route-workflow",
+      "must": "MUST",
+      "evidence": {
+        "skill": "route-workflow"
+      },
+      "cite": "skills/route-workflow/references/lane-model.md:114"
+    },
+    {
+      "id": "s1-init",
+      "kind": "state",
+      "name": "svc-init",
+      "must": "MUST",
+      "evidence": {
+        "file": ".svc/**"
+      },
+      "cite": "scripts/init-project-state.mjs:5"
+    },
+    {
+      "id": "s1-analyze-domain",
+      "kind": "skill",
+      "name": "analyze-domain",
+      "must": "MUST",
+      "evidence": {
+        "skill": "analyze-domain"
+      },
+      "cite": "scripts/compile-delivery-graph.mjs:69"
+    },
+    {
+      "id": "s1-plan-changeset",
+      "kind": "skill",
+      "name": "plan-changeset",
+      "must": "MUST",
+      "evidence": {
+        "skill": "plan-changeset"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s1-review-plan",
+      "kind": "skill",
+      "name": "review-plan",
+      "must": "MUST",
+      "evidence": {
+        "skill": "review-plan"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s1-execute-changeset",
+      "kind": "skill",
+      "name": "execute-changeset",
+      "must": "MUST",
+      "evidence": {
+        "skill": "execute-changeset"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s1-review-gate",
+      "kind": "skill",
+      "name": "review-gate",
+      "must": "MUST",
+      "evidence": {
+        "skill": "review-gate"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s1-review-exec",
+      "kind": "skill",
+      "name": "review-exec",
+      "must": "MUST",
+      "evidence": {
+        "skill": "review-exec"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s1-audit-implementation",
+      "kind": "skill",
+      "name": "audit-implementation",
+      "must": "MUST",
+      "evidence": {
+        "skill": "audit-implementation"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s1-land-changeset",
+      "kind": "skill",
+      "name": "land-changeset",
+      "must": "MUST",
+      "evidence": {
+        "skill": "land-changeset"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s1-verify-promotion",
+      "kind": "skill",
+      "name": "verify-promotion",
+      "must": "MUST",
+      "evidence": {
+        "skill": "verify-promotion"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s1-svc-next",
+      "kind": "check",
+      "name": "svc-next",
+      "must": "MUST",
+      "evidence": {
+        "bash": "svc-next\\.mjs"
+      },
+      "cite": "docs/analysis/2026-10-11-organism-plan.md:243"
+    },
+    {
+      "id": "s1-receipts",
+      "kind": "receipt",
+      "name": "receipts",
+      "must": "MUST",
+      "evidence": {
+        "any": [
+          {
+            "git_notes": {
+              "ref": "refs/notes/svc-receipts"
+            }
+          },
+          {
+            "file": ".svc/receipts/**"
+          }
+        ]
+      },
+      "cite": "references/chain-receipt-contract.md:13"
+    },
+    {
+      "id": "s1-commit",
+      "kind": "check",
+      "name": "commit-beyond-seed",
+      "must": "MUST",
+      "evidence": {
+        "commits": {
+          "min": 2
+        }
+      },
+      "cite": "scripts/emit-receipt.mjs:360"
+    },
+    {
+      "id": "s1-tests",
+      "kind": "check",
+      "name": "node-test",
+      "must": "MUST",
+      "evidence": {
+        "bash": "node --test"
+      },
+      "cite": "skills/route-workflow/references/lane-model.md:22"
+    },
+    {
+      "id": "s2-route",
+      "kind": "skill",
+      "name": "route-workflow",
+      "must": "MUST",
+      "evidence": {
+        "skill": "route-workflow"
+      },
+      "cite": "skills/route-workflow/references/lane-model.md:114"
+    },
+    {
+      "id": "s2-svc-next",
+      "kind": "check",
+      "name": "svc-next",
+      "must": "MUST",
+      "evidence": {
+        "bash": "svc-next\\.mjs"
+      },
+      "cite": "docs/analysis/2026-10-11-organism-plan.md:243"
+    },
+    {
+      "id": "s2-analyze-domain",
+      "kind": "skill",
+      "name": "analyze-domain",
+      "must": "MUST",
+      "evidence": {
+        "skill": "analyze-domain"
+      },
+      "cite": "scripts/compile-delivery-graph.mjs:69"
+    },
+    {
+      "id": "s2-plan-changeset",
+      "kind": "skill",
+      "name": "plan-changeset",
+      "must": "MUST",
+      "evidence": {
+        "skill": "plan-changeset"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s2-review-plan",
+      "kind": "skill",
+      "name": "review-plan",
+      "must": "MUST",
+      "evidence": {
+        "skill": "review-plan"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s2-execute-changeset",
+      "kind": "skill",
+      "name": "execute-changeset",
+      "must": "MUST",
+      "evidence": {
+        "skill": "execute-changeset"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s2-review-gate",
+      "kind": "skill",
+      "name": "review-gate",
+      "must": "MUST",
+      "evidence": {
+        "skill": "review-gate"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s2-review-exec",
+      "kind": "skill",
+      "name": "review-exec",
+      "must": "MUST",
+      "evidence": {
+        "skill": "review-exec"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s2-audit-implementation",
+      "kind": "skill",
+      "name": "audit-implementation",
+      "must": "MUST",
+      "evidence": {
+        "skill": "audit-implementation"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s2-land-changeset",
+      "kind": "skill",
+      "name": "land-changeset",
+      "must": "MUST",
+      "evidence": {
+        "skill": "land-changeset"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s2-verify-promotion",
+      "kind": "skill",
+      "name": "verify-promotion",
+      "must": "MUST",
+      "evidence": {
+        "skill": "verify-promotion"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "s2-receipts",
+      "kind": "receipt",
+      "name": "receipts",
+      "must": "MUST",
+      "evidence": {
+        "any": [
+          {
+            "git_notes": {
+              "ref": "refs/notes/svc-receipts"
+            }
+          },
+          {
+            "file": ".svc/receipts/**"
+          }
+        ]
+      },
+      "cite": "references/chain-receipt-contract.md:13"
+    },
+    {
+      "id": "s2-commit",
+      "kind": "check",
+      "name": "commit-beyond-seed",
+      "must": "MUST",
+      "evidence": {
+        "commits": {
+          "min": 2
+        }
+      },
+      "cite": "scripts/emit-receipt.mjs:360"
+    },
+    {
+      "id": "s2-tests",
+      "kind": "check",
+      "name": "node-test",
+      "must": "MUST",
+      "evidence": {
+        "bash": "node --test"
+      },
+      "cite": "skills/route-workflow/references/lane-model.md:22"
+    }
+  ]
+}
