@@ -1,9 +1,11 @@
+// @organism-suite
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync, spawn } from "node:child_process";
+import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 import { startCockpit } from "../../scripts/cockpit-serve.mjs";
 
@@ -127,9 +129,52 @@ test("the HTML shell needs no token, holds no data and no token, and sends no re
   } finally { c.close(); }
 });
 
-test("the page reads the token from the fragment and sends it", () => {
+// Runs the page's script in a vm with stubbed browser globals and a known location.hash.
+function runPage({ hash, stored = {} }) {
   const html = fs.readFileSync(path.join(ROOT, "templates/cockpit/live.html"), "utf8");
-  assert.match(html, /location\.hash/);
-  assert.match(html, /\/api\/events\?t=/);
+  const script = html.split("<script>")[1].split("</script>")[0];
+  // A permissive element: any property is a callable that returns the element itself.
+  const el = () => new Proxy(function () {}, {
+    get: (_, k) => (k === Symbol.toPrimitive ? () => "" : k === "dataset" || k === "classList" ? el() : k === "length" ? 0 : el()),
+    apply: () => el(),
+    set: () => true,
+  });
+  const store = { ...stored };
+  const calls = { eventSources: [], replaceState: [] };
+  const location = { hash, pathname: "/", search: "" };
+  const sandbox = {
+    location,
+    history: { replaceState: (...a) => { calls.replaceState.push(a); location.hash = ""; } },
+    sessionStorage: { getItem: (k) => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } },
+    EventSource: class { constructor(url) { calls.eventSources.push(url); } },
+    document: { querySelector: () => el(), querySelectorAll: () => [], addEventListener() {}, body: el() },
+    window: {},
+    Notification: undefined,
+    URLSearchParams, setTimeout, clearTimeout, setInterval: () => 0, clearInterval() {},
+    console,
+  };
+  sandbox.window = sandbox;
+  vm.runInNewContext(script, sandbox);
+  return { calls, location, store };
+}
+
+test("the page script reads the token from location.hash, sends it on the stream, and strips the hash", () => {
+  const token = "abcDEF_-0123456789abcDEF_-0123456789abcde";
+  const { calls, location, store } = runPage({ hash: `#t=${token}` });
+  assert.deepEqual(calls.eventSources, [`/api/events?t=${token}`]);
+  assert.equal(calls.replaceState.length, 1);
+  assert.equal(location.hash, "", "the fragment is removed from the address bar");
+  assert.equal(calls.replaceState[0][2].includes(token), false, "the replacement URL carries no token");
+  assert.equal(store["cockpit-token"], token, "kept for reloads in this tab");
+});
+
+test("without a hash the page falls back to the tab's stored token", () => {
+  const { calls, calls: { replaceState } } = runPage({ hash: "", stored: { "cockpit-token": "stored-token" } });
+  assert.deepEqual(calls.eventSources, ["/api/events?t=stored-token"]);
+  assert.equal(replaceState.length, 0);
+});
+
+test("the page script still parses", () => {
+  const html = fs.readFileSync(path.join(ROOT, "templates/cockpit/live.html"), "utf8");
   assert.doesNotThrow(() => new Function(html.split("<script>")[1].split("</script>")[0]));
 });
