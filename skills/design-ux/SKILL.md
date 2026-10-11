@@ -74,7 +74,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P5-
 node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-SelfVerifyContinuation --evidence command_output:.svc/design-ux-self-verify.log
 ```
 
-## Product Questions — MANDATORY format
+## Product Questions — shared format
 
 Ground screen flows, empty/error/loading states and interactions in current personas, journeys, ACs and actual code. Follow `_shared/product-question-format.md` with `phase: design-ux`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work. UX-REVIEWED requires the shared promotion predicate.
 
@@ -100,13 +100,13 @@ information hierarchy), follow the Design Alternatives Protocol
 
 ## Adversarial Design Review (after UX is drafted)
 
-See [references/adversarial-design-review.md](references/adversarial-design-review.md) for the full adversarial review — the 12 Designer Cognitive Patterns, AI Slop Blacklist, 7 Review Dimensions, and Review Scorecard. MANDATORY after the UX is drafted; this is the G2 design-review rubric.
+See [references/adversarial-design-review.md](references/adversarial-design-review.md) for the full adversarial review — the 12 Designer Cognitive Patterns, AI Slop Blacklist, 7 Review Dimensions, and Review Scorecard. Run it after every UX draft; it is the G2 design-review rubric.
 
 ## What UX Design Is (And Is Not)
 
 UX design defines the structure, flow, and behavior of the experience. It determines what screens exist, what states each screen can be in, how users navigate between them, what information matters most, and what happens when things go wrong.
 
-**UX design does NOT define:** Colors, fonts, spacing, visual style, component libraries, design tokens, animation specifics. Those are UI design (Phase 5). If you catch yourself writing hex values, font names, or pixel measurements, stop — you have crossed into UI territory.
+**UX design does not define:** Colors, fonts, spacing, visual style, component libraries, design tokens, animation specifics. Those are UI design (Phase 5). If you catch yourself writing hex values, font names, or pixel measurements, stop — you have crossed into UI territory.
 
 **The boundary:** UX says "this screen has a primary action, a list of results, and a filter panel." UI says "the primary action is a 48px filled button in brand-primary, the list uses 16px inter-line spacing, and the filter panel collapses below 768px into a bottom sheet."
 
@@ -168,20 +168,20 @@ Identify every distinct screen or view the feature requires. A "screen" is any s
 **Rules:**
 - Every user story must map to at least one screen
 - Every journey UI step must happen on a named screen
-- Empty states, error states, and loading states are NOT separate screens — they are states of a screen (Step 3)
+- Empty states, error states, and loading states are not separate screens — they are states of a screen (Step 3)
 - Modals and overlays are screens if they require user decisions; they are components if they are pure confirmation
 
 **For Enablers:** Screens are admin dashboards, monitoring views, configuration panels.
 
 **For Integrations:** Screens are setup wizards, connection status views, credential management forms.
 
-**Step 3: State Machines Per Screen** — Map each screen as a state machine in a `## State Machines` section with State, Description, Transitions To and Trigger columns. Every screen MUST have at least LOADING, POPULATED, EMPTY and ERROR; name the trigger of each transition and the data condition that makes a screen empty versus populated; cover offline or degraded states if relevant; and for tabs, accordions and segmented controls specify what is mounted, visible and hidden on each transition. Details: `references/process.md`.
+**Step 3: State Machines Per Screen** — Map each screen as a state machine in a `## State Machines` section with State, Description, Transitions To and Trigger columns. Every screen has at least LOADING, POPULATED, EMPTY and ERROR; name the trigger of each transition and the data condition that makes a screen empty versus populated; cover offline or degraded states if relevant; and for tabs, accordions and segmented controls specify what is mounted, visible and hidden on each transition. Details: `references/process.md`.
 
 **Step 4: Flow Diagrams** — Write a `## Flow Diagrams` section with at least one flow per journey scenario, showing branching points, error-recovery paths and exit points, and an AC Coverage table mapping each AC to a flow, screen and state. Details: `references/process.md`.
 
 ### Step 5: Information Hierarchy
 
-For each screen, define what information matters most. This is NOT layout — it is priority. UI design will determine how priority maps to visual weight.
+For each screen, define what information matters most. This is priority, not layout. UI design will determine how priority maps to visual weight.
 
 ```markdown
 ## Information Hierarchy
@@ -234,7 +234,7 @@ Define the experience for every non-happy-path state. This is where most UX fail
 - Error copy must be actionable — "Something went wrong" is never acceptable
 - Define timeout thresholds (when does "loading" become "error"?)
 
-**Step 7: Accessibility Requirements** — Write feature-specific (not generic WCAG) accessibility decisions: keyboard navigation (tab order, shortcuts, focus management), screen reader (announcements, live regions, landmarks) and cognitive concerns (reading level, reduced motion, time limits, error prevention). Keyboard navigation MUST cover every interactive element, focus MUST be specified for modals, dynamic content and route changes, state changes from Step 3 need announcements, and every timed interaction needs an extension mechanism. Details: `references/process.md`.
+**Step 7: Accessibility Requirements** — Write feature-specific (not generic WCAG) accessibility decisions: keyboard navigation (tab order, shortcuts, focus management), screen reader (announcements, live regions, landmarks) and cognitive concerns (reading level, reduced motion, time limits, error prevention). Keyboard navigation covers every interactive element, focus is specified for modals, dynamic content and route changes, state changes from Step 3 need announcements, and every timed interaction needs an extension mechanism. Details: `references/process.md`.
 
 ### Step 8: Responsive Strategy
 
@@ -398,22 +398,9 @@ When invoked with `--audit` to review existing UX design:
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
+
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. Follow `references/task-graph-chaining-protocol.md`: treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, mark this skill's task `completed` before leaving, then load the next runnable task's skill (marking it `in_progress`) or mark it `completed` with a skip reason. Mirror status to the host UI only from the parent session (Claude `TaskList`/`TaskUpdate`; Kimi `/task` observation; in Codex, mirror only the active step in `update_plan`); a subagent (`SVC_SUBAGENT=1`) leaves mirroring to the parent, because a failed mirror call silently drifts from the file.
 
 ### Self-Verify
 
@@ -433,15 +420,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Apply the task-graph protocol above, then:
 
 **If `--progressive` flag is present AND self-verify passed:**
 - Check `--skip` list. If this skill is in the skip list, pass through to next.
@@ -453,13 +432,4 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.json` is the sole source of truth: resume the first `in_progress` task (else the first `pending` task with blockers satisfied), re-load its skill with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` names a different `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.

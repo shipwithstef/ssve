@@ -90,7 +90,7 @@ verify-promotion       → VERIFIED (PROVE: tests pass, QA complete)
 
 **Announce at start:** "I'm using the design-tech skill to define the technical approach."
 
-## Product Questions — MANDATORY format
+## Product Questions — shared format
 
 Ground architecture, concurrency, scalability and cost choices in the current spec and affected implementation dependencies. Follow `_shared/product-question-format.md` with `phase: design-tech`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work. BASELINED requires the shared promotion predicate.
 
@@ -188,7 +188,7 @@ node scripts/scan-deprecated-foundations.mjs --root . --path <file-or-dir> --fir
 
 Do not design through a capability blocker. Route before implementation churn.
 
-**Adversarial Engineering Review** — After the tech design is drafted, P0 challenges it interactively (max 8 issues per section). Tag every recommendation `[Layer 1]` tried-and-true, `[Layer 2]` new-and-popular (needs stronger justification), `[Layer 3]` first principles or `[EUREKA]`, plus a `[Confidence: X/10]` score (below 5 goes to an appendix unless it is a P0 production risk). Review architecture (end-to-end data flow, a System Contract Map for cross-runtime flows, feature toggles and realistic mocks for every external dependency, and a first-demo that runs locally with no credentials), code quality, tests, performance, and motion (animate only `transform`/`opacity`; animating `top`/`left`/`width`/`height`/`margin` is BANNED). ASCII diagrams for data flow, state machines, dependency graphs and pipelines are mandatory and must be updated in the same commit as the design. If the design adds 8+ new files or 2+ new classes/services, STOP and run the scope-reduction trigger: explain what is overbuilt, propose a minimal version, and ask the team whether to reduce. Details: `references/adversarial-engineering-review.md`.
+**Adversarial Engineering Review** — After the tech design is drafted, P0 challenges it interactively (max 8 issues per section). Tag every recommendation `[Layer 1]` tried-and-true, `[Layer 2]` new-and-popular (needs stronger justification), `[Layer 3]` first principles or `[EUREKA]`, plus a `[Confidence: X/10]` score (below 5 goes to an appendix unless it is a P0 production risk). Review architecture (end-to-end data flow, a System Contract Map for cross-runtime flows, feature toggles and realistic mocks for every external dependency, and a first-demo that runs locally with no credentials), code quality, tests, performance, and motion (animate only `transform`/`opacity`; animating `top`/`left`/`width`/`height`/`margin` is not allowed because it forces layout on every frame). Include ASCII diagrams for data flow, state machines, dependency graphs and pipelines, updated in the same commit as the design. If the design adds 8+ new files or 2+ new classes/services, pause and run the scope-reduction trigger: explain what is overbuilt, propose a minimal version, and ask the team whether to reduce. Details: `references/adversarial-engineering-review.md`.
 
 Cross-system flows (OAuth, hosted login, SSO, payments, webhooks, deep links) require a System Contract Map; the full rule is in that reference.
 
@@ -222,33 +222,18 @@ Read the DESIGNED feature spec and all referenced journey docs. Understand:
 
 ### Step 2: Codebase Analysis
 
-Scan the existing codebase to understand current patterns and constraints.
-
-```bash
-# Project structure
-ls -la src/ app/ lib/ components/ 2>/dev/null
-
-# Tech stack
-cat package.json 2>/dev/null | head -30
-cat go.mod 2>/dev/null | head -20
-cat requirements.txt pyproject.toml 2>/dev/null | head -20
-
-# Existing patterns
-ls src/components/ src/services/ src/models/ 2>/dev/null
-```
-
-Identify:
+Scan the existing codebase (source tree and manifests such as `package.json`, `go.mod`, `pyproject.toml`) to understand current patterns and constraints, and log the findings to `.svc/design-tech-codebase-analysis.log`. Identify:
 - **Tech stack:** Languages, frameworks, libraries already in use
 - **Patterns:** How existing features are structured (MVC, services, hooks, etc.)
 - **Data layer:** Database, ORM, API patterns
 - **Testing:** What test frameworks and conventions exist
 - **Boundaries:** Where this feature touches existing code
 
-**Step 2.5: Concern Scan** — Before architecting, run `node <SKILLS_PATH>/scripts/scan-concerns.mjs --project <repo-root> --paths <planned-or-touched-files> --json`, open each matched concern's `source_file` checklist, and fold its requirements into the matching Technical Design section. CRITICAL/HIGH matches that name a specialist in `required_skills` (e.g. `review-security`, `manage-finops`) MUST become an explicit design decision or a routed follow-on task, never left implicit. Details: `references/step-2-5-concern-scan.md`.
+**Step 2.5: Concern Scan** — Before architecting, run `node <SKILLS_PATH>/scripts/scan-concerns.mjs --project <repo-root> --paths <planned-or-touched-files> --json`, open each matched concern's `source_file` checklist, and fold its requirements into the matching Technical Design section. CRITICAL/HIGH matches that name a specialist in `required_skills` (e.g. `review-security`, `manage-finops`) become an explicit design decision or a routed follow-on task, never left implicit. Details: `references/step-2-5-concern-scan.md`.
 
-**Step 3: Architecture Decision** — Write the `## Technical Design` section: architecture summary, components table, data model, data flow, external dependencies and a Technology Decisions table (choice plus rationale). Two subsections are MANDATORY: a Cost Model (compute, storage, bandwidth, external API, background jobs, with scaling trigger points, a red line, and year-1 projections; a $0 claim must name the free-tier quotas used) and Operations & Ownership (owner, on-call, SLA/SLO, error budget, monitoring, alerting, runbook, failure modes, recovery, backup, dependency failure impact; "best effort" is valid only if stated explicitly). If the feature touches core mechanics (earn, redeem, verify, enroll, loyalty, points, reward), a Competitive Tech Alternatives table is REQUIRED, and if the landscape is populated and our tech matches no competitor, add an ADR explaining the divergence. Details: `references/step-3-architecture-decision.md`.
+**Step 3: Architecture Decision** — Write the `## Technical Design` section: architecture summary, components table, data model, data flow, external dependencies and a Technology Decisions table (choice plus rationale). Two subsections are always present: a Cost Model (compute, storage, bandwidth, external API, background jobs, with scaling trigger points, a red line, and year-1 projections; a $0 claim must name the free-tier quotas used) and Operations & Ownership (owner, on-call, SLA/SLO, error budget, monitoring, alerting, runbook, failure modes, recovery, backup, dependency failure impact; "best effort" is valid only if stated explicitly). If the feature touches core mechanics (earn, redeem, verify, enroll, loyalty, points, reward), include a Competitive Tech Alternatives table, and if the landscape is populated and our tech matches no competitor, add an ADR explaining the divergence. Details: `references/step-3-architecture-decision.md`.
 
-**Steps 4-5: Feasibility, Risks, Trade-offs** — Step 4 is the critical gate: build a Feasibility Matrix checking every spec AC against the design, with a `Persona pressure` column citing a concrete persona ID/path or `N/A - system-only` for user/admin-facing ACs. If an AC is infeasible, explain why, propose alternatives, and loop back to write-spec; do NOT proceed with a design that leaves ACs unsatisfied. Step 5 adds Risks (impact, mitigation) and Trade-offs (chose, over, rationale) tables. Details: `references/steps-4-5-feasibility-risks.md`.
+**Steps 4-5: Feasibility, Risks, Trade-offs** — Step 4 is the critical gate: build a Feasibility Matrix checking every spec AC against the design, with a `Persona pressure` column citing a concrete persona ID/path or `N/A - system-only` for user/admin-facing ACs. If an AC is infeasible, explain why, propose alternatives, and loop back to write-spec rather than proceeding with a design that leaves ACs unsatisfied. Step 5 adds Risks (impact, mitigation) and Trade-offs (chose, over, rationale) tables. Details: `references/steps-4-5-feasibility-risks.md`.
 
 ### Step 6: Trigger G4 Review
 
@@ -378,7 +363,7 @@ node scripts/validate-design-chrome-testability.mjs --root .
 This companion rule prevents later E2E positional selector exceptions by
 requiring chrome controls to be testable before implementation starts.
 
-**Retrieval-Augmented Reasoning** — When uncertain mid-design, do NOT guess: pause, analyze locally (grep, read the slice, installed docs, cited `references/knowledge/` nodes), incorporate the result, and continue. Invoke `research` only when `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns `external_research_required`; a new dependency or API choice is a consequential amendment, not an automatic research trigger. Log non-trivial retrievals in `.svc/pipeline-decisions.jsonl`, and never fabricate a `research` receipt when only local analysis ran. Details: `references/retrieval-augmented-reasoning.md`.
+**Retrieval-Augmented Reasoning** — When uncertain mid-design, retrieve instead of guessing: pause, analyze locally (grep, read the slice, installed docs, cited `references/knowledge/` nodes), incorporate the result, and continue. Invoke `research` only when `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns `external_research_required`; a new dependency or API choice is a consequential amendment, not an automatic research trigger. Log non-trivial retrievals in `.svc/pipeline-decisions.jsonl`, and never fabricate a `research` receipt when only local analysis ran. Details: `references/retrieval-augmented-reasoning.md`.
 
 ## Pipeline Continuation
 
@@ -395,22 +380,9 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P5-
 node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-BaselinedSpecSelfVerify --evidence file:docs/specs/features/<name>.md
 ```
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
+
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. Follow `references/task-graph-chaining-protocol.md`: treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, mark this skill's task `completed` before leaving, then load the next runnable task's skill (marking it `in_progress`) or mark it `completed` with a skip reason. Mirror status to the host UI only from the parent session (Claude `TaskList`/`TaskUpdate`; Kimi `/task` observation; in Codex, mirror only the active step in `update_plan`); a subagent (`SVC_SUBAGENT=1`) leaves mirroring to the parent, because a failed mirror call silently drifts from the file.
 
 ### Self-Verify
 
@@ -429,15 +401,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Apply the task-graph protocol above, then:
 
 **If `--progressive` flag is present AND self-verify passed:**
 - Check `--skip` list. If this skill is in the skip list, pass through to next.
@@ -451,16 +415,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.json` is the sole source of truth: resume the first `in_progress` task (else the first `pending` task with blockers satisfied), re-load its skill with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` names a different `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
 
 ## Skill Outcome Contract
 

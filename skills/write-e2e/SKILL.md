@@ -68,18 +68,18 @@ chain:
 
 ## Deployment & Repository Mode
 - **Production-Only Platforms:** See [references/deployment.md](references/deployment.md) for testing on Base44, Vercel, etc.
-- **Repository Mode Gate:** Detect mode from \`REPO_MODES.md\`.
+- **Repository Mode Gate:** Detect mode from `REPO_MODES.md`.
 
-## Step 0: Pre-Flight — Read the Frontend Before Writing (MANDATORY)
-**Before writing any selector or assertion, READ the actual component source code.**
+## Step 0: Pre-Flight — Read the Frontend Before Writing
+Read the actual component source before writing any selector or assertion; selectors guessed from the journey text are the main source of brittle tests.
 - Identify ARIA roles and landmarks.
 - Verify text content and hierarchy.
 - Especially read the toast/notification component.
 - See [references/deployment.md](references/deployment.md) for pre-flight details.
 
-**Gemini CLI pre-flight (MANDATORY on Gemini):** before any multi-file E2E work, run `bash hooks/svc-gemini-context-check.sh`. Blocks at POOR tier (>4 MB chat JSON). See [references/gemini-context-budget.md](../../references/gemini-context-budget.md). This is WI-085 archetype — Gemini spent 40 min blaming selectors when "fix not deployed" had fallen out of attention.
+**Gemini CLI pre-flight (Gemini only):** before any multi-file E2E work, run `bash hooks/svc-gemini-context-check.sh`. Blocks at POOR tier (>4 MB chat JSON). See [references/gemini-context-budget.md](../../references/gemini-context-budget.md). This is WI-085 archetype — Gemini spent 40 min blaming selectors when "fix not deployed" had fallen out of attention.
 
-**Deploy-before-validate (MANDATORY for post-deploy E2E runs):** before running a spec that claims to validate a fix is live, run `node scripts/verify-deploy-status.mjs`. Confirms HEAD is pushed, auto-deploy elapsed-time has passed, and optional health-check sha matches HEAD. Requires `## Deployment Contract` section in repo's `docs/specs/router-context.md`. This is G2 from the 2026-04-19 WI-085 audit.
+**Deploy-before-validate (post-deploy E2E runs):** before running a spec that claims to validate a fix is live, run `node scripts/verify-deploy-status.mjs`. Confirms HEAD is pushed, auto-deploy elapsed-time has passed, and optional health-check sha matches HEAD. Requires `## Deployment Contract` section in repo's `docs/specs/router-context.md`. This is G2 from the 2026-04-19 WI-085 audit.
 
 ## Workflow
 1.  **Analyze Journey:** Read the target journey and ACs. For generated journey
@@ -151,7 +151,7 @@ harness code with ignored secrets, redacted output, and E2E-account allowlists.
 ## Standards & Best Practices
 - **Fix the App, Not the Test:** Core testing philosophy. See [references/principles.md](references/principles.md).
 - **Avoid Shortcuts:** Never use user-impossible hacks. See [references/principles.md](references/principles.md).
-- **Playwright Anti-Patterns:** See [references/anti-patterns.md](references/anti-patterns.md) for what NOT to do.
+- **Playwright Anti-Patterns:** See [references/anti-patterns.md](references/anti-patterns.md) for patterns to avoid.
 - **Examples:** See [references/examples.md](references/examples.md) for production-grade test patterns.
 
 ## Selector Discipline
@@ -177,7 +177,7 @@ node scripts/validate-e2e-selector-discipline.mjs --root .
 If the validator fails, change the test or add a justified exception before closeout.
 
 ## Close-Out Rule
-- The final user-facing summary MUST be anchored to the latest runtime artifact, not an earlier hypothesis.
+- Anchor the final user-facing summary to the latest runtime artifact, not an earlier hypothesis.
 - Cite the latest failing assertion, latest error signature, or latest passing command from the most recent run.
 - If the latest artifact supersedes an earlier blocker, say so explicitly and drop the stale blocker from the summary.
 
@@ -228,28 +228,13 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 ```
 
 ## Pipeline Continuation
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
+
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. Follow `references/task-graph-chaining-protocol.md`: treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, mark this skill's task `completed` before leaving, then load the next runnable task's skill (marking it `in_progress`) or mark it `completed` with a skip reason. Mirror status to the host UI only from the parent session (Claude `TaskList`/`TaskUpdate`; Kimi `/task` observation; in Codex, mirror only the active step in `update_plan`); a subagent (`SVC_SUBAGENT=1`) leaves mirroring to the parent, because a failed mirror call silently drifts from the file.
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.json` is the sole source of truth: resume the first `in_progress` task (else the first `pending` task with blockers satisfied), re-load its skill with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` names a different `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
 
 ## Skill Outcome Contract
 

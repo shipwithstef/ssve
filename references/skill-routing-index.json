@@ -45,7 +45,7 @@
     {
       "skill": "align-feature",
       "path": "skills/align-feature/SKILL.md",
-      "content_hash": "9f322fa8c835c5dba1774f27da1985d57ff94e8556cb5671a9b78286bbd1f936",
+      "content_hash": "31ba84990b0c1e9edde0ecc7eccb782f4115a89bae393ac5593f124cfc07cb48",
       "description": "Runs the story-receipts chain for one WI, stage by stage through owning skills, until the validator prints STORY ALIGNED. The fixing counterpart of audit-feature. Use for \"align <feature>\", \"continue the chain for WI-X\", \"fix it the receipted way\".",
       "aliases": [],
       "positive_triggers": [],
@@ -585,7 +585,7 @@
     {
       "skill": "design-tech",
       "path": "skills/design-tech/SKILL.md",
-      "content_hash": "e85bd6aeb8c1dc212f80d9b705387f589a8531c786cad33cd8e109d2addd225a",
+      "content_hash": "1bd54d795e7e0655ff02bc286e8c42b91c5d7674fb4cbcfdc2e65dde8ac92c30",
       "description": "Define architecture, tech choices and component design for a feature spec that has finished UX and UI design, before planning. Use for \"tech design\", \"architecture for this feature\", \"how should we build X\".",
       "aliases": [
         "technical design",
@@ -627,7 +627,7 @@
     {
       "skill": "design-ui",
       "path": "skills/design-ui/SKILL.md",
-      "content_hash": "0aad516650198573611c15f429a647a7d614db64ef32f48f3c41ae82737eddcf",
+      "content_hash": "1e5d26f19535a92b79445b7d6647e9d24e0e8f34c4d11b6617ea8c2ba57da0bf",
       "description": "Visual design for a UX-reviewed feature spec: component specs, design tokens, responsive layout, before tech design. Use for \"design the UI\", \"visual design\", \"make it look good\", \"component specs\".",
       "aliases": [],
       "positive_triggers": [],
@@ -645,7 +645,7 @@
     {
       "skill": "design-ux",
       "path": "skills/design-ux/SKILL.md",
-      "content_hash": "3e06db677873718d6d20228d8f5b1cf229933788a0f9a6b094b8ce16fc209b85",
+      "content_hash": "a7b6834f0f97595f5a330b2f5e5808915aa23026aabe6de990bcfb9f1f48c352",
       "description": "UX design for a draft feature spec: screen flows, state machines, information hierarchy, interaction patterns, before visual design. Use for \"design the UX\", \"user flow\", \"screen flow\", \"how should this work for users\".",
       "aliases": [],
       "positive_triggers": [],
@@ -663,7 +663,7 @@
     {
       "skill": "diagnose-bug",
       "path": "skills/diagnose-bug/SKILL.md",
-      "content_hash": "7a298fa7377c9ae7997afbc38d06b030fc044a363cc2d07f8aa0324baba3d48d",
+      "content_hash": "2037533baecd9ada4afd4382ac2e1fa91a9aeaeaa9b883ee0510a7ba08aa9457",
       "description": "Root-cause-first diagnosis for broken behavior, regressions or production issues; produces a bugfix brief with repro, root cause, smallest fix and proof plan. Use for \"bug\", \"regression\", \"this broke\", \"why is X failing\". Not for new features.",
       "aliases": [
         "root cause",
@@ -807,7 +807,7 @@
     {
       "skill": "explore-solutions",
       "path": "skills/explore-solutions/SKILL.md",
-      "content_hash": "3f046f66936f220ab6228b5b9f4bf39203596fdc2df46b8c7e2f2706f7c8c0f5",
+      "content_hash": "3ceb0eabf239fc7f39e4b255681707b906ff0f68392a35ea880f8dcaa03c8ee8",
       "description": "Challenge a chosen technical approach with alternative paradigms and evidence before building, for high-stakes or hard-to-reverse designs. Use for \"explore alternatives\", \"is this the best approach\", \"compare options\", \"challenge the design\".",
       "aliases": [],
       "positive_triggers": [],
@@ -1810,7 +1810,7 @@
     {
       "skill": "sync-spec-code",
       "path": "skills/sync-spec-code/SKILL.md",
-      "content_hash": "6aebcc96159ee15409f30e59eccb86a1f0fcbd2ed45f1a92950ed0e2e0f660d2",
+      "content_hash": "dd2888af69c0bd975e211a627484d773363d32b0ead1f9cb0076ebfc78eaf452",
       "description": "Audit feature specs against the codebase for drift (PLANNED items now built, RESOLVED refs pointing at dead code) and update Implementation Notes. Use for 'does the spec reflect the code', 'check for spec drift', 'sync spec to code'.",
       "aliases": [],
       "positive_triggers": [],
@@ -1900,7 +1900,7 @@
     {
       "skill": "test-journeys",
       "path": "skills/test-journeys/SKILL.md",
-      "content_hash": "afe2c395d8983974ab6dd57058242937b67df29152f6bbad1b884e8c583b8fae",
+      "content_hash": "865780812a34c1809845ef05afd56d84d1a5c348b2f7a37173cae3af39a76fc3",
       "description": "Journey-based QA of real user flows at any URL (local, preview, staging, prod), capturing evidence and writing pass/fail back to spec AC tables. Use for 'run QA by journey', 'validate journeys', 'regression pass', 'verify this flow on staging'.",
       "aliases": [],
       "positive_triggers": [],
@@ -1936,7 +1936,7 @@
     {
       "skill": "track-visuals",
       "path": "skills/track-visuals/SKILL.md",
-      "content_hash": "ae44527b1e336a25164823033e5937c0b8da32dcc9cd224c7a199020a29e135a",
+      "content_hash": "d6e47ac81564262aacad36fa8bc3640ee1da4dc5db2159d62ee1b308d6e7c063",
       "description": "Capture and diff screenshots of every screen across viewports against a visual baseline. Use for 'visual baseline', 'screenshot all screens', 'visual regression', 'what changed visually', or after design-ui and UI-affecting changes.",
       "aliases": [],
       "positive_triggers": [],
@@ -1954,7 +1954,7 @@
     {
       "skill": "validate-feature",
       "path": "skills/validate-feature/SKILL.md",
-      "content_hash": "38451e1b291cacc18be34803234f6ada798d5563dd341c93dbfbb9f7a90539e2",
+      "content_hash": "8b7b3f3d94614ddabc13dda77fe0c70a2fb739e156e1a58a84a1e64ffca07c44",
       "description": "First stop for a new feature idea: checks it against personas, journeys and specs, settles key business decisions, writes a Feature Ship Brief with a ship/defer/no-ship call, and routes onward. Use for 'I have a feature idea', 'should we add X'.",
       "aliases": [],
       "positive_triggers": [],
@@ -1990,7 +1990,7 @@
     {
       "skill": "write-e2e",
       "path": "skills/write-e2e/SKILL.md",
-      "content_hash": "776603d5baf3f9ac7a18c4457825acf728a886643c492f75584f1353da1aaf85",
+      "content_hash": "0aaa7e3e257afe24d19f78d3250440cf7e38c86433b8e32d542f02068e8aa5a9",
       "description": "Write or fix Playwright E2E tests that act like a real user in a real browser, with no user-impossible shortcuts. Use for 'write e2e', 'playwright test', 'fix flaky test', 'e2e coverage', 'acceptance test'. Not demo videos (use demo-recorder).",
       "aliases": [],
       "positive_triggers": [],
@@ -2008,7 +2008,7 @@
     {
       "skill": "write-journeys",
       "path": "skills/write-journeys/SKILL.md",
-      "content_hash": "07d0a505c2406340ebe521b18f7a80cc4dfa0e08deb657fdffe34d4ab9f5807c",
+      "content_hash": "fcad466368370c3d5d84f4b0bc981f3963687ce8fa8f8ca3ee4c6f8f481e06ca",
       "description": "Generate or update BDD journey docs (.feature.md) with Gherkin scenarios traced to spec ACs. Use for 'generate journeys', 'define user flows', 'journey coverage', 'journey sync', 'discover journeys', or when specs exist but docs/specs/journeys/ does not.",
       "aliases": [],
       "positive_triggers": [],

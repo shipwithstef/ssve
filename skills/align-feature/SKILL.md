@@ -36,11 +36,11 @@ If this file and story-receipts.md disagree, story-receipts.md wins.
 
 ## Execution loop
 
-0. 🔴 **READ THE BRANCH INDEX FIRST — it is the scope's authority (audit-feature §2g/2i).**
+0. **Read the branch index first — it is the scope's authority (audit-feature §2g/2i).**
    `docs/specs/relations/<scope>.branches.md` is the single entry point: every entry point,
    caller, auth path, state, counter, promise, outcome, data table, journey/test and
-   retry/concurrency boundary, plus every **dead** branch. **Do not start from a WI, a plan or
-   a brief** — those are actionable selections, and each carries a `Scope-note` saying the
+   retry/concurrency boundary, plus every **dead** branch. Start from the index, not a WI, plan or
+   brief — those are actionable selections, and each carries a `Scope-note` saying the
    index wins on disagreement.
 
    **Hard gate — the same three claims the audit answers to:**
@@ -76,25 +76,25 @@ If this file and story-receipts.md disagree, story-receipts.md wins.
    `https://` and `commit:` evidence ride the validator's own checks instead) → **run the
    ASPECT SWEEP over the item just produced (story-receipts.md Mechanics 10)** → set the receipt
    `done` with evidence paths → run
-   `node scripts/audit-story-receipts.mjs <file> --wip` → **show the FULL matrix (all
-   stages, never abridged)** → continue.
-3b. **The aspect sweep (every stage, no exceptions).** The chain is NOT a relay of narrow
-   lenses — four separate misses in one 2026-07-31 session each fell BETWEEN stages that all
-   did their own job correctly. Whatever the stage just produced, examine THAT item across:
+   `node scripts/audit-story-receipts.mjs <file> --wip` → **show the full matrix (all
+   stages, unabridged)** → continue.
+3b. **The aspect sweep (every stage, no exceptions).** The chain is not a relay of narrow
+   lenses — four separate misses in one 2026-07-31 session each fell between stages that all
+   did their own job correctly. Whatever the stage just produced, examine that item across:
    **Money** (does it change what anyone pays or what it costs us) · **Avoidance** (what does
    a rational person do to route around it, and what does that cost them versus complying —
    deliberately *not* "abuse": STRIDE models attackers, and the customer opening fifteen
    accounts to duck a plan limit is not attacking anything) · **Promise** (what does it claim
    publicly, and is that true) · **Existing** (what happens to rows/customers/state already
    there) · **Neighbours** (what else touches it and now disagrees).
-   **Above all five: answer at the SOURCE** — the primary page, the rendered pixel, the live
+   **Above all five: answer at the source** — the primary page, the rendered pixel, the live
    database; never a summary, a score, or the page adjacent to the one that answers. Each
    aspect gets a citation, a number, or an N/A **carrying its reason**; all-prose aspects mean
    the sweep was not run. Scope it to the item, not the universe.
 
-3c. **Framework-born scope: two mandatory outputs.** When the scope being aligned is the svc
+3c. **Framework-born scope: two required outputs.** When the scope being aligned is the svc
    framework itself (not a downstream product) — a skill, hook, validator or script under this
-   repo — every align run emits TWO outputs, not one: **(1) the fix** (the normal stage
+   repo — every align run emits two outputs, not one: **(1) the fix** (the normal stage
    artifact) and **(2) the failed-gate finding** — which existing gate should have caught this
    defect before align had to fix it, and why it didn't. A run that cannot name a responsible
    gate is itself a finding: an unowned miss is worse than a named gate that under-caught.
@@ -107,7 +107,7 @@ If this file and story-receipts.md disagree, story-receipts.md wins.
    {"key":"<gate-name>-miss","type":"harness-defect","confidence":7,"insight":"<what the gate should have caught and did not>","files":["<gate-source-file>"],"wi":"<WI-id>","ts":"<YYYY-MM-DD>"}
    ```
 
-   **Confidence must be ≥7, never lower.** `rules/learning-preload.md` only surfaces rows via
+   **Confidence must be ≥7.** `rules/learning-preload.md` only surfaces rows via
    `select(.confidence >= 7)` — a failed-gate finding logged below that floor is invisible to
    the very preload step that is supposed to read it back and elevate it, so it can never
    become a rule no matter how many times it fires. `files` names the gate's own source (the
@@ -133,11 +133,11 @@ If this file and story-receipts.md disagree, story-receipts.md wins.
      marketing context) you edit it — the `audited <date>` stamp included, but only if the
      walks it names happened; PUBLISHING the twin is Claude-only. Where the ARTIFACT is
      canonical (pricing) make no judgment while the mirror may lag — stop and request;
-   - `implement` is **FOUR steps, not one** — see §4b. Collapsing it is the documented
+   - `implement` is **four steps, not one** — see §4b. Collapsing it is the documented
      Surface ③ failure;
    - `implement` must leave D-BOOL / D-TZ / D-FIELD / D-DUPE / D-DEAD clean on the diff;
    - `e2e` must include the written can-fail statement;
-   - **framework validators are INVOKED, never vendored.** They live in the framework repo,
+   - **framework validators are invoked, never vendored.** They live in the framework repo,
      not in the product repo — `node scripts/verify-journey-e2e-bridge.mjs` from a product
      worktree fails MODULE_NOT_FOUND and that is **not a product defect**. Invoke them
      install-relative from their canonical path; never copy them into the repo and never
@@ -146,9 +146,9 @@ If this file and story-receipts.md disagree, story-receipts.md wins.
      conversation, so the rule existed nowhere a second session could read it.)*;
    - `spec-sync` runs the sync-spec-code skill on every touched spec;
    - `marketing`/`pricing` re-certify claims with live citations or record "not affected".
-   - 🔴 **`device-proof` as written below is ANDROID-ONLY — `adb` does not exist for iOS.** A
+   - **`device-proof` as written below is Android-only — `adb` does not exist for iOS.** A
      story promising anything iOS-specific (VoiceOver, Dynamic Type, App Attest, iOS safe-area,
-     Apple push) **cannot be proven by it** and the stage must say so rather than pass on an
+     Apple push) cannot be proven by it, and the stage must say so rather than pass on an
      Android screenshot. iOS proof is a physical device plus Xcode/Simulator capture. Where the
      infrastructure does not exist, use **`deferred`** — see §4a2. *(2026-08-03: a plan review
      found `DEVICE-01` describing only Android/wireless adb while the story carried an explicit
@@ -199,7 +199,7 @@ If this file and story-receipts.md disagree, story-receipts.md wins.
       re-read, not silently green. The validator enforces (a)+(b) mechanically — a screen-spec
       story without a clean conformance report does NOT print STORY ALIGNED.
 
-## 4a · STAGE ORDER IS A DEPENDENCY GRAPH — some orderings are load-bearing
+## 4a · Stage order is a dependency graph — some orderings are load-bearing
 
 The chain reads as a list, so a plan is free to schedule it differently and nothing catches the
 reorder. But several orderings are **not** stylistic: a proof stage cannot precede the thing it
@@ -243,12 +243,12 @@ applicable*, which is a lie about a capability the product genuinely has.
 2. **It is registered**, not just noted — `docs/specs/deferred-proof.md`, one row: what is
    unproven · which stage · **exactly what unblocks it** (*"a Mac with Xcode and one iPhone"*) ·
    the story it came from. When the infrastructure arrives, that file **is** the work queue.
-3. 🔴 **The PROMISE must match the proof.** Nothing user-visible — landing, store listing,
+3. **The promise must match the proof.** Nothing user-visible — landing, store listing,
    marketing, in-app copy — may claim the deferred capability *works*. Shipping unverified iOS
    code is a legitimate engineering choice; **telling customers it is verified is not.** This is
    the same rule as the scout badge: the claim may only assert what was actually established.
 
-**🔴 `deferred` attaches to the PLATFORM, never to the whole stage.** A stage that proved
+**`deferred` attaches to the platform, never to the whole stage.** A stage that proved
 Android on real hardware is **`done`** — it produced real evidence, and `deferred` explicitly
 does not block, so there is no reason the proven half should lose its status because of the
 unproven one.
@@ -258,25 +258,25 @@ unproven one.
 | Android, real device, screenshots carrying the build id | stage **`done`**, evidence tracked |
 | iOS-specific behaviour | **one row in `deferred-proof.md`** |
 
-Marking the whole stage `deferred` because one platform is unreachable **erases proof that
-exists** — the opposite failure to marking it `done` and pretending iOS was covered. Both are
+Marking the whole stage `deferred` because one platform is unreachable erases proof that
+exists — the opposite failure to marking it `done` and pretending iOS was covered. Both are
 dishonest; they just lie in different directions.
 
 **And with Capacitor, say which LAYER is proven too.** The shared web layer runs on both
 platforms and is provable on Android and in a browser; only native-specific behaviour is
 deferred. "iOS is unproven" is too coarse and hides the part that genuinely was tested.
 
-## 4a3 · 🔴 THE INDEX IS THE MAP. THE PLAN IS THE ROUTE. Do not size one by the other.
+## 4a3 · The index is the map, the plan is the route — do not size one by the other
 
-**Index is the map, plan is the route** — Size the index by the whole scope (used to check impact) and the plan and ACs by what CHANGES (one task per modified surface, not one per row that merely exists). Do NOT let the plan inherit the audit's enumeration denominator. An index correction does NOT invalidate the plan unless it touches a file the plan modifies, so check a new path for impact and move on rather than re-planning. If the task count tracks scope size instead of diff size, the plan is describing the territory, not the journey. Details: `references/stage-rules-detail.md`.
+**Index is the map, plan is the route** — Size the index by the whole scope (used to check impact) and the plan and ACs by what changes (one task per modified surface, not one per row that merely exists). Do not let the plan inherit the audit's enumeration denominator. An index correction does not invalidate the plan unless it touches a file the plan modifies, so check a new path for impact and move on rather than re-planning. If the task count tracks scope size instead of diff size, the plan is describing the territory, not the journey. Details: `references/stage-rules-detail.md`.
 
-## 4b · 🔴 `implement` IS FOUR STEPS — and nothing mechanical catches you skipping two
+## 4b · `implement` is four steps — and nothing mechanical catches you skipping two
 
-**`implement` is four steps** — plan (`plan-changeset`, every screen-spec `UI-<WI>-NN` row maps to a task with DONE-conditions), review the plan (`review-plan`, before any code), execute (`execute-changeset`), review the diff (`review-exec`, the section-8 pair). The validator does NOT check plans, so steps 1 and 2 are the ones that get dropped: the `implement` receipt evidence MUST include the plan manifest path and the `review-plan` artifact path (repo-local, checked with `git ls-files --error-unmatch` before the receipt is written); a receipt citing only code has not done them. Tier the model by step: high for plan, review-plan and review-exec, a cheap model at MAX effort for execute (declared, not inherited; with Codex, `gpt-5.6-luna` max for step 3 and `gpt-5.6-sol high` for 1, 2, 4). If execution needs judgement, the plan was under-specified: fix and record the plan, never raise the execution tier. Details: `references/stage-rules-detail.md`.
+**`implement` is four steps** — plan (`plan-changeset`, every screen-spec `UI-<WI>-NN` row maps to a task with DONE-conditions), review the plan (`review-plan`, before any code), execute (`execute-changeset`), review the diff (`review-exec`, the section-8 pair). The validator does not check plans, so steps 1 and 2 are the ones that get dropped: the `implement` receipt evidence includes the plan manifest path and the `review-plan` artifact path (repo-local, checked with `git ls-files --error-unmatch` before the receipt is written); a receipt citing only code has not done them. Tier the model by step: high for plan, review-plan and review-exec, a cheap model at MAX effort for execute (declared, not inherited; with Codex, `gpt-5.6-luna` max for step 3 and `gpt-5.6-sol high` for 1, 2, 4). If execution needs judgement, the plan was under-specified: fix and record the plan, never raise the execution tier. Details: `references/stage-rules-detail.md`.
 
-## 4c · AN OPERATIONAL CHANGE NEEDS A RECEIPT — it leaves no diff
+## 4c · An operational change needs a receipt — it leaves no diff
 
-This whole chain is **code-shaped**: stages produce artifacts, artifacts get committed, the
+This whole chain is code-shaped: stages produce artifacts, artifacts get committed, the
 commit is the record. A **config change to a live environment** — a feature flag, a Vault
 secret, a dispatcher switch, a cron schedule — changes behaviour faster than any deploy and
 produces **no diff at all**. Nothing in the receipts chain notices it happened.
@@ -300,17 +300,17 @@ repository that it had happened, who did it, or how to undo it.)*
 This is not paperwork. An operational change is the **fastest** way to alter live behaviour and
 the **only** one with no artifact — which makes it the one most in need of a written one.
 
-## 4d · REVIEWER LADDER — a declared list, and every rung on it CLOSES
+## 4d · Reviewer ladder — a declared list, and every rung on it closes
 
-**Reviewer ladder** — Declare `REVIEWERS` up front in priority order (the other vendor first, then the own vendor as `@subagent`; flipped when the executor is Codex), since `resolve-adversarial-reviewer.sh` does no availability probe and has no fallback. Every entry is a full `vendor-model-effort` tuple, declared never inherited, and the fallback names the strongest model available; the receipt records the resolved tuple. Every rung on the list closes the story (no provisional flag or debt); if none is left the stage stays `pending` with reason `reviewer_unavailable`. `REVIEW_UNAVAILABLE=<entry>:<timestamp>` means skip with no retry until then. NEVER use the main loop as the reviewer: the fallback is a separate fresh-context adversarial agent, self-review is not on the list. Record `review_family: cross|same` and `model_attestation.observed_models`; silent substitution of a weaker reviewer is the only unacceptable outcome. Details: `references/stage-rules-detail.md`.
+**Reviewer ladder** — Declare `REVIEWERS` up front in priority order (the other vendor first, then the own vendor as `@subagent`; flipped when the executor is Codex), since `resolve-adversarial-reviewer.sh` does no availability probe and has no fallback. Every entry is a full `vendor-model-effort` tuple, declared never inherited, and the fallback names the strongest model available; the receipt records the resolved tuple. Every rung on the list closes the story (no provisional flag or debt); if none is left the stage stays `pending` with reason `reviewer_unavailable`. `REVIEW_UNAVAILABLE=<entry>:<timestamp>` means skip with no retry until then. Do not use the main loop as the reviewer, because it cannot be adversarial to its own work: the fallback is a separate fresh-context adversarial agent, and self-review is not on the list. Record `review_family: cross|same` and `model_attestation.observed_models`; silent substitution of a weaker reviewer is the only unacceptable outcome. Details: `references/stage-rules-detail.md`.
 
-## 7 · PARALLEL STREAMS — what is shared, and what must never be
+## 7 · Parallel streams — what is shared, and what must never be
 
-**Parallel streams** — When two stories run at once: (a) index freshness is two-tier, so a moved file the index cites is a HARD FAIL (re-walk, re-stamp) while an in-scope file it never cites is a SOFT WARN that never blocks; (b) the phone is an exclusive lease via `.svc/device-lease.json` (`{holder, wi, expires_at}`, 30 min TTL), so if someone else holds it do NOT queue or wait, leave `device-proof` `pending` and continue, but it still blocks STORY ALIGNED at the end, and build the APK to a per-stream path with the build id in screenshot names; (c) one session republishes each canonical twin (e.g. the QA companion) once after both streams land, streams only edit the repo file and record the receipt; (d) `.svc/*.jsonl` ledgers are append-only (use `merge=union`, never resolve by taking one side), assign each stream a migration timestamp range, and declare one owner per shared surface; (e) the handoff prompt MUST state the shared-surface owner, migration range and device rule. Details: `references/stage-rules-detail.md`.
+**Parallel streams** — When two stories run at once: (a) index freshness is two-tier, so a moved file the index cites is a HARD FAIL (re-walk, re-stamp) while an in-scope file it never cites is a SOFT WARN that never blocks; (b) the phone is an exclusive lease via `.svc/device-lease.json` (`{holder, wi, expires_at}`, 30 min TTL), so if someone else holds it, do not queue or wait; leave `device-proof` `pending` and continue, but it still blocks STORY ALIGNED at the end, and build the APK to a per-stream path with the build id in screenshot names; (c) one session republishes each canonical twin (e.g. the QA companion) once after both streams land, streams only edit the repo file and record the receipt; (d) `.svc/*.jsonl` ledgers are append-only (use `merge=union`, never resolve by taking one side), assign each stream a migration timestamp range, and declare one owner per shared surface; (e) the handoff prompt states the shared-surface owner, migration range and device rule. Details: `references/stage-rules-detail.md`.
 
-## 8 · EVERY REVIEW IS TWO PASSES, PAIRED — never the diff alone
+## 8 · Every review is two passes, paired — never the diff alone
 
-**Every review is two passes, paired** — Run back to back: Pass 1 EXACT reviews `git diff main..HEAD` plus spec and ACs; Pass 2 FULL reviews `docs/specs/relations/<scope>.branches.md` plus the DECISION card, bounded by the diff's relation-neighbours (callers, counters, promises, journeys and tests, data, auth) and hunting for absence: what the change should have touched and did not. The same scoping applies to self-review. FREEZE THE TARGET BEFORE ANY EXTERNAL PASS: the reviewer reviews a named SHA that does not move during the review (freeze, review, remediate, re-freeze, review), with at most two remediation rounds before you stop and report that the plan was wrong. Loop pass 1 until two runs find nothing new, then pass 2 until dry, record what you considered and rejected, and stamp the artifact with `Reviewed-diff-at`, `Reviewed-index-at` and both `## Pass 1` and `## Pass 2` sections; an artifact with no Pass 2 has not reviewed the feature. Details: `references/stage-rules-detail.md`.
+**Every review is two passes, paired** — Run back to back: Pass 1 EXACT reviews `git diff main..HEAD` plus spec and ACs; Pass 2 FULL reviews `docs/specs/relations/<scope>.branches.md` plus the DECISION card, bounded by the diff's relation-neighbours (callers, counters, promises, journeys and tests, data, auth) and hunting for absence: what the change should have touched and did not. The same scoping applies to self-review. Freeze the target before any external pass: the reviewer reviews a named SHA that does not move during the review (freeze, review, remediate, re-freeze, review), with at most two remediation rounds before you stop and report that the plan was wrong. Loop pass 1 until two runs find nothing new, then pass 2 until dry, record what you considered and rejected, and stamp the artifact with `Reviewed-diff-at`, `Reviewed-index-at` and both `## Pass 1` and `## Pass 2` sections; an artifact with no Pass 2 has not reviewed the feature. Details: `references/stage-rules-detail.md`.
 
 ## Never
 
@@ -322,10 +322,9 @@ while the validator still exits 1.
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
 - Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume; on Codex, mirror only the active step in `update_plan`.
-- Read `.svc/lane-tasks-<WI>.json` first if a task graph is active for this WI; mark the
-  align-feature task `in_progress` on entry and `completed` (with the STORY ALIGNED evidence
-  path) on exit.
-- Subagents MUST NOT attempt TaskUpdate calls — file state is the durable record; the
+- When a task graph is active for this WI, mark the align-feature task `in_progress` on entry
+  and `completed` (with the STORY ALIGNED evidence path) on exit.
+- Subagents leave TaskUpdate to the parent — file state is the durable record, and the
   orchestrator parent re-mirrors after a subagent returns.
 
 ### Self-Verify

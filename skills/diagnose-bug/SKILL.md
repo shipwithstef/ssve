@@ -65,7 +65,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P4-
 node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P5-PillarRevisit --evidence file:<path>
 ```
 
-## Product Questions — MANDATORY format
+## Product Questions — shared format
 
 When diagnosis exposes an unresolved consequential product decision, use `_shared/product-question-format.md` with `phase: diagnose-bug`. Reuse clear owner authorization and accepted behavior; expose current spec/code conflicts and meaningful alternatives before dependent coding. Do not ask again when the accepted spec already determines the restoration. No question quota or empty companion is required.
 
@@ -81,10 +81,12 @@ When diagnosis exposes an unresolved consequential product decision, use `_share
 | Flag | Behavior |
 |------|----------|
 | *(none)* | Full Lane 4 — diagnosis + implementation tasks created, all pending, stop hook enforces completion |
-| `--diagnose-only` | Diagnosis + Changeset Brief only. Creates task graph with Tasks 2-3 (plan-changeset, execute-changeset) marked `manual` so stop hook doesn't block on them. Use when implementation CANNOT be performed by `execute-changeset` alone — e.g. the fix lives in a resource that requires an external deploy step (Base44 **pages** via `coding/write`, Base44 **entity schemas** via `coding/write`, Shopify app metadata, Cloudflare zone config via API). When the owner has authorized implementation, do NOT select this platform-handoff mode for resources that auto-deploy from git push alone (Base44 **backend functions**, Base44 **components**, Vercel-on-push repos, Cloudflare Workers with git integration) — those fit normal `execute-changeset`. Run the Auto-Deploy Pre-check (see Step 0 below) before setting this flag. |
+| `--diagnose-only` | Diagnosis + Changeset Brief only. Creates task graph with Tasks 2-3 (plan-changeset, execute-changeset) marked `manual` so stop hook doesn't block on them. Use when implementation cannot be performed by `execute-changeset` alone — e.g. the fix lives in a resource that requires an external deploy step (Base44 **pages** via `coding/write`, Base44 **entity schemas** via `coding/write`, Shopify app metadata, Cloudflare zone config via API). When the owner has authorized implementation, do not select this platform-handoff mode for resources that auto-deploy from git push alone (Base44 **backend functions**, Base44 **components**, Vercel-on-push repos, Cloudflare Workers with git integration) — those fit normal `execute-changeset`. Run the Auto-Deploy Pre-check (see Step 0 below) before setting this flag. |
 | `mode: e2e-test` / `--mode=e2e-test` | Diagnose a failing, flaky, or misleading E2E/Playwright test. Read the latest trace/screenshot/error first, bisect whether the failure persists, check helper-app parity, tenant/scope setup, transient assertions, and selector ambiguity before proposing app or test changes. |
 | `--retroactive` | Retroactive mode — reads committed diff instead of reproducing from broken state. Equivalent to "code is already in main." |
 | `--progressive` | Chain immediately to next skill after self-verify passes. |
+
+**Auto-deploy repos:** **If implementation is authorized and ALL paths auto-deploy from `git push` alone:** do not set `--diagnose-only`. Run the normal Lane 4: `execute-changeset` handles the implementation and `git push` is the deploy.
 
 ## E2E Test Diagnosis Mode
 
@@ -96,7 +98,7 @@ See [references/advanced-diagnosis.md](references/advanced-diagnosis.md#cross-sy
 
 ## Inputs
 
-**Read in this order — do not skip ahead to code:**
+**Read in this order, before any code** (the spec defines expected behavior; code only shows actual behavior):
 
 1. The work-item file (`docs/specs/work-items/WI-*.md`)
 2. The relevant journey(s) and ACs for the affected feature area
@@ -114,8 +116,8 @@ Update the work item with:
 - smallest safe fix surface
 - verification plan
 - whether specs need updating after the fix
-- **Pillar Revisit Audit** — mandatory walk of all 8 pillars per `references/pillars-coverage-matrix.md` (see Process Step 4.4)
-- **pattern scan results** — mandatory grep of the codebase for the same class of defect elsewhere (see Process Step 4.5)
+- **Pillar Revisit Audit** — walk of all 8 pillars per `references/pillars-coverage-matrix.md` (see Process Step 4.4)
+- **pattern scan results** — grep of the codebase for the same class of defect elsewhere (see Process Step 4.5)
 - **register discoveries** — decomposition of findings into independent work items with WI files, INDEX update, and priority routing (see Process Step 5.5)
 - **affected artifacts** — list of specs, journeys, ACs, e2e tests, feedback memories, and rule files that need updating because of this bug (derived from the Pillar Revisit Audit)
 - **learnings** — rule, feedback memory, or code-style entry that would have prevented the bug, framed so a future agent catches it before merge
@@ -127,7 +129,7 @@ Optional output:
 
 ## Process
 
-### Step 0 Pre-flight: Gemini Context Budget (MANDATORY on Gemini CLI)
+### Step 0 Pre-flight: Gemini Context Budget (Gemini CLI only)
 
 Before diagnosis, on Gemini CLI:
 ```bash
@@ -135,11 +137,11 @@ bash hooks/svc-gemini-context-check.sh
 ```
 Blocks at POOR tier (>4 MB chat JSON). Diagnosis requires holding spec + code + reproduction in attention simultaneously — impossible at POOR tier. On Claude Code this is a no-op. See [references/gemini-context-budget.md](../../references/gemini-context-budget.md). G1 from 2026-04-19 WI-085 audit.
 
-**0. Task Graph Setup — MANDATORY** — MANDATORY before any diagnosis: make sure `.svc/lane-tasks-<WI>.json` holds the task graph for this lane and Task {T} has its `process_tasks`. If the file and process_tasks already exist, skip setup and hydrate; if the file exists without them, add only Task {T}'s process_tasks (never overwrite the file); if there is no file, initialize it with `node scripts/task-graph.mjs init` and populate it. Update the file before the task system on each completion, and do not mark Task {T} completed while process tasks remain open. If no task graph exists, create it with `node scripts/task-graph.mjs init .svc/lane-tasks-<WI>.json --wi <WI-###> --lane bugfix`. Details: `references/process.md`.
+**0. Task Graph Setup** — Before any diagnosis, make sure `.svc/lane-tasks-<WI>.json` holds the task graph for this lane and Task {T} has its `process_tasks`. If the file and process_tasks already exist, skip setup and hydrate; if the file exists without them, add only Task {T}'s process_tasks (never overwrite the file); if there is no file, initialize it with `node scripts/task-graph.mjs init` and populate it. Update the file before the task system on each completion, and do not mark Task {T} completed while process tasks remain open. If no task graph exists, create it with `node scripts/task-graph.mjs init .svc/lane-tasks-<WI>.json --wi <WI-###> --lane bugfix`. Details: `references/process.md`.
 
-### 0.3. Bug-Domain Classification — MANDATORY FIRST HYPOTHESIS GATE
+### 0.3. Bug-Domain Classification — first hypothesis gate
 
-**Before any "what code is broken" hypothesis, classify which DOMAIN the bug lives in.** Agents default to code-bug hypotheses and chase React state races / SDK quirks / framework internals for hours when the real cause is fixture state, platform quirk, or test-logic error. Forced classification at turn 1 prevents this.
+Before any "what code is broken" hypothesis, classify which domain the bug lives in. Agents default to code-bug hypotheses and chase React state races / SDK quirks / framework internals for hours when the real cause is fixture state, platform quirk, or test-logic error. Forced classification at turn 1 prevents this.
 
 For every diagnose-bug invocation, answer:
 
@@ -150,11 +152,11 @@ For every diagnose-bug invocation, answer:
 | **Test-fixture** | Test account / seeded entity / test database has wrong shape; bug does NOT reproduce for real users | Fix the fixture; don't touch app code OR test logic |
 | **Platform** | Upstream service behavior (cache, consistency, auth, rate limit) differs from what code assumes | Workaround in app or test; file upstream issue |
 
-Classify BEFORE reading the code. Write the classification in the brief. If you're not sure, say "ambiguous — will refine after Step 0.4–0.5 evidence" and revisit at Step 1.6 (root cause).
+Classify before reading the code. Write the classification in the brief. If you're not sure, say "ambiguous — will refine after Step 0.4–0.5 evidence" and revisit at Step 1.6 (root cause).
 
 **WI-087 archetype (2026-04-19):** 8 hours chasing Code-domain hypotheses (H1 useEffect clobber, H2 Radix race, H13 state cascade) when the real bug was Test-fixture (test account didn't own seeded location) + Platform (filter-query cache not invalidated by entity API). One forced classification round at turn 1 would have flipped the whole investigation immediately.
 
-### 0.35. Read the Failing File's Own Comments — MANDATORY BEFORE HYPOTHESIS
+### 0.35. Read the Failing File's Own Comments — before hypothesizing
 
 Before generating cause hypotheses, read every comment in the failing file that starts with SKIP / TODO / FIXME / KNOWN ISSUES / XXX / NOTE — and any multi-line block comment whose first line mentions the same symbol/test/feature. The previous author may have already documented the cause.
 
@@ -163,15 +165,15 @@ Mechanical check:
 grep -nE "SKIP|TODO|FIXME|KNOWN|XXX|NOTE" <failing-file-path>
 ```
 
-If a SKIP comment explains WHY a test was skipped or is marked un-skipped, that comment IS the diagnosis. Do not restart investigation — verify whether the comment's stated cause still applies, then fix or escalate.
+If a SKIP comment explains why a test was skipped or is marked un-skipped, treat that comment as the diagnosis: verify whether its stated cause still applies, then fix or escalate, rather than restarting the investigation.
 
 **WI-087 archetype (2026-04-19):** the spec at `e2e/specs/journeys/WI081-sop-friendly-toggle.spec.ts:150-170` had a SKIP-comment block explicitly naming the root cause ("test account is TEAM MEMBER, not OWNER"). Every investigation round (Base44 AI × 2, Claude) missed it because we anchored on "the upstream WI-085 fix should have resolved this" instead of reading the test's own prior documentation.
 
 **0.4. Pre-Lock Rejection — reject WIs with pre-specified fixes** — Before reading the spec or code, scan the WI file for pre-specified fixes (`## Proposed fix/solution`, `## Plan`, `## Resolution`, diff or code fences proposing changes, "Option A (preferred)", PR-body or commit drafts) and HALT if any are present; `## Symptom`, `## Reproduction`, `## Evidence`, `## Impact`, open questions and outcome-style ACs are fine. If the WI came from a `BLOCKING_DISCOVERY`, external report or earlier pattern-match, strip the fix proposal and commit `chore(wi-###): strip pre-locked fix per diagnose-bug 0.4`; if the user authored or anchored the fix, ask once whether to strip it (recommended) or run `--retroactive` validation. Never proceed silently with a pre-locked conclusion; skipped under `--retroactive`. Details: `references/process.md`.
 
-**0.5. Spec/Journey/AC Anchor — MANDATORY BEFORE ANY CODE EXPLORATION** — MANDATORY before opening any code (when `docs/specs/` exists): read the relevant journey step(s) and ACs (copy the covering AC verbatim, or record a spec gap), answer who the persona is, what they were trying to do, what the spec says SHOULD happen, and whether this is a code defect or a spec gap. Then write a 2-4 file reading list derived from the spec, read only those files (NEVER launch a broad Explore subagent), classify each finding as match, drift or gap, and file independent surprises as new WIs per Step 5.5. Details: `references/process.md`.
+**0.5. Spec/Journey/AC Anchor (before any code exploration)** — Before opening any code (when `docs/specs/` exists): read the relevant journey step(s) and ACs (copy the covering AC verbatim, or record a spec gap), answer who the persona is, what they were trying to do, what the spec says SHOULD happen, and whether this is a code defect or a spec gap. Then write a 2-4 file reading list derived from the spec, read only those files (not a broad Explore subagent, which answers "what does the code do?" instead of "does it match the spec?"), classify each finding as match, drift or gap, and file independent surprises as new WIs per Step 5.5. Details: `references/process.md`.
 
-### 0.6. Persistence Bisect — MANDATORY for empty/zero visibility symptoms
+### 0.6. Persistence Bisect — for empty/zero visibility symptoms
 
 For any symptom matching "expected record/entity/item visible, got empty/zero/not
 found" or "after save/upload/create, the page shows nothing", bisect persistence
@@ -208,7 +210,7 @@ Expected: [what should have happened]
 Actual:   [what happened instead]
 ```
 
-**Temporal qualifier check (MANDATORY):** If the report says "after doing X, Y is wrong" or "when I upload/save/click X, it shows Y" — X is part of the repro, not background. Classify the bug by causal structure before looking at any code:
+**Temporal qualifier check:** If the report says "after doing X, Y is wrong" or "when I upload/save/click X, it shows Y" — X is part of the repro, not background. Classify the bug by causal structure before looking at any code:
 
 | Classification | Meaning | First thing to trace |
 |---|---|---|
@@ -216,7 +218,7 @@ Actual:   [what happened instead]
 | **Propagation bug** | X completes but the effect doesn't reach Y — stale cache, wrong query key, missing invalidation | The invalidation path (onSuccess, queryClient.invalidateQueries, query keys used by readers vs writers) |
 | **Rendering bug** | Data reaches Y correctly but Y displays it wrong — fallback, null guard, field mismatch | The rendering/fallback code only |
 
-**Do NOT start reading code until you've written the structured repro and chosen one of these three causal categories.** Jumping to code exploration before this step causes category errors — the agent finds the nearest plausible-looking bug (often a rendering fallback) instead of the actual broken path.
+Write the structured repro and choose one of these three causal categories before reading code. Jumping to code exploration before this step causes category errors — the agent finds the nearest plausible-looking bug (often a rendering fallback) instead of the actual broken path.
 
 If repro is not yet reliable, record the best-known repro and the uncertainty — then still classify by causal category before exploring.
 
@@ -264,11 +266,11 @@ Summarize:
 
 If true root cause is still unknown, say so plainly and log the current best hypothesis.
 
-**4.4. Pillar Revisit Audit — MANDATORY** — MANDATORY before proposing a fix: walk all 8 pillars in `references/pillars-coverage-matrix.md` (product fit, journey, AC, UX, UI, tech architecture, cost model, operations) and record `affected`, `unaffected` or `unknown` with one-line evidence under **Pillar Revisit Audit:** in the work item. `unaffected` means you opened the artifact and confirmed; "probably fine" is a self-verify failure. Affected pillars are bundled into the fix or filed as follow-up WIs, and unresolved ones block close-out. Then sync `eval_matrix` in `.svc/lane-tasks-<WI>.json` (`UPDATED - WI-NNN`, `UNCHANGED - VERIFIED - <file:line>`, or `N/A - <reason>`); the PreToolUse eval gate blocks `TaskUpdate(completed)` until all 8 entries are non-null. Details: `references/process.md`.
+**4.4. Pillar Revisit Audit** — Before proposing a fix, walk all 8 pillars in `references/pillars-coverage-matrix.md` (product fit, journey, AC, UX, UI, tech architecture, cost model, operations) and record `affected`, `unaffected` or `unknown` with one-line evidence under **Pillar Revisit Audit:** in the work item. `unaffected` means you opened the artifact and confirmed; "probably fine" is a self-verify failure. Affected pillars are bundled into the fix or filed as follow-up WIs, and unresolved ones block close-out. Then sync `eval_matrix` in `.svc/lane-tasks-<WI>.json` (`UPDATED - WI-NNN`, `UNCHANGED - VERIFIED - <file:line>`, or `N/A - <reason>`); the PreToolUse eval gate blocks `TaskUpdate(completed)` until all 8 entries are non-null. Details: `references/process.md`.
 
-### 4.5. Pattern scan — MANDATORY
+### 4.5. Pattern scan
 
-Before proposing a fix, grep the codebase for the same class of defect elsewhere. A bug that surfaced in one place almost always exists in others that nobody has noticed yet. The mandate: **find all instances, not just the reported one.**
+Before proposing a fix, grep the codebase for the same class of defect elsewhere. A bug that surfaced in one place almost always exists in others that nobody has noticed yet. The goal is to find all instances, not just the reported one.
 
 Pattern scan types (pick the ones that match the root cause):
 
@@ -285,8 +287,6 @@ Pattern scan types (pick the ones that match the root cause):
 Document the scan in the work item under **Pattern Scan:**
 
 ```markdown
-**Auto-deploy repos:** **If implementation is authorized and ALL paths auto-deploy from `git push` alone:** do NOT set `--diagnose-only`. Run the normal Lane 4. `execute-changeset` handles the implementation; `git push` IS the deploy.
-
 ## Pattern Scan
 
 **Scope:** <what was grepped — exact patterns, directories, file types>
@@ -298,7 +298,7 @@ If the pattern scan finds additional broken instances, the bugfix scope expands 
 
 Skipping the pattern scan is a self-verify failure. If the root cause is so specific that no scan is possible (e.g., a one-time data corruption event in a single row), document that explicitly: "Pattern scan: N/A — root cause is non-generalizable. Reason: ..."
 
-### 4.6 Risk-Flag Classification — MANDATORY
+### 4.6 Risk-Flag Classification
 
 Before defining the smallest safe fix, classify it against the shared
 risk-flag table (`scripts/lib/risk-flags.mjs`, AC-553-1). This step itself is
@@ -336,7 +336,7 @@ Specify:
 - behavior to change
 - whether this is a code-only fix or requires spec/journey updates
 
-**5.5. Register Discoveries — MANDATORY** — MANDATORY before defining proof of fix: if the diagnosis surfaced several independent corrections (root-cause fix, pattern-scan siblings, pillar follow-ups, spec/journey drift, missing ACs or e2e), decompose them, create a WI file for each (canonical schema, heading `# WI-NNN: title`, `Status: identified`, `Source: diagnose-bug WI-<parent>`), update `docs/specs/work-items/INDEX.md`, rank them (the reported bug first) and point `**Next:**` at the top child. NEVER ask the user "implement or file?"; if there is only one correction, write "Register Discoveries: single correction - no decomposition needed." and continue to Step 6. Details: `references/process.md`.
+**5.5. Register Discoveries** — Before defining proof of fix: if the diagnosis surfaced several independent corrections (root-cause fix, pattern-scan siblings, pillar follow-ups, spec/journey drift, missing ACs or e2e), decompose them, create a WI file for each (canonical schema, heading `# WI-NNN: title`, `Status: identified`, `Source: diagnose-bug WI-<parent>`), update `docs/specs/work-items/INDEX.md`, rank them (the reported bug first) and point `**Next:**` at the top child. registering is the default, so do not ask the user "implement or file?"; if there is only one correction, write "Register Discoveries: single correction - no decomposition needed." and continue to Step 6. Details: `references/process.md`.
 
 ### 6. Define proof of fix
 
@@ -394,12 +394,12 @@ Regression briefs should explicitly capture the last-known-good behavior and how
 1. **Reproduce** (Step 1).
 2. **Hypothesize** - a concrete, falsifiable hypothesis about the root cause.
 3. **Scope lock** - restrict investigation to the smallest relevant subsystem (`scripts/worktree.sh freeze <directory>` if available) so you do not "fix" unrelated code.
-4. **Trace** the data flow end to end. When the fault surface spans components (API -> service -> DB -> response), add logging at EVERY component boundary in one pass, run once, and read all boundary logs together.
+4. **Trace** the data flow end to end. When the fault surface spans components (API -> service -> DB -> response), add logging at every component boundary in one pass, run once, and read all boundary logs together.
 5. **Verify** with code evidence that confirms or refutes. For cross-system flows, the probe needs both a confirmation and a falsification check and must pass `scripts/validate-cross-system-probe-evidence.mjs`.
 6. **If refuted**, form a new hypothesis. Maximum 3 attempts, then escalate.
 7. **If confirmed**, go to Step 5 (smallest safe fix).
 
-**3-attempt escalation:** after 3 failed hypotheses, STOP investigating and do NOT start guessing fixes. Report what was tried, what was ruled out and the best current hypothesis; say whether this looks like a design problem (wrong architecture, especially if all 3 targeted code-level causes) or a code problem; then ask the user for domain knowledge or pair debugging.
+**3-attempt escalation:** after 3 failed hypotheses, stop investigating and do not start guessing fixes. Report what was tried, what was ruled out and the best current hypothesis; say whether this looks like a design problem (wrong architecture, especially if all 3 targeted code-level causes) or a code problem; then ask the user for domain knowledge or pair debugging.
 
 Common root-cause patterns (race, null access, state-machine violation, stale cache, schema mismatch, off-by-one) with verification tips: `references/iron-law-no-fixes-without-root-cause.md`.
 
@@ -416,15 +416,13 @@ Common root-cause patterns (race, null access, state-machine violation, stale ca
 - **Do not launch a broad Explore subagent before reading the spec** — the spec names the relevant components; read them directly with Read/Grep. Broad exploration without spec context costs 10x more and answers the wrong question ("what does the code do?" instead of "does the code match the spec?")
 - **Do not derive expected behavior from the broken code** — broken code describes actual behavior, not expected. Expected behavior comes from spec/journey/AC or user intent, never from reading what the code currently does and calling that correct
 
-**Routing After This Skill** — Implementation goes to `plan-changeset` or the direct execution flow; a user-facing or admin-facing bugfix MUST run `write-e2e` before close-out; drift goes to `sync-spec-code`; a missing capability goes to `validate-feature`; retroactive mode chains `write-e2e` -> `review-gate` -> `land-changeset` -> `verify-promotion`. With `--diagnose-only`, emit a Changeset Brief (file, line, before/after, rationale, confidence, test surface), set Tasks 2-3 to `manual` and mark Task 1 completed. Every output MUST end with the `**Next:**` trailer. Details: `references/routing-after-this-skill.md`.
+**Routing After This Skill** — Implementation goes to `plan-changeset` or the direct execution flow; a user-facing or admin-facing bugfix runs `write-e2e` before close-out; drift goes to `sync-spec-code`; a missing capability goes to `validate-feature`; retroactive mode chains `write-e2e` -> `review-gate` -> `land-changeset` -> `verify-promotion`. With `--diagnose-only`, emit a Changeset Brief (file, line, before/after, rationale, confidence, test surface), set Tasks 2-3 to `manual` and mark Task 1 completed. Every output ends with the `**Next:**` trailer. Details: `references/routing-after-this-skill.md`.
 
 ## Pipeline Continuation
 
 ### Task-graph mode (when authorized; source of truth: `.svc/lane-tasks-<WI>.json`)
 
-Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. In the parent Codex session, mirror only the active step in `update_plan`. These instructions apply only when a task graph is authorized; report-only and terminal-answer boundaries below remain controlling.
-
-When a task graph is authorized, read and update `.svc/lane-tasks-<WI>.json` first. Complete the diagnosis only after the brief and actual required phase evidence are ready. Follow `references/task-graph-chaining-protocol.md` for task status, conditions, skill loading and parent-only UI mirroring; subagents do not call TaskUpdate. Preserve the explicit owner diagnosis-only/no-edit boundary and the mode-specific handoffs below.
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. In the parent Codex session, mirror only the active step in `update_plan`. These instructions apply only when a task graph is authorized; report-only and terminal-answer boundaries below remain controlling. Complete the diagnosis only after the brief and actual required phase evidence are ready. Follow `references/task-graph-chaining-protocol.md` for task status, conditions, skill loading and parent-only UI mirroring; subagents do not call TaskUpdate. Preserve the explicit owner diagnosis-only/no-edit boundary and the mode-specific handoffs below.
 
 ### Self-Verify
 
@@ -460,7 +458,7 @@ Apply the canonical task-graph protocol above. If the owner requested diagnosis 
 2. Set Tasks 2-3 to `"status": "manual"` in `lane-tasks.json`
 3. Mark Task 1 `completed` in `lane-tasks.json`
 4. Emit: `**Next:** implement via [platform path] per changeset brief above, then resume Task 4: \`review-gate\``
-5. Do NOT invoke `plan-changeset` or `execute-changeset`
+5. Do not invoke `plan-changeset` or `execute-changeset`
 
 **If `--progressive` flag is present AND self-verify passed:**
 - Check `--skip` list. If this skill is in the skip list, pass through to next.
@@ -472,16 +470,7 @@ Apply the canonical task-graph protocol above. If the owner requested diagnosis 
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.json` is the sole source of truth: resume the first `in_progress` task (else the first `pending` task with blockers satisfied), re-load its skill with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` names a different `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
 
 ## Skill Outcome Contract
 

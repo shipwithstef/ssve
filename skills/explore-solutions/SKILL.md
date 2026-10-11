@@ -69,15 +69,15 @@ chain:
   human_checkpoint: true
 ---
 
-> **Cognitive routing:** labels, host, model, and effort stay configurable via the active profile (`references/model-routing.md`). Alternative-paradigm comparison is ANALYSIS of current specs, code, and cited evidence. Do not hard-require DISC-SEARCH or any fixed default old recipe. Invoke search/`research` only when `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns `external_research_required`.
+> **Cognitive routing:** labels, host, model, and effort stay configurable via the active profile (`references/model-routing.md`). Alternative-paradigm comparison is analysis of current specs, code, and cited evidence; no fixed search recipe is required. Invoke search/`research` only when `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns `external_research_required`.
 
 # Solution Explorer
 
 Challenge the technical design with alternative paradigms before committing
-to implementation. The LLM already picked its best approach in
-`design-tech`. This skill contests that choice with local analysis,
-alternatives, and current cited evidence — so you commit with confidence, not default.
-External research is not unconditional and is not required per paradigm.
+to implementation. `design-tech` already picked its best approach; this skill
+contests that choice with local analysis, alternatives, and current cited
+evidence, so the team commits with confidence rather than by default.
+External research is conditional, never required per paradigm.
 
 Derived from petekp/claude-code-setup (MIT, Copyright 2024 Pete Petrash).
 Adapted for svc's spec-first pipeline with full upstream context.
@@ -86,16 +86,13 @@ Adapted for svc's spec-first pipeline with full upstream context.
 
 ## Why This Exists
 
-LLMs satisfice. When `design-tech` picks an architecture, it
-pattern-matches to the most common approach for the stated problem. That's
-a local maximum — the most obvious solution is rarely the best across all
-dimensions that matter for THIS project, THIS team, THESE constraints.
-
-This skill forces the discipline a senior engineer applies: compare alternatives
-against current constraints and cited evidence before committing. Repository
-inspection and reasoning are ANALYSIS, never internal research. The initial tech
-design becomes Approach A — the baseline to beat. Exploration either confirms it
-(with evidence) or finds something better.
+Models satisfice: `design-tech` tends to pattern-match the most common
+architecture for the stated problem, which is a local maximum, not
+necessarily the best fit for this project's constraints. This skill applies a
+senior engineer's discipline: the initial tech design becomes Approach A, the
+baseline to beat, and exploration either confirms it with evidence or finds
+something better. Repository inspection and reasoning count as analysis, never
+as internal research.
 
 ## When to Skip
 
@@ -110,9 +107,9 @@ design becomes Approach A — the baseline to beat. Exploration either confirms 
 user explicitly asks for "best solution", "right design", "all cards on the
 table", "golden standard", real-world examples, or cost/cache grounding. In
 that mode, load `references/solution-confidence-protocol.md`; the exploration
-must challenge the baseline with at least three materially different options
-and must feed the selected/rejected options back into `SOLUTION-CONFIDENCE.md`.
-It must also feed the action-by-action approval packet: each proposed action
+challenges the baseline with at least three materially different options and
+feeds the selected/rejected options back into `SOLUTION-CONFIDENCE.md`.
+It also feeds the action-by-action approval packet: each proposed action
 needs what/why/how, positive outcome, negative/risk outcome, impact if skipped,
 and required proof gates before approval or planning.
 If `solution_confidence_mode=design_auto`, continue through the normal lane
@@ -120,30 +117,22 @@ after the design direction is ready. If `solution_confidence_mode=
 post_design_human_gate`, stop before `plan-changeset` after the design
 checkpoint.
 
-**Bootstrap template check (automatic):**
-
-Before starting exploration, scan `references/bootstraps/*/manifest.md`:
-1. Read each template's Stack section
-2. Compare against the tech design's stack choices
-3. If a template matches (same runtime + framework + database + API pattern):
-   - Load its `decisions.md`
-   - Report: "Bootstrap template '<name>' matches. Paradigm decisions are
-     production-verified. Skipping exploration."
-   - Chain directly to `define-code-style`
-4. If no template matches → proceed with exploration
-
-To create templates from real repos: `extract-bootstrap`
+**Bootstrap template check (automatic):** before exploring, compare each
+`references/bootstraps/*/manifest.md` Stack section against the tech design's
+stack. If one matches (same runtime + framework + database + API pattern),
+load its `decisions.md`, report "Bootstrap template '<name>' matches. Paradigm
+decisions are production-verified. Skipping exploration.", and chain directly
+to `define-code-style`. Otherwise explore. (Templates are created from real
+repos with `extract-bootstrap`.)
 
 **Run** (full or abbreviated) when:
 - The tech design introduces a new external dependency
 - The data model is new or significantly changed
 - The architecture is hard to reverse (new service, new protocol, new storage engine)
 - Multiple viable paradigms exist and the right one isn't obvious
-- The domain-profile flags domain-specific patterns the LLM may not know
+- The domain-profile flags domain-specific patterns the model may not know
 
 ## Calibration
-
-Not every decision deserves the same depth:
 
 | Mode | When | Phases | Output |
 |------|------|--------|--------|
@@ -151,297 +140,107 @@ Not every decision deserves the same depth:
 | **Abbreviated** | 2-3 viable approaches, analysis alone can decide | Phases 1-3 | PROBLEM_BRIEF + SOLUTION_MAP + ANALYSIS |
 | **Quick** | Small feature, sanity-check the obvious choice | Phases 1-2 | PROBLEM_BRIEF + SOLUTION_MAP only |
 
-When in doubt, start full. You can abbreviate once you see the landscape.
+When in doubt, start full; abbreviate once you see the landscape.
 
 ## Process
 
-All artifacts go in `docs/specs/explorations/<feature-name>/`.
+All artifacts go in `docs/specs/explorations/<feature-name>/`. Their document
+shapes, the AC-to-criterion mapping, frame-shift prompts and the EUREKA entry
+format are in `references/artifact-templates.md`; use those shapes so
+downstream skills and the self-verify checks can read the artifacts.
 
 ### Phase 1: Frame the Problem Against Upstream Context
 
-Unlike a standalone exploration, svc has accumulated context. Use it.
+Load the available upstream context (vision, personas, feature spec ACs and
+consumer type, journeys, UX/UI design, domain profile) and the BASELINED tech
+design, which is Approach A. Then:
 
-**1a. Load everything available:**
-- Vision — what product principles constrain this decision?
-- Personas — whose needs does this serve? What are their technical constraints (device, connectivity, expertise)?
-- Feature spec — what ACs define "done"? What's the consumer type (human/service/external)?
-- Journeys — what user flows exercise this feature? What error states matter?
-- UX/UI design — what interaction patterns were chosen? What performance expectations?
-- Domain profile — what domain conventions exist? What do competitors use?
-- The existing tech design (BASELINED) — this is Approach A, the baseline
+- **Derive success criteria from ACs.** Every AC that constrains the approach
+  becomes a MUST criterion; quality attributes from design, persona and vision
+  become SHOULD/NICE. Derive criteria from what the spec defines rather than
+  inventing abstract ones, so the analysis stays traceable.
+- **Surface the baseline's assumptions** (why this database, API pattern,
+  component structure, scale and deployment target). Each is a dimension the
+  exploration can challenge.
 
-**1b. Extract success criteria from ACs:**
-
-Every AC becomes a MUST criterion. Don't invent abstract criteria — derive them
-from what the spec already defines:
-
-| Source | Becomes |
-|--------|---------|
-| AC with response time requirement | MUST: performance criterion |
-| AC referencing offline/zero-state | MUST: offline/resilience criterion |
-| Journey with concurrent users | MUST: scale criterion |
-| UI design with animation | SHOULD: interaction smoothness |
-| Persona pain point | SHOULD: addresses specific pain |
-| Vision principle | NICE: aligns with product direction |
-
-**1c. Surface assumptions from the tech design:**
-
-Read the BASELINED tech design and list every implicit assumption:
-- Why this database and not another?
-- Why this API pattern and not another?
-- Why this component structure?
-- What scale is assumed?
-- What deployment target is assumed?
-
-Each assumption is a dimension the exploration can challenge.
-
-### Output: PROBLEM_BRIEF.md
-
-```markdown
-# Problem Brief: <feature name>
-
-## Problem statement
-<restate from spec — what capability is needed, for whom, under what constraints>
-
-## Upstream context
-- Vision principles: <relevant ones>
-- Persona constraints: <devices, expertise, connectivity>
-- Key ACs: <the ones that most constrain the technical approach>
-- Journey complexity: <number of flows, error states, concurrent paths>
-
-## Success criteria (derived from ACs)
-### Must
-<each AC that constrains the approach>
-### Should
-<quality attributes from design/persona/vision>
-### Nice
-<differentiators, nice-to-haves>
-
-## Baseline approach (from tech design)
-<summary of what design-tech chose and why>
-
-## Assumptions to challenge
-1. <assumption from tech design> — why was this chosen?
-2. ...
-
-## Constraints
-<hard limits: existing stack, team, timeline, budget>
-```
-
----
+Output: PROBLEM_BRIEF.md.
 
 ### Phase 2: Explore Alternative Paradigms
 
-The existing tech design is Approach A. Find at least 2 more paradigms that
-make fundamentally different bets.
+A paradigm is a different strategy — a different bet about what matters most —
+not a different library for the same strategy. Name the bet the current design
+makes, then find alternatives (aim for 3+ paradigms including the baseline,
+1-3 concrete approaches each). For each approach state how it works, what it
+gains for this feature's ACs, what it gives up, complexity relative to the
+codebase, and known risks. Finish by hunting for the non-obvious: reframing,
+hybrids, managed services, other domains.
 
-**What's a paradigm?** Not a different library for the same strategy — a different
-strategy entirely. Different bet about what matters most.
+Analyze each paradigm from the current repo, specs, bootstraps, and cited
+evidence (analysis). Per-paradigm search is not required, and requested
+solution confidence does not by itself require external examples.
 
-**Steps:**
+If `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns
+`external_research_required`, bind `requesting_decision_id` and
+`requesting_task_id`, invoke `research` for that scope only, return updated
+question/evidence/confidence, reevaluate before unblocking, and reuse a matching
+existing task on resume. Completed status alone is not resolution. When external
+research does run, separate product UX examples from provider/API examples and
+include cost/cache/freshness lessons where relevant. External/AI suggestions are
+not accepted directly; classify them as `adopt`, `modify`, `defer`, `reject`, or
+`unrelated`.
 
-1. **Name the paradigm of the current tech design.** What bet does it make?
-   e.g., "Server-rendered with progressive enhancement — bets that simplicity
-   and SEO matter more than interactivity."
+**Self-improvement signal:** if a paradigm is strictly better than a baseline
+that came from default pattern-matching, log a EUREKA learning (format in the
+templates reference); these are the highest-value learning entries.
 
-2. **Find alternative paradigms.** Aim for 3+ total (including the baseline).
-   Frame-shifts if stuck:
-   - What if the constraint was opposite? (high scale → low scale, real-time → batch)
-   - How do competitors in the domain-profile solve this?
-   - What existed before the currently popular approach?
-   - What would make the hardest AC trivially easy?
-   - What's the laziest solution that still meets every MUST?
-
-3. **Analyze each paradigm** from the current repo, specs, bootstraps, and cited
-   evidence (ANALYSIS). Do not run per-paradigm mandatory search and do not require
-   external examples because solution confidence was requested. For each paradigm:
-   libraries already in play, patterns, failure modes, and currently cited prior art.
-
-   If `researchDecision(question)` from `scripts/lib/research-decision.mjs` returns
-   `external_research_required`, bind `requesting_decision_id` and
-   `requesting_task_id`, invoke `research` for that scope only, return updated
-   question/evidence/confidence, reevaluate before unblocking, and reuse a matching
-   existing task on resume. Completed status alone is not resolution. When external
-   research does run, separate product UX examples from provider/API examples and
-   include cost/cache/freshness lessons where relevant. External/AI suggestions are
-   not accepted directly; classify them as `adopt`, `modify`, `defer`, `reject`, or
-   `unrelated`.
-
-4. **Generate concrete approaches.** 1-3 per paradigm. Each needs:
-   - How it works (concrete, not hand-waving)
-   - What you gain (specific to this feature's ACs)
-   - What you give up
-   - Complexity relative to the existing codebase
-   - Known risks
-
-**Self-improvement signal:** If the exploration discovers a paradigm that is strictly better than the baseline AND the baseline was chosen by the LLM's default pattern-matching, log this as an EUREKA learning:
-
-```json
-{"skill": "solution-explorer", "type": "pattern", "key": "eureka-<topic>", "insight": "LLM default was <X> but <Y> is better because <evidence>. The default pattern-match failed because <why>.", "confidence": 8, "source": "observed", "saves_minutes": 60}
-```
-
-These EUREKA learnings are the highest-value entries in the learning system — they represent cases where the LLM's training data was wrong for this specific context.
-
-5. **Hunt for the non-obvious.** After initial exploration:
-   - Can the problem be reframed to make it trivial?
-   - Is there a hybrid combining strengths of multiple paradigms?
-   - Is there a managed service that eliminates the problem?
-   - What would someone from a different domain do?
-
-### Output: SOLUTION_MAP.md
-
-```markdown
-# Solution Map: <feature name>
-
-## Paradigm A: <name> (BASELINE — from tech design)
-**Core bet:** <what this paradigm assumes matters most>
-### Approach A1: <current tech design>
-- **How it works:** <from the BASELINED tech design>
-- **Gains:** <why design-tech chose this>
-- **Gives up:** <what was traded away>
-- **Complexity:** <relative to codebase>
-
-## Paradigm B: <name>
-**Core bet:** <different bet>
-### Approach B1: <name>
-...
-
-## Paradigm C: <name>
-**Core bet:** <different bet>
-### Approach C1: <name>
-...
-
-## Non-obvious options
-<creative, unconventional, or hybrid approaches>
-
-## Eliminated early
-<approaches considered but dismissed, with reasoning>
-```
+Output: SOLUTION_MAP.md.
 
 ### Minimum Exploration Gate
 
-Do not proceed to Phase 3 until:
-- At least 3 distinct paradigms (including baseline) with substantive analysis
-- At least 5 total approaches across paradigms
-- Local analysis conducted against current cited evidence (not uncited brainstorming); external research only if `researchDecision(question)` returned `external_research_required` for a named scope and that work actually ran
-- Non-obvious section genuinely attempted
+Proceed to Phase 3 only when:
+- At least 3 distinct paradigms (including baseline) have substantive analysis
+- At least 5 total approaches exist across paradigms
+- Local analysis was conducted against current cited evidence (not uncited brainstorming); external research only if `researchDecision(question)` returned `external_research_required` for a named scope and that work actually ran
+- The non-obvious section was genuinely attempted
 
-If the baseline seems "obviously best" — that's the satisficing instinct this
-skill exists to counter. Document why it seems obvious, then keep exploring.
-
----
+If the baseline seems obviously best, that is the satisficing instinct this
+skill counters: document why it seems obvious, then keep exploring.
 
 ### Phase 3: Analyze Against ACs
 
-Evaluate all approaches against the success criteria from Phase 1.
+Build a tradeoff matrix of all approaches against every criterion using
+concrete assessments ("~200ms p95", not "good performance"). Eliminate
+approaches that fail an AC-derived MUST, with documented reasoning; rank
+survivors on SHOULD/NICE; select 2-3 finalists from different paradigms; and
+name the key differentiator — the single question whose answer makes the
+choice clear, which Phase 4 prototyping targets. A confirmed baseline with a
+documented "why not the alternative" is a valid outcome.
 
-**Steps:**
-
-1. **Tradeoff matrix.** Compare ALL approaches against each criterion.
-   Use concrete assessments ("~200ms p95" not "good performance").
-
-2. **Eliminate on MUST failures.** Which approaches fail an AC-derived MUST?
-   Remove with documented reasoning.
-
-3. **Rank survivors.** For SHOULD and NICE criteria, compare performance.
-
-4. **Select 2-3 finalists.** Must be from different paradigms.
-
-5. **Name the key differentiator.** What single question, if answered, would
-   make the choice clear? This is what Phase 4 prototyping targets.
-
-### Output: ANALYSIS.md
-
-```markdown
-# Analysis: <feature name>
-
-## Tradeoff Matrix
-
-| Criterion (source) | Approach A1 | Approach B1 | Approach C1 |
-|---------------------|------------|------------|------------|
-| MUST: AC-01 ... | ✅ detail | ✅ detail | ❌ why |
-| MUST: AC-02 ... | ✅ | ⚠️ risk | ✅ |
-| SHOULD: ... | detail | detail | detail |
-
-## Eliminated
-- <Approach X>: fails MUST AC-<N> because <evidence>
-
-## Finalists
-1. **A1** (baseline) — from Paradigm A. Because...
-2. **B1** — from Paradigm B. Because...
-
-## Key differentiator
-<what prototyping needs to answer>
-
-## Runner-up value
-If only 2 strong finalists exist, the runner-up is still documented
-with full reasoning. A confirmed baseline with a documented "why not
-the alternative" is a valid and valuable outcome.
-```
-
----
+Output: ANALYSIS.md.
 
 ### Phase 4: Prototype Finalists (Full mode only)
 
-Build minimal prototypes to answer the key differentiator. Skip if
-abbreviated/quick mode or if Phase 3 analysis is decisive.
+Skip in abbreviated/quick mode or when Phase 3 is decisive. Otherwise build
+50-200 line prototypes in `docs/specs/explorations/<feature-name>/prototypes/`
+that test only the key differentiator. Define comparison criteria before
+writing code, and record concrete numbers, not impressions.
 
-Each prototype: 50-200 lines testing the key differentiator only.
-Put in `docs/specs/explorations/<feature-name>/prototypes/`.
-
-Define comparison criteria BEFORE writing code. Run comparison.
-Record concrete numbers, not vibes.
-
-### Output: COMPARISON.md
-
----
+Output: COMPARISON.md.
 
 ### Phase 5: Decide
 
-**If the baseline wins:** The exploration confirms the tech design with evidence.
-Document why alternatives were rejected with specific AC-traced reasoning.
-The tech design stands — no changes needed.
+- **Baseline wins:** the exploration confirms the tech design with evidence;
+  document why alternatives were rejected with AC-traced reasoning. No design
+  changes.
+- **Alternative wins:** revise the tech design — update the BASELINED feature
+  spec's Implementation Notes, feasibility matrix and component table.
 
-**If an alternative wins:** Revise the tech design. Update the BASELINED feature
-spec's Implementation Notes section with the new approach. The feasibility
-matrix and component table change.
+Either way, produce DECISION.md with the selected approach, confidence
+(integer 1..10 or null; confidence is not evidence by itself), evidence chain,
+why this approach, why not each alternative, the runner-up and the condition
+that would make it the choice, and the impact on the tech design.
 
-**Either way:** Produce DECISION.md.
-
-### Output: DECISION.md
-
-```markdown
-# Decision: <feature name>
-
-## Selected approach
-**<name>** — <one-line description>
-
-## Confidence
-<integer 1..10 or null; high means prototyped + analyzed from current cited evidence. External research is not required for a high score and is included only if `researchDecision` required it and it ran. Confidence is not evidence by itself.>
-
-## Evidence chain
-- Problem framing: PROBLEM_BRIEF.md
-- Alternatives explored: SOLUTION_MAP.md (N paradigms, M approaches)
-- Analysis: ANALYSIS.md (tradeoff matrix against ACs)
-- Prototyping: COMPARISON.md (if done)
-
-## Why this approach
-<reference specific ACs it satisfies better than alternatives>
-
-## Why not the alternatives
-- **<Alt B>**: <specific AC or criterion it fails/underperforms, with evidence>
-- **<Alt C>**: <specific reason>
-
-## Runner-up
-**<name>** — would be the choice if <condition changes>.
-Preserved as a documented fallback.
-
-## Impact on tech design
-- [ ] No changes needed (baseline confirmed)
-- [ ] Tech design revised — see updated Implementation Notes in feature spec
-```
-
----
+Output: DECISION.md.
 
 ## Session Protocol
 
@@ -476,32 +275,9 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. Follow `references/task-graph-chaining-protocol.md`: treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, mark this skill's task `completed` before leaving, then load the next runnable task's skill (marking it `in_progress`) or mark it `completed` with a skip reason. Mirror status to the host UI only from the parent session (Claude `TaskList`/`TaskUpdate`; Kimi `/task` observation; in Codex, mirror only the active step in `update_plan`); a subagent (`SVC_SUBAGENT=1`) leaves mirroring to the parent, because a failed mirror call silently drifts from the file.
 
 ### Self-Verify
 
@@ -514,20 +290,12 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Apply the task-graph protocol above, then:
 
 **If `--progressive` flag is present AND self-verify passed:**
 - If baseline won (no changes): invoke `define-code-style --progressive --lane <lane>`
 - If tech design was revised: **re-trigger G4** on the revised design before continuing.
-  The design that reaches planning MUST be the one that passed review.
+  The design that reaches planning has to be the one that passed review, otherwise G4 certified a different design.
   `review-gate --gate G4 --artifact docs/specs/features/<name>.md --section "Implementation Notes"`
   On G4 PASS: invoke `define-code-style --progressive --lane <lane>`
   On G4 FAIL: fix findings in the revised design, re-trigger G4.
@@ -538,13 +306,4 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.json` is the sole source of truth: resume the first `in_progress` task (else the first `pending` task with blockers satisfied), re-load its skill with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` names a different `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.

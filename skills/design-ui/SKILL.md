@@ -38,7 +38,7 @@ chain:
   human_checkpoint: false
 ---
 
-> **Cognitive routing:** 🎨 Gemini (visual/multimodal reasoning) for UI generation, with Opus 4.8 for strategic framing. Gemini excels at spatial/visual composition; Opus resolves product/UX intent. See `references/model-routing.md`.
+> **Cognitive routing:** visual/multimodal reasoning for UI generation, strategic reasoning for product/UX intent. Resolve the harness and model for each through the active profile in `references/model-routing.md`.
 
 # Writing UI Design
 
@@ -85,13 +85,11 @@ responsive approach), follow the Design Alternatives Protocol
 
 ## Design Shotgun (variant exploration)
 
-**Design Shotgun** — Before finalizing component specs, gather context on five dimensions (who, job to be done, what exists, user flow, edge cases) and do not skip it. When the work changes an existing component, screen, shared component or route, the Production-Derived Mock Parity Gate is MANDATORY before any mock: write a parity ledger (`docs/specs/ui/<feature>-mock-parity-ledger.md` or inside the UI doc) showing current state and intended final state of the real component, with production source paths, usages, ACs, states and viewports; generic "inspired by" mocks are a hard fail, and missing baselines mean run `track-visuals` or record a blocking gap. Then read prior approvals (`docs/specs/decisions/approved.json`, `taste-*.md`), propose genuinely different same-job text concepts, and present them to the user BEFORE generating HTML (a gate; in auto mode P0 selects with justification). Generate self-contained HTML/CSS variants with real content, 375px and 1200px, and record the chosen direction in `approved.json`. Details: `references/design-shotgun.md`.
-
-The mock parity gate below stays inline because later gates assert it:
+**Design Shotgun** — Before finalizing component specs, gather context on five dimensions (who, job to be done, what exists, user flow, edge cases); variants built without it solve the wrong problem. When the work changes existing UI, complete the Production-Derived Mock Parity Gate below before any mock. Then read prior approvals (`docs/specs/decisions/approved.json`, `taste-*.md`), propose genuinely different same-job text concepts, and present them to the user BEFORE generating HTML (a gate; in auto mode P0 selects with justification). Generate self-contained HTML/CSS variants with real content, 375px and 1200px, and record the chosen direction in `approved.json`. Details: `references/design-shotgun.md`.
 
 ### Step 1.5: Production-Derived Mock Parity Gate
 
-This gate is mandatory whenever the UI work changes an existing component,
+This gate applies whenever the UI work changes an existing component,
 existing screen, shared component, or route already present in the codebase.
 Do not generate standalone greenfield mocks until this gate is complete.
 
@@ -123,10 +121,11 @@ Parity requirements:
 
 **Hard fail:** generic "inspired by" mocks, isolated Dribbble-style frames,
 or HTML variants that do not include the affected existing component are not
+valid, because they cannot show what the change does to the real product.
 
-## External Canvas Handoff (OPT-IN escape hatch — NOT the default path)
+## External Canvas Handoff (opt-in escape hatch, not the default path)
 
-**External Canvas Handoff (opt-in only)** — The default is the in-session Design Shotgun; use external handoff ONLY when the user names an external canvas (Claude Design, v0, Lovable), the task graph names `design-ui-external-handoff`, or the WI sets `design_route: external-canvas`. Never route here because quality "might be higher" or the codebase is large. When triggered: a Gemini subagent builds `docs/specs/ui/constraint-matrix.md` (the orchestrator MUST NOT re-read the codebase), compose the Vibe Contract prompt (Claude Design uses `/design-sync`, falling back to Design Shotgun if unavailable), then a second zero-history Gemini subagent audits the returned code against the matrix (strict PASS/FAIL) before integration. Code stays the source of truth. Details: `references/external-canvas-handoff.md`.
+**External Canvas Handoff (opt-in only)** — The default is the in-session Design Shotgun; use external handoff only when the user names an external canvas (Claude Design, v0, Lovable), the task graph names `design-ui-external-handoff`, or the WI sets `design_route: external-canvas`. Do not route here because quality "might be higher" or the codebase is large. When triggered: a Gemini subagent builds `docs/specs/ui/constraint-matrix.md` (the orchestrator does not re-read the codebase, to keep its context free for integration), compose the Vibe Contract prompt (Claude Design uses `/design-sync`, falling back to Design Shotgun if unavailable), then a second zero-history Gemini subagent audits the returned code against the matrix (strict PASS/FAIL) before integration. Code stays the source of truth. Details: `references/external-canvas-handoff.md`.
 
 ## Adversarial Design Review (after UI is drafted)
 
@@ -147,13 +146,13 @@ Fix anything under 7. In auto mode: P0 fixes automatically.
 
 UI design defines the visual treatment, component structure, and interaction aesthetics of screens that UX design already mapped. It takes the screen inventory, state machines, flows, and information hierarchy from UX design and specifies exactly how each element renders — which components, which tokens, which states, which animations.
 
-**UI design does NOT define:** Which screens exist, how users navigate between them, what information hierarchy to use, or what error recovery flows look like. Those are UX design (Phase 4). If you catch yourself adding new screens or changing flow logic, stop — that is a feedback loop to design-ux.
+**UI design does not define:** Which screens exist, how users navigate between them, what information hierarchy to use, or what error recovery flows look like. Those are UX design (Phase 4). If you catch yourself adding new screens or changing flow logic, stop — that is a feedback loop to design-ux.
 
 **The boundary:** UX says "this screen has a primary action, a list of results, and a filter panel." UI says "the primary action is a filled button using `color.primary` at `size.lg`, the list uses `CardList` with `spacing.md` between items, and the filter panel uses `CollapsiblePanel` that becomes a `BottomSheet` below the `breakpoint.md` threshold."
 
 ## The Design System
 
-**The Design System** — `docs/specs/design-system.md` is a foundational artifact; if it is missing, create it BEFORE designing any feature UI, from the vision, personas and existing codebase UI patterns (adapted to this brand, not a copy of Material or Tailwind). If it exists, read it: every UI decision must reference its tokens, and a missing pattern means extend the design system first, then use the new tokens. Details: `references/design-system.md`.
+**The Design System** — `docs/specs/design-system.md` is a foundational artifact; if it is missing, create it before designing any feature UI, from the vision, personas and existing codebase UI patterns (adapted to this brand, not a copy of Material or Tailwind). If it exists, read it: every UI decision must reference its tokens, and a missing pattern means extend the design system first, then use the new tokens. Details: `references/design-system.md`.
 
 ## When To Use
 
@@ -182,14 +181,10 @@ UI design defines the visual treatment, component structure, and interaction aes
 
 ### Step 0b: Ensure Design System Exists (Tokens)
 
-```bash
-cat docs/specs/design-system.md 2>/dev/null
-```
-
-If the file does not exist, create it before proceeding to Step 1. Follow the design system creation process described in "The Design System" section above. The design system implements the direction from DESIGN.md as concrete tokens.
+If `docs/specs/design-system.md` does not exist, create it before proceeding to Step 1. Follow the design system creation process described in "The Design System" section above. The design system implements the direction from DESIGN.md as concrete tokens.
 
 **W3C Design Tokens (Masterclass UI):**
-In addition to the Markdown design system, the agent MUST generate a machine-readable `docs/specs/ui/tokens.json` following the **W3C DTCG 1.0** standard. This ensures 1:1 token parity across all hosts (Gemini, Claude, Codex).
+In addition to the Markdown design system, generate a machine-readable `docs/specs/ui/tokens.json` following the **W3C DTCG 1.0** standard. This ensures 1:1 token parity across all hosts (Gemini, Claude, Codex).
 
 **Vibe Contract (Motion Schema):**
 Read the Signature Hook disposition from `design-ux`. For `existing-pattern-retained`, carry the existing motion/accessibility tokens and verify the affected states; do not invent new decorative physics or require a new motion schema. For a selected new interaction, generate `docs/specs/ui/vibe-contract.json` with its applicable motion parameters (including easing and interaction behavior), reduced-motion/accessibility behavior and performance checks. Keep the technical contract tied to the approved interaction and current design tokens.
@@ -206,28 +201,7 @@ Missing entries = UX screens with no UI plan = design gap. Resolve before procee
 
 ### Step 1: Read The UX Design And Spec
 
-Read the UX design artifact and the feature spec. Understand:
-
-- What screens exist (screen inventory)
-- What states each screen has (state machines)
-- What the information hierarchy is (priority per screen)
-- What error and loading states are defined
-- What the responsive strategy requires
-- What accessibility requirements are specified
-
-```bash
-# Read UX design
-cat docs/specs/ux/<feature-name>.md
-
-# Read feature spec
-cat docs/specs/features/<feature-name>.md
-
-# Read design system
-cat docs/specs/design-system.md
-
-# Read personas for visual context
-ls docs/specs/personas/P*.md 2>/dev/null
-```
+Read the UX design (`docs/specs/ux/<feature-name>.md`), the feature spec, the design system and the relevant personas. Extract the screen inventory, per-screen state machines, information hierarchy, error and loading states, responsive strategy and accessibility requirements; the UI spec has to cover each of them.
 
 ### Step 2: Component Specifications
 
@@ -386,32 +360,9 @@ When invoked with `--audit` to review existing UI design:
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. Follow `references/task-graph-chaining-protocol.md`: treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, mark this skill's task `completed` before leaving, then load the next runnable task's skill (marking it `in_progress`) or mark it `completed` with a skip reason. Mirror status to the host UI only from the parent session (Claude `TaskList`/`TaskUpdate`; Kimi `/task` observation; in Codex, mirror only the active step in `update_plan`); a subagent (`SVC_SUBAGENT=1`) leaves mirroring to the parent, because a failed mirror call silently drifts from the file.
 
 ### Self-Verify
 
@@ -429,15 +380,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Apply the task-graph protocol above, then:
 
 **If `--progressive` flag is present AND self-verify passed:**
 - Check `--skip` list. If this skill is in the skip list, pass through to next.
@@ -451,7 +394,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ## Phase Z — Live in-app verification (post-execution promotion gate)
 
-After implementation is deployed and before promotion is declared done, capture the affected screen(s) in every supported theme and shipping viewport via Playwright, follow the actual user journey through the changed states, and run the eyeball checklist in `_shared/live-evidence.md`. **No live screenshots, no done.**
+After implementation is deployed and before promotion is declared done, capture the affected screen(s) in every supported theme and shipping viewport via Playwright, follow the actual user journey through the changed states, and run the eyeball checklist in `_shared/live-evidence.md`. Without live screenshots the UI work is not done.
 
 Output: `docs/specs/ui/<screen>/in-app-verification/` with labeled captures for the supported theme(s), viewports, and material states.
 
@@ -463,13 +406,4 @@ Origin: 2026-04-30 Example Marketplace run shipped a logo-swap that bundle-grep 
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.json` is the sole source of truth: resume the first `in_progress` task (else the first `pending` task with blockers satisfied), re-load its skill with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` names a different `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.

@@ -83,7 +83,7 @@ perfectly is worse than no feature at all.
 
 **Announce at start:** "I'm using validate-feature to validate this idea before we design anything."
 
-## Product Questions — MANDATORY format
+## Product Questions — shared format
 
 Ground the business case in current owner scope, persona/journey/spec evidence and actual relevant code. Follow `_shared/product-question-format.md` with `phase: validate-feature`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
@@ -150,7 +150,7 @@ digraph feature_discovery {
     noship -> pivot [label="user requests alternative"];
     pivot -> route [label="user accepts pivot"];
     route -> brainstorm [label="standard"];
-    route -> officehours [label="strategic"];
+    route -> strategicbet [label="strategic"];
     route -> explorer [label="technical"];
     route -> plans [label="small"];
 }
@@ -158,7 +158,7 @@ digraph feature_discovery {
 
 ---
 
-**0. Task Graph Setup — MANDATORY** — MANDATORY before any validation work: make sure `.svc/lane-tasks-<WI>.json` has a Task {T} with nine `process_tasks` ({T}.1 context-scan through {T}.9 finalize). If the file and process_tasks exist, skip setup and just hydrate; if the file exists without process_tasks, add them to Task {T} only (never overwrite the file); if no file exists, run `node scripts/task-graph.mjs init .svc/lane-tasks-<WI>.json --wi <WI-###> --lane feature` and populate it. Set status with `node scripts/task-graph.mjs set-status .svc/lane-tasks-<WI>.json {T} completed` (and the same for each process task), update the file before the task system on each completion, and never mark Task {T} completed until all nine process tasks are completed or skipped ({T}.3-{T}.7 may be skipped only on the escape-check path). Details: `references/process.md`.
+**0. Task Graph Setup** — Before any validation work, make sure `.svc/lane-tasks-<WI>.json` has a Task {T} with nine `process_tasks` ({T}.1 context-scan through {T}.9 finalize). If the file and process_tasks exist, skip setup and just hydrate; if the file exists without process_tasks, add them to Task {T} only (never overwrite the file); if no file exists, run `node scripts/task-graph.mjs init .svc/lane-tasks-<WI>.json --wi <WI-###> --lane feature` and populate it. Set status with `node scripts/task-graph.mjs set-status .svc/lane-tasks-<WI>.json {T} completed` (and the same for each process task), update the file before the task system on each completion, and never mark Task {T} completed until all nine process tasks are completed or skipped ({T}.3-{T}.7 may be skipped only on the escape-check path). Details: `references/process.md`.
 
 ## Step 0: Context Scan
 
@@ -168,7 +168,7 @@ For concept fragmentation, an existing pipeline break, or a missing journey desc
 
 Before asking a single question, scan the project for existing artifacts related to the idea.
 
-**What to check (in this order — high-level first, detail only when needed)** — Check product-level truth first, then code: journeys (`docs/specs/journeys/*.feature.md`), personas (`docs/specs/personas/P*.md`), vision, `domain-profile.md`, and `analyze-competitors.md` (feeds K3). Read journeys in full, including their Journey Analysis gaps. Every feature spec moving to BASELINED MUST carry an `## Industry Grounding` section, checked with `scripts/lib/structured-gate-engine.mjs` against `analyze-competitors.data.json` (populated landscape blocks BASELINED unless aligned or compensated). Details: `references/step-0-context-scan.md`.
+**What to check (in this order — high-level first, detail only when needed)** — Check product-level truth first, then code: journeys (`docs/specs/journeys/*.feature.md`), personas (`docs/specs/personas/P*.md`), vision, `domain-profile.md`, and `analyze-competitors.md` (feeds K3). Read journeys in full, including their Journey Analysis gaps. Every feature spec moving to BASELINED carries an `## Industry Grounding` section, checked with `scripts/lib/structured-gate-engine.mjs` against `analyze-competitors.data.json` (populated landscape blocks BASELINED unless aligned or compensated). Details: `references/step-0-context-scan.md`.
 
 **Concept deduplication and industry pattern matching** — When the scan finds related code, look for concept fragmentation: two components creating the same entity are the same feature under different names. Name the industry pattern (producer, consumer, system sides), state your diagnosis yourself instead of asking the user, and recommend consolidating duplicate names. This diagnosis replaces Q1-Q3 when the codebase already answers them. Details: `references/step-0-context-scan.md`.
 
@@ -178,7 +178,7 @@ Before asking a single question, scan the project for existing artifacts related
 
 This step behaves differently based on invocation mode.
 
-**Guided Mode (standalone or `--progressive` without `--auto-approve`)** — Ask only unresolved, consequential owner choices; skip any question the context scan, codebase, or the user's message already answers. For every question give a RECOMMENDATION and let the user Accept / Customize / Override. When confidence is low, analyze current cited evidence first; invoke `research` only if `researchDecision(question)` returns `external_research_required`. Details: `references/step-1-business-questions.md`.
+**Guided Mode (standalone or `--progressive` without `--auto-approve`)** — Ask only unresolved, consequential owner choices; skip any question the context scan, codebase, or the user's message already answers. For every question give a recommendation and let the user Accept / Customize / Override. When confidence is low, analyze current cited evidence first; invoke `research` only if `researchDecision(question)` returns `external_research_required`. Details: `references/step-1-business-questions.md`.
 
 ### Auto Mode (`--progressive --auto-approve`)
 
@@ -272,7 +272,7 @@ Evaluate each signal. A signal fires when the evidence supports it.
 | K4 | Vision misalignment | Cross-validation | The feature contradicts the product's stated direction and the vision shouldn't change to accommodate it. |
 | K5 | No kill condition | Q6 | The user cannot articulate what failure looks like. If you can't define failure, you can't recognize it, and the feature will zombie-walk forever. |
 | K6 | MVP is actually a platform | Q7 + Q4 | The "smallest version" requires 3+ months of work or multiple integrated systems. The wedge isn't narrow enough. |
-| K7 | Existing solution in codebase | Context scan | The feature already exists under a different name, or a minor fix to existing code solves the same problem. **Coverage gate (mandatory):** Before firing K7, enumerate the user's described problem surface (e.g., "all sidebar destinations", "every customer mobile page", "every checkout step") and compare against the existing solution's actual scope (config list length, route table, classification array, etc.). K7 fires ONLY when the existing solution covers ≥95% of the described surface. If the existing component covers a strict subset (e.g., 3 of 16 sidebar destinations classified as ROOT_PAGES while the user described inconsistency across all peers), K7 does NOT fire — the user's complaint is real and partial-coverage is the underlying bug. Route to a bugfix that extends coverage, do NOT exit via the escape hatch. Source: example-marketplace WI-185 misroute, 2026-05-08. |
+| K7 | Existing solution in codebase | Context scan | The feature already exists under a different name, or a minor fix to existing code solves the same problem. **Coverage gate:** Before firing K7, enumerate the user's described problem surface (e.g., "all sidebar destinations", "every customer mobile page", "every checkout step") and compare against the existing solution's actual scope (config list length, route table, classification array, etc.). K7 fires only when the existing solution covers ≥95% of the described surface. If the existing component covers a strict subset (e.g., 3 of 16 sidebar destinations classified as ROOT_PAGES while the user described inconsistency across all peers), K7 does not fire — the user's complaint is real and partial coverage is the underlying bug. Route to a bugfix that extends coverage instead of exiting via the escape hatch. Source: example-marketplace WI-185 misroute, 2026-05-08. |
 
 ### Builder History Weighting
 
@@ -281,12 +281,12 @@ sensitivity based on past project outcomes and builder patterns:
 
 | Builder pattern | Kill signal adjustment |
 |---|---|
-| 2+ past projects died from no distribution | K1 (no demand) fires at LOWER threshold — require stronger evidence of demand before shipping. "Interesting idea" is not enough for this builder. |
-| Past projects consistently over-scoped | K6 (MVP is a platform) fires at LOWER threshold — if this builder's "small" is historically large, be more aggressive about scope. |
-| Builder has no marketing skills AND no social presence | K1 weight doubles — without distribution capability, even validated demand doesn't mean THIS builder can capture it. Recommend marketplace/SEO plays instead. |
+| 2+ past projects died from no distribution | K1 (no demand) fires at a lower threshold — require stronger evidence of demand before shipping. "Interesting idea" is not enough for this builder. |
+| Past projects consistently over-scoped | K6 (MVP is a platform) fires at a lower threshold — if this builder's "small" is historically large, be more aggressive about scope. |
+| Builder has no marketing skills and no social presence | K1 weight doubles — without distribution capability, even validated demand doesn't mean this builder can capture it. Recommend marketplace/SEO plays instead. |
 | Builder abandoned projects at month 3+ | K6 should consider builder timeline, not just technical scope. A 3-month project for someone who quits at month 3 is a kill signal. |
 | Builder has shipped successfully before | All signals at normal threshold — proven ability to execute means standard gates are sufficient. |
-| Builder has relevant failed project | Check if THIS feature is the same idea repackaged. If the same concept failed before and nothing changed (no new skills, tools, or market shift), that's evidence for K1 or K3. |
+| Builder has relevant failed project | Check if this feature is the same idea repackaged. If the same concept failed before and nothing changed (no new skills, tools, or market shift), that's evidence for K1 or K3. |
 
 ### Scoring
 
@@ -299,7 +299,7 @@ Count the kill signals that fire. Each must include the specific evidence that t
 After the ship decision is made, log it. The `run_id` comes from the active task graph (`.svc/lane-tasks-<WI>.json` → `wi` field). The `phase` comes from this task's `id` in the task graph.
 
 ```bash
-# SHIP/NO-SHIP decision (mandatory — this is the highest-stakes decision in the pipeline)
+# SHIP/NO-SHIP decision (always logged — the highest-stakes decision in the pipeline)
 node scripts/pipeline-log.mjs append \
   --path .svc/pipeline-decisions.jsonl \
   --run-id "<WI-ID>" \
@@ -315,9 +315,9 @@ node scripts/pipeline-log.mjs append \
 
 In auto mode, also log each kill signal assessment as a separate `mechanical` entry so the full reasoning is reconstructable.
 
-**NO-SHIP Evidence Package** — On NO-SHIP, produce a structured rejection, not a vague "reconsider": for every fired signal give the evidence and what would change it, then a recommendation and an "If You Disagree" clause (override needs counter-evidence for at least N-1 signals). In auto mode NO-SHIP ALWAYS stops the pipeline and presents findings; killing a feature is a User-class decision, never silent. Details: `references/step-3b-ship-decision.md`.
+**NO-SHIP Evidence Package** — On NO-SHIP, produce a structured rejection, not a vague "reconsider": for every fired signal give the evidence and what would change it, then a recommendation and an "If You Disagree" clause (override needs counter-evidence for at least N-1 signals). In auto mode NO-SHIP stops the pipeline and presents findings, because killing a feature is a User-class decision and is never silent. Details: `references/step-3b-ship-decision.md`.
 
-**DEFER Protocol** — A DEFER MUST name the blocking kill signal(s), the Builder-Profile constraint, a CONCRETE verifiable unblocking milestone ("after first paying customer", not "when users exist"), and a revisit trigger. Write the brief with `Status: DEFERRED`, add a `blocked-by-<milestone-slug>` row to `docs/specs/work-items/INDEX.md`, log the decision with `(Until: <milestone>)`, and halt the pipeline; no downstream skill runs. DEFER is non-destructive and still needs user confirmation. Details: `references/step-3b-ship-decision.md`.
+**DEFER Protocol** — A DEFER names the blocking kill signal(s), the Builder-Profile constraint, a concrete verifiable unblocking milestone ("after first paying customer", not "when users exist"), and a revisit trigger. Write the brief with `Status: DEFERRED`, add a `blocked-by-<milestone-slug>` row to `docs/specs/work-items/INDEX.md`, log the decision with `(Until: <milestone>)`, and halt the pipeline; no downstream skill runs. DEFER is non-destructive and still needs user confirmation. Details: `references/step-3b-ship-decision.md`.
 
 **Pivot Protocol** — On PIVOT (or when the user asks for alternatives after NO-SHIP), build on what is strong, read the builder profile so alternatives fit the builder's skills, channels, time and past failures, then propose 1-3 directions (why stronger, what is preserved and sacrificed, smallest test) and let the user pick. A chosen pivot re-runs Step 1 and must pass the same kill-signal gate; an override requires counter-evidence for at least N-1 signals and keeps the NO-SHIP evidence as a risk section. Details: `references/step-3b-ship-decision.md`.
 
@@ -398,32 +398,9 @@ PASS when provider/source or saved outcome is unknown.
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. Follow `references/task-graph-chaining-protocol.md`: treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, mark this skill's task `completed` before leaving, then load the next runnable task's skill (marking it `in_progress`) or mark it `completed` with a skip reason. Mirror status to the host UI only from the parent session (Claude `TaskList`/`TaskUpdate`; Kimi `/task` observation; in Codex, mirror only the active step in `update_plan`); a subagent (`SVC_SUBAGENT=1`) leaves mirroring to the parent, because a failed mirror call silently drifts from the file.
 
 ### Self-Verify
 
@@ -446,15 +423,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Apply the task-graph protocol above, then:
 
 **If `--progressive` flag is present AND self-verify passed:**
 - Check `--skip` list. If this skill is in the skip list, pass through to next.
@@ -467,16 +436,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.json` is the sole source of truth: resume the first `in_progress` task (else the first `pending` task with blockers satisfied), re-load its skill with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` names a different `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
 
 ## Skill Outcome Contract
 

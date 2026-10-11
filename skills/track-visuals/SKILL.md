@@ -76,9 +76,9 @@ Visual regression testing integrated into the pipeline.
 
 ## Hard rule — multi-viewport capture (added 2026-04-20 per F-003)
 
-Any component that can render at a non-design viewport size (embedded cards, responsive containers, aspect-ratio frames, modals, drawers) MUST be captured **at every size it actually ships at**, not only at its design-canvas size. Scoring and AI-vision analysis run **independently per viewport**. If a component scores acceptable at 1600×900 but fails at 600×338, that's a FAIL for the component — not a pass with a footnote.
+Any component that can render at a non-design viewport size (embedded cards, responsive containers, aspect-ratio frames, modals, drawers) is captured **at every size it actually ships at**, not only at its design-canvas size. Scoring and AI-vision analysis run **independently per viewport**. If a component scores acceptable at 1600×900 but fails at 600×338, that's a FAIL for the component — not a pass with a footnote.
 
-The Storyboard-hero regression that triggered this rule: component designed at 1600×900, reviewed only at that size, deployed at ~600×338 embedded, legibility destroyed (text 62.5% smaller, characters 30×52 unreadable). No alarm fired. Viewports actually in use MUST all be asserted.
+The Storyboard-hero regression that triggered this rule: component designed at 1600×900, reviewed only at that size, deployed at ~600×338 embedded, legibility destroyed (text 62.5% smaller, characters 30×52 unreadable). No alarm fired, which is why every viewport actually in use is asserted.
 
 **Required capture viewports (minimum):**
 - Design-canvas size (whatever the source-of-truth specifies)
@@ -96,9 +96,9 @@ feature has a visual surface.
 
 ## Hard rule — mobile occlusion + safe-area gate (added 2026-07-11 per WI-SAMPLE-NAV-01)
 
-DOM-presence checks ("the button is in the DOM") are perceptually blind: they pass while a button is half-hidden behind a fixed bottom nav or sitting under the phone's home indicator. And headless Chromium reports `env(safe-area-inset-bottom)=0`, so a fixed nav never grows and these bugs are **invisible** to a normal render. Four shipped to users this way — a Sample FAB clipped by the tab bar, a logout under the gesture bar, a FAB that vanished on scroll, a hero clipped at 390px — each caught by a human testing on-device, not by any gate.
+DOM-presence checks ("the button is in the DOM") are perceptually blind: they pass while a button is half-hidden behind a fixed bottom nav or sitting under the phone's home indicator. And headless Chromium reports `env(safe-area-inset-bottom)=0`, so a fixed nav never grows and these bugs are invisible to a normal render. Four shipped to users this way — a Sample FAB clipped by the tab bar, a logout under the gesture bar, a FAB that vanished on scroll, a hero clipped at 390px — each caught by a human testing on-device, not by any gate.
 
-**Rule:** any browser-visible change to an app screen with fixed/sticky chrome (bottom tab bar, sticky header, FAB) — or any screen a mobile user reaches — MUST pass the `mobile-occlusion` gate at a real phone viewport with the device safe-area emulated:
+**Rule:** any browser-visible change to an app screen with fixed/sticky chrome (bottom tab bar, sticky header, FAB) — or any screen a mobile user reaches — passes the `mobile-occlusion` gate at a real phone viewport with the device safe-area emulated:
 
 ```bash
 node scripts/browser-verify.mjs --url "<screen-url>" --wi <WI> \
@@ -135,7 +135,7 @@ Visual screenshots follow a 4-state lifecycle: **CAPTURED → DIFFED → PROMOTE
 | WI review reports & analysis (persistent) | `.svc/visuals/<WI>/*.md` | Kept permanently for platform improvement. |
 
 `.svc/visuals/<WI>/` contains both screenshot files and analysis artifacts.
-After promotion (or WI close without visual changes), **only screenshot files**
+After promotion (or WI close without visual changes), only screenshot files
 (`.png/.jpg/.webp`) are deleted — review reports, manifests, and analysis logs
 are retained for platform improvement and cross-WI analysis.
 
@@ -143,9 +143,7 @@ are retained for platform improvement and cross-WI analysis.
 
 ### Baseline Mode
 
-**Baseline Mode** — Run after `design-ui` produces the first visual design, or when onboarding a brownfield project. Step 0 (WI/feature impact scan) is MANDATORY BEFORE BUILDING INVENTORY: read the WI and linked feature spec, mine `docs/specs/journeys/J*.feature.md` for modal/toast/form/loading/empty transition states, check existing E2E coverage, map affected shared components, read the Production-Derived Mock Parity Ledger when UI work modifies an existing component (if required but missing, stop and route back to `design-ui`), and log a pre-flight checklist. Step 1 builds the inventory from Source A (routes from UX/UI docs) plus Source B (transition states, required whenever journey docs or shared-component ACs exist). Step 2 captures each screen and state at desktop 1280, tablet 768 and mobile 375, and a browse-daemon pre-flight is MANDATORY before any capture (fall back to Playwright MCP only if it fails, with a warning). Step 3 saves `docs/specs/visuals/baseline/manifest.md`. Details: `references/baseline-mode.md`.
-
-Inline requirement (also in the reference):
+**Baseline Mode** — Run after `design-ui` produces the first visual design, or when onboarding a brownfield project. Step 0 (WI/feature impact scan) runs before building the inventory: read the WI and linked feature spec, mine `docs/specs/journeys/J*.feature.md` for modal/toast/form/loading/empty transition states, check existing E2E coverage, map affected shared components, read the Production-Derived Mock Parity Ledger when UI work modifies an existing component (if required but missing, stop and route back to `design-ui`), and log a pre-flight checklist. Step 1 builds the inventory from Source A (routes from UX/UI docs) plus Source B (transition states, required whenever journey docs or shared-component ACs exist). Step 2 captures each screen and state at desktop 1280, tablet 768 and mobile 375, with a browse-daemon pre-flight before any capture (fall back to Playwright MCP only if it fails, with a warning). Step 3 saves `docs/specs/visuals/baseline/manifest.md`. Details: `references/baseline-mode.md`.
 
 **Read the Production-Derived Mock Parity Ledger** when UI work modifies an
 existing component/screen or when `design-ui` produced
@@ -170,7 +168,7 @@ Before re-capturing, classify the change's visual blast radius:
 | `component` | Shared component modification (nav, sidebar, card, modal) | All screens using that component × all viewports |
 | `route` | Single page or feature change | Affected routes only × all viewports |
 
-For `component` blast radius, the capture scope MUST be derived from the
+For `component` blast radius, derive the capture scope from the
 Production-Derived Mock Parity Ledger when one exists or is required. Use the
 ledger's affected usages/routes, required states, current-state evidence,
 intended final-state evidence, and viewports as the minimum capture set. If the
@@ -304,11 +302,11 @@ Compare current app visuals against UI design documents:
 
 ### Review Mode
 
-**Review Mode** — Analyze already-captured screenshots (`screenshots_dir`, `concern`, `exclusions` from the caller) for one visual concern; no re-capture, no baseline comparison. Read the dir's `manifest.md`, turn the concern (dark mode completeness, color contrast, layout regression, general, comprehension) into a checklist, and read EVERY `.png` (no sampling), skipping excluded items. Record file, area, problem, likely cause and severity (critical/high/low), tag generic gradients, stock icons or filler copy as `[AI-SLOP]`, and for `comprehension` score six dimensions 1-4 and file a WI for any high or critical finding even outside ACs. Save `.svc/visuals/<WI>/review-<concern-slug>-<date>.md`, then run `node scripts/verify-skill-contract.mjs artifact-family track-visuals --root .` and `visual-review-closeout`; the review is not complete until both pass. Details: `references/review-mode.md`.
+**Review Mode** — Analyze already-captured screenshots (`screenshots_dir`, `concern`, `exclusions` from the caller) for one visual concern; no re-capture, no baseline comparison. Read the dir's `manifest.md`, turn the concern (dark mode completeness, color contrast, layout regression, general, comprehension) into a checklist, and read every `.png` (no sampling, since one unread screenshot can hide the defect), skipping excluded items. Record file, area, problem, likely cause and severity (critical/high/low), tag generic gradients, stock icons or filler copy as `[AI-SLOP]`, and for `comprehension` score six dimensions 1-4 and file a WI for any high or critical finding even outside ACs. Save `.svc/visuals/<WI>/review-<concern-slug>-<date>.md`, then run `node scripts/verify-skill-contract.mjs artifact-family track-visuals --root .` and `visual-review-closeout`; the review is not complete until both pass. Details: `references/review-mode.md`.
 
 ### External-Anchor Mode
 
-**External-Anchor Mode** — Capture a third-party landing page for `landing-page`'s reference bank, when an anchor lacks `hero.png`/`hero.webm` or its captures are over 12 months old. Given `url`, `sector` and `anchor`, use the browse pre-flight, capture a 1920x1080 hero PNG and a short scroll-cast WEBM into `references/landing-bank/<sector>/<anchor>/`, then update the sector `INDEX.md` row and the `pattern.md` Captured field. Return ONLY file paths to the caller (never raw screenshots or DOM dumps), and never touch `docs/specs/visuals/`. Details: `references/external-anchor-mode.md`.
+**External-Anchor Mode** — Capture a third-party landing page for `landing-page`'s reference bank, when an anchor lacks `hero.png`/`hero.webm` or its captures are over 12 months old. Given `url`, `sector` and `anchor`, use the browse pre-flight, capture a 1920x1080 hero PNG and a short scroll-cast WEBM into `references/landing-bank/<sector>/<anchor>/`, then update the sector `INDEX.md` row and the `pattern.md` Captured field. Return only file paths to the caller (not raw screenshots or DOM dumps, which flood the caller's context), and leave `docs/specs/visuals/` untouched. Details: `references/external-anchor-mode.md`.
 
 ## Integration Points
 
@@ -337,32 +335,9 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P7-
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. Follow `references/task-graph-chaining-protocol.md`: treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, mark this skill's task `completed` before leaving, then load the next runnable task's skill (marking it `in_progress`) or mark it `completed` with a skip reason. Mirror status to the host UI only from the parent session (Claude `TaskList`/`TaskUpdate`; Kimi `/task` observation; in Codex, mirror only the active step in `update_plan`); a subagent (`SVC_SUBAGENT=1`) leaves mirroring to the parent, because a failed mirror call silently drifts from the file.
 
 ### Self-Verify
 
@@ -381,15 +356,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P7-
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Apply the task-graph protocol above, then:
 
 Sidecar skill — upstream handoffs invoke it at visual checkpoints, but it does
 not advance the chain itself. Suggest after UI design (baseline) and after
@@ -397,14 +364,7 @@ execution (diff).
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
+If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.json` is the sole source of truth: resume the first `in_progress` task (else the first `pending` task with blockers satisfied), re-load its skill with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` names a different `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
 
 ## Feature Validation Ledger Handoff
 
@@ -435,5 +395,3 @@ For generated visual deliverables, review mode must emit rows that can satisfy
 
 If the image came from fallback, upload, placeholder, mock, or a different
 provider, report FAIL/BLOCKED unless explicit fallback approval is linked.
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.

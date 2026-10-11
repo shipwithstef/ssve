@@ -67,7 +67,7 @@ flagging RESOLVED references that have gone stale.
 
 **Announce at start:** "I'm using the sync-spec-code skill to sync specs against the codebase."
 
-## Product Questions — MANDATORY format
+## Product Questions — shared format
 
 Expose spec/code drift and follow affected dependencies; do not silently choose existing code over intended behavior or stale specs over current owner decisions. Follow `_shared/product-question-format.md` with `phase: sync-spec-code`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
@@ -111,15 +111,7 @@ Read the spec fully. Pay attention to:
 
 For each `PLANNED` annotation, the spec is claiming: *this behavior is described but not yet in the code.*
 
-Search the codebase to check if it's been implemented since:
-
-```bash
-# Find the relevant file
-grep -r "keyword" web/src/ --include="*.tsx" --include="*.ts" -l
-
-# Verify the specific behavior
-grep -n "specificFunction\|specificString" web/src/path/to/file.tsx
-```
+Search the codebase (all tiers in "Where to Search" below) to check whether it has been implemented since, down to the specific behavior, not just a matching file name.
 
 **If code confirms it's implemented:**
 - Change `PLANNED` → `RESOLVED YYYY-MM-DD` with file:line reference AND tier tag
@@ -151,15 +143,7 @@ call.
 
 ### Step 3 — Audit RESOLVED / FIXED items
 
-For each `RESOLVED` or `FIXED` annotation that references a specific file:line, verify that reference is still valid:
-
-```bash
-# Check file still exists
-ls web/src/path/to/file.tsx
-
-# Check the specific line/function still exists
-grep -n "specificFunction" web/src/path/to/file.tsx
-```
+For each `RESOLVED` or `FIXED` annotation that references a specific file:line, verify that the file still exists and the referenced line/function still carries the behavior.
 
 **If the reference is stale** (file renamed, function moved, logic refactored away):
 - Update the file:line to the new location
@@ -182,7 +166,7 @@ Don't try to resolve drift — just flag it. The developer decides whether to fi
 
 **Step 4b — Audit Code Against Journey Requirements** — Journeys are the source of truth for what the product should do, so for every journey covering this feature (`grep -l "feature-name" docs/specs/journeys/*.feature.md`) read its Background/Given preconditions and Journey Analysis, then check each against the code: the entity or field exists, the UI renders that state, the backend validation actually runs on the UI's code path, and expected side effects fire. Flag each failure as `> - **[PREFIX]-N JOURNEY-GAP YYYY-MM-DD:** Journey J07 assumes ... but code ... - file:line`; JOURNEY-GAP (journey needs X, code lacks it) is different from DRIFT (spec says X, code does Y). Details: `references/the-audit.md`.
 
-**Step 4c — Write Missing Spec Coverage** — For each JOURNEY-GAP, if the spec has no user story covering the behavior, WRITE it now (specs are safe and reversible to edit, and a hole blocks everything downstream): add a `US-N` section tagged `[SPEC-GENERATED]` with a user story, a narrative, and an AC table of placeholder ACs (`QA=—`, `E2E=🔲`, `Test=—`), annotate the source journey with a `SPEC-GENERATED` note, and route to `audit-ac` to make the ACs testable. If the code just lacks an existing story's behavior, that is a PLANNED item instead. NEVER invent behavior no journey precondition demands. Details: `references/the-audit.md`.
+**Step 4c — Write Missing Spec Coverage** — For each JOURNEY-GAP, if the spec has no user story covering the behavior, write it now (specs are safe and reversible to edit, and a hole blocks everything downstream): add a `US-N` section tagged `[SPEC-GENERATED]` with a user story, a narrative, and an AC table of placeholder ACs (`QA=—`, `E2E=🔲`, `Test=—`), annotate the source journey with a `SPEC-GENERATED` note, and route to `audit-ac` to make the ACs testable. If the code just lacks an existing story's behavior, that is a PLANNED item instead. Write only behavior a journey precondition demands; invented behavior becomes unreviewed scope. Details: `references/the-audit.md`.
 
 ### Step 5 — Update the spec in place
 
@@ -292,7 +276,7 @@ After all specs are done:
 - Don't rewrite existing acceptance criteria — that's audit-ac's job
 - Don't resolve PLANNED by assumption — only mark RESOLVED if you found the code
 - Don't fix code drift yourself — flag it (DRIFT), let the developer decide
-- DO write missing spec sections when journeys require them (SPEC-GENERATED) —
+- Do write missing spec sections when journeys require them (SPEC-GENERATED) —
   specs are documentation, not code. A missing spec section blocks the entire
   downstream pipeline (audit-ac, write-e2e, implementation). Writing it
   is safe and reversible. Tag with `[SPEC-GENERATED]` so reviewers know.
@@ -369,32 +353,9 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. Follow `references/task-graph-chaining-protocol.md`: treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, mark this skill's task `completed` before leaving, then load the next runnable task's skill (marking it `in_progress`) or mark it `completed` with a skip reason. Mirror status to the host UI only from the parent session (Claude `TaskList`/`TaskUpdate`; Kimi `/task` observation; in Codex, mirror only the active step in `update_plan`); a subagent (`SVC_SUBAGENT=1`) leaves mirroring to the parent, because a failed mirror call silently drifts from the file.
 
 ### Self-Verify
 
@@ -410,15 +371,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Apply the task-graph protocol above, then:
 
 **If `--progressive` flag is present AND self-verify passed:**
 - Check `--skip` list. If this skill is in the skip list, pass through to next.
@@ -436,13 +389,4 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.json` is the sole source of truth: resume the first `in_progress` task (else the first `pending` task with blockers satisfied), re-load its skill with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` names a different `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.

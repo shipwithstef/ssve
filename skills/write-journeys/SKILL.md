@@ -97,14 +97,14 @@ first time (or after significant code changes), ensure:
 1. **sync-spec-code** has been run — specs reflect what code actually does
 2. **audit-ac** has been run — every user story has complete, testable ACs
 
-Check this automatically at the start of every run:
+Check this at the start of every run:
 
 ```bash
 # Check when sync skills last ran (look for recent spec changes)
 git log --oneline -5 --format="%h %s" -- docs/specs/features/
 ```
 
-If the last spec-touching commit is NOT from a sync skill, warn the user:
+If the last spec-touching commit is not from a sync skill, warn the user:
 "Feature specs may be stale. Run `/sync-spec-code` then `/audit-ac` first
 for best results. Continue anyway?"
 
@@ -134,7 +134,7 @@ Triggered when `MANUAL_TEST_RUNBOOK_*.md` or similar legacy journey docs are det
 Extracts useful flows from legacy docs, generates proper journey files, and archives
 the originals.
 
-**Mode 5: Auto (full codebase, no stopping)** — On "auto", "full sync", "do everything", `--auto`, or a request not to be interrupted, run the entire pipeline without pausing: read ALL feature specs, identify ALL personas, generate the 3 critical journeys (J01-J03: activation, core loop, conversion), run three-layer analysis on each, generate expansion journeys until every persona has a journey and every spec with user-facing ACs is referenced, run coverage analysis, migrate legacy docs, write `JOURNEY_INDEX.md`, and present the full result to the user ONCE at the end. Auto mode does NOT skip quality steps (deep spec reading, user-language scenarios, Layer 3 reasoning); it only skips mid-run confirmation. It ends with a "JOURNEY SYNC COMPLETE (auto mode)" summary of personas, journeys, AC coverage, Layer 3 findings and migrated docs. Details: `references/modes.md`.
+**Mode 5: Auto (full codebase, no stopping)** — On "auto", "full sync", "do everything", `--auto`, or a request not to be interrupted, run the entire pipeline without pausing: read every feature spec, identify every persona, generate the 3 critical journeys (J01-J03: activation, core loop, conversion), run three-layer analysis on each, generate expansion journeys until every persona has a journey and every spec with user-facing ACs is referenced, run coverage analysis, migrate legacy docs, write `JOURNEY_INDEX.md`, and present the full result to the user once at the end. Auto mode keeps every quality step (deep spec reading, user-language scenarios, Layer 3 reasoning); it only skips mid-run confirmation. It ends with a "JOURNEY SYNC COMPLETE (auto mode)" summary of personas, journeys, AC coverage, Layer 3 findings and migrated docs. Details: `references/modes.md`.
 
 ### Mode 6: Tiered Auto-Discovery (proposal gate, new product or full reset)
 
@@ -143,7 +143,7 @@ Triggered when the user says "tiered journeys", "discover journeys", "classify j
 fresh on a product that already has persona files and feature specs but no journeys yet.
 
 Mirrors the structure of build-personas Mode 7: reads specs deeply, proposes a
-classified journey set (Tier 1/2/3) for the user to approve BEFORE writing a single
+classified journey set (Tier 1/2/3) for the user to approve before writing a single
 journey file, then builds only what was approved. Tier 2 journeys show both the
 current path (what works today) and the enhanced path (what becomes possible with
 1-3 backlog additions). Tier 3 journeys become stub files only.
@@ -156,10 +156,10 @@ current path (what works today) and the enhanced path (what becomes possible wit
 
 ## Phase 1: Deep Project Analysis
 
-This is the most important phase. You MUST deeply understand the product before
-generating a single journey. Shallow reading produces generic, disconnected output.
+This is the most important phase: understand the product deeply before generating
+a single journey, because shallow reading produces generic, disconnected output.
 
-**1a. Read ALL feature specs — FULLY, not just headers** — For EACH spec relevant to the journey, read the ENTIRE spec (`ls docs/specs/features/*.md`): full AC tables, UI descriptions, user stories, error states and edge cases. You need what the user sees on each screen, the choices they have, what happens on each choice, the exact AC behavior, and how features hand off to each other. Summarizing ACs makes the journey WRONG ("my profile shows as complete" is useless when the spec defines exactly what complete means). Details: `references/phase-1-deep-project-analysis.md`.
+**1a. Read the feature specs fully, not just headers** — For each spec relevant to the journey, read the entire spec (`ls docs/specs/features/*.md`): full AC tables, UI descriptions, user stories, error states and edge cases. You need what the user sees on each screen, the choices they have, what happens on each choice, the exact AC behavior, and how features hand off to each other. Summarizing ACs makes the journey wrong ("my profile shows as complete" is useless when the spec defines exactly what complete means). Details: `references/phase-1-deep-project-analysis.md`.
 
 ### 1b. Map the journey BEFORE writing it
 
@@ -173,9 +173,9 @@ Step 3: User decides [choice] because [goal]. If [alternative], then [branch].
 ...
 ```
 
-This map is your draft. It forces you to think through the COMPLETE experience
-before writing Gherkin. If you can't describe what the user sees at every step,
-you haven't read the specs deeply enough. Go back and read more.
+This map is your draft: it makes you think through the complete experience before
+writing Gherkin. If you can't describe what the user sees at every step, read the
+specs more deeply first.
 
 ### 1c. Read existing E2E tests for real flow evidence
 
@@ -183,7 +183,7 @@ you haven't read the specs deeply enough. Go back and read more.
 ls e2e/*.spec.ts test/e2e/*.spec.ts web/e2e/*.spec.ts 2>/dev/null
 ```
 
-E2E tests encode REAL flows — actual selectors, actual navigation, actual assertions.
+E2E tests encode real flows — actual selectors, actual navigation, actual assertions.
 Read the test bodies (not just names) to understand:
 - What screens actually exist
 - What the real navigation flow is
@@ -225,7 +225,7 @@ Output a summary: "Here's what I understand about this project's feature graph..
 
 ---
 
-**Phase 2: Load Personas (from build-personas)** — write-journeys does NOT build personas. Read `docs/specs/personas/P*.md` and use each persona's Skill Implications > write-journeys section, Trust Triggers (is this step earning or losing trust?) and Patience Budget (where must the journey be faster?). If no persona files exist, warn the user to run `/build-personas` first and, only if they agree, fall back to shallow persona extraction from feature specs, flagged as to be replaced. Map each persona to activation, core-loop and conversion journeys, and always know which persona a scenario is written for, since the same step feels different to different personas. Details: `references/phase-2-load-personas-from-build-persona.md`.
+**Phase 2: Load Personas (from build-personas)** — write-journeys reads personas; it does not build them. Read `docs/specs/personas/P*.md` and use each persona's Skill Implications > write-journeys section, Trust Triggers (is this step earning or losing trust?) and Patience Budget (where must the journey be faster?). If no persona files exist, warn the user to run `/build-personas` first and, only if they agree, fall back to shallow persona extraction from feature specs, flagged as to be replaced. Map each persona to activation, core-loop and conversion journeys, and always know which persona a scenario is written for, since the same step feels different to different personas. Details: `references/phase-2-load-personas-from-build-persona.md`.
 
 ## Phase 3: Generate Journeys (Iterative)
 
@@ -254,7 +254,7 @@ For each subsequent iteration:
 Use sequential IDs: J01, J02, J03...
 File names: `J01-descriptive-name.feature.md`
 
-**Journey document format** — Journeys must be ABSOLUTE and read like a screenplay, not a checklist: every step states what the user sees (specific screen, labels), decides and why, what happens as a result, and what could go wrong. Each journey doc has the header (`Journey ID`, `Persona`, `Covers`, `Priority`), Why This Journey Matters, User Motivation, a Behavior Specification of Gherkin scenarios tagged with AC IDs (` `@AC-ID` ` above each `# Scenario:`), Alternative Paths, E2E Coverage, and Coverage Gaps. Details and full template: `references/phase-3-generate-journeys-iterative.md`.
+**Journey document format** — Journeys must be concrete and read like a screenplay, not a checklist: every step states what the user sees (specific screen, labels), decides and why, what happens as a result, and what could go wrong. Each journey doc has the header (`Journey ID`, `Persona`, `Covers`, `Priority`), Why This Journey Matters, User Motivation, a Behavior Specification of Gherkin scenarios tagged with AC IDs (` `@AC-ID` ` above each `# Scenario:`), Alternative Paths, E2E Coverage, and Coverage Gaps. Details and full template: `references/phase-3-generate-journeys-iterative.md`.
 
 ### AC reference syntax
 
@@ -270,9 +270,9 @@ This is:
 - Grep-able: `grep -r '@MT-26' docs/specs/journeys/`
 - Readable on GitHub (rendered as inline code)
 
-**Writing good scenarios** — Every scenario must pass the PM test: readable by a PM who has never opened the codebase. NEVER mention file names, database columns, CSS selectors, implementation details or code paths; AC IDs are the ONLY technical element, and only as tags. Write behavior ("When I click Find Match"), not implementation ("When the matchmaking RPC is invoked"), and keep scenarios to 3-7 steps, splitting longer ones within the same journey. Details: `references/phase-3-generate-journeys-iterative.md`.
+**Writing good scenarios** — Every scenario must pass the PM test: readable by a PM who has never opened the codebase. Leave out file names, database columns, CSS selectors, implementation details and code paths; AC IDs are the only technical element, and only as tags. Write behavior ("When I click Find Match"), not implementation ("When the matchmaking RPC is invoked"), and keep scenarios to 3-7 steps, splitting longer ones within the same journey. Details: `references/phase-3-generate-journeys-iterative.md`.
 
-### What BDD scenarios MUST capture
+### What BDD scenarios capture
 
 Each scenario is a complete picture of the user's experience at that moment:
 - **What the user sees** — screens, buttons, labels, indicators (in plain language)
@@ -281,7 +281,7 @@ Each scenario is a complete picture of the user's experience at that moment:
 - **Alternative user paths** — what happens when the user chooses differently (e.g., skip tour, cancel auth, no match found)
 - **Timing and feel** — how long things take, what loading states look like
 
-### What BDD scenarios must NOT include
+### What BDD scenarios leave out
 
 - **Emotional narration** — "I'm excited but nervous" is UX research, not BDD. Describe behaviors, not feelings.
 - **Infrastructure failures** — "server is down", "internet drops", "GitHub is unavailable" belong in ops runbooks, not journeys.
@@ -320,7 +320,7 @@ mark them so the PM knows what's aspirational vs confirmed:
 This prevents the journey from lying. A PM reading a `[SPEC]` step knows:
 "This is what we designed but I should verify it actually works."
 
-**Layer 3: What's MISSING + What's WRONG (journey reasoning)** — The most valuable layer: reason about the journey as a whole system, since perfect individual specs can still produce a broken flow. Find logical contradictions, sequencing problems, persona mismatches, missing transitions, wrong placement, redundancies, dead ends, missing user expectations, and concept fragmentation (the same entity under two components or names; check entity-level dedup, industry patterns such as producer/consumer/system sides, naming alignment, and full persona lifecycle per entity). For every Background or Given that assumes data exists, ask who creates it and whether a journey covers that creation, tracing entity, producing role, UI, validation, side effects, journey coverage and discoverability; report the step where the chain breaks as an Ungrounded Precondition. Present all findings in a `## Journey Analysis` section (Logical Issues, Ungrounded Preconditions, Missing Transitions, Product Gaps). Each finding must be specific and tied to the persona at that moment; flag only user-facing problems, not tech debt or deliberate design choices; separate "definitely wrong" from "worth considering"; findings are for the PM to evaluate, not demands. Details: `references/phase-3-5-three-layer-journey-analysis.md`.
+**Layer 3: What's missing + what's wrong (journey reasoning)** — The most valuable layer: reason about the journey as a whole system, since perfect individual specs can still produce a broken flow. Find logical contradictions, sequencing problems, persona mismatches, missing transitions, wrong placement, redundancies, dead ends, missing user expectations, and concept fragmentation (the same entity under two components or names; check entity-level dedup, industry patterns such as producer/consumer/system sides, naming alignment, and full persona lifecycle per entity). For every Background or Given that assumes data exists, ask who creates it and whether a journey covers that creation, tracing entity, producing role, UI, validation, side effects, journey coverage and discoverability; report the step where the chain breaks as an Ungrounded Precondition. Present all findings in a `## Journey Analysis` section (Logical Issues, Ungrounded Preconditions, Missing Transitions, Product Gaps). Each finding must be specific and tied to the persona at that moment; flag only user-facing problems, not tech debt or deliberate design choices; separate "definitely wrong" from "worth considering"; findings are for the PM to evaluate, not demands. Details: `references/phase-3-5-three-layer-journey-analysis.md`.
 
 **Routing Layer 3 findings to other skills** — After presenting findings, recommend the next skill rather than just listing them: ungrounded precondition with no producer journey or UI goes to `/validate-feature`; one where the UI exists but bypasses validation goes to `plan-changeset` (a fix, not a new feature); concept fragmentation goes to `/validate-feature`; a missing persona goes to `/build-personas`; a missing transition goes to `/audit-ac`. Details: `references/phase-3-5-three-layer-journey-analysis.md`.
 
@@ -390,7 +390,7 @@ no longer match the current product).
 
 **Phase 6: Persist State** — After each iteration, `mkdir -p docs/specs/journeys` and write `docs/specs/journeys/JOURNEY_INDEX.md` (last synced date, persona and journey counts, AC coverage %, a Personas table, a Journeys table with ID, title, persona, priority, features, AC refs and E2E tests, and a Next Iteration checklist from coverage gaps) so the next session can resume. Also add a Journeys section to `docs/specs/INDEX.md` if it exists. Details: `references/phase-6-persist-state.md`.
 
-**Important Rules** — (1) NEVER generate journeys without reading specs first; every step must trace to a real AC ID. (2) Iterate, don't dump: 2-3 journeys per iteration with user approval between, except in auto mode (review once at the end). (3) Critical first: activation, core loop, conversion. (4) Standalone interactions (theme toggle, password change) are feature ACs, not journeys. (5) Scenarios describe user behavior, not system internals. (6) Flag, don't fabricate: flag a missing AC in Coverage Gaps, never invent AC IDs. (7) Legacy migration is opt-in: archive, never delete without explicit approval. (8) Journey docs are the source of truth for E2E scope, so write them clearly enough for an agent to generate tests. (9) Before handing a journey to `write-e2e`, it MUST pass `node scripts/verify-journey-e2e-bridge.mjs <journey-file>` (parseable scenarios, AC/chrome/capability tags, `## E2E Coverage`, specific UI labels, no scenario over 7 steps). (10) Every Background must be grounded: trace who creates the assumed data, whether a journey covers it and whether the UI supports it; flag any gap as an Ungrounded Precondition in the Journey Analysis and never silently assume the producer side exists. Details: `references/important-rules.md`.
+**Important Rules** — (1) Read the specs before generating journeys; every step must trace to a real AC ID. (2) Iterate, don't dump: 2-3 journeys per iteration with user approval between, except in auto mode (review once at the end). (3) Critical first: activation, core loop, conversion. (4) Standalone interactions (theme toggle, password change) are feature ACs, not journeys. (5) Scenarios describe user behavior, not system internals. (6) Flag, don't fabricate: flag a missing AC in Coverage Gaps, never invent AC IDs. (7) Legacy migration is opt-in: archive, and delete only with explicit approval. (8) Journey docs are the source of truth for E2E scope, so write them clearly enough for an agent to generate tests. (9) Before handing a journey to `write-e2e`, it has to pass `node scripts/verify-journey-e2e-bridge.mjs <journey-file>` (parseable scenarios, AC/chrome/capability tags, `## E2E Coverage`, specific UI labels, no scenario over 7 steps). (10) Every Background must be grounded: trace who creates the assumed data, whether a journey covers it and whether the UI supports it; flag any gap as an Ungrounded Precondition in the Journey Analysis and never silently assume the producer side exists. Details: `references/important-rules.md`.
 
 ## Mode 6: Tiered Auto-Discovery
 
@@ -413,32 +413,9 @@ When invoked with `--audit` to review existing journeys:
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. Follow `references/task-graph-chaining-protocol.md`: treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, mark this skill's task `completed` before leaving, then load the next runnable task's skill (marking it `in_progress`) or mark it `completed` with a skip reason. Mirror status to the host UI only from the parent session (Claude `TaskList`/`TaskUpdate`; Kimi `/task` observation; in Codex, mirror only the active step in `update_plan`); a subagent (`SVC_SUBAGENT=1`) leaves mirroring to the parent, because a failed mirror call silently drifts from the file.
 
 ### Self-Verify
 
@@ -457,15 +434,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Apply the task-graph protocol above, then:
 
 **If `--progressive` flag is present AND self-verify passed:**
 - Check `--skip` list. If this skill is in the skip list, pass through to next.
@@ -479,15 +448,6 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
+If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.json` is the sole source of truth: resume the first `in_progress` task (else the first `pending` task with blockers satisfied), re-load its skill with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` names a different `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
 
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
-
-**Boilerplate rationale:** references/phase-receipts.md supersedes duplicate task-graph boilerplate cleanup for journey skills. The duplicated host-specific chaining blocks stay temporarily for host readability; future changes should update the shared phase-receipt/task-graph references first and use validators instead of hand-maintaining divergent journey-skill copies.
+**Boilerplate rationale:** references/phase-receipts.md supersedes duplicate task-graph boilerplate cleanup for journey skills. Chaining now points at `references/task-graph-chaining-protocol.md` instead of carrying host-specific copies; future changes update the shared phase-receipt/task-graph references first and rely on validators rather than hand-maintained journey-skill copies.
