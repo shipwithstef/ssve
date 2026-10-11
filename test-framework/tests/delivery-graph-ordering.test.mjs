@@ -1,3 +1,4 @@
+// @organism-suite
 // Prerequisite stages (personas, journeys, e2e, journey proof, technical design) must
 // be ordered before land-changeset and verify-promotion in every lane and profile.
 // Review 6108295955 on PR #127: a production graph put write-e2e and test-journeys
@@ -121,4 +122,101 @@ test("validator rejects a prerequisite process step owned by a task after land-c
   const v = validate(g);
   assert.equal(v.status, 1, v.out);
   assert.match(v.out, /write-e2e/);
+});
+
+test("validator rejects a prerequisite process step owned by land-changeset itself", () => {
+  const g = compile("greenfield", "production", "user-facing");
+  const execute = g.tasks.find((t) => skillOf(t) === "execute-changeset");
+  const moved = (execute.metadata.required_process_steps || []).filter((p) => p.skill === "write-e2e");
+  execute.metadata.required_process_steps = execute.metadata.required_process_steps.filter((p) => p.skill !== "write-e2e");
+  g.tasks.find((t) => skillOf(t) === "land-changeset").metadata.required_process_steps = moved;
+  const v = validate(g);
+  assert.equal(v.status, 1, v.out);
+  assert.match(v.out, /write-e2e.*strictly precede/);
+});
+
+// ---- resuming a graph compiled before this ordering existed ----------------------------
+const INPUT = { wi: "WI-ORD-1", lane: "brownfield-feature", user_intent: "ordering matrix", planned_files: ["src/app/page.tsx"], delivery_profile: "production", change_type: "feature", risk_flags: ["user-facing", "browser-visible"] };
+
+function cyclic(tasks) {
+  const byId = new Map(tasks.map((t) => [t.id, t]));
+  const state = new Map();
+  const visit = (id) => {
+    if (!byId.has(id) || state.get(id) === 2) return false;
+    if (state.get(id) === 1) return true;
+    state.set(id, 1);
+    const hit = (byId.get(id).blocked_by || []).some(visit);
+    state.set(id, 2);
+    return hit;
+  };
+  return tasks.some((t) => visit(t.id));
+}
+
+// The old compiler appended personas, write-e2e and test-journeys after verify-promotion.
+function legacyGraph({ legacyStatus, rest }) {
+  const g = compileDeliveryGraph(INPUT);
+  const take = (skill) => g.tasks.splice(g.tasks.findIndex((t) => skillOf(t) === skill), 1)[0];
+  const personas = take("build-personas");
+  const execute = g.tasks.find((t) => skillOf(t) === "execute-changeset");
+  execute.metadata.required_process_steps = (execute.metadata.required_process_steps || []).filter((p) => !["write-e2e", "test-journeys"].includes(p.skill));
+  g.tasks.forEach((t, i) => { t.id = i + 1; t.blocked_by = i === 0 ? [] : [i]; t.status = rest; });
+  let last = g.tasks.length;
+  for (const entry of [personas, { metadata: { skill: "write-e2e" } }, { metadata: { skill: "test-journeys" } }]) {
+    g.tasks.push({ id: last + 1, subject: skillOf(entry), status: legacyStatus, blocked_by: [last], metadata: { skill: skillOf(entry) } });
+    last += 1;
+  }
+  return g;
+}
+
+function resume(old) {
+  const next = compileDeliveryGraph({ ...INPUT, existing_graph: old });
+  const v = validate(next);
+  return { next, v };
+}
+
+for (const [legacyStatus, rest] of [["pending", "pending"], ["pending", "completed"], ["completed", "completed"]]) {
+  test(`resuming a legacy graph (prerequisites ${legacyStatus}, chain ${rest}) has no cycle and passes the validator`, () => {
+    const { next, v } = resume(legacyGraph({ legacyStatus, rest }));
+    assert.equal(cyclic(next.tasks), false, "dependency cycle");
+    assert.equal(v.status, 0, v.out);
+    const order = next.tasks.map(skillOf);
+    assert.ok(order.indexOf("build-personas") < order.indexOf("write-spec"));
+    assert.equal(order.at(-1), "verify-promotion");
+    for (const s of ["write-e2e", "test-journeys"]) assert.equal(order.includes(s), false, `${s} has no runnable top-level task`);
+    assert.deepEqual(ordering(next), []);
+  });
+}
+
+test("legacy e2e/journey tasks are archived as history, not kept executable", () => {
+  const { next } = resume(legacyGraph({ legacyStatus: "completed", rest: "completed" }));
+  const archived = next.delivery_graph.migrated_prerequisites;
+  assert.deepEqual(archived.map((r) => r.task.metadata.skill).sort(), ["test-journeys", "write-e2e"]);
+  assert.ok(archived.every((r) => r.task.status === "completed" && /not executable/.test(r.disposition)));
+  const again = compileDeliveryGraph({ ...INPUT, existing_graph: next });
+  assert.equal(again.delivery_graph.migrated_prerequisites.length, 2, "history is carried forward, not duplicated");
+});
+
+for (const legacyStatus of ["pending", "completed"]) {
+  test(`a completed execute-changeset gaining process steps is reopened with its dependents (legacy ${legacyStatus})`, () => {
+    const { next } = resume(legacyGraph({ legacyStatus, rest: "completed" }));
+    const status = (s) => next.tasks.find((t) => skillOf(t) === s).status;
+    for (const s of ["execute-changeset", "review-gate", "review-exec", "audit-implementation", "land-changeset", "verify-promotion"]) assert.equal(status(s), "pending", s);
+    for (const s of ["write-spec", "plan-changeset", "review-plan"]) assert.equal(status(s), "completed", `${s} upstream stays done`);
+    assert.ok(next.delivery_graph.mutation_history.some((m) => m.action === "reopen_for_process_steps"));
+    const steps = next.tasks.find((t) => skillOf(t) === "execute-changeset").metadata.required_process_steps.map((p) => p.skill);
+    assert.ok(steps.includes("write-e2e") && steps.includes("test-journeys"));
+  });
+}
+
+test("execute-changeset with digest-bound process receipts for the new steps is not reopened", () => {
+  const old = legacyGraph({ legacyStatus: "completed", rest: "completed" });
+  const execute = old.tasks.find((t) => skillOf(t) === "execute-changeset");
+  execute.process_receipts = ["write-e2e", "test-journeys"].map((skill) => ({ skill, evidence: { path: "e.txt", sha256: "a".repeat(64) } }));
+  const { next } = resume(old);
+  assert.equal(next.tasks.find((t) => skillOf(t) === "execute-changeset").status, "completed");
+});
+
+test("a pending execute-changeset gaining process steps needs no reopen", () => {
+  const { next } = resume(legacyGraph({ legacyStatus: "pending", rest: "pending" }));
+  assert.equal(next.delivery_graph.mutation_history.some((m) => m.action === "reopen_for_process_steps"), false);
 });

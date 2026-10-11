@@ -135,7 +135,8 @@ function addIssue(issues, issue) {
 }
 
 // Prerequisites are ordered by position. A task position decides "after"; a process step
-// is owned by its task, so it is late when its owner is, or when it names a late stage.
+// is owned by its task, so it is late when its owner is the earliest late stage or after
+// it, or when it names a late stage.
 function addOrderingIssues(issues, tasks) {
   const lateIndex = Math.min(...LATE_CHAIN_SKILLS.map((skill) => tasks.findIndex((task) => taskSkill(task) === skill)).filter((i) => i >= 0));
   if (!Number.isFinite(lateIndex)) return;
@@ -145,7 +146,7 @@ function addOrderingIssues(issues, tasks) {
     if (PREREQUISITE_SKILLS.has(skill) && index > lateIndex) addIssue(issues, `prerequisite ${skill} is ordered after ${late}`);
     for (const step of task?.metadata?.required_process_steps || []) {
       if (!PREREQUISITE_SKILLS.has(step?.skill)) continue;
-      if (index > lateIndex) addIssue(issues, `prerequisite ${step.skill} is a process step of ${skill}, ordered after ${late}`);
+      if (index >= lateIndex) addIssue(issues, `prerequisite ${step.skill} is a process step of ${skill}, which does not strictly precede ${late}`);
       if (LATE_CHAIN_SKILLS.includes(step.before)) addIssue(issues, `prerequisite ${step.skill} process step runs before ${step.before}, not before the chain's late stages`);
     }
   });

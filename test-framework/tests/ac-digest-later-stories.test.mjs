@@ -1,3 +1,4 @@
+// @organism-suite
 // The AC digest must see every story's acceptance criteria, not only the first section
 // (review 6108295729). The spec template writes one "Acceptance Criteria" section per
 // user story, so a change in story 2 must change the digest.
