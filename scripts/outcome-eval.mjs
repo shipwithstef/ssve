@@ -207,6 +207,19 @@ export function prepare(task) {
   return dir;
 }
 
+// Builders run where they cannot read the eval's answers: the task folders (reference
+// solutions, hidden graders, quizzes), recorded results and other runs' kept builds are
+// masked with empty directories, and only the build directory and a private home are
+// writable (bubblewrap, nested probe-loop sandboxes still work inside it). Without
+// bubblewrap the build runs unmasked and the row records builder_sandbox: null.
+export function builderWrap(dir) {
+  if (process.env.OE_NO_BUILDER_SANDBOX === "1" || spawnSync("sh", ["-c", "command -v bwrap"]).status !== 0) return null;
+  const home = fs.mkdtempSync(path.join(path.dirname(dir), "home-"));
+  const kept = path.join(os.homedir(), ".svc", "outcome-eval-artifacts");
+  const masks = [TASKS, path.join(ROOT, "test-framework", "outcome-evals", "results"), kept].filter((m) => fs.existsSync(m)).map((m) => `--tmpfs ${JSON.stringify(m)}`).join(" ");
+  return { name: "bwrap", prefix: `bwrap --ro-bind / / --tmpfs /tmp --bind "$PROBE_DIR" "$PROBE_DIR" --bind "$PROBE_HOME" "$PROBE_HOME" --tmpfs /sys/fs/cgroup ${masks} --dev /dev --proc /proc --unshare-pid --die-with-parent --`, env: { PROBE_DIR: dir, PROBE_HOME: home, npm_config_cache: path.join(home, ".npm") } };
+}
+
 export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40, effort = null, extraArgs = [], wrap = null) {
   return new Promise((resolve) => {
     // The model guides tell you to sweep effort on your own evals rather than assume a level.
@@ -455,14 +468,15 @@ async function main(argv) {
     // Hash the prompts actually sent, not the files as they are when the row is written.
     const prompts = armPrompts(job.task, job.arm);
     const sha = crypto.createHash("sha256").update(isPillarArm(job.arm) ? prompts.join("\n\0\n") : prompts[0]).digest("hex").slice(0, 12);
+    const wrap = builderWrap(dir);
     for (const prompt of prompts) {
-      const step = await runAgent(dir, prompt, model, cfg.timeout_ms, isPillarArm(job.arm) ? cfg.tools : armTools(cfg.tools, job.arm), cfg.max_turns, effort);
+      const step = await runAgent(dir, prompt, model, cfg.timeout_ms, isPillarArm(job.arm) ? cfg.tools : armTools(cfg.tools, job.arm), cfg.max_turns, effort, [], wrap);
       replies.push(String(step.text || "").slice(-400));
       if (step.error) { agent = { ...agent, error: `step ${agent.steps + 1}: ${step.error}` }; break; }
       agent = { ...step, cost_usd: (agent.cost_usd || 0) + (step.cost_usd || 0), turns: (agent.turns || 0) + (step.turns || 0), duration_ms: (agent.duration_ms || 0) + (step.duration_ms || 0), steps: agent.steps + 1 };
     }
     // The end of each step's final reply, so a run that wrote nothing still says why.
-    const row = { ...job, model, ...(effort ? { effort } : {}), pillar: cfg.pillar, prompt_sha: sha, started_at: new Date(t).toISOString(), wall_ms: Date.now() - t, ...agent, step_replies: replies };
+    const row = { ...job, builder_sandbox: wrap?.name ?? null, model, ...(effort ? { effort } : {}), pillar: cfg.pillar, prompt_sha: sha, started_at: new Date(t).toISOString(), wall_ms: Date.now() - t, ...agent, step_replies: replies };
     // A run that ended (even at its turn limit) is graded: hitting the limit is a failure to
     // count, not an error to hide. Only a crash or timeout with no result is an error.
     if (!agent.error) Object.assign(row, grade(dir, job.task), await judge(dir, job.task, judgeModel));

@@ -2372,6 +2372,7 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-bounded-planning.mjs",
+        "test-framework/evals/tier-1/validate-builder-sandbox.mjs",
         "test-framework/evals/tier-1/validate-claims-and-outcome-eval.mjs"
       ]
     },
