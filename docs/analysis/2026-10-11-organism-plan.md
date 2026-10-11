@@ -155,7 +155,7 @@ The weighted formula from revision 2 is deleted. There is one score.
 - browser-probe seconds;
 - hook seconds (edits × measured p50).
 
-The always-loaded catalog overhead is measured on an empty task and reported, so the token cut has a target. Nothing is subtracted from the cap.
+The always-loaded catalog overhead is measured on an empty task and reported, so the token cut has a target. Nothing is subtracted from the product-task caps; only the typo cap is net of it (§11 item 1).
 
 **Fair arms.**
 - **Same model everywhere.** Every slot is pinned to the arm's model (a sandbox dispatch policy plus `CLAUDE_CODE_SUBAGENT_MODEL`). Every model's tokens are recorded. A run is rejected only when a model other than the arm's did real work; the CLI's small background calls are tolerated (§11 item 7).
@@ -294,6 +294,7 @@ Two full audits read every SKILL.md. Of the dozen or so skills measured, none sh
   - Skills move from `node scripts/<name>` to `svc-run <name>` lane by lane, never in one bulk edit. Setup installs `svc-run`. It resolves through `SVC_ROOT`, which SessionStart always exports, and falls back to the install root.
   - The form names a script, not a layout, so a later layout change is one launcher change.
   - The validator accepts both forms during the migration and only `svc-run` after it.
+  - All of this launcher work is conditional under rev 4 (§11 item 9): it is built only if the baseline shows path failures on hookless hosts.
   - A Claude PreToolUse rewrite may later be added as a speed-up. It is allowed only if it produces the same argv as the launcher, and it never ships on a failed parse.
   - **Acceptance:**
     - installed-consumer tests for advisory, enforce and repo-off;
@@ -682,7 +683,7 @@ One loop, owned by improve-framework.
   The agent returns finished work and the decisions it could not make. COS writes the decision card after a person approves. A product with no record is not a company worker. CLI hosts stay process launchers.
 - **First slice.**
   - A scoped briefing, status, recall and pending-proposal surface over the existing company state.
-  - One real connection per always-on product, tested for identity, freshness, interruption and resume.
+  - One real connection per always-on product, tested for identity, freshness, interruption and resume. Deferred until the owner supplies documented APIs or an export sample (§11 item 4).
   - The vendor pages establish connection surfaces, not provisioning APIs.
 - **Briefing.**
   - Counts and pending asks come from `dashboard --json`, with no filesystem path and no ledger body.
@@ -767,7 +768,7 @@ Neither touches a northstar task path.
 - **R4** dispatch argv from the store; the codex eval transport.
 - **R5** The router's default-arm control, its deviation rule, and the replay regret test.
 
-**Program 2: only after Program 1 passes on Haiku and on Opus.**
+**Program 2: only after Program 1 passes on Haiku and on Opus.** This gates deletions, merges and any 2× claim; the additive items of §11 item 3 may start after P1.4.
 - **Gate B:** skill merges and rewrites run only if Program 1 shows the gap is in skill text, not in missing probes.
 - **Gate C:** receipt deletion runs after Program 1 passes, one green PR through the new path, and the consumer compatibility tests.
 - **Waves, in this order:**
@@ -1043,7 +1044,7 @@ Run from a checkout or `git archive` of `7b48cc4`. `C` is shorthand for `node sc
 | T8 | `grep -rEo` over skills, agents, rules, hooks and scripts for `claude-(opus\|sonnet\|haiku\|fable)-…`, `gpt-…`, `grok-…`, `gemini-…`, `mimo-v…`, test files excluded | 170 strings, 61 files |
 | T9 | `node scripts/expertise.mjs preload --agent svc-stage-exec`; `node scripts/expertise.mjs refresh-scan` (in a scratch copy: it writes `.svc/knowledge-refresh-triggers.jsonl`) | the exit message; 13 of 13 stale |
 | T10 | `grep -n TRANSPORTS scripts/lib/harness-transports.mjs` | `{ claude }` |
-| T11 | `git merge-tree --write-tree` of #127 and #129 without a run-scoped merge driver | the crash |
+| T11 | `readlink` on an installed skill link, then check out another branch in the main checkout and read the same skill file through the link | the installed content changes with the branch. The merge-driver crash: `git merge-tree --write-tree` of #127 and #129 without a run-scoped merge driver |
 | T12 | `rangeOf({dist:"discrete", values:[100,1,10], weights:[0.2,0.4,0.4]})` from #129's `decision-engine.mjs` | p10 100, p50 1, p90 10 |
 
 ---
