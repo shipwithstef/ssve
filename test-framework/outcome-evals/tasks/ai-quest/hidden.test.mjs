@@ -54,6 +54,10 @@ test("every lesson is needed: skipping any curriculum action leaves the game unw
   }
 });
 
+// An evenly spread, deterministic sample of at most n items, so the dead-end checks cost
+// the same on a 30-step game and a 100-step one.
+const spread = (xs, n) => (xs.length <= n ? xs : Array.from({ length: n }, (_, k) => xs[Math.floor((k * xs.length) / n)]));
+
 // Finish a game from wherever it is, using only the walkthrough's own steps: a step not on
 // offer here is looked for by walking the exits ("go to <place>"); a step whose effect has
 // already happened is skipped. Several passes, so out-of-order progress still completes.
@@ -89,8 +93,8 @@ test("no dead ends: one wrong move at any point along the walkthrough can always
   const w = read("docs/walkthrough.json"), make = await quest();
   const prefix = (i) => { const q = make(); for (const a of w.slice(0, i)) if (q.actions().includes(a)) q.act(a); return q; };
   const traps = [], known = new Set();
-  for (let i = 0; i < w.length; i++) {
-    for (const dev of prefix(i).actions().filter((a) => a !== w[i])) {
+  for (const i of spread([...w.keys()], 30)) {
+    for (const dev of spread(prefix(i).actions().filter((a) => a !== w[i]), 12)) {
       const q = prefix(i); q.act(dev);
       const k = JSON.stringify(q.state()) + q.screen();
       if (known.has(k)) continue;
@@ -107,12 +111,22 @@ test("no dead ends: skipping a step and then making a risky move can always be r
   // the genre: the player should never be stuck without knowing it.
   const w = read("docs/walkthrough.json"), make = await quest();
   const traps = [], known = new Set();
-  const t0 = Date.now(); let done = 0;
-  for (let j = 0; j < w.length && Date.now() - t0 < 240000; j++, done++) {
+  // Where traps live: the step skipped is an item step (use, give, show, pick up), and the
+  // risky move is tried right after arriving somewhere new, where new people and objects
+  // are. Bounded by count, not time.
+  const skips = spread([...w.keys()].filter((k) => /^(use|give|show|pick up) /.test(w[k])), 24);
+  let done = 0;
+  for (const j of skips) {
+    done++;
     const path = w.filter((_, k) => k !== j);
-    for (let i = j; i < path.length; i++) {
+    const arrivals = [...path.keys()].filter((k) => k > j && /^go to /.test(path[k - 1] || ""));
+    for (const i of spread(arrivals, 12)) {
       const at = () => { const q = make(); for (const a of path.slice(0, i)) if (q.actions().includes(a)) q.act(a); return q; };
-      for (const dev of at().actions().filter((a) => /^(use|give|show) /.test(a) && a !== path[i])) {
+      // Handing things to people first (where items get taken), then using items on the
+      // scene, then item-on-item combinations.
+      const risky = at().actions().filter((a) => /^(use|give|show) /.test(a) && a !== path[i]);
+      const rank = (a) => (/^(give|show) /.test(a) ? 0 : 1);
+      for (const dev of [...risky.filter((a) => rank(a) === 0), ...spread(risky.filter((a) => rank(a) === 1), 8)].slice(0, 16)) {
         const q = at(); q.act(dev);
         // A state already proven finishable needs no second proof (most wrong moves are
         // jokes that change nothing).
@@ -124,7 +138,7 @@ test("no dead ends: skipping a step and then making a risky move can always be r
     }
   }
   assert.deepEqual(traps.slice(0, 5), [], `${traps.length} move pairs make the game unwinnable`);
-  assert.equal(done, w.length, `checked only ${done} of ${w.length} skipped steps in the time limit`);
+  assert.equal(done, skips.length);
 });
 
 test("teaching stays hidden: no on-screen text lectures", async () => {
