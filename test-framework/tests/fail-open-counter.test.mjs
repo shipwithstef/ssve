@@ -1,3 +1,4 @@
+// @organism-suite
 // Fail-open counter: increments, concurrency, silence, shape, and a wired hook whose
 // exit code must not change when it fails open.
 import { test } from "node:test";
@@ -144,4 +145,28 @@ test("hook-bench drops inherited mode switches, passes explicit ones, and fails 
   } finally {
     if (saved === undefined) delete process.env.SVC_REPO_MODE; else process.env.SVC_REPO_MODE = saved;
   }
+});
+
+test("the installed enforcement bundle ships the counter: a forced child failure increments the project's file", () => {
+  const home = repo({ svc: false });            // disposable HOME, a git work tree like a dotfiles home
+  const installed = path.join(home, "installed");
+  fs.mkdirSync(installed);
+  const project = repo();
+  const env = { ...process.env, HOME: home, CODEX_HOME: path.join(home, ".codex"), SVC_HOST: "codex", SVC_HOOK_MODE: "advisory" };
+  for (const k of ["SVC_REPO_MODE", "SVC_DISABLED_HOOKS", "SVC_HOOK_PROFILE", "SVC_SESSION_ID", "CLAUDE_SESSION_ID"]) delete env[k];
+  const built = spawnSync(process.execPath, [path.join(ROOT, "scripts", "svc-migrate-install.mjs"), "materialize",
+    "--host", "codex", "--repo-root", ROOT, "--skills-path", installed, "--json"], { env, encoding: "utf8" });
+  assert.equal(built.status, 0, built.stderr);
+  const bundle = path.join(home, ".svc", "enforcement", "1");
+  for (const rel of ["hooks/lib/fail-open.mjs", "hooks/lib/process-liveness.mjs", "scripts/lib/fail-open-counter.mjs", "scripts/lib/is-main.mjs", "scripts/state-io.mjs"]) {
+    assert.ok(fs.existsSync(path.join(bundle, rel)), `bundle ships ${rel}`);
+  }
+  const child = path.join(project, "bad-hook.mjs");
+  fs.writeFileSync(child, "process.exit(1);\n");
+  const spec = Buffer.from(JSON.stringify({ command: `node ${child}`, host: "claude", event: "UserPromptSubmit", timeoutMs: 20000 })).toString("base64url");
+  const r = spawnSync(process.execPath, [path.join(bundle, "hooks", "svc-hook-boundary.mjs"), "bad-hook", "--spec", spec], {
+    cwd: project, env, input: JSON.stringify({ cwd: project, hook_event_name: "UserPromptSubmit", prompt: "hi" }), encoding: "utf8",
+  });
+  assert.equal(r.status, 0, r.stderr);
+  assert.deepEqual(read(project), { total: 1, by_hook: { "bad-hook": { Exit1: 1 } } });
 });

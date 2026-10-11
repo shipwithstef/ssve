@@ -145,6 +145,11 @@ function enforcementDir(stateRoot) {
   return path.join(stateRoot, "enforcement", MIGRATION_VERSION);
 }
 
+const OPTIONAL_BUNDLE_FILES = new Set([
+  "hooks/lib/fail-open.mjs", "hooks/lib/process-liveness.mjs", "scripts/lib/fail-open-counter.mjs",
+  "scripts/lib/is-main.mjs", "scripts/state-io.mjs",
+]);
+
 // Materialize the launcher + canonical core as byte/hash-verified COPIES (never
 // symlinks) under ~/.svc/enforcement/<version>/. Idempotent: a converged bundle
 // (matching hashes) is a no-op. Returns { launcherPath, changed }.
@@ -159,6 +164,7 @@ function materializeLauncher(stateRoot, repoRoot, effectiveSource, registry) {
   ensureSecureDir(libDir, { boundary: stateRoot });
   ensureSecureDir(path.join(hookDir, "codex", "lib"), { boundary: stateRoot });
   ensureSecureDir(path.join(hookDir, "lib"), { boundary: stateRoot });
+  ensureSecureDir(path.join(dir, "scripts", "lib"), { boundary: stateRoot });
   const srcLauncher = path.join(repoRoot, "bin", "svc-enforce.mjs");
   const srcCore = path.join(repoRoot, "hooks", "lib", "enforcement-core.mjs");
   const dstLauncher = path.join(binDir, "svc-enforce");
@@ -175,7 +181,16 @@ function materializeLauncher(stateRoot, repoRoot, effectiveSource, registry) {
     ["hooks/lib/advisory-diagnostic.mjs", "hooks/lib/advisory-diagnostic.mjs", 0o600],
     ["hooks/lib/svc-runtime-root.mjs", "hooks/lib/svc-runtime-root.mjs", 0o600],
     ["hooks/codex/lib/argv-lex.mjs", "hooks/codex/lib/argv-lex.mjs", 0o600],
+    // Fail-open counter: the boundary and hooks run from this bundle, so it must carry the
+    // counter and its relative imports (otherwise every run would report a false zero).
+    ["hooks/lib/fail-open.mjs", "hooks/lib/fail-open.mjs", 0o600],
+    ["hooks/lib/process-liveness.mjs", "hooks/lib/process-liveness.mjs", 0o600],
+    ["scripts/lib/fail-open-counter.mjs", "scripts/lib/fail-open-counter.mjs", 0o600],
+    ["scripts/lib/is-main.mjs", "scripts/lib/is-main.mjs", 0o600],
+    ["scripts/state-io.mjs", "scripts/state-io.mjs", 0o600],
   ]) {
+    // A minimal fixture source tree may predate the counter files: skip those, never fail.
+    if (OPTIONAL_BUNDLE_FILES.has(source) && !fs.existsSync(path.join(repoRoot, source))) continue;
     changed = copyVerified(path.join(repoRoot, source), path.join(dir, target), mode, stateRoot) || changed;
   }
   // Sibling manifest (durable, outside the checkout) records effective_source.
