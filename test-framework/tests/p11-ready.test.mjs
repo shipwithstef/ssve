@@ -63,28 +63,28 @@ test("with no judge the builder gets the whole share; with a judge it keeps the 
 // ---- 1. the run is bounded ----
 test("preflight refuses when the per-job share is under the floor, using bar.json floor_usd", () => {
   const tasks = Array.from({ length: 26 }, (_, i) => `t${i}`);
-  const r = oe.preflightRun({ tasks, arms: ["solo", "framework"], reps: 3, maxUsd: 35, bar: { floor_usd: 0.5 }, dirOf: () => null });
-  assert.match(r.error, /156 jobs/); assert.match(r.error, /\$0\.224 per job/); assert.match(r.error, /\$0\.5 floor/);
-  assert.ok(oe.preflightRun({ tasks: ["a"], arms: ["solo"], reps: 1, maxUsd: 0.8, bar: { floor_usd: 1 }, dirOf: () => null }).error, "floor from the bar, not the default");
+  const r = oe.preflightRun({ tasks, arms: ["solo", "framework"], reps: 3, maxUsd: 35, bar: { floor_usd: 0.5, reserve: [] }, dirOf: () => null });
+  assert.match(r.error, /156 jobs/); assert.match(r.error, /tasks t0,t1,.*t25/); assert.match(r.error, /\$0\.224/); assert.match(r.error, /\$0\.224 per job/); assert.match(r.error, /\$0\.5 floor/);
+  assert.ok(oe.preflightRun({ tasks: ["a"], arms: ["solo"], reps: 1, maxUsd: 0.8, bar: { floor_usd: 1, reserve: [] }, dirOf: () => null }).error, "floor from the bar, not the default");
   assert.equal(oe.barFloor(null), 0.5);
   assert.equal(oe.barFloor({}), 0.5);
   assert.equal(oe.barFloor({ floor_usd: 0.75 }), 0.75);
 });
 
 test("preflight prints the plan line; no cap keeps --tasks optional", () => {
-  const ok = oe.preflightRun({ tasks: ["a", "b"], arms: ["solo", "framework"], reps: 3, maxUsd: 12, bar: { floor_usd: 0.5 }, dirOf: () => null });
+  const ok = oe.preflightRun({ tasks: ["a", "b"], arms: ["solo", "framework"], reps: 3, maxUsd: 12, bar: { floor_usd: 0.5, reserve: [] }, dirOf: () => null });
   assert.equal(ok.error, undefined);
   assert.equal(ok.jobs, 12);
   assert.equal(ok.line, "plan: tasks a,b; 12 jobs; $1.000 per job; arms solo,framework");
-  const free = oe.preflightRun({ tasks: ["a"], arms: ["solo"], reps: 1, maxUsd: null, bar: { floor_usd: 0.5 }, dirOf: () => null });
+  const free = oe.preflightRun({ tasks: ["a"], arms: ["solo"], reps: 1, maxUsd: null, bar: { floor_usd: 0.5, reserve: [] }, dirOf: () => null });
   assert.match(free.line, /no cap/);
 });
 
 test("run without --tasks under a cap that cannot fund every task exits 2 before anything starts", () => {
   const r = run(["--arms", "solo,framework", "--max-usd", "35", "--framework-sha", "deadbeef"]);
   assert.equal(r.status, 2, r.stderr);
-  assert.match(r.stderr, /refusing to start: \d+ jobs/);
-  assert.match(r.stderr, /per job, below the \$0\.5 floor/);
+  assert.match(r.stderr, /refusing to start: tasks .*; \d+ jobs/);
+  assert.match(r.stderr, /per job \(arms solo,framework\), below the \$0\.5 floor/);
 });
 
 // ---- 2. reserve hashes ----
@@ -121,4 +121,50 @@ test("usage documents --sealed", () => {
   const r = spawnSync(process.execPath, [SCRIPT, "bogus"], { encoding: "utf8" });
   assert.match(r.stderr, /--sealed/);
   assert.match(r.stderr, /no score/);
+});
+
+// ---- review round 1 ----
+test("the bar must load and validate: missing, malformed or reserve-less bar refuses, also for R1 with no directory", () => {
+  const args = { tasks: ["R1"], arms: ["solo"], reps: 1, maxUsd: 5, dirOf: () => null };
+  assert.match(oe.preflightRun({ ...args, bar: null }).error, /bar\.json/);
+  assert.match(oe.preflightRun({ ...args, bar: {} }).error, /reserve/);
+  assert.match(oe.preflightRun({ ...args, bar: { reserve: "R1" } }).error, /reserve/);
+  assert.match(oe.preflightRun({ ...args, bar: { reserve: [{ task: 1 }] } }).error, /reserve/);
+  assert.match(oe.preflightRun({ ...args, bar: { reserve: [{ task: "R1", grader_sha256: 5 }] } }).error, /reserve/);
+  assert.match(oe.preflightRun({ ...args, bar: { floor_usd: -1, reserve: [] } }).error, /floor_usd/);
+  assert.match(oe.preflightRun({ ...args, bar: { reserve: [{ task: "R1", grader_sha256: null }] } }).error, /R1/, "no directory: refused");
+  assert.match(oe.preflightRun({ ...args, maxUsd: null, bar: null }).error, /bar\.json/, "also without a cap");
+  assert.equal(oe.preflightRun({ ...args, tasks: ["a"], bar: { reserve: [] }, dirOf: () => "x" }).error, undefined);
+});
+
+test("a missing bar.json refuses the run (exit 2) even for a task with a directory", () => {
+  const repo = tmp("p11-repo-");
+  fs.mkdirSync(path.join(repo, "scripts", "lib"), { recursive: true });
+  fs.cpSync(path.join(ROOT, "scripts", "lib"), path.join(repo, "scripts", "lib"), { recursive: true });
+  fs.cpSync(path.join(ROOT, "hooks", "lib"), path.join(repo, "hooks", "lib"), { recursive: true });
+  for (const f of ["outcome-eval.mjs", "state-io.mjs", "quality-probes.mjs", "chaos-probe.mjs"]) fs.copyFileSync(path.join(ROOT, "scripts", f), path.join(repo, "scripts", f));
+  const r = spawnSync(process.execPath, [path.join(repo, "scripts", "outcome-eval.mjs"), "run", "--parallel", "1", "--arms", "solo", "--tasks", "R1", "--reps", "1"], { encoding: "utf8", timeout: 60000 });
+  assert.equal(r.status, 2, r.stderr);
+  assert.match(r.stderr, /bar\.json/);
+});
+
+test("--sealed --out must be a regular file outside /dev and /proc, checked before any job", () => {
+  const dir = tmp("p11-out-");
+  const ok = path.join(dir, "r.json");
+  assert.equal(oe.sealedOutProblem(ok), null, "does not exist yet");
+  fs.writeFileSync(ok, "{}");
+  assert.equal(oe.sealedOutProblem(ok), null, "existing regular file");
+  for (const bad of ["/dev/stdout", "/dev/stderr", "/dev/fd/1", "/dev/null", "/proc/self/fd/1", dir, path.join(dir, "nodir", "r.json")]) {
+    assert.ok(oe.sealedOutProblem(bad), bad);
+  }
+  const link = path.join(dir, "link.json"); fs.symlinkSync("/dev/stdout", link);
+  assert.ok(oe.sealedOutProblem(link), "a symlink to a device");
+  const fifo = path.join(dir, "fifo");
+  if (spawnSync("mkfifo", [fifo]).status === 0) assert.ok(oe.sealedOutProblem(fifo), "a FIFO");
+  for (const bad of ["/dev/stdout", "/dev/fd/2", fifo]) {
+    const r = run(["--arms", "solo", "--tasks", "typo-readme", "--reps", "1", "--sealed", "--out", bad]);
+    assert.equal(r.status, 2, bad);
+    assert.match(r.stderr, /--sealed --out/);
+    assert.doesNotMatch(r.stdout, /solve|score/i);
+  }
 });

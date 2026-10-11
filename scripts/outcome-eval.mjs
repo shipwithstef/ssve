@@ -964,8 +964,38 @@ export function check() {
 
 // ---- run preflight --------------------------------------------------------------------
 // Everything that can be refused before a paid job starts, with no model call.
-const readBar = () => { try { return JSON.parse(fs.readFileSync(path.join(NORTHSTAR, "bar.json"), "utf8")); } catch { return null; } };
+const BAR_FILE = path.join(NORTHSTAR, "bar.json");
+const readBar = () => { try { return JSON.parse(fs.readFileSync(BAR_FILE, "utf8")); } catch { return null; } };
 export const barFloor = (bar) => (typeof bar?.floor_usd === "number" ? bar.floor_usd : 0.5);
+// The bar must load and carry a reserve list of { task, grader_sha256 (64 hex or null) }, otherwise
+// reserve verification would silently be off. Returns the refusal text or null.
+export function barProblem(bar) {
+  if (!bar || typeof bar !== "object" || Array.isArray(bar)) return "northstar/bar.json is missing, unreadable or not an object: the reserve cannot be verified, so no run starts";
+  if (!Array.isArray(bar.reserve)) return "northstar/bar.json has no reserve array: the reserve cannot be verified, so no run starts";
+  if (!bar.reserve.every((e) => e && typeof e.task === "string" && e.task && (e.grader_sha256 === null || typeof e.grader_sha256 === "string"))) return "northstar/bar.json reserve must be a list of { task, grader_sha256 } (grader_sha256 a string or null)";
+  if ("floor_usd" in bar && !(typeof bar.floor_usd === "number" && bar.floor_usd > 0)) return "northstar/bar.json floor_usd must be a positive number";
+  return null;
+}
+
+// --sealed writes the scored rows to --out, so --out must be a plain file: not a device, FIFO,
+// directory, or anything under /dev or /proc (/dev/stdout, /dev/fd/N). Returns the refusal or null.
+export function sealedOutProblem(out) {
+  const bad = (why) => `--sealed --out ${out}: ${why}; it must be a regular file path (new or existing) outside /dev and /proc`;
+  const forbidden = (p) => /^\/(dev|proc)(\/|$)/.test(p);
+  const abs = path.resolve(out);
+  if (forbidden(abs)) return bad("under /dev or /proc");
+  let target = abs;
+  try { target = fs.realpathSync(abs); }
+  catch (e) {
+    if (e.code !== "ENOENT") return bad("cannot be resolved");
+    // Does not exist yet: a dangling symlink is refused, a new file needs a real parent directory.
+    try { fs.lstatSync(abs); return bad("is a dangling symlink"); } catch { /* not there at all */ }
+    try { target = path.join(fs.realpathSync(path.dirname(abs)), path.basename(abs)); } catch { return bad("its directory does not exist"); }
+    return forbidden(target) ? bad("under /dev or /proc") : null;
+  }
+  if (forbidden(target)) return bad("resolves under /dev or /proc");
+  return fs.statSync(target).isFile() ? null : bad("is not a regular file");
+}
 
 // Every reserve task named in the run must exist and hash to its frozen grader_sha256.
 export function reserveProblems(tasks, bar, dirOf = taskDir) {
@@ -979,11 +1009,13 @@ export function reserveProblems(tasks, bar, dirOf = taskDir) {
 
 // { error } (exit 2) or { line, jobs, share } for the one line printed before the run starts.
 export function preflightRun({ tasks, arms, reps, maxUsd, bar = readBar(), dirOf = taskDir }) {
+  const bp = barProblem(bar);
+  if (bp) return { error: `refusing to start: ${bp}` };
   const jobs = tasks.length * arms.length * reps;
   const floor = barFloor(bar);
   const share = maxUsd != null && jobs > 0 ? maxUsd / jobs : null;
   if (share != null && share < floor) {
-    return { error: `refusing to start: ${jobs} jobs (${tasks.length} tasks x ${arms.length} arms x ${reps} reps) at --max-usd ${maxUsd} is $${share.toFixed(3)} per job, below the $${floor} floor, so later jobs would be skipped. Narrow --tasks / --arms / --reps, or raise --max-usd to at least $${(jobs * floor).toFixed(2)}.` };
+    return { error: `refusing to start: tasks ${tasks.join(",")}; ${jobs} jobs (${tasks.length} tasks x ${arms.length} arms x ${reps} reps) at --max-usd ${maxUsd} is $${share.toFixed(3)} per job (arms ${arms.join(",")}), below the $${floor} floor, so later jobs would be skipped. Narrow --tasks / --arms / --reps, or raise --max-usd to at least $${(jobs * floor).toFixed(2)}.` };
   }
   const problems = reserveProblems(tasks, bar, dirOf);
   if (problems.length) return { error: `refusing to start: ${problems.join("; ")}` };
@@ -1092,6 +1124,7 @@ async function main(argv) {
   const tasks = opt("--tasks") ? opt("--tasks").split(",") : listTasks();
   const sealed = argv.includes("--sealed");
   if (sealed && !opt("--out")) { process.stderr.write("--sealed requires --out <file>: the rows are written there and nothing is printed that scores them\n"); return 2; }
+  if (sealed) { const sp = sealedOutProblem(opt("--out")); if (sp) { process.stderr.write(sp + "\n"); return 2; } }
   const maxUsdArg = opt("--max-usd", null) == null ? null : Number(opt("--max-usd"));
   if (maxUsdArg != null && !(maxUsdArg > 0)) { process.stderr.write("--max-usd must be a positive number of dollars\n"); return 2; }
   const pre = preflightRun({ tasks, arms, reps, maxUsd: maxUsdArg });
