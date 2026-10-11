@@ -34,6 +34,7 @@ import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
+import { dirSha } from "./lib/dir-sha.mjs";
 import { writeJsonAtomic } from "./state-io.mjs";
 import { probe } from "./quality-probes.mjs";
 import { probe as chaosProbe } from "./chaos-probe.mjs";
@@ -56,6 +57,35 @@ export function resetTaskRoots() { taskRoots.length = 1; }
 export function taskDir(task) {
   for (const r of taskRoots) if (fs.existsSync(path.join(r, task))) return path.join(r, task);
   return path.join(TASKS, task);
+}
+// sha256 of the whole task directory (task, hidden test, specs, probes). Recorded on every row
+// so a decision can prove the frozen reserve is what was run. null when it cannot be computed.
+export function taskSha256(task) {
+  try { return dirSha(taskDir(task)); } catch { return null; }
+}
+
+// Rescore a row with `gradeFn` (which reads the task files as they are now). The row's
+// task_sha256 becomes the hash of the task directory actually used for the rescore, so a task
+// changed after the run no longer passes as the frozen one; null when the directory changed
+// while grading or cannot be hashed.
+export function regradeRow(row, gradeFn) {
+  const used = taskSha256(row.task);
+  const result = gradeFn();
+  Object.assign(row, result, { regraded_at: new Date().toISOString(), task_sha256: used !== null && used === taskSha256(row.task) ? used : null });
+  return row;
+}
+
+// The environment that tells the component graders where external tasks live.
+export const TASK_ROOTS_ENV = "NORTHSTAR_TASK_ROOTS";
+export const externalRootsEnv = () => {
+  const extra = getTaskRoots().slice(1);
+  return extra.length ? { [TASK_ROOTS_ENV]: extra.join(path.delimiter) } : {};
+};
+// argv and environment of the sandboxed component-grade child. Pure, so it is unit-testable.
+export function componentGradeCommand(wrapped, { dir, task, northstar, roots = getTaskRoots().slice(1), nodePath = process.execPath, script = fileURLToPath(import.meta.url) }) {
+  const rootArgs = roots.flatMap((r) => ["--tasks-root", r]);
+  const env = { ...wrapped.env, ...(roots.length ? { [TASK_ROOTS_ENV]: roots.join(path.delimiter) } : {}) };
+  return { cmd: wrapped.argv[0], args: [...wrapped.argv.slice(1), nodePath, script, "component-grade", dir, task, "--northstar", northstar, ...rootArgs], env };
 }
 
 export const ARMS = {
@@ -750,7 +780,8 @@ export async function gradeComponentsFor(dir, task, { northstar = NORTHSTAR, san
     // sandbox (role components: northstar and this one task visible, nothing else of the eval).
     const w = builderWrap(dir, { ...sandbox, role: "components", task, northstar });
     try {
-      const r = spawnSync(w.argv[0], [...w.argv.slice(1), process.execPath, fileURLToPath(import.meta.url), "component-grade", dir, task, "--northstar", northstar], { cwd: dir, encoding: "utf8", timeout: 900000, env: { ...builderEnvBase(), NODE_TEST_CONTEXT: undefined, OE_PLAYWRIGHT: playwrightEntry(), ...w.env } });
+      const c = componentGradeCommand(w, { dir, task, northstar });
+      const r = spawnSync(c.cmd, c.args, { cwd: dir, encoding: "utf8", timeout: 900000, env: { ...builderEnvBase(), NODE_TEST_CONTEXT: undefined, OE_PLAYWRIGHT: playwrightEntry(), ...c.env } });
       const line = String(r.stdout || "").split("\n").reverse().find((l) => l.startsWith("OE_COMPONENTS "));
       if (line) return JSON.parse(line.slice("OE_COMPONENTS ".length));
       return failComponents(dir, task, northstar, `component grading child failed: ${String(r.stderr || r.error || "").slice(-200)}`);
@@ -762,6 +793,8 @@ export async function gradeComponentsFor(dir, task, { northstar = NORTHSTAR, san
   if (!components.length) return {};
   const scores = {}, errors = {};
   let result = null;
+  // The graders find tasks kept outside the repo through this variable (same roots, same order).
+  Object.assign(process.env, externalRootsEnv());
   try {
     const mod = await import(`${pathToFileURL(index).href}?t=${Date.now()}`);
     result = await mod.gradeComponents(dir, task, { components });
@@ -955,7 +988,7 @@ async function main(argv) {
       if (!row.artifact || !fs.existsSync(row.artifact)) continue;
       const before = `${row.hidden_pass}/${row.hidden_total}`;
       delete row.hidden_failures;
-      try { Object.assign(row, withGradeSandbox(row.artifact, { workRoot: os.tmpdir() }, (wrap) => grade(row.artifact, row.task, { wrap })), { regraded_at: new Date().toISOString() }); }
+      try { regradeRow(row, () => withGradeSandbox(row.artifact, { workRoot: os.tmpdir() }, (wrap) => grade(row.artifact, row.task, { wrap }))); }
       finally { fs.rmSync(path.join(row.artifact, "__hidden.test.mjs"), { force: true }); }
       process.stderr.write(`${row.task}/${row.arm}#${row.rep}: ${before} -> ${row.hidden_pass}/${row.hidden_total}\n`);
     }
@@ -1084,10 +1117,16 @@ async function runAll({ argv, opt, parallel, workRoot, workBase, keepRoot, tasks
   return 0;
 }
 
+// A job the budget could not fund. It still names the task it would have run, by hash, so a
+// frozen reserve can tell a skipped run of the right task from a row of some other task.
+export function skippedRow(job, budget) {
+  return { ...job, error: "skipped: budget", spent_before_usd: +budget.spent.toFixed(2), task_sha256: taskSha256(job.task) };
+}
+
 // One job: up to two attempts (a second only after a fail-open count), spend summed.
 async function runJob(job, budget, ctx) {
   const claim = budget.claim();
-  if (!claim) { process.stderr.write(`${job.task}/${job.arm}#${job.rep}: skipped, budget spent\n`); return { ...job, error: "skipped: budget", spent_before_usd: +budget.spent.toFixed(2) }; }
+  if (!claim) { process.stderr.write(`${job.task}/${job.arm}#${job.rep}: skipped, budget spent\n`); return skippedRow(job, budget); }
   let prior = 0;
   const row = await withFailOpenRerun(async (n) => {
     const r = await attemptJob(job, claim, ctx, n, prior);
@@ -1144,7 +1183,7 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
   agent.outer_cost_usd = agent.cost_usd;
   agent.cost_usd = +((agent.cost_usd || 0) + nested.usd).toFixed(6);
   // The end of each step's final reply, so a run that wrote nothing still says why.
-  const row = { ...job, ...(claim.usd != null ? { budget_usd: +claim.usd.toFixed(2) } : {}), builder_sandbox: wrap?.name ?? null, model, ...(effort ? { effort } : {}), pillar: cfg.pillar, prompt_sha: sha, started_at: new Date(t).toISOString(), wall_ms: Date.now() - t, ...agent, stopped_by: agent.stopped_by ?? null, model_usage: usage, nested_cost_usd: nested.usd, nested_sessions: nested.sessions, ...(nested.unpriced.length ? { nested_unpriced_models: nested.unpriced } : {}), foreign_cli: wrap.foreign_cli ?? null, step_replies: replies };
+  const row = { ...job, ...(claim.usd != null ? { budget_usd: +claim.usd.toFixed(2) } : {}), builder_sandbox: wrap?.name ?? null, model, ...(effort ? { effort } : {}), task_sha256: taskSha256(job.task), pillar: cfg.pillar, prompt_sha: sha, started_at: new Date(t).toISOString(), wall_ms: Date.now() - t, ...agent, stopped_by: agent.stopped_by ?? null, model_usage: usage, nested_cost_usd: nested.usd, nested_sessions: nested.sessions, ...(nested.unpriced.length ? { nested_unpriced_models: nested.unpriced } : {}), foreign_cli: wrap.foreign_cli ?? null, step_replies: replies };
   if (fw) {
     Object.assign(row, { framework_sha: fw.sha, checkpoint_mode: fw.checkpoint_mode, slot_pin: wrap.slot_pin, ...readFailOpen(dir, fw), ...countReceipts(dir), ...chainFacts(dir, fw, fw.src, jobHome) });
   }

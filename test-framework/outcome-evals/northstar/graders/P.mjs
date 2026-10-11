@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import {
-  requireSandboxFor, REPO_ROOT, TASKS, check, scoreChecks, validateSpec, workCopy, startApp, withBrowser, ensureStartScript,
+  requireSandboxFor, REPO_ROOT, taskDirFor, check, scoreChecks, validateSpec, workCopy, startApp, withBrowser, ensureStartScript,
   ensureBrowser, findReadme, documentedCommand, runShell, countPassed, countCases, testFiles, listFiles, hasDependencies,
   discoverPages, loginAuto, runNodeContained, jailHome, readFindings, findingMatches, SEVERITY_RANK,
 } from "./lib-ep.mjs";
@@ -108,7 +108,7 @@ export async function grade(dir, task, spec) {
   async function mutation(c) {
     const min = c.min ?? 0.6;
     // The score must reflect the arm's own tests, not the ones the repository started with.
-    if (c.needs_new_tests && countCases(dir) <= countCases(path.join(TASKS, task, "repo"))) return [check("mutation_score", false, "the build added no tests of its own, so the score would measure the starting repository")];
+    if (c.needs_new_tests && countCases(dir) <= countCases(path.join(taskDirFor(task), "repo"))) return [check("mutation_score", false, "the build added no tests of its own, so the score would measure the starting repository")];
     const w = workDir();
     // Run inside the jail with the build's installed dependencies linked in (mutation-ep.mjs).
     const file = path.join(jailHome(w.dir), "mutation.json");
@@ -130,7 +130,7 @@ export async function grade(dir, task, spec) {
   }
 
   function newTests(c) {
-    const base = countCases(path.join(TASKS, task, c.baseline || "repo"));
+    const base = countCases(path.join(taskDirFor(task), c.baseline || "repo"));
     const now = countCases(dir);
     const min = c.min_new ?? 1;
     return [check("new_tests_added", now - base >= min, `${now} test cases, the starting repository had ${base}; need ${min} more`)];
@@ -139,7 +139,7 @@ export async function grade(dir, task, spec) {
   function testsFailOnBaseline(c) {
     const w = workCopy(dir, { deps: false });
     try {
-      const base = path.join(TASKS, task, c.baseline || "repo");
+      const base = path.join(taskDirFor(task), c.baseline || "repo");
       let replaced = 0;
       for (const sub of c.replace || ["src"]) for (const f of listFiles(path.join(base, sub))) {
         const rel = path.join(sub, f);
@@ -260,7 +260,7 @@ export async function grade(dir, task, spec) {
     return [check("report:severity_calibrated", judged > 0 && !wrong.length, !judged ? "none of the known defects is in the report, so nothing to calibrate" : wrong.slice(0, 3).join("; ") || `${judged} money and auth defects rated at or above their floor`)];
   }
   function srcUnmodified(c) {
-    const base = path.join(TASKS, task, c.baseline || "repo", c.src || "src");
+    const base = path.join(taskDirFor(task), c.baseline || "repo", c.src || "src");
     const sha = (d) => crypto.createHash("sha256").update(listFiles(d).map((f) => `${f}\0${fs.readFileSync(path.join(d, f))}`).join("\n")).digest("hex");
     const same = fs.existsSync(path.join(dir, c.src || "src")) && sha(base) === sha(path.join(dir, c.src || "src"));
     return [check("src_unmodified", same, same ? "the reviewed code is untouched, so the report matches what ships" : "src/ differs from the code that was reviewed")];

@@ -6,20 +6,23 @@
 //
 // Each component lives in its own module (E.mjs, S.mjs, P.mjs, K.mjs) exporting
 //   async grade(dir, task, spec) -> { score: 0..1, checks: [{ name, pass, detail }] }
-// and reads specs/<task>/<component>.json. Only the requested modules are imported. A
+// and reads specs/<task>/<component>.json (for a task kept outside the repo, under
+// NORTHSTAR_TASK_ROOTS: <task dir>/specs/<component>.json; see task-roots.mjs). Only the requested modules are imported. A
 // missing module, a missing spec or a thrown error scores 0 for that component with the
 // error in details: a grader that cannot run never passes a build.
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
+import { specDirFor } from "./task-roots.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const SPECS_DIR = path.resolve(HERE, "..", "specs");
 export const COMPONENTS = ["E", "S", "P", "K"];
 
 export function readSpec(task, component, specsDir = SPECS_DIR) {
-  const file = path.join(specsDir, task, `${component}.json`);
+  // An explicit specsDir (tests) is a root of <task>/ subdirectories; the default follows the task.
+  const file = path.join(specsDir === SPECS_DIR ? specDirFor(task) : path.join(specsDir, task), `${component}.json`);
   if (!fs.existsSync(file)) throw new Error(`no ${component} spec for task "${task}"`);
   try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) { throw new Error(`${component} spec for "${task}" is not valid JSON: ${e.message}`); }
 }

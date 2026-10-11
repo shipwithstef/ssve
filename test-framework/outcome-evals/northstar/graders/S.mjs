@@ -22,7 +22,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { TASKS, check, finish, getPath, jsonOf, loadSpec, readText, request, runScript, specDirOf, startServer, walk } from "./sk-shared.mjs";
+import { taskDirFor, check, finish, getPath, jsonOf, loadSpec, readText, request, runScript, specDirOf, startServer, walk } from "./sk-shared.mjs";
 
 export { loadSpec };
 
@@ -201,7 +201,7 @@ function hashTree(root, rel) {
   const files = fs.existsSync(base) ? (fs.statSync(base).isDirectory() ? walk(base, { skipTests: false }).map((f) => path.join(rel, f)) : [rel]) : [];
   return Object.fromEntries(files.map((f) => [f.split(path.sep).join("/"), crypto.createHash("sha256").update(fs.readFileSync(path.join(root, f))).digest("hex")]));
 }
-const baselineOf = (task, spec) => (path.isAbsolute(spec.baseline || "") ? spec.baseline : path.join(TASKS, task, spec.baseline || "repo"));
+const baselineOf = (task, spec) => (path.isAbsolute(spec.baseline || "") ? spec.baseline : path.join(taskDirFor(task), spec.baseline || "repo"));
 function filesUnchanged(dir, task, spec, c) {
   const baseline = baselineOf(task, spec);
   const diffs = [];

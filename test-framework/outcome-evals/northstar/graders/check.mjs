@@ -3,16 +3,17 @@
 // least 0.8 and a stub build (the unchanged repository) at most 0.4. A grader that fails
 // this is wrong or unfair, and is fixed before any arm is scored with it.
 //
-//   node test-framework/outcome-evals/northstar/graders/check.mjs [--tasks a,b] [--components E,P] [--json]
+//   node test-framework/outcome-evals/northstar/graders/check.mjs [--tasks a,b] [--components E,P] [--json] [--tasks-root <dir>]...
 //
 // Reference = the task's repo/ + its ref/ overlay + northstar/ref-ep/<task>/ (grader-side
 // additions: a README, tests or a fuller build where the shipped reference has none; refs
-// are never shown to an arm). The stub is the prepared task directory untouched.
+// are never shown to an arm; for a task outside the repo that overlay is <task dir>/ref-ep/,
+// see task-roots.mjs). The stub is the prepared task directory untouched.
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { pathToFileURL } from "node:url";
-import { NORTHSTAR, REPO_ROOT, TASKS } from "./lib-ep.mjs";
+import { NORTHSTAR, REPO_ROOT, taskDirFor, refEpDirFor } from "./lib-ep.mjs";
 import { gradeComponents } from "./index.mjs";
 
 export const REF_MIN = 0.8;
@@ -29,10 +30,10 @@ export async function buildDir(task, kind) {
   const { prepare } = await outcomeEval();
   const dir = prepare(task);
   if (kind === "stub") return dir;
-  const ref = path.join(TASKS, task, "ref");
+  const ref = path.join(taskDirFor(task), "ref");
   if (fs.existsSync(ref)) fs.cpSync(ref, dir, { recursive: true });
-  else if (fs.existsSync(path.join(TASKS, task, "ref.mjs"))) fs.copyFileSync(path.join(TASKS, task, "ref.mjs"), path.join(dir, "solution.mjs"));
-  const extra = path.join(NORTHSTAR, "ref-ep", task);
+  else if (fs.existsSync(path.join(taskDirFor(task), "ref.mjs"))) fs.copyFileSync(path.join(taskDirFor(task), "ref.mjs"), path.join(dir, "solution.mjs"));
+  const extra = refEpDirFor(task);
   if (fs.existsSync(extra)) fs.cpSync(extra, dir, { recursive: true });
   return dir;
 }
@@ -53,13 +54,25 @@ export async function checkTask(task, components) {
   return rows;
 }
 
+// Tasks outside MATRIX_EP (the reserve) take their E and P cells from the pre-registered bar.
+function matrixFromBar(task) {
+  try { return (JSON.parse(fs.readFileSync(path.join(NORTHSTAR, "bar.json"), "utf8")).matrix?.[task] || []).filter((c) => c === "E" || c === "P"); } catch { return []; }
+}
+
 async function main(argv) {
   const opt = (n) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : null; };
+  // External task roots (the reserve): the runner finds them, the graders read them from the environment.
+  const roots = argv.flatMap((a, i) => (a === "--tasks-root" ? [path.resolve(argv[i + 1])] : []));
+  if (roots.length) {
+    const oe = await outcomeEval();
+    for (const r of roots) oe.addTaskRoot(r);
+    process.env.NORTHSTAR_TASK_ROOTS = roots.join(path.delimiter);
+  }
   const tasks = (opt("--tasks") || Object.keys(MATRIX_EP).join(",")).split(",").filter(Boolean);
   const only = opt("--components")?.split(",");
   const all = [];
   for (const task of tasks) {
-    const components = (MATRIX_EP[task] || []).filter((c) => !only || only.includes(c));
+    const components = (MATRIX_EP[task] || matrixFromBar(task)).filter((c) => !only || only.includes(c));
     if (!components.length) { process.stderr.write(`${task}: no E or P component in the matrix\n`); continue; }
     const rows = await checkTask(task, components);
     all.push(...rows);

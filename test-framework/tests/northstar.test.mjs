@@ -8,7 +8,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
   loadBar, loadRows, decide, adopt, buildManifest, assertBalanced, dryRun, main, NorthstarError, catalogOverhead,
-  isFinished, isVoid, fakeRun, syntheticOverhead, unfinishedReason, offModel,
+  isFinished, isVoid, fakeRun, reserveHashes, syntheticOverhead, unfinishedReason, offModel,
 } from "../../scripts/northstar.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -297,7 +297,9 @@ test("typo task: H must not drop at all, upstream stages are a constraint", () =
 });
 
 test("slices are judged separately and rows outside the slice are ignored", () => {
-  const res = decide(fx("dev-pass"), { slice: "reserve", bar });
+  // the reserve slice needs a frozen reserve; the hashes here are placeholders for rows that never reach them
+  const frozen = { ...bar, reserve: bar.reserve.map((r) => ({ ...r, grader_sha256: "a".repeat(64) })) };
+  const res = decide(fx("dev-pass"), { slice: "reserve", bar: frozen });
   assert.equal(res.headline.cells_numbered, 0);
   assert.equal(res.headline.pass, false);
   assert.equal(res.overall, "incomplete"); // nothing numbered yet: not evidence of failure
@@ -325,7 +327,12 @@ test("adopt: n >= 5 per arm, p < .05, ci low > 0, else inconclusive", () => {
 
 // ---- plan ----
 test("plan: balanced manifest, every task x arm x rep funded at or above the floor", () => {
-  const m = buildManifest({ model: "haiku", maxUsd: 35, slice: "all", frameworkSha: "dc358c0", bar });
+  // The reserve is outside the repo and frozen by hash: stand it in with a temp root.
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ns-plan-reserve-"));
+  for (const t of ["R1", "R2"]) { fs.mkdirSync(path.join(root, t)); fs.writeFileSync(path.join(root, t, "task.json"), "{}"); }
+  const frozen = { ...bar, reserve: bar.reserve.map((r) => ({ ...r, grader_sha256: reserveHashes(root, bar)[r.task] })) };
+  const m = buildManifest({ model: "haiku", maxUsd: 35, slice: "all", frameworkSha: "dc358c0", bar: frozen, tasksRoots: [root] });
+  fs.rmSync(root, { recursive: true, force: true });
   assert.equal(m.runs.length, 54);
   assert.equal(m.forecast.runs, 54);
   assert.equal(m.per_run_usd, +(35 / 54).toFixed(4));

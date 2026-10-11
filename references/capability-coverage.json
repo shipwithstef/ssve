@@ -2397,6 +2397,7 @@
       "source": "scripts/northstar.mjs",
       "status": "tested",
       "evidence": [
+        "test-framework/tests/northstar-spec-root.test.mjs",
         "test-framework/tests/northstar.test.mjs"
       ]
     },
