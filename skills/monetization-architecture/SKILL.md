@@ -406,9 +406,8 @@ response.
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
 - Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth for task status, skip reasons, and resume.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
+- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume (across sessions and subagents too).
+- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; in Codex, mirror only the active step in `update_plan`)
   happens only in the parent/top-level session. Detect via: host exposes
   TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either check fails,
   skip host mirroring — file state is the durable record, and the orchestrator

@@ -279,7 +279,7 @@
     {
       "skill": "blend-private",
       "path": "skills/blend-private/SKILL.md",
-      "content_hash": "d5c3bbb90bf307a766d6f07f1ec24c211da7a9890275339e996c3a060d41afdd",
+      "content_hash": "8d5185abdae45ba07abb56d7ed284c3fca4c5a3f10919bf078e997f2c35851f7",
       "description": "Blends patterns from a private repo you own into svc while scrubbing source identifiers (repo, org, client names, private URLs). Use for \"blend from my private repo\", \"take this pattern but scrub the source\", \"blend without attribution\".",
       "aliases": [],
       "positive_triggers": [],
@@ -1230,7 +1230,7 @@
     {
       "skill": "monetization-architecture",
       "path": "skills/monetization-architecture/SKILL.md",
-      "content_hash": "288c9ea2082d1cc4bbf61bd344b78e86dba7cb2b0479ebc2f001799ef334a9c1",
+      "content_hash": "76c871aab2684d8e161b6891a8779c9e6d0954f43bb932a35431e7420db57b48",
       "description": "Decide which features are free, usage-limited or paid, and audit whether code guards match the stated pricing. Use when: free vs paid, paywall strategy, feature gating, tier enforcement, what goes in which tier.",
       "aliases": [],
       "positive_triggers": [],
@@ -1721,7 +1721,7 @@
     {
       "skill": "stage-revenue",
       "path": "skills/stage-revenue/SKILL.md",
-      "content_hash": "dc0215d6a55e2db247bcf80299ef04078cc6c4e047a7410bbaf81a6ad57597ce",
+      "content_hash": "de5f35515861947e39eaf66e36a5de0e9eb9ee8f17da8945838143c9d2148b79",
       "description": "Split a big idea into revenue stages: a 1-2 week money-maker, a reinvestment stage, then the real build. Use for 'I have an idea but no money', 'how do I fund this', 'this will take months', 'revenue first', 'staging plan'.",
       "aliases": [],
       "positive_triggers": [],
@@ -2063,7 +2063,7 @@
     {
       "skill": "write-vision",
       "path": "skills/write-vision/SKILL.md",
-      "content_hash": "3735c603aaff6a5920e4de5d3fb1ae89db26aebac5f9aeed3655d07f02be6012",
+      "content_hash": "0d9c40b1f95568e6a6251ab432ca33637cdbbce8e68b06edb36e04f00dd4bfa2",
       "description": "Create, refine or convert the product vision doc (docs/specs/vision.md) from evidence, proposal first. Use for 'create vision', 'refine vision', 'update north star', 'align vision with code', 'vision drift'.",
       "aliases": [],
       "positive_triggers": [],
