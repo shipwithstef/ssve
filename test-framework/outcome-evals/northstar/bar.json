@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "source": "docs/analysis/2026-10-11-organism-plan.md section 4 (rev 4 overrides from section 11)",
+  "dev": ["yoga-studio", "ai-quest", "waitlist-feature", "bugfix-rootcause", "security-payments", "typo-readme", "continuity-rules"],
+  "reserve": [
+    { "task": "R1", "grader_sha256": null },
+    { "task": "R2", "grader_sha256": null }
+  ],
+  "matrix": {
+    "yoga-studio": ["E", "S", "P"],
+    "ai-quest": ["E", "P"],
+    "waitlist-feature": ["E", "S", "P"],
+    "bugfix-rootcause": ["E", "P"],
+    "security-payments": ["E", "S", "P"],
+    "typo-readme": [],
+    "continuity-rules": ["K"],
+    "R1": ["E", "S", "P", "K"],
+    "R2": ["E", "S", "P", "K"]
+  },
+  "arms": ["solo", "framework"],
+  "reps": 3,
+  "parallel": 4,
+  "floor_usd": 0.5,
+  "pass": { "R_min": 2.0, "delta_min": 0.20, "delta_ci_low_gt": 0 },
+  "min_finished_runs_per_cell_arm": 3,
+  "arm_limits": { "time": 2, "turns": 3, "same_for_all_arms": true },
+  "constraints": {
+    "h_max_drop": 0.05,
+    "product_tasks": ["yoga-studio", "ai-quest", "waitlist-feature", "bugfix-rootcause", "security-payments", "R1", "R2"],
+    "product_cost_ratio_max": 1.5,
+    "product_wall_ratio_max": 1.3,
+    "typo_task": "typo-readme",
+    "typo_cost_ratio_max_net_overhead": 1.3
+  },
+  "budgets": {
+    "P1.1": { "what": "frozen baseline, Haiku, 9 tasks x 2 arms x 3 reps", "runs": 54, "cap_usd": 35, "owner_yes": false },
+    "P1.3": { "what": "Program 1 treatments, dev slice, framework arm", "treatments": 6, "runs_each": 12, "cap_usd_each": 8, "cap_usd_total": 48, "owner_yes": false },
+    "P1.4": { "what": "after-number, Haiku, dev and reserve", "runs": 54, "cap_usd": 35, "owner_yes": false },
+    "P1.5": { "what": "loop, dev only", "iterations_max": 3, "runs_each": 12, "cap_usd_each": 8, "cap_usd_total": 24, "min_cap_usd_total": 18, "owner_yes": false },
+    "P1.6": { "what": "Opus confirmation, full bar", "runs": 54, "cap_usd": null, "forecast_required": true, "owner_yes": true }
+  }
+}

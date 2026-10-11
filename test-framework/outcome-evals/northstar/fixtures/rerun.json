@@ -1,0 +1,195 @@
+{
+  "schema": "outcome-eval-results",
+  "fixture": "rerun",
+  "rows": [
+    {
+      "task": "continuity-rules",
+      "arm": "solo",
+      "rep": 1,
+      "cost_usd": 0.5,
+      "wall_ms": 60000,
+      "turns": 10,
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "components": {
+        "K": 0
+      }
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "solo",
+      "rep": 2,
+      "cost_usd": 0.5,
+      "wall_ms": 60000,
+      "turns": 10,
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "components": {
+        "K": 0
+      }
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "solo",
+      "rep": 3,
+      "cost_usd": 0.5,
+      "wall_ms": 60000,
+      "turns": 10,
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "components": {
+        "K": 0
+      }
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "framework",
+      "rep": 1,
+      "cost_usd": 0.6,
+      "wall_ms": 60000,
+      "turns": 10,
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "components": {
+        "K": 1
+      }
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "framework",
+      "rep": 2,
+      "cost_usd": 0.6,
+      "wall_ms": 60000,
+      "turns": 10,
+      "hidden_pass": 0,
+      "hidden_total": 10,
+      "score": 0,
+      "solved": false,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 2,
+      "rules_not_loaded": true,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "components": {
+        "K": 0
+      }
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "framework",
+      "rep": 2,
+      "cost_usd": 0.6,
+      "wall_ms": 60000,
+      "turns": 10,
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "components": {
+        "K": 1
+      }
+    },
+    {
+      "task": "continuity-rules",
+      "arm": "framework",
+      "rep": 3,
+      "cost_usd": 0.6,
+      "wall_ms": 60000,
+      "turns": 10,
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "components": {
+        "K": 1
+      }
+    }
+  ]
+}
