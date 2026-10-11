@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { resolveDispatchRoleTuple } from "./resolve-dispatch.mjs";
+import { resolveDispatchRoleTuple, HOST_FAMILY } from "./resolve-dispatch.mjs";
 import { putObject } from "./lib/review-evidence-store.mjs";
 import { readJsonAtomic, updateJsonAtomic, withStateLock } from "./state-io.mjs";
 import {
@@ -161,10 +161,19 @@ export function assertPlanningTransports(tuples) {
       throw new IsolationUnsupported(`role ${role}: family ${t.family} does not match host ${t.host} (${planningHostFamily(t.host)})`);
     }
   }
+  // The orchestrator identity is the resolver's own field. A tuple carrying a different (or any
+  // non-matching) orchestrator is an override attempt and fails closed; unknown families too.
+  const orchestrator = tuples.assessor.orchestrator;
+  for (const role of PLANNING_ROLES) {
+    if (tuples[role].orchestrator !== orchestrator || tuples[role].tuple.orchestrator !== orchestrator) {
+      throw new IsolationUnsupported(`role ${role}: orchestrator identity must be the single resolved orchestrator (${orchestrator}); a tuple-provided orchestrator override is refused`);
+    }
+  }
+  const orchestratorFamily = HOST_FAMILY[orchestrator];
+  if (!orchestratorFamily) throw new IsolationUnsupported(`unknown orchestrator family for host ${orchestrator}; set SVC_HOST or dispatch.orchestrator to a known host`);
   const assessor = tuples.assessor.tuple;
-  const orchestratorFamily = planningHostFamily(tuples.assessor.tuple.orchestrator ?? tuples.open_box.tuple.orchestrator);
   const authorFamilies = new Set(["open_box", "contract_box", "contract_revise"].map((r) => tuples[r].tuple.family));
-  const clash = authorFamilies.has(assessor.family) ? "a plan author" : (orchestratorFamily && assessor.family === orchestratorFamily ? "the orchestrator" : null);
+  const clash = authorFamilies.has(assessor.family) ? "a plan author" : (assessor.family === orchestratorFamily ? "the orchestrator" : null);
   if (clash) {
     const need = assessor.family === "anthropic" ? "codex (family openai)" : "claude (family anthropic)";
     throw new IsolationUnsupported(

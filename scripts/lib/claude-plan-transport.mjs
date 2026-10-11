@@ -35,7 +35,22 @@ const EFFORTS = new Set(["low", "medium", "high", "xhigh", "max"]);
 const HOST_FAMILY = Object.freeze({ claude: "anthropic", codex: "openai" });
 // Mirrors isolated-plan-analysis: whether the declared payload itself quotes framework paths.
 const SOURCE_RE = /skills\/|AGENTS\.md|\bSSVE\b|DOCTRINE|SKILL\.md/;
-const STRIP_ENV = [/^SVC_/, /^_SVC_/, /^CODEX_/, /^CURSOR_/, /^CLAUDECODE$/, /^CLAUDE_CODE_SESSION/, /^CLAUDE_SESSION/];
+// Allowlist, not denylist: the isolated process gets only runtime and authentication values.
+// Customization channels (CLAUDE_CODE_EXTRA_BODY, CLAUDE_CODE_PLUGIN_DIRS, ANTHROPIC_CUSTOM_HEADERS,
+// parent-session and svc identity, ...) are never forwarded, whatever their names.
+const ENV_ALLOW_EXACT = new Set([
+  "PATH", "HOME", "USER", "LOGNAME", "LANG", "LANGUAGE", "TERM", "TMPDIR", "TMP", "TEMP", "SHELL", "TZ",
+  "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME", "XDG_STATE_HOME", "XDG_RUNTIME_DIR",
+  "CLAUDE_CONFIG_DIR",
+  "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL", "CLAUDE_CODE_OAUTH_TOKEN",
+  "CLAUDE_CODE_USE_BEDROCK", "CLAUDE_CODE_USE_VERTEX", "ANTHROPIC_VERTEX_PROJECT_ID", "CLOUD_ML_REGION",
+  "GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_CLOUD_PROJECT",
+  "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy", "ALL_PROXY", "all_proxy",
+  "SSL_CERT_FILE", "SSL_CERT_DIR", "NODE_EXTRA_CA_CERTS", "REQUESTS_CA_BUNDLE",
+]);
+const ENV_ALLOW_PREFIX = ["LC_", "AWS_"];
+// Request/extension channels that would change what the model receives or loads.
+const ENV_DENY_PATTERN = /EXTRA_BODY|PLUGIN|CUSTOM_HEADERS|SYSTEM_PROMPT|SETTINGS|MCP|HOOK|SKILL|APPEND|^SVC_|^_SVC_|^CODEX_|^CURSOR_|^CLAUDECODE$|SESSION/i;
 
 export function planningTransportOf(host) {
   if (host === "claude") return CLAUDE_TRANSPORT;
@@ -51,13 +66,12 @@ function fail(message) {
   throw new IsolationUnsupported(message);
 }
 
-/** Environment for the isolated process: inherited auth, minus parent-session and svc identity. */
 export function claudeEnv(source = process.env) {
   const env = {};
   for (const [key, value] of Object.entries(source)) {
     if (typeof value !== "string") continue;
-    if (STRIP_ENV.some((re) => re.test(key))) continue;
-    env[key] = value;
+    if (ENV_DENY_PATTERN.test(key)) continue;
+    if (ENV_ALLOW_EXACT.has(key) || ENV_ALLOW_PREFIX.some((p) => key.startsWith(p))) env[key] = value;
   }
   return env;
 }
@@ -76,6 +90,19 @@ export function buildClaudeExecArgs({ tuple, schema } = {}) {
   requireClaudeTuple(tuple);
   if (!schema || typeof schema !== "object") fail("schema required");
   return claude.args({ model: tuple.model, effort: tuple.effort, schema });
+}
+
+// Claude Code exposes no request-inspect channel, so the complete request cannot be captured.
+// What is recorded is a conservative UPPER BOUND, never a measurement: the exact JSON-escaped
+// prompt, the schema and model fields as sent, plus a generous allowance for the built-in
+// (tool-free, settings-free) system prompt and protocol framing.
+export const CLAUDE_SYSTEM_ALLOWANCE_BYTES = 256 * 1024;
+export const CLAUDE_ESTIMATE_KIND = "conservative_upper_bound_with_system_allowance";
+export function claudeRequestUpperBound({ prompt, schema, tuple }) {
+  return Buffer.byteLength(JSON.stringify(prompt), "utf8")
+    + Buffer.byteLength(JSON.stringify(schema), "utf8")
+    + Buffer.byteLength(JSON.stringify({ model: tuple.model, effort: tuple.effort }), "utf8")
+    + CLAUDE_SYSTEM_ALLOWANCE_BYTES;
 }
 
 export function claudeSchemaSha256(schema) {
@@ -204,8 +231,7 @@ export function assertClaudeIsolation({
     }
     const nativePrompt = claudeNativePromptBytes(prompt);
     const stored = putObject(nativePrompt, { start: consumerRoot });
-    const schemaJson = JSON.stringify(schema);
-    const envelopeBytes = Buffer.byteLength(prompt, "utf8") + Buffer.byteLength(schemaJson, "utf8");
+    const envelopeBytes = claudeRequestUpperBound({ prompt, schema, tuple });
     const usableLive = !offlineMode && modeName === "live";
     const proof = {
       transport: CLAUDE_TRANSPORT,
@@ -242,7 +268,8 @@ export function assertClaudeIsolation({
           checked: true,
           fits: null,
           enforcement: "native_runner",
-          estimate_kind: "request_bytes_only",
+          estimate_kind: CLAUDE_ESTIMATE_KIND,
+          system_allowance_bytes: CLAUDE_SYSTEM_ALLOWANCE_BYTES,
           estimated_tokens: null,
           envelope_bytes: envelopeBytes,
           captured_body_bytes: null,
@@ -358,7 +385,12 @@ export function collectClaudeProofErrors(proof, { launch, role, schema, proofPro
     const probe = proof.isolation_probe;
     if (!probe || probe.ok !== true || probe.canary_seen !== false || probe.authority !== CLAUDE_INSPECTION_AUTHORITY) fail2("live proof requires a passing canary isolation probe");
     else if (probe.binary_sha256 !== proof.binary?.sha256) fail2("isolation probe was not run on the launched binary");
-    if (!Number.isInteger(proof.token_budget?.envelope_bytes) || proof.token_budget.envelope_bytes < 1) fail2("complete request byte measurement required");
+    const tb = proof.token_budget || {};
+    if (tb.estimate_kind !== CLAUDE_ESTIMATE_KIND || tb.system_allowance_bytes !== CLAUDE_SYSTEM_ALLOWANCE_BYTES || tb.captured_body_bytes !== null) {
+      fail2("claude request size must be the declared conservative upper bound, not a claimed capture");
+    } else if (req && tb.envelope_bytes !== claudeRequestUpperBound({ prompt: proofPrompt, schema, tuple: req })) {
+      fail2("request upper bound differs from recomputation");
+    }
   }
   if (nativeBytes && Buffer.compare(nativeBytes, claudeNativePromptBytes(proofPrompt)) !== 0) fail2("native prompt differs from the exact stdin request");
   if (proof.diagnosis?.ok !== true || proof.diagnosis?.unknown !== false || proof.diagnosis?.exact_prompt_count !== 1

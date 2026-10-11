@@ -321,3 +321,110 @@ test('a Codex orchestrator may judge with a Claude assessor (cross-family in the
     assert.equal(result.planning_transports.open_box.transport, 'codex_exec');
   }, { plan: codexTuple('offline-plan'), exec: codexTuple('offline-exec'), assessor: claudeTuple('offline-assessor'), orchestrator: 'codex' });
 });
+
+// ---- Round 2 regressions ----
+test('R1-1: a policy cannot override the orchestrator identity; the resolved field is authoritative', () => {
+  const root = tmp('tbc-orch-');
+  const forms = {
+    flat: { roles: { assessor: { ...codexTuple('a'), orchestrator: 'claude' } } },
+    nested: { roles: { assessor: { tuple: { ...codexTuple('a'), orchestrator: 'claude' } } } },
+    label: { labels: { PLAN: { ...codexTuple('p'), orchestrator: 'claude' }, EXEC: codexTuple('e') } },
+  };
+  try {
+    for (const [name, extra] of Object.entries(forms)) {
+      const file = policyFile(root, { labels: { PLAN: codexTuple('p'), EXEC: codexTuple('e') }, ...extra });
+      assert.throws(() => resolveAll(file, 'codex', root), (e) => e.code === 'dispatch_policy_invalid' && /must not set an orchestrator/.test(e.message), name);
+      fs.rmSync(file);
+    }
+    // Defense in depth: even a hand-built tuples object cannot smuggle an override through.
+    const file = policyFile(root, { labels: { PLAN: codexTuple('p'), EXEC: codexTuple('e') }, roles: { assessor: codexTuple('a') } });
+    const real = withRevise(resolveAll(file, 'codex', root));
+    assert.throws(() => assertPlanningTransports(real), /cross-family/); // codex orchestrator + codex assessor
+    const forged = structuredClone(real);
+    for (const role of Object.keys(forged)) forged[role].tuple.orchestrator = 'claude'; // would make codex look cross-family
+    assert.throws(() => assertPlanningTransports(forged), /orchestrator override is refused/);
+    const mixedForged = structuredClone(real);
+    mixedForged.assessor.tuple.orchestrator = 'claude';
+    assert.throws(() => assertPlanningTransports(mixedForged), /orchestrator override is refused/);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('R1-1: an unknown orchestrator family fails closed', () => {
+  const root = tmp('tbc-orch2-');
+  try {
+    const file = policyFile(root, { labels: { PLAN: claudeTuple('p'), EXEC: claudeTuple('e') }, roles: { assessor: codexTuple('a') } });
+    const tuples = withRevise(resolveAll(file, 'claude', root));
+    for (const role of Object.keys(tuples)) { tuples[role].orchestrator = 'mystery'; tuples[role].tuple.orchestrator = 'mystery'; }
+    assert.throws(() => assertPlanningTransports(tuples), /unknown orchestrator family/);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('R1-2: the isolated process gets runtime and auth values only, never request or plugin channels', () => {
+  const env = transport.claudeEnv({
+    PATH: '/bin', HOME: '/h', LANG: 'C', ANTHROPIC_API_KEY: 'k', AWS_REGION: 'r', HTTPS_PROXY: 'p',
+    CLAUDE_CODE_EXTRA_BODY: '{"x":1}', CLAUDE_CODE_PLUGIN_DIRS: '/evil', ANTHROPIC_CUSTOM_HEADERS: 'h: v',
+    CLAUDE_CODE_SETTINGS: '{}', CLAUDE_CODE_MCP_CONFIG: 'm', ANTHROPIC_SYSTEM_PROMPT: 's', CLAUDE_CODE_APPEND_SYSTEM_PROMPT: 'a',
+    CLAUDE_CODE_SESSION_ID: 'x', SOME_UNLISTED_VAR: 'u', NODE_OPTIONS: '--require=/evil.js',
+  });
+  assert.deepEqual(Object.keys(env).sort(), ['ANTHROPIC_API_KEY', 'AWS_REGION', 'HOME', 'HTTPS_PROXY', 'LANG', 'PATH']);
+});
+
+test('R1-2: the launched child receives the sanitized environment', async () => {
+  const root = tmp('tbc-env-');
+  const consumer = path.join(root, 'consumer'); fs.mkdirSync(consumer);
+  const dir = path.join(root, 'fakebin'); fs.mkdirSync(dir);
+  fs.writeFileSync(path.join(dir, 'claude'), `#!/usr/bin/env node
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+if (args[0] === '--version') { console.log('9.9.9'); process.exit(0); }
+fs.readFileSync(0, 'utf8');
+const leaked = ['CLAUDE_CODE_EXTRA_BODY', 'CLAUDE_CODE_PLUGIN_DIRS'].filter((k) => k in process.env);
+const out = { type: 'result', is_error: false, modelUsage: { f: {} }, permission_denials: [] };
+if (args.includes('--json-schema')) out.structured_output = { plan: leaked.length ? 'LEAK ' + leaked.join(',') : 'clean environment' };
+else out.result = 'NONE';
+process.stdout.write(JSON.stringify(out));
+`, { mode: 0o755 });
+  const saved = { PATH: process.env.PATH, a: process.env.CLAUDE_CODE_EXTRA_BODY, b: process.env.CLAUDE_CODE_PLUGIN_DIRS };
+  process.env.PATH = `${dir}${path.delimiter}${saved.PATH}`;
+  process.env.CLAUDE_CODE_EXTRA_BODY = '{"x":1}';
+  process.env.CLAUDE_CODE_PLUGIN_DIRS = '/evil';
+  try {
+    await transport.primeClaudeProbe();
+    const payload = { bindings: { wi: 'WI-ENV-T' }, requirements: [{ id: 'AC1', text: 'Keep it.' }], facts: {} };
+    const launch = await launcher.launchRole({ role: 'open_box', tuple: claudeTuple('m'), payload, schema: protocol.outputSchemaForCall('open_box'), sourceBindings: { consumerRoot: consumer }, mode: 'live' });
+    assert.equal(launch.output.plan, 'clean environment');
+  } finally {
+    process.env.PATH = saved.PATH;
+    if (saved.a === undefined) delete process.env.CLAUDE_CODE_EXTRA_BODY; else process.env.CLAUDE_CODE_EXTRA_BODY = saved.a;
+    if (saved.b === undefined) delete process.env.CLAUDE_CODE_PLUGIN_DIRS; else process.env.CLAUDE_CODE_PLUGIN_DIRS = saved.b;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('R1-3: the Claude request size is a declared conservative upper bound, not a claimed capture', () => {
+  const schema = protocol.outputSchemaForCall('open_box');
+  const tuple = claudeTuple('claude-opus-5-5');
+  const plain = 'x'.repeat(1000);
+  const escapey = '\n'.repeat(1000); // each newline serializes as two bytes
+  const bound = (prompt) => transport.claudeRequestUpperBound({ prompt, schema, tuple });
+  const floor = Buffer.byteLength(plain) + Buffer.byteLength(JSON.stringify(schema));
+  assert.ok(bound(plain) >= floor + transport.CLAUDE_SYSTEM_ALLOWANCE_BYTES, 'includes the system allowance and the schema');
+  assert.ok(bound(escapey) - bound(plain) >= 1000, 'JSON escaping overhead is counted');
+  const root = tmp('tbc-bound-');
+  try {
+    const pre = transport.assertClaudeIsolation({ role: 'open_box', tuple, prompt: plain, schema, consumerRoot: root, mode: 'offline', offline: {} });
+    try {
+      assert.equal(pre.proof.token_budget.checked, false); // offline fixture: nothing authoritative claimed
+    } finally { pre.cleanup(); }
+    // A live-shaped proof must declare the bound exactly; claiming a capture or a smaller size is caught.
+    const live = { ...pre.proof, mode: 'live', frozen_request: { ...pre.proof.frozen_request, transport: 'claude_stdin' }, inspection_authority: 'claude_isolation_probe',
+      isolation_probe: { ok: true, canary_seen: false, authority: 'claude_isolation_probe', binary_sha256: pre.proof.binary.sha256 },
+      token_budget: { checked: true, fits: null, enforcement: 'native_runner', estimate_kind: transport.CLAUDE_ESTIMATE_KIND, system_allowance_bytes: transport.CLAUDE_SYSTEM_ALLOWANCE_BYTES, estimated_tokens: null, envelope_bytes: bound(plain), captured_body_bytes: null } };
+    const launch = { requested: tuple, invocation: { host: 'claude', transport: 'claude_isolated', exec_args: live.exec_args } };
+    const run = (proof) => transport.collectClaudeProofErrors(proof, { launch, role: 'open_box', schema, proofPrompt: plain, fixture: false }).join('\n');
+    assert.doesNotMatch(run(live), /request size|upper bound/);
+    assert.match(run({ ...live, token_budget: { ...live.token_budget, envelope_bytes: floor } }), /upper bound differs/);
+    assert.match(run({ ...live, token_budget: { ...live.token_budget, captured_body_bytes: 123 } }), /not a claimed capture/);
+    assert.match(run({ ...live, token_budget: { ...live.token_budget, estimate_kind: 'request_bytes_only' } }), /not a claimed capture/);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
