@@ -373,3 +373,54 @@ test("R2-4: feature work that mentions pause and resume is not a pause request",
   }
   for (const t of ["pause", "please pause now", "pause everything"]) assert.equal(classifyActiveIntent(t).suppress, true, t);
 });
+
+test("R3-1: a negated continuation classifies as suppressing intent", () => {
+  for (const t of ["Do not continue WI-123", "don't resume WI-45 please", "never proceed with WI-9000"]) {
+    const c = classifyActiveIntent(t);
+    assert.equal(c.suppress, true, t);
+    assert.equal(c.classification, "stop", t);
+  }
+  assert.equal(classifyActiveIntent("continue WI-123").suppress, false);
+  const dir = project({ lane: { ...graph(), wi: "WI-123" } });
+  assert.ok(blocked(viaBoundary(dir, {}, baseEnv())));
+  const rec = spawnSync(process.execPath, [path.join(ROOT, "hooks", "lib", "active-intent.mjs"), "record"], {
+    cwd: dir, input: JSON.stringify({ prompt: "Do not continue WI-123", session_id: "sess-1", cwd: dir }), encoding: "utf8",
+  });
+  assert.equal(rec.status, 0, rec.stderr);
+  const r = viaBoundary(dir, {}, baseEnv());
+  assert.ok(!blocked(r), r.stdout + r.stderr);
+});
+
+test("R3-2: an explicit pause clause survives feature-work wording in the same sentence", () => {
+  for (const t of ["Fix this later, pause everything for now", "Fix this later and pause everything", "Add the login page. Pause everything."]) {
+    assert.equal(classifyActiveIntent(t).suppress, true, t);
+  }
+  for (const t of ["implement pause and resume for the video player", "Add a pause/resume toggle to the player"]) {
+    assert.equal(classifyActiveIntent(t).suppress, false, t);
+  }
+});
+
+test("R3-3: bare receipt types from the checker are recognized before the all-missing fallback", () => {
+  const dir = project({ lane: graph(CHAIN), commit: true });
+  const f = path.join(mk("checker"), "check.mjs");
+  fs.writeFileSync(f, `process.stdout.write(JSON.stringify({ ok: false, results: [{ ok: false, type: "invalid", missing: ["audit-implementation"] }] }));\nprocess.exit(1);\n`);
+  const r = spawnSync(process.execPath, [LANE_CLI, "--cwd", dir, "--checker", f], { env: { ...process.env, SVC_ROOT: emptySvcRoot() }, encoding: "utf8" });
+  const out = JSON.parse(r.stdout);
+  assert.equal(out.decision, "block");
+  assert.equal(out.next_skill, "audit-implementation");
+  assert.deepEqual(out.missing, ["audit-implementation"]);
+});
+
+test("R3-4: the shell guard is silent for a nested repository without a lane, in every mode", () => {
+  const outer = project();
+  const inner = path.join(outer, "nested-project");
+  fs.mkdirSync(inner);
+  spawnSync("git", ["init", "-q"], { cwd: inner });
+  for (const extra of [{}, { SVC_HOOK_MODE: "enforce" }]) {
+    const r = viaBoundary(inner, { cwd: inner }, baseEnv(extra));
+    assert.equal(r.status, 0, r.stderr);
+    assert.ok(!r.out || r.out.decision === undefined, JSON.stringify(extra) + r.stdout + r.stderr);
+  }
+  // The outer project itself still gets the continuation, enforce mode included.
+  assert.ok(blocked(viaBoundary(outer, {}, baseEnv({ SVC_HOOK_MODE: "enforce" }))));
+});

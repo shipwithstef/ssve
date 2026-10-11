@@ -206,7 +206,8 @@ function receiptIndexFor(root, wi, checkerPath) {
   const lines = Array.isArray(row.missing) ? row.missing.map(String) : [];
   const parsed = new Set();
   for (const line of lines) {
-    const m = /^([a-z][a-z-]*)\s*:/.exec(line.trim());
+    // "audit-implementation", "audit-implementation: receipt is not an object", "review-exec is ...".
+    const m = /^([a-z][a-z-]*)(?=$|[\s:;,])/.exec(line.trim());
     if (m && STOP_REQUIRED_TYPES.includes(m[1])) parsed.add(m[1]);
   }
   let missingTypes = STOP_REQUIRED_TYPES.filter((t) => parsed.has(t));

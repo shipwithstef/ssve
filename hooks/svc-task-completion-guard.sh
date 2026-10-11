@@ -536,14 +536,19 @@ find_lane_tasks() {
   # Emit every lane-tasks*.json file from the nearest ancestor that has
   # .svc/lane-tasks*.json (one lookup, all matches). Supports the
   # multi-WI convention `lane-tasks-<WI>.json` alongside the legacy
-  # singular `lane-tasks.json`.
-  local dir="$PWD"
+  # singular `lane-tasks.json`. The walk never leaves the current Git worktree
+  # (or the start directory outside Git): an enclosing repository's lane is not
+  # this project's lane.
+  local dir="$PWD" ceiling
+  ceiling="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  [[ -n "$ceiling" ]] || ceiling="$PWD"
   while [[ "$dir" != "/" ]]; do
     if compgen -G "$dir/.svc/lane-tasks*.json" >/dev/null 2>&1; then
       # shellcheck disable=SC2012
       ls -1 "$dir"/.svc/lane-tasks*.json
       return 0
     fi
+    [[ "$dir" != "$ceiling" ]] || break
     dir="$(dirname "$dir")"
   done
   return 1

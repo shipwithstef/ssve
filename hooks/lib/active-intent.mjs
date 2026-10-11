@@ -151,7 +151,9 @@ function hasAffirmativePause(text) {
   // Feature work that merely mentions pausing ("Implement pause and resume for the player",
   // "add a pause/resume toggle") is a task description, not a request to pause this session.
   const noTask = noFeature
-    .replace(/\b(?:implement|add|build|create|support|handle|fix|write|make|design|test|develop|wire|expose|document|refactor)\b[^.;!?\n]{0,60}?\b(?:pause|halt|abort)\b/giu, "")
+    // The span never crosses a clause boundary (punctuation or a conjunction), so an imperative
+    // pause in a later clause ("Fix this later, pause everything for now") is kept.
+    .replace(/\b(?:implement|add|build|create|support|handle|fix|write|make|design|test|develop|wire|expose|document|refactor)\b(?:(?!\b(?:and|then|but|so|also|now|or)\b)[^.,;:!?\n]){0,60}?\b(?:pause|halt|abort)\b/giu, "")
     .replace(/\b(?:pause|halt|abort)\s*[\/&]\s*resume\b/giu, "");
   return PAUSE_WORDS.test(noTask);
 }
@@ -169,6 +171,14 @@ export function isExplicitContinueForWI(text) {
   for (const match of raw.matchAll(CONTINUE_WI)) {
     // "do not continue WI-123" is the opposite of a resume.
     if (!NEGATION_BEFORE.test(raw.slice(Math.max(0, match.index - 40), match.index))) return true;
+  }
+  return false;
+}
+
+export function hasNegatedContinueForWI(text) {
+  const raw = String(text || "");
+  for (const match of raw.matchAll(CONTINUE_WI)) {
+    if (NEGATION_BEFORE.test(raw.slice(Math.max(0, match.index - 40), match.index))) return true;
   }
   return false;
 }
@@ -212,6 +222,17 @@ export function classifyActiveIntent(text) {
       wi: referencedWi,
       resumed_wi: referencedWi,
       reason: referencedWi ? `explicit continue for ${referencedWi}` : "explicit WI continuation"
+    };
+  }
+
+  if (hasNegatedContinueForWI(raw)) {
+    return {
+      classification: "stop",
+      suppress: true,
+      wi: referencedWi || "*",
+      reason: referencedWi
+        ? `negated continuation suppresses ${referencedWi}`
+        : "negated continuation suppresses stale WI continuation pressure"
     };
   }
 
