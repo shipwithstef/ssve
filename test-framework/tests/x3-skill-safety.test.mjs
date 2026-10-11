@@ -1,3 +1,4 @@
+// @organism-suite
 // X3 safety regressions: secret redaction in topology snapshots, no auto-commit/push
 // in research and assess-market-readiness, approval-gated install in discover-skills.
 import test from 'node:test';
@@ -5,6 +6,7 @@ import assert from 'node:assert/strict';
 import {readFileSync, readdirSync, statSync, mkdtempSync, writeFileSync} from 'node:fs';
 import {join, dirname} from 'node:path';
 import {tmpdir} from 'node:os';
+import {symlinkSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {REDACTED, redactSnapshot, diffSnapshots} from '../../skills/track-topology-diff/scripts/redact-topology.mjs';
@@ -77,6 +79,41 @@ test('a bare Secret object and terraform sensitive_values are redacted', () => {
   assert.equal(tf.resources[0].values.identifier, 'main');
 });
 
+test('last-applied-configuration is redacted on every resource kind', () => {
+  const leak = 'lit-pw-9f3';
+  const annotated = (kind, extra) => ({kind, metadata: {name: 'x', annotations: {'kubectl.kubernetes.io/last-applied-configuration': JSON.stringify({kind, ...extra}), keep: 'ok'}}});
+  const dep = annotated('Deployment', {spec: {containers: [{env: [{name: 'DB_PASSWORD', value: leak}, {name: 'MODE', value: 'fast'}]}]}});
+  const cm = annotated('ConfigMap', {data: {password: leak, mode: 'fast'}});
+  const out = redactSnapshot({items: [dep, cm]});
+  const text = JSON.stringify(out);
+  assert.ok(!text.includes(leak), 'credential survived in annotation');
+  for (const it of out.items) {
+    const a = it.metadata.annotations;
+    assert.equal(a.keep, 'ok');
+    const v = a['kubectl.kubernetes.io/last-applied-configuration'];
+    assert.ok(v === REDACTED || JSON.parse(v), 'annotation is redacted or valid redacted JSON');
+  }
+  const unparsable = redactSnapshot({kind: 'Deployment', metadata: {annotations: {'kubectl.kubernetes.io/last-applied-configuration': `not json ${leak}`}}});
+  assert.ok(!JSON.stringify(unparsable).includes(leak));
+});
+
+test('terraform outputs marked sensitive lose their value', () => {
+  const out = redactSnapshot({values: {outputs: {db_url: {sensitive: true, type: 'string', value: 'postgres://u:pw@h/db'}, region: {sensitive: false, type: 'string', value: 'eu-west-1'}, cfg: {sensitive: true, value: {a: ['x', 'y']}}}}});
+  assert.equal(out.values.outputs.db_url.value, REDACTED);
+  assert.equal(out.values.outputs.db_url.type, 'string');
+  assert.equal(out.values.outputs.region.value, 'eu-west-1');
+  assert.deepEqual(out.values.outputs.cfg.value, {a: [REDACTED, REDACTED]});
+});
+
+test('sensitive_values redacts ordinary keys, including nested arrays', () => {
+  const tf = {resources: [{type: 't', values: {identifier: 'main', owner: 'alice-literal', endpoints: [{host: 'h1-literal', port: 5432}, {host: 'h2-literal', port: 5433}], flags: ['f1-literal', 'f2-literal']}, sensitive_values: {owner: true, endpoints: [{host: true}, {host: true}], flags: [true, false]}}]};
+  const v = redactSnapshot(tf).resources[0].values;
+  assert.equal(v.identifier, 'main');
+  assert.equal(v.owner, REDACTED);
+  assert.deepEqual(v.endpoints, [{host: REDACTED, port: 5432}, {host: REDACTED, port: 5433}]);
+  assert.deepEqual(v.flags, [REDACTED, 'f2-literal']);
+});
+
 test('diff output never contains secret values', () => {
   const before = structuredClone(secretManifest);
   const after = structuredClone(secretManifest);
@@ -99,6 +136,15 @@ test('CLI redacts stdin JSON and fails closed on invalid JSON', () => {
   const bad = spawnSync('node', [script], {input: 'password=hunter2', encoding: 'utf8'});
   assert.notEqual(bad.status, 0);
   assert.equal(bad.stdout, '');
+});
+
+test('CLI body runs when invoked through a symlink', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'x3-link-'));
+  const link = join(dir, 'redact-link.mjs');
+  symlinkSync(join(root, 'skills/track-topology-diff/scripts/redact-topology.mjs'), link);
+  const r = spawnSync('node', [link], {input: JSON.stringify(secretManifest), encoding: 'utf8'});
+  assert.equal(r.status, 0);
+  assert.ok(r.stdout.includes(REDACTED) && !r.stdout.includes(PLAIN));
 });
 
 test('track-topology-diff SKILL.md routes kubectl output through the redactor and bans raw secret dumps', () => {

@@ -2,7 +2,7 @@
 // Redacts credentials from infra snapshots (kubectl/helm/terraform JSON) before anything is
 // written to docs/specs/topology-snapshots/. Fails closed: non-JSON input is refused.
 //   kubectl get ... -o json | node redact-topology.mjs > state.json
-import {readFileSync} from 'node:fs';
+import {readFileSync, realpathSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 
 export const REDACTED = '[REDACTED]';
@@ -35,6 +35,13 @@ function applySensitiveMap(values, map) {
   return out;
 }
 
+// last-applied-configuration embeds the whole applied manifest. Parse and redact it; if it is
+// not valid JSON, drop it entirely (a Secret's own annotation is always dropped, see below).
+function redactLastApplied(value) {
+  if (typeof value !== 'string') return REDACTED;
+  try { return JSON.stringify(redactSnapshot(JSON.parse(value))); } catch { return REDACTED; }
+}
+
 export function redactSnapshot(node, parentKey = '') {
   if (Array.isArray(node)) return node.map((v) => redactSnapshot(v, parentKey));
   if (!isObj(node)) return node;
@@ -47,11 +54,17 @@ export function redactSnapshot(node, parentKey = '') {
       const m = redactSnapshot(v, k);
       if (isObj(m.annotations) && LAST_APPLIED in m.annotations) m.annotations[LAST_APPLIED] = REDACTED;
       out[k] = m;
+    } else if (k === 'annotations' && isObj(v)) {
+      const a = redactSnapshot(v, k);
+      if (LAST_APPLIED in v) a[LAST_APPLIED] = redactLastApplied(v[LAST_APPLIED]);
+      out[k] = a;
     } else if (typeof v === 'string' && isSensitiveKey(k) && v !== '') out[k] = REDACTED;
     else out[k] = redactSnapshot(v, k);
   }
   // Container env entries: {name: DB_PASSWORD, value: "literal"}
   if (typeof node.name === 'string' && typeof node.value === 'string' && isSensitiveKey(node.name)) out.value = REDACTED;
+  // Terraform outputs: {sensitive: true, value: ...}
+  if (node.sensitive === true && 'value' in node) out.value = redactAll(node.value);
   // Terraform JSON: sensitive_values mirrors `values` with true leaves.
   if (isObj(node.sensitive_values) && node.values !== undefined) out.values = applySensitiveMap(out.values, node.sensitive_values);
   return out;
@@ -82,7 +95,12 @@ export function diffSnapshots(before, after, {from = 'before', to = 'after'} = {
   ].join('\n');
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// Realpath comparison so the CLI still runs when invoked through the symlinked skill install.
+function isMain() {
+  try { return Boolean(process.argv[1]) && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)); } catch { return false; }
+}
+
+if (isMain()) {
   let input;
   try { input = JSON.parse(readFileSync(0, 'utf8')); } catch {
     process.stderr.write('redact-topology: input is not valid JSON; refusing to pass it through. Use -o json / -json output.\n');
