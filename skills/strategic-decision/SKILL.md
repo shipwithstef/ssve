@@ -70,8 +70,8 @@ cost modeling, elimination gates, and adversarial review.
 
 **Division of labour.** You build the decision model and its evidence: options, the
 variables that drive their value with sourced ranges, correlations, HARD gates and
-profiles, all in `MODEL.json` (format: `schemas/decision-model.schema.json`, guide:
-`docs/decision-engine.md`). `scripts/decision-engine.mjs` computes everything numeric:
+profiles, all in `MODEL.json` (format: `<framework-root>/schemas/decision-model.schema.json`, guide:
+`<framework-root>/docs/decision-engine.md`). `<framework-root>/scripts/decision-engine.mjs` computes everything numeric:
 correlated Monte Carlo, gate elimination, EV per option, P(best), value of information,
 break-even, and the winner per profile. Never hand-compute EV cells, sensitivity or
 break-even values in prose; the only in-repo run that did (2026-06-29) was rejected by
@@ -378,8 +378,8 @@ growth scenarios as a `discrete` variable or as profiles, and known dependencies
 example completion rate and retention) as `correlations`. Then run:
 
 ```bash
-node scripts/decision-engine.mjs evaluate docs/specs/decisions/<slug>/MODEL.json --markdown > docs/specs/decisions/<slug>/EV-MODEL.md
-node scripts/decision-engine.mjs evaluate docs/specs/decisions/<slug>/MODEL.json --json > docs/specs/decisions/<slug>/EV-RESULT.json
+node <framework-root>/scripts/decision-engine.mjs evaluate docs/specs/decisions/<slug>/MODEL.json --markdown > docs/specs/decisions/<slug>/EV-MODEL.md
+node <framework-root>/scripts/decision-engine.mjs evaluate docs/specs/decisions/<slug>/MODEL.json --json > docs/specs/decisions/<slug>/EV-RESULT.json
 ```
 
 The engine outputs per survivor: the EV distribution (mean, p10/p50/p90), P(best) and
@@ -441,9 +441,11 @@ Invoke `agents/strategic-reviewer` with input manifest:
 | Host | Mechanism |
 |---|---|
 | Claude Code | Agent tool with `subagent_type: strategic-reviewer` and the manifest paths in the prompt → runtime enforces tool allowlist + fresh context |
-| Kimi CLI | same script; Kimi's runtime enforces agent YAML |
+| Kimi CLI | native subagent with `agents/strategic-reviewer.md` as its agent definition; if the subagent tool is unavailable, inline load as for Codex |
+| Cursor, Grok, OpenCode, MiMo Code (`agents: true` in `provision/hosts/*.json`) | the host's native subagent loaded from `agents/strategic-reviewer.md`; if it cannot load that definition, inline load as for Codex |
 | Codex CLI | inline load of `agents/strategic-reviewer.md` append content; no runtime enforcement — prompt-level discipline + eval regression catches violations |
 | Gemini CLI | same as Codex |
+| Antigravity (`agents: false`) | inline load of `agents/strategic-reviewer.md` in a fresh turn; state in REVIEW.md that the review was not isolated |
 
 Agent emits YAML findings (see `agents/strategic-reviewer.md` output format). Parent
 (this skill) writes the YAML to REVIEW.md.
@@ -539,7 +541,7 @@ node scripts/pipeline-log.mjs append \
   --reasoning "<short summary citing DECISION.md>" \
   --decided-by P0 \
   --overrideable true
-node scripts/decision-ledger.mjs record --model docs/specs/decisions/<slug>/MODEL.json --result docs/specs/decisions/<slug>/EV-RESULT.json --id <slug>
+node <framework-root>/scripts/decision-ledger.mjs record --model docs/specs/decisions/<slug>/MODEL.json --result docs/specs/decisions/<slug>/EV-RESULT.json --id <slug>
 ```
 
 The ledger row is what later observations are checked against. Record outcomes with
@@ -618,13 +620,15 @@ Kimi CLI / Codex CLI / Gemini CLI.
 
 ## Host-agnostic contract
 
-The 9-phase flow runs identically on all 4 hosts. Invocation mechanics differ per host but
+The 9-phase flow runs identically on every host. Invocation mechanics differ per host but
 the contract is identical:
 
 | Host | Skill load | Agent invocation (Phase 6) | Research (Phase 1b) |
 |---|---|---|---|
-| Claude Code | `Skill` tool | `dispatch-worker.sh --agent strategic-reviewer` | `WebSearch` tool inline |
-| Kimi CLI | `Skill` tool (or `/flow:strategic-decision`) | `dispatch-worker.sh` | built-in `explore` subagent OR WebSearch |
+| Claude Code | `Skill` tool | Agent tool, `subagent_type: strategic-reviewer` | `WebSearch` tool inline |
+| Kimi CLI | `Skill` tool (or `/flow:strategic-decision`) | native subagent from `agents/strategic-reviewer.md` | built-in `explore` subagent OR WebSearch |
+| Cursor / Grok / OpenCode / MiMo Code | Direct SKILL.md load | native subagent from `agents/strategic-reviewer.md`, else inline | inline research |
+| Antigravity | Direct SKILL.md load | inline load (not isolated; say so in REVIEW.md) | inline research |
 | Codex CLI | Direct SKILL.md load | inline append of agent's system prompt | inline research |
 | Gemini CLI | `activate_skill` | inline append | inline research |
 

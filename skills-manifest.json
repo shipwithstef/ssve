@@ -651,7 +651,8 @@
         "strategic-decision"
       ],
       "defaultSkips": [],
-      "notes": "Lane 13 (general outcome): any work whose deliverable is not a code change in this repo (business, research, content, operations, personal or company decisions) and the fallback when no other lane fits. Flow: frame outcome metrics -> strategic-decision computes the choice with scripts/decision-engine.mjs -> compose steps from existing skills, with a host dynamic workflow for uncovered steps -> execute (outward/irreversible actions need owner confirmation) -> verify the metric and record it with scripts/decision-ledger.mjs. Not a code delivery graph: code work it produces hands off to the matching code lane. See skills/route-workflow/references/general-lane.md."
+      "notes": "Lane 13 (general outcome): any work whose deliverable is not a code change in this repo (business, research, content, operations, personal or company decisions) and the fallback when no other lane fits. Flow: frame outcome metrics -> strategic-decision computes the choice with scripts/decision-engine.mjs -> compose steps from existing skills, with a host dynamic workflow for uncovered steps -> execute (outward/irreversible actions need owner confirmation) -> verify the metric and record it with scripts/decision-ledger.mjs. Not a code delivery graph: code work it produces hands off to the matching code lane. See skills/route-workflow/references/general-lane.md.",
+      "kind": "non-code"
     }
   },
   "rulesRegistry": {

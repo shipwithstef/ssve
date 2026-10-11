@@ -102,7 +102,7 @@
           "enum": ["contract-change", "hot-path", "refactor", "additive", "docs", "n/a"]
         },
         "lane": {
-          "enum": ["greenfield", "brownfield-conversion", "brownfield-feature", "bugfix", "drift", "refactor", "framework"]
+          "enum": ["greenfield", "brownfield-conversion", "brownfield-feature", "bugfix", "drift", "refactor", "framework", "general"]
         }
       }
     },

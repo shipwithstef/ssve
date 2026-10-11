@@ -195,7 +195,7 @@ Before declaring routing complete, verify:
 
 | # | Check | How | PASS/FAIL |
 |---|-------|-----|-----------|
-| 1 | Lane matched to change type | Routing decision references one of the 7 lane definitions and the change-type detection signal that triggered it | |
+| 1 | Lane matched to change type | Routing decision references one of the 8 lane definitions in `skills-manifest.json` `laneDefinitions` (the 7 code lanes or Lane 13 `general`) and the change-type detection signal that triggered it | |
 | 2 | Skip conditions evaluated | For each lane skill listed in `<SKILLS_PATH>/references/skip-conditions.json`, state whether the skip applies and log the registry-backed justification in `.svc/pipeline-decisions.jsonl` | |
 | 2b | `na` is evidence, not a shrug | Ran the `## Conditional Stage Activation (P3, WI-521 Batch C — closes WI-519)` block above (`node scripts/stage-activation.mjs --diff main..HEAD`) and pasted its output; for a conditionally-active STAGE (not a lane skill), `na` is valid ONLY when a cited condition evaluation accompanies it (`{stage, condition, evaluated_against, result:"na"}`) from that output — a bare "n/a" sentence with no evaluation is not a valid skip. When showing that record to a human, also say: skipped \<stage\> because its condition was not met ("\<condition\>", result na). Essential stages still ran. This is not a quick-fix bypass. quick-fix stays retired; the replacement is `route-workflow`. | |
 | 3 | New-lane necessity checked | If no existing lane fits, the run uses Lane 13 (`references/general-lane.md`); a recurring composed flow also gets `**Proposal:** New lane <name> needed because <reason>` | |

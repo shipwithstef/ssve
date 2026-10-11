@@ -54,9 +54,12 @@ Worked example: `examples/decisions/launch-channel.model.json`, a non-coding dec
   - Supported distributions: `const`, `uniform` (low/high), `triangular` (low/mode/high), `normal` (mean/sd), `lognormal` (p10/p90, the form people can actually estimate), and `discrete` (values/weights, for scenarios).
   - Give every uncertain variable a `source`. Give it a `question` if it is worth asking, or set `askable: false` when nobody can know it before deciding.
 - **`derived`**: named intermediate expressions, evaluated in order.
-- **`options[].value`**: the objective expression for that option, with optional per-option `params`. Expressions support `+ - * / % ^`, comparisons, `&& || !`, `?:`, `min max abs sqrt log exp floor ceil round clamp if`. They are compiled, never `eval`'d.
+- **`options[].value`**: the objective expression for that option, with optional per-option `params`. Expressions support `+ - * / % ^`, comparisons, `&& || !`, `?:`, `min max abs sqrt log exp floor ceil round clamp if`. They are compiled, never `eval`'d. `&&` and `||` return 0 or 1 and evaluate both sides; use `?:`, which short-circuits, for "log only when positive".
 - **`gates`**: global or per option. `expr` must hold; `tolerance` is the allowed probability that it does not hold.
-- **`correlations`**: rank dependence via a Gaussian copula. An inconsistent set (not positive definite) is rejected.
+  - In any sample where an option fails a gate, that option cannot win P(best) and scores as the worst viable value. Options that tie share the win.
+  - A non-finite value (for example a division by zero) is treated as an implicit gate, "value is finite", with tolerance `objective.nonfinite_tolerance` (default 0.05).
+  - A gate expression that evaluates to NaN is a model error (exit 2), not a pass.
+- **`correlations`**: rank dependence via a Gaussian copula. A pair declared twice, or an inconsistent set (not positive definite), is rejected.
 - **`profiles`**: variable overrides. Each profile is evaluated, and the output says where the winner flips.
 
 ## Verdicts

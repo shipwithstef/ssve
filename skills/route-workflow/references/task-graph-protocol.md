@@ -26,7 +26,7 @@ Minimum shape:
     "user_intent": "normalized user goal",
     "repo_mode": "bootstrap|convert",
     "change_type": "feature|bugfix|regression|drift|refactor|chore|docs|framework",
-    "lane": "greenfield|brownfield-conversion|brownfield-feature|bugfix|drift|refactor|framework",
+    "lane": "greenfield|brownfield-conversion|brownfield-feature|bugfix|drift|refactor|framework|general",
     "delivery_mode": "interactive|end_to_end",
     "delivery_tier": {
       "mode": "full|compressed|rush|end_to_end",

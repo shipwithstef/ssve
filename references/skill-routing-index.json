@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "compiled_from": {
-    "manifest_sha256": "1e024cf599e60e748b913727c79763c1224cea6a9c9740844cb531174a29d57e",
+    "manifest_sha256": "ee1246ad5b79436efe25d81453423382f30335b6aa2734739d232ab659849247",
     "overrides_sha256": "14fa674603c6a84ddf5b2673fe072778aa69cfd415d3d58e55adf4486a685249",
     "concern_registry_sha256": "6c336c8832c4907ee78413a2b7d377b790bb55bba180783d2164892a130ea507"
   },
@@ -1266,7 +1266,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "02c972a7f484c18bc97562ada08c972119e4bae7a6521b77ca30612e4d38bbcd",
+      "content_hash": "07178078230017a1c430f19a19f0b73a6a5955dc111724583c61668dd4afa0c9",
       "description": "Use when you have a BASELINED feature spec with technical design and need to produce the implementation plan for branch-first execution — task graph, file set, validation plan, checkpoints, and AC/test mapping",
       "aliases": [],
       "positive_triggers": [],
@@ -1636,7 +1636,7 @@
     {
       "skill": "route-workflow",
       "path": "skills/route-workflow/SKILL.md",
-      "content_hash": "1710622f922d59850b3d9fa80bee5d7e765f769681689150aec5b5afa0fa1970",
+      "content_hash": "0b73931fec1e6712bc70fdbf5f4aea4fab6c6416f2e383707b8aa8f310141390",
       "description": "Universal entry point for any work. Routes freeform intent to the right svc skill based on repo state, change type, and current project artifacts. Handles: \"do this\", \"build this\", \"I want to\", \"help me with\", \"make me a\", \"ship this\", \"fix this\", or ANY freeform description of work; also handles explicit routing questions like \"what should I do next\", \"which skill do I run\", \"what's the right order\", and \"what lane is this\". Here \"what should I do next\" means only which skill and lane to run in this repo.",
       "aliases": [
         "what should I do next",
@@ -1703,7 +1703,7 @@
     {
       "skill": "strategic-decision",
       "path": "skills/strategic-decision/SKILL.md",
-      "content_hash": "e39c8fb0ca99d069a280b9668e88d6a1977f027c7d59ff8bd9011b00c96e77d0",
+      "content_hash": "a25a36214fd4501a8a9833b8ad78ffd6447cdb6e9c07b14566da5c4bb7f822d9",
       "description": "N-way strategic trade study spanning features, vendors, or years — build-vs-buy, framework/database/hosting/AI-model/payment-provider selection, pricing model, strategic pivot. Use when: \"which X should I use\", \"compare providers\", \"trade study\", \"strategic decision\". NOT for within-feature architecture (design-tech owns that). Also: \"N-way decision\", \"pick vendor\", \"compare options before committing\".",
       "aliases": [
         "trade study",

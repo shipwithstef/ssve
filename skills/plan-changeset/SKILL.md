@@ -313,7 +313,7 @@ Before declaring done, verify:
 | 10 | Base44/backend ground truth checked | If Base44 entity/schema/RLS/persistence behavior is in scope, manifest cites `audit-base44-entity-rls.mjs`, a live schema round-trip dump, or an explicit non-Base44 N/A reason | |
 | 11 | Migration universe recorded | If archetype = migration: manifest header contains grep baseline (N files, M instances per pattern family) | |
 | 12 | Lane-model validation passed | `node scripts/validate-task-graph-lane.mjs .svc/lane-tasks-<WI>.json` exits 0 with no missing mandatory skills | |
-| 13 | New-lane necessity checked | If the work does not fit any existing lane (greenfield, brownfield-conversion, brownfield-feature, bugfix, drift, refactor, framework), the manifest contains a `**Proposal:** New lane <name> needed because <reason>` block with proposed skill sequence and routing signals | |
+| 13 | New-lane necessity checked | If the work does not fit any existing code lane (greenfield, brownfield-conversion, brownfield-feature, bugfix, drift, refactor, framework) and is not Lane 13 `general` non-code work, the manifest contains a `**Proposal:** New lane <name> needed because <reason>` block with proposed skill sequence and routing signals | |
 | 14 | Migration phase split accounted | If archetype = migration AND plan covers <100% of grep matches: deferred files/instances are named and counted, not implied | |
 
 If any check FAILs, fix before continuing.

@@ -29,7 +29,7 @@ Derived-at for all blocks: **2026-09-14** unless stated otherwise
 |---|---|---|---|
 | First-party skills | 105 in `includedSkills`; 59 in router core pack | `skills-manifest.json` | `node -e "console.log(require('./skills-manifest.json').includedSkills.length)"` |
 | Review gates | G1–G7 (write-spec, design-ux, design-ui, design-tech, execute-changeset, land-changeset, verify-promotion) | `skills-manifest.json` `gates` | `node -e "const m=require('./skills-manifest.json');console.log(Object.keys(m.reviewGates\|\|m.gates))"` |
-| Workflow lanes | 7: greenfield, brownfield-conversion, brownfield-feature, bugfix, drift, refactor, framework | `skills-manifest.json` `laneDefinitions` | `node -e "console.log(Object.keys(require('./skills-manifest.json').laneDefinitions).join(','))"` |
+| Workflow lanes | 8: greenfield, brownfield-conversion, brownfield-feature, bugfix, drift, refactor, framework, general (Lane 13, non-code) | `skills-manifest.json` `laneDefinitions` | `node -e "console.log(Object.keys(require('./skills-manifest.json').laneDefinitions).join(','))"` |
 | Anti-patterns | 34 APs in the reference doc | `references/anti-patterns.md` | `grep -cE '^###? AP-[0-9]+' references/anti-patterns.md` |
 | Provisioned hosts | 9: claude, kimi, codex, gemini, opencode, mimo-code, antigravity, cursor, grok | `provision/hosts/*.json` | `ls provision/hosts/*.json \| wc -l` |
 | Tier-1 validators | 329 shell validators (*.sh); 370 total tier-1 scripts when including .mjs AST and contract checkers | `test-framework/evals/tier-1/` | `ls test-framework/evals/tier-1/*.sh \| wc -l` (329); `ls test-framework/evals/tier-1/* \| wc -l` (370) |
