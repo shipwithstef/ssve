@@ -223,6 +223,59 @@ test("caps smaller than the digest header are rejected", () => {
   });
 });
 
+test("quoted labels with unquoted credentials are redacted", () => {
+  fixture((root) => {
+    const password = ["orchid", "123456789"].join("");
+    const token = ["pine", "99887766"].join("");
+    write(root, "OWNER-NOTES.md", [
+      `The refund desk stores "password": ${password} and rotates it yearly.`,
+      `The backup reads 'token': ${token} before anyone prints it.`,
+      "",
+    ].join("\n"));
+    const digest = preloadKnowledge(root);
+    assert.equal(digest.text.includes(password), false);
+    assert.equal(digest.text.includes(token), false);
+    assert.equal(digest.text.includes("orchid"), false);
+    assert.equal(digest.text.includes("99887766"), false);
+    assert.match(digest.text, /\[redacted\]/);
+    assert.match(digest.text, /refund desk stores/);
+    assert.match(digest.text, /rotates it yearly/);
+    assert.match(digest.text, /before anyone prints it/);
+    assert.equal(digest.text, preloadKnowledge(root).text);
+  });
+});
+
+test("a refund policy keeps its six-hour exclusion unless the whole fact is dropped", () => {
+  fixture((root) => {
+    const exclusion = "A cancellation inside six hours is not refunded.";
+    const stem = "Refunds are issued for every paid booking when the guest cancels before the session. ";
+    let policy = "";
+    while (policy.length < 240) policy += stem;
+    policy += exclusion;
+    assert.ok(policy.length > 240);
+    assert.ok(policy.indexOf("six hours") >= 240);
+    write(root, ".svc/standing-rules.md", `- ${policy}\n`);
+
+    const fitted = preloadKnowledge(root);
+    assert.equal(fitted.truncated, 0);
+    assert.equal(fitted.facts.length, 1);
+    assert.equal(fitted.facts[0].text, policy);
+    assert.match(fitted.text, /six hours is not refunded/);
+    assert.equal(fitted.text.includes("…"), false);
+
+    // 360 fits a 240-character slice of this fact and not the complete fact.
+    const tight = preloadKnowledge(root, { cap: 360 });
+    assert.ok(tight.bytes <= 360);
+    assert.equal(tight.bytes, Buffer.byteLength(tight.text, "utf8"));
+    assert.equal(tight.truncated, 1);
+    assert.deepEqual(tight.facts, []);
+    assert.equal(tight.text.includes("Refunds are issued"), false);
+    assert.equal(tight.text.includes("six hours"), false);
+    assert.equal(tight.text.includes("…"), false);
+    assert.match(tight.text, /^k-preload facts=0 bytes=\d+ cap=360 truncated=1\n$/);
+  });
+});
+
 test("cli --root prints the same digest", () => {
   fixture((root) => {
     write(root, "NOTES.md", "- Keep the journey runnable from a clean tree.\n");

@@ -22,7 +22,6 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 export const DEFAULT_CAP_BYTES = 2048;
-const MAX_FACT_CHARS = 240;
 const MAX_MARKDOWN_BYTES = 64 * 1024;
 const MAX_JSONL_BYTES = 128 * 1024;
 const MAX_DOCS_DEPTH = 4;
@@ -53,7 +52,9 @@ const SECRET = new RegExp(
     String.raw`AKIA[0-9A-Z]{16}`,
     String.raw`Bearer\s+[A-Za-z0-9._-]{8,}`,
     `["']?${CREDENTIAL}["']?\\s*[:=]\\s*${QUOTED_VALUE}`,
-    `${CREDENTIAL}\\s*[:=]\\s*\\S+`,
+    // A quoted label with a bare value ("password": orchid...) does not match
+    // the quoted-value alternative. Keep the label quotes optional here too.
+    `["']?${CREDENTIAL}["']?\\s*[:=]\\s*\\S+`,
   ].join("|"),
   "gi",
 );
@@ -70,11 +71,9 @@ function normalizeFact(raw) {
   text = text.replace(/^(?:[-*+]|\d+[.)])\s+/, "");
   text = redact(text).trim();
   if (text.length < 8) return "";
-  if (text.length > MAX_FACT_CHARS) {
-    const cut = text.lastIndexOf(" ", MAX_FACT_CHARS - 1);
-    const at = cut > 40 ? cut : MAX_FACT_CHARS - 1;
-    text = `${text.slice(0, at).trimEnd()}…`;
-  }
+  // Keep the fact whole. A character cutoff deletes exceptions (a six-hour
+  // refund exclusion) while the byte cap still reports truncated=0.
+  // finish() enforces the cap by dropping whole facts.
   return text;
 }
 
