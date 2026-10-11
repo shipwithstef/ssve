@@ -213,13 +213,25 @@ export function failureReasons(out) {
   return reasons.slice(0, 5);
 }
 
-export function grade(dir, task) {
+// Hidden-test grading. Builder-written modules run here, so with `wrap` the test runs inside
+// the sandbox: private empty home, the build directory writable, the same masks as the builder.
+export function grade(dir, task, { wrap = null } = {}) {
   fs.copyFileSync(path.join(taskDir(task), "hidden.test.mjs"), path.join(dir, "__hidden.test.mjs"));
-  const r = spawnSync(process.execPath, ["--test", "--test-reporter=tap", `--test-timeout=${taskConfig(task).test_timeout_ms}`, "__hidden.test.mjs"], { cwd: dir, encoding: "utf8", timeout: Math.max(180000, taskConfig(task).test_timeout_ms * 8), env: { ...process.env, NODE_TEST_CONTEXT: undefined, OE_PLAYWRIGHT: playwrightEntry() } });
+  const nodeArgs = ["--test", "--test-reporter=tap", `--test-timeout=${taskConfig(task).test_timeout_ms}`, "__hidden.test.mjs"];
+  const env = { ...(wrap ? builderEnvBase() : process.env), NODE_TEST_CONTEXT: undefined, OE_PLAYWRIGHT: playwrightEntry(), ...(wrap?.env || {}) };
+  const [bin, argv] = wrap ? [wrap.argv[0], [...wrap.argv.slice(1), process.execPath, ...nodeArgs]] : [process.execPath, nodeArgs];
+  const r = spawnSync(bin, argv, { cwd: dir, encoding: "utf8", timeout: Math.max(180000, taskConfig(task).test_timeout_ms * 8), env });
   const out = `${r.stdout}\n${r.stderr}`;
   const t = parseTap(out) || { pass: 0, fail: 1 };
   const total = t.pass + t.fail;
   return { hidden_pass: t.pass, hidden_total: total, score: total ? t.pass / total : 0, solved: t.fail === 0 && t.pass > 0, ...(t.fail ? { hidden_failures: failureReasons(out) } : {}) };
+}
+
+// Run fn with a grading sandbox (role grade) around `dir`, and remove its private home after.
+export function withGradeSandbox(dir, sandbox, fn) {
+  if (!sandbox) return fn(null);
+  const w = builderWrap(dir, { ...sandbox, role: "grade" });
+  try { return fn(w); } finally { fs.rmSync(w.job_home, { recursive: true, force: true }); }
 }
 
 export const promptSha = (arm, task) => crypto.createHash("sha256").update(task && isPillarArm(arm) ? armPrompts(task, arm).join("\n\0\n") : ARMS[arm]).digest("hex").slice(0, 12);
@@ -259,14 +271,46 @@ export function hasBwrap(pathEnv = process.env.PATH) {
   return String(pathEnv || "").split(path.delimiter).filter(Boolean).some((d) => { try { fs.accessSync(path.join(d, "bwrap"), fs.constants.X_OK); return true; } catch { return false; } });
 }
 
-// Where a claude command found on PATH lives (the binary and the link that points at it), so
-// those directories can stay visible when the real home is hidden.
-export function claudeDirs(pathEnv = process.env.PATH) {
+// The claude command found on PATH as [real binary, path it is found at]. Only this file is
+// brought back into the hidden home (not its directory, which may hold other agent CLIs).
+export function claudeBinds(pathEnv = process.env.PATH) {
   for (const d of String(pathEnv || "").split(path.delimiter).filter(Boolean)) {
     const f = path.join(d, "claude");
-    try { fs.accessSync(f, fs.constants.X_OK); return uniq([d, path.dirname(fs.realpathSync(f))]); } catch { /* next */ }
+    try { fs.accessSync(f, fs.constants.X_OK); return [[fs.realpathSync(f), f]]; } catch { /* next */ }
   }
   return [];
+}
+
+// Agent CLIs other than claude. A builder may only spend through claude, which the runner
+// accounts for; these are made unavailable inside the sandbox.
+export const FOREIGN_CLIS = Object.freeze(["codex", "grok", "cursor-agent", "agy", "gemini", "opencode", "kimi"]);
+// Binaries of those CLIs that sit in visible PATH directories (hidden-home ones are already gone).
+export function foreignCliMasks(pathEnv = process.env.PATH, { hidden = () => false } = {}) {
+  const out = [];
+  for (const d of String(pathEnv || "").split(path.delimiter).filter(Boolean)) for (const n of FOREIGN_CLIS) {
+    const f = path.join(d, n);
+    let real; try { real = fs.realpathSync(f); } catch { continue; }
+    // Hidden paths, and links into the hidden home, are already unavailable in the sandbox.
+    if (!hidden(f) && !hidden(real) && !out.includes(f)) out.push(f);
+  }
+  return out;
+}
+const SHIM_DIR = path.posix.join(SANDBOX_HOME, ".oe-shims");
+function writeForeignShims(home) {
+  const d = path.join(home, ".oe-shims");
+  fs.mkdirSync(d, { recursive: true });
+  for (const n of FOREIGN_CLIS) fs.writeFileSync(path.join(d, n), `#!/bin/sh\necho "${n}: blocked in the eval sandbox (claude is the only agent CLI)" >&2\nexit 127\n`, { mode: 0o755 });
+}
+
+// Playwright's global install and browser cache, read-only, so UI graders still work in a
+// sandbox whose home is empty.
+export function playwrightBinds() {
+  const entry = playwrightEntry();
+  const keep = [];
+  if (path.isAbsolute(entry)) keep.push(path.dirname(path.dirname(entry)));
+  const browsers = process.env.PLAYWRIGHT_BROWSERS_PATH || path.join(os.homedir(), ".cache", "ms-playwright");
+  if (fs.existsSync(browsers)) keep.push(browsers);
+  return { keep, browsers: fs.existsSync(browsers) ? browsers : null };
 }
 
 // Claude walks up from its working directory reading CLAUDE.md, AGENTS.md and .claude/.
@@ -292,17 +336,26 @@ export function assertCleanAncestors(dir) {
 //   dir          the writable build directory (null for the framework install)
 //   jobHome      host directory bound at SANDBOX_HOME
 //   credentials  the real credentials file, bound read-write over the placeholder in the home
+//   hideRoots    run-level directories (work root, keep root) emptied BEFORE the job's own
+//                directory is bound back, so sibling builds and kept artifacts stay unreadable
 //   maskRoots    directories shown empty (task folders incl. extra roots, results, kept builds)
 //   keepRo       host paths that must stay readable although they sit under /tmp or the real home
-export function bwrapArgv({ dir = null, jobHome, credentials = null, maskRoots = [], keepRo = [], realHome = os.homedir() }) {
+//   keepFiles    [real file, path] pairs bound read-only (the claude binary, node)
+//   reBind       read-only paths bound back after the masks (the one task a grader needs)
+//   blockFiles   files replaced by /dev/null (foreign agent CLIs)
+export function bwrapArgv({ dir = null, jobHome, credentials = null, hideRoots = [], maskRoots = [], keepRo = [], keepFiles = [], reBind = [], blockFiles = [], realHome = os.homedir() }) {
   const a = ["bwrap", "--ro-bind", "/", "/", "--tmpfs", "/tmp"];
   if (realHome && realHome !== "/") a.push("--tmpfs", realHome);
+  for (const h of uniq(hideRoots)) a.push("--tmpfs", h);
   for (const k of uniq(keepRo)) a.push("--ro-bind", k, k);
+  for (const [from, to] of keepFiles) a.push("--ro-bind", from, to);
   if (dir) a.push("--bind", dir, dir);
   a.push("--bind", jobHome, SANDBOX_HOME);
   if (credentials) a.push("--bind", credentials, path.posix.join(SANDBOX_HOME, ".claude", ".credentials.json"));
   a.push("--tmpfs", "/sys/fs/cgroup");
   for (const m of uniq(maskRoots)) a.push("--tmpfs", m);
+  for (const r of uniq(reBind)) a.push("--ro-bind", r, r);
+  for (const f of uniq(blockFiles)) a.push("--ro-bind", "/dev/null", f);
   a.push("--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent", "--");
   return a;
 }
@@ -319,16 +372,26 @@ export function realCredentialsFile() { return process.env.OE_CREDENTIALS || pat
 
 // Build the sandbox for one job. `jobHome` is created here: empty for the solo-style arms,
 // a clone of the prebuilt framework home for the framework arm. Throws when there is no
-// bubblewrap: nothing is scored without a sandbox.
-export function builderWrap(dir, { jobHome = null, framework = null, model = null, extraMaskRoots = [], exposeRoot = false, credentials = realCredentialsFile(), hookMode = null, workRoot = path.dirname(dir) } = {}) {
+// bubblewrap: nothing is scored without a sandbox. One helper serves every role:
+//   build       the agent (credentials bound, claude on PATH)
+//   grade       hidden tests run against builder code: private empty home, no credentials
+//   components  component graders: as grade, with the northstar graders and the one task visible
+export function builderWrap(dir, { jobHome = null, framework = null, model = null, extraMaskRoots = [], exposeRoot = false, credentials = undefined, hookMode = null, workRoot = path.dirname(dir), hideRoots = [], role = "build", task = null, northstar = NORTHSTAR } = {}) {
   if (!hasBwrap()) throw new Error("no builder sandbox: bubblewrap (bwrap) is not available");
-  if (!credentials || !fs.existsSync(credentials)) throw new Error(`no builder credentials file at ${credentials}`);
+  const needsCreds = role === "build";
+  if (needsCreds && credentials === undefined) credentials = realCredentialsFile();
+  if (needsCreds && (!credentials || !fs.existsSync(credentials))) throw new Error(`no builder credentials file at ${credentials}`);
+  if (!needsCreds) credentials = null;
+  if (role === "components") exposeRoot = true;
   const home = jobHome || fs.mkdtempSync(path.join(workRoot, "home-"));
   if (framework) cloneHome(framework.home, home);
   fs.mkdirSync(path.join(home, ".claude"), { recursive: true });
-  const placeholder = path.join(home, ".claude", ".credentials.json");
-  fs.rmSync(placeholder, { force: true });
-  fs.writeFileSync(placeholder, "", { mode: 0o600 });
+  if (needsCreds) {
+    const placeholder = path.join(home, ".claude", ".credentials.json");
+    fs.rmSync(placeholder, { force: true });
+    fs.writeFileSync(placeholder, "", { mode: 0o600 });
+  }
+  writeForeignShims(home);
   if (framework) {
     const bad = verifyInstalledRoot(home, framework.src);
     if (bad.length) throw new Error(`installed root is not its archive: ${bad.slice(0, 3).join("; ")}`);
@@ -336,18 +399,36 @@ export function builderWrap(dir, { jobHome = null, framework = null, model = nul
     framework.slot_pin = policy.slot_pin;
   }
   const realHome = os.homedir();
-  const needsKeep = (p) => isUnder(p, "/tmp") || isUnder(p, realHome);
-  const keepRo = [...claudeDirs(), ...(exposeRoot ? [ROOT] : []), ...(framework ? [framework.src] : [])].filter(needsKeep);
+  const hiddenByDefault = (p) => isUnder(p, "/tmp") || isUnder(p, realHome);
+  const pw = playwrightBinds();
+  const keepFiles = [...(needsCreds ? claudeBinds() : []), ...(hiddenByDefault(process.execPath) ? [[fs.realpathSync(process.execPath), process.execPath]] : [])].filter(([, to]) => hiddenByDefault(to));
+  const extraKeep = [...(role === "components" ? [northstar] : [])];
+  const keepRo = [...(exposeRoot ? [ROOT] : []), ...(framework ? [framework.src] : []), ...pw.keep, ...extraKeep].filter(hiddenByDefault);
   const kept = path.join(os.homedir(), ".svc", "outcome-eval-artifacts");
+  const evalRoots = [path.join(ROOT, "test-framework", "outcome-evals"), ...(framework ? [path.join(framework.src, "test-framework", "outcome-evals")] : []), ...[...taskRoots, ...extraMaskRoots].map((r) => path.dirname(r))];
+  let answers = [...taskRoots, ...extraMaskRoots, ...answerDirs(evalRoots)];
+  const reBind = [];
+  if (role === "components") {
+    // The grader needs its own code and this one task; everything else stays masked.
+    answers = answers.filter((m) => !isUnder(northstar, m) && !isUnder(m, northstar));
+    const t = task ? taskDir(task) : null;
+    if (t && fs.existsSync(t)) reBind.push(t);
+  }
   // A mask under the hidden real home would only recreate directory names there: skip those
   // unless the path was brought back read-only.
-  const maskRoots = [...taskRoots, ...extraMaskRoots, ...answerDirs([path.join(ROOT, "test-framework", "outcome-evals"), ...(framework ? [path.join(framework.src, "test-framework", "outcome-evals")] : []), ...[...taskRoots, ...extraMaskRoots].map((r) => path.dirname(r))]), kept, ...(exposeRoot ? [] : [ROOT])]
-    .filter((m) => fs.existsSync(m) && (!isUnder(m, realHome) || keepRo.some((k) => isUnder(m, k))));
-  const argv = bwrapArgv({ dir, jobHome: home, credentials, maskRoots, keepRo, realHome });
-  const env = { PROBE_DIR: dir, PROBE_HOME: SANDBOX_HOME, HOME: SANDBOX_HOME, npm_config_cache: path.posix.join(SANDBOX_HOME, ".npm") };
+  const visible = (m) => fs.existsSync(m) && (!isUnder(m, realHome) || keepRo.some((k) => isUnder(m, k)));
+  // (never a mask that would swallow the directory this sandbox exists to expose)
+  const maskRoots = [...answers, kept, ...(exposeRoot ? [] : [ROOT])].filter((m) => visible(m) && !isUnder(dir, m));
+  // Run-level directories outside /tmp and the home (a custom --work-root or --keep) would
+  // otherwise show every sibling build and kept artifact.
+  const hide = hideRoots.filter((h) => fs.existsSync(h) && !hiddenByDefault(h));
+  const blockFiles = foreignCliMasks(process.env.PATH, { hidden: hiddenByDefault });
+  const argv = bwrapArgv({ dir, jobHome: home, credentials, hideRoots: hide, maskRoots, keepRo, keepFiles, reBind, blockFiles, realHome });
+  const env = { PROBE_DIR: dir, PROBE_HOME: SANDBOX_HOME, HOME: SANDBOX_HOME, npm_config_cache: path.posix.join(SANDBOX_HOME, ".npm"), PATH: `${SHIM_DIR}${path.delimiter}${process.env.PATH || ""}` };
+  if (pw.browsers) env.PLAYWRIGHT_BROWSERS_PATH = pw.browsers;
   if (model) { env.CLAUDE_CODE_SUBAGENT_MODEL = model; env.ANTHROPIC_SMALL_FAST_MODEL = model; }
   if (framework) { env.SVC_HOOK_MODE = hookMode || "advisory"; if (framework.checkpoint_mode === "eval-profile") env.SVC_DELIVERY_PROFILE = "eval"; }
-  return { name: "bwrap", argv, env, job_home: home, ...(framework ? { framework_home: home, slot_pin: framework.slot_pin } : {}) };
+  return { name: "bwrap", argv, env, job_home: home, role, foreign_cli: "blocked", ...(framework ? { framework_home: home, slot_pin: framework.slot_pin } : {}) };
 }
 
 // Where an eval tree keeps its answers: the tasks (graders, references), recorded results and
@@ -439,7 +520,7 @@ export function buildFrameworkHome(sha, { repo = ROOT, cacheRoot = path.join(os.
     fs.rmSync(tarFile, { force: true });
     if (ex.status !== 0) throw new Error(`extracting the archive failed: ${(ex.stderr || "").slice(-200)}`);
     const realSrc = fs.realpathSync(src);
-    const keepRo = [realSrc, ...claudeDirs()].filter((p) => isUnder(p, "/tmp") || isUnder(p, os.homedir()));
+    const keepRo = [realSrc].filter((p) => isUnder(p, "/tmp") || isUnder(p, os.homedir()));
     const argv = bwrapArgv({ jobHome: home, keepRo });
     const env = { ...builderEnvBase(), HOME: SANDBOX_HOME, npm_config_cache: path.posix.join(SANDBOX_HOME, ".npm"), PROBE_HOME: SANDBOX_HOME };
     const r = spawnSync(argv[0], [...argv.slice(1), path.join(realSrc, "setup"), "--host", "claude"], { env, encoding: "utf8", timeout: 600000, cwd: realSrc });
@@ -471,17 +552,22 @@ export function readFailOpen(dir, caps) {
 
 // One run, and a second only when the first failed open at least once. The second result is
 // kept (flagged); a repeat marks the rules as not loaded. Spend is the sum of all attempts.
-export async function withFailOpenRerun(attempt) {
+export async function withFailOpenRerun(attempt, { model = null } = {}) {
   const first = await attempt(1);
   if (!(typeof first.fail_open === "number" && first.fail_open > 0)) return first;
   const second = await attempt(2);
   const sum = (k) => +((first[k] || 0) + (second[k] || 0)).toFixed(6);
   const merged = { ...second, fail_open_rerun: true, first_attempt_fail_open: first.fail_open, attempts: 2, cost_usd: sum("cost_usd") };
-  for (const k of ["wall_ms", "turns", "duration_ms"]) if (first[k] != null || second[k] != null) merged[k] = (first[k] || 0) + (second[k] || 0);
+  for (const k of ["wall_ms", "turns", "duration_ms", "nested_cost_usd"]) if (first[k] != null || second[k] != null) merged[k] = (first[k] || 0) + (second[k] || 0);
   if (first.model_usage || second.model_usage) merged.model_usage = mergeModelUsage(first.model_usage, second.model_usage);
   if (first.judge_cost_usd != null || second.judge_cost_usd != null) merged.judge_cost_usd = sum("judge_cost_usd");
   if (first.artifact) merged.first_attempt_artifact = first.artifact;
   if (typeof second.fail_open === "number" && second.fail_open > 0) merged.rules_not_loaded = true;
+  // Disqualifying errors are not forgiven by a clean second attempt: the combined usage is
+  // judged, and an off-model rejection of the first attempt stays.
+  const off = model ? offModelWork(merged.model_usage, model) : null;
+  if (off) merged.error = `off-model work: ${off}`;
+  else if (!merged.error && /^off-model work/.test(first.error || "")) merged.error = first.error;
   return merged;
 }
 
@@ -537,6 +623,59 @@ export function offModelWork(usage, armModel, { minTokens = 1000, minShare = 0.0
   return null;
 }
 
+// ---------------------------------------------------------------------------------------
+// Nested sessions. The outer CLI envelope covers the outer session and its own subagents
+// (their transcripts carry the outer session id). A Bash-launched `claude -p` is a separate
+// session with its own id, and its spend never reaches the envelope. The job home is private,
+// so every session's transcript lands under <home>/.claude/projects/**.jsonl; sessions other
+// than the known outer ones are summed here and priced from the repo's model table.
+// ---------------------------------------------------------------------------------------
+const MODEL_INTEL = path.join(ROOT, "references", "model-intel", "models.json");
+// USD per token for one model id: output price from the table; input is a fifth of it, a cache
+// read a tenth of input, a cache write 1.25x input (the first-party price ratios). A model the
+// table does not know is priced at the dearest known output rate and flagged.
+export function modelRates(id, table = JSON.parse(fs.readFileSync(MODEL_INTEL, "utf8")).models) {
+  const entries = Object.entries(table);
+  const hit = entries.find(([alias, v]) => v.id === id) || entries.find(([alias]) => String(id).toLowerCase().includes(alias));
+  const outPerM = hit ? hit[1].price_out : Math.max(...entries.map(([, v]) => v.price_out));
+  const out = outPerM / 1e6, input = out / 5;
+  return { input, output: out, cacheRead: input * 0.1, cacheWrite: input * 1.25, known: Boolean(hit) };
+}
+export function priceUsage(id, u, table) {
+  const r = modelRates(id, table);
+  return { usd: (u.inputTokens || 0) * r.input + (u.outputTokens || 0) * r.output + (u.cacheReadInputTokens || 0) * r.cacheRead + (u.cacheCreationInputTokens || 0) * r.cacheWrite, known: r.known };
+}
+
+// Sum assistant usage over every session transcript in `home` whose session id is not in
+// `knownIds`. A message is written once per content block, so records are de-duplicated by
+// message id (the last one, which carries the final output count, wins).
+export function nestedUsage(home, knownIds = new Set(), table) {
+  const files = [];
+  const walk = (d) => { for (const e of fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }) : []) { const f = path.join(d, e.name); if (e.isDirectory()) walk(f); else if (e.name.endsWith(".jsonl")) files.push(f); } };
+  walk(path.join(home, ".claude", "projects"));
+  const msgs = new Map(), sessions = new Set();
+  for (const f of files) for (const line of fs.readFileSync(f, "utf8").split("\n")) {
+    if (!line.includes('"usage"')) continue;
+    let j; try { j = JSON.parse(line); } catch { continue; }
+    const m = j.message;
+    if (j.type !== "assistant" || !m?.usage || !m.model || m.model === "<synthetic>") continue;
+    if (knownIds.has(j.sessionId)) continue;
+    sessions.add(j.sessionId);
+    const key = `${j.sessionId}:${m.id || j.requestId || j.uuid}`;
+    const prev = msgs.get(key);
+    if (!prev || (m.usage.output_tokens || 0) >= (prev.usage.output_tokens || 0)) msgs.set(key, { model: m.model, usage: m.usage });
+  }
+  const model_usage = {};
+  for (const { model, usage } of msgs.values()) {
+    const t = (model_usage[model] ??= { inputTokens: 0, outputTokens: 0, cacheReadInputTokens: 0, cacheCreationInputTokens: 0, costUSD: 0 });
+    t.inputTokens += usage.input_tokens || 0; t.outputTokens += usage.output_tokens || 0;
+    t.cacheReadInputTokens += usage.cache_read_input_tokens || 0; t.cacheCreationInputTokens += usage.cache_creation_input_tokens || 0;
+  }
+  let usd = 0; const unpriced = [];
+  for (const [id, u] of Object.entries(model_usage)) { const pr = priceUsage(id, u, table); u.costUSD = +pr.usd.toFixed(6); usd += pr.usd; if (!pr.known) unpriced.push(id); }
+  return { model_usage, usd: +usd.toFixed(6), sessions: sessions.size, unpriced };
+}
+
 // "timeout" when the safety timeout killed the run, "max_turns" when it ended at its turn
 // limit, "budget" when the CLI stopped it on its spending cap (all three score 0 downstream).
 export function stoppedBy({ timedOut = false, stop = null } = {}) {
@@ -563,9 +702,10 @@ export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit
     child.on("close", (code) => {
       clearTimeout(timer);
       let j = null; try { j = JSON.parse(out); } catch {}
-      if (timedOut) return resolve({ ok: false, error: `timeout after ${Math.round(timeoutMs / 1000)}s`, stopped_by: "timeout", model_usage: j?.modelUsage || {} });
+      const acct = j ? { cost_usd: j.total_cost_usd ?? null, turns: j.num_turns ?? null, duration_ms: j.duration_ms ?? null, model_id: Object.keys(j.modelUsage || {})[0] || null, model_usage: j.modelUsage || {}, session_id: j.session_id ?? null } : {};
+      if (timedOut) return resolve({ ...acct, ok: false, error: `timeout after ${Math.round(timeoutMs / 1000)}s`, stopped_by: "timeout", model_usage: acct.model_usage || {} });
       const stop = j ? j.subtype || j.terminal_reason || null : null;
-      resolve(j ? { ok: !j.is_error, cost_usd: j.total_cost_usd ?? null, turns: j.num_turns ?? null, duration_ms: j.duration_ms ?? null, model_id: Object.keys(j.modelUsage || {})[0] || null, model_usage: j.modelUsage || {}, stop, stopped_by: stoppedBy({ stop }), text: typeof j.result === "string" ? j.result : "" }
+      resolve(j ? { ok: !j.is_error, ...acct, stop, stopped_by: stoppedBy({ stop }), text: typeof j.result === "string" ? j.result : "" }
         : { ok: false, error: `exit ${code}; no JSON result` });
     });
   });
@@ -573,10 +713,10 @@ export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit
 
 // Grade a build, then ALWAYS delete the grader copied into it, also when the judge throws.
 // A thrown error carries the fields graded so far on `partial`.
-export async function gradeAndCleanup(dir, task, { judgeFn = null, componentsFn = null } = {}) {
+export async function gradeAndCleanup(dir, task, { judgeFn = null, componentsFn = null, sandbox = null } = {}) {
   const fields = {};
   try {
-    Object.assign(fields, grade(dir, task));
+    Object.assign(fields, withGradeSandbox(dir, sandbox, (wrap) => grade(dir, task, { wrap })));
     fs.rmSync(path.join(dir, "__hidden.test.mjs"), { force: true });
     if (componentsFn) Object.assign(fields, await componentsFn());
     if (judgeFn) Object.assign(fields, await judgeFn());
@@ -592,9 +732,20 @@ export async function gradeAndCleanup(dir, task, { judgeFn = null, componentsFn 
 // Component graders (E, S, P, K), written elsewhere: northstar/graders/index.mjs exports
 // gradeComponents(dir, task, { components }) and northstar/bar.json lists matrix[task].
 // Both must exist, otherwise nothing is graded. A grader that throws scores 0.
-export async function gradeComponentsFor(dir, task, { northstar = NORTHSTAR } = {}) {
+export async function gradeComponentsFor(dir, task, { northstar = NORTHSTAR, sandbox = null } = {}) {
   const index = path.join(northstar, "graders", "index.mjs"), barFile = path.join(northstar, "bar.json");
   if (!fs.existsSync(index) || !fs.existsSync(barFile)) return {};
+  if (sandbox) {
+    // The graders run builder code, so the whole grading step runs in a child inside the
+    // sandbox (role components: northstar and this one task visible, nothing else of the eval).
+    const w = builderWrap(dir, { ...sandbox, role: "components", task, northstar });
+    try {
+      const r = spawnSync(w.argv[0], [...w.argv.slice(1), process.execPath, fileURLToPath(import.meta.url), "component-grade", dir, task, "--northstar", northstar], { cwd: dir, encoding: "utf8", timeout: 900000, env: { ...builderEnvBase(), NODE_TEST_CONTEXT: undefined, OE_PLAYWRIGHT: playwrightEntry(), ...w.env } });
+      const line = String(r.stdout || "").split("\n").reverse().find((l) => l.startsWith("OE_COMPONENTS "));
+      if (line) return JSON.parse(line.slice("OE_COMPONENTS ".length));
+      return failComponents(dir, task, northstar, `component grading child failed: ${String(r.stderr || r.error || "").slice(-200)}`);
+    } finally { fs.rmSync(w.job_home, { recursive: true, force: true }); }
+  }
   let cell;
   try { cell = JSON.parse(fs.readFileSync(barFile, "utf8")).matrix?.[task]; } catch { return {}; }
   const components = Array.isArray(cell) ? cell : cell && typeof cell === "object" ? Object.keys(cell).filter((k) => cell[k]) : [];
@@ -613,12 +764,28 @@ export async function gradeComponentsFor(dir, task, { northstar = NORTHSTAR } = 
   }
   return { components: scores, ...(Object.keys(errors).length ? { component_errors: errors } : {}) };
 }
+// A grading child that could not report scores every applicable component 0 with the reason.
+function failComponents(dir, task, northstar, reason) {
+  let cell; try { cell = JSON.parse(fs.readFileSync(path.join(northstar, "bar.json"), "utf8")).matrix?.[task]; } catch { return {}; }
+  const components = Array.isArray(cell) ? cell : cell && typeof cell === "object" ? Object.keys(cell).filter((k) => cell[k]) : [];
+  return components.length ? { components: Object.fromEntries(components.map((c) => [c, 0])), component_errors: Object.fromEntries(components.map((c) => [c, reason])) } : {};
+}
 
 // A wall-time forecast printed once the first wave of jobs has settled.
 export function forecastWall({ firstWaveMs, remaining, parallel }) {
   const mean = firstWaveMs.reduce((a, b) => a + b, 0) / Math.max(1, firstWaveMs.length);
   const waves = Math.ceil(remaining / Math.max(1, parallel));
   return { mean_job_ms: Math.round(mean), waves_left: waves, forecast_ms: Math.round(mean * waves) };
+}
+// The result files among a subcommand's arguments: options and the values they consume are not files.
+const VALUE_OPTIONS = new Set(["--candidate", "--baseline", "--tasks-root", "--out", "--keep", "--work-root", "--model", "--judge", "--parallel", "--reps", "--arms", "--tasks", "--max-usd", "--effort", "--probes", "--framework-sha", "--framework-repo", "--framework-cache", "--northstar"]);
+export function positionalArgs(args) {
+  const out = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith("--")) { if (VALUE_OPTIONS.has(args[i]) && !args[i].includes("=")) i++; continue; }
+    out.push(args[i]);
+  }
+  return out;
 }
 export function parseParallel(argv) {
   const i = argv.indexOf("--parallel");
@@ -784,16 +951,22 @@ async function main(argv) {
     process.stdout.write(problems.length ? `outcome-eval check: ${problems.length} problem(s)\n` : `outcome-eval check: ${listTasks().length} graders sound\n`);
     return problems.length ? 1 : 0;
   }
+  if (argv[0] === "component-grade") {
+    // Internal: runs inside the grading sandbox (see gradeComponentsFor).
+    const [dir, task] = positionalArgs(argv.slice(1));
+    process.stdout.write(`OE_COMPONENTS ${JSON.stringify(await gradeComponentsFor(dir, task, { northstar: opt("--northstar", NORTHSTAR) }))}\n`);
+    return 0;
+  }
   if (argv[0] === "regrade") {
     // Re-score kept artifacts with the current graders; agent and judge results are unchanged.
-    const file = argv[1];
+    const file = positionalArgs(argv.slice(1))[0];
     const data = JSON.parse(fs.readFileSync(file, "utf8"));
     for (const r of data.task_roots || []) if (fs.existsSync(r)) addTaskRoot(r);
     for (const row of data.rows) {
       if (!row.artifact || !fs.existsSync(row.artifact)) continue;
       const before = `${row.hidden_pass}/${row.hidden_total}`;
       delete row.hidden_failures;
-      try { Object.assign(row, grade(row.artifact, row.task), { regraded_at: new Date().toISOString() }); }
+      try { Object.assign(row, withGradeSandbox(row.artifact, { workRoot: os.tmpdir() }, (wrap) => grade(row.artifact, row.task, { wrap })), { regraded_at: new Date().toISOString() }); }
       finally { fs.rmSync(path.join(row.artifact, "__hidden.test.mjs"), { force: true }); }
       process.stderr.write(`${row.task}/${row.arm}#${row.rep}: ${before} -> ${row.hidden_pass}/${row.hidden_total}\n`);
     }
@@ -804,7 +977,7 @@ async function main(argv) {
   if (argv[0] === "promote") {
     // node scripts/outcome-eval.mjs promote --candidate production --baseline plain <results.json...>
     const rest = argv.slice(1);
-    const files = rest.filter((x, i) => !x.startsWith("--") && !["--candidate", "--baseline"].includes(rest[i - 1]));
+    const files = positionalArgs(rest);
     const rows = files.flatMap((f) => JSON.parse(fs.readFileSync(f, "utf8")).rows);
     const out = promotionDecision(rows, opt("--candidate"), opt("--baseline", "plain"));
     process.stdout.write(JSON.stringify(out, null, 2) + "\n");
@@ -812,7 +985,7 @@ async function main(argv) {
   }
   if (argv[0] === "summarize") {
     // Recorded evidence, re-derived: per-arm solve rate and cost relative to plain.
-    const rows = argv.slice(1).filter((a) => !a.startsWith("--")).flatMap((f) => JSON.parse(fs.readFileSync(f, "utf8")).rows);
+    const rows = positionalArgs(argv.slice(1)).flatMap((f) => JSON.parse(fs.readFileSync(f, "utf8")).rows);
     const by = Object.fromEntries(summarize(rows).map((s) => [s.arm, s]));
     const out = { runs: rows.length, errors: rows.filter((r) => r.error).length };
     for (const [arm, s] of Object.entries(by)) {
@@ -876,11 +1049,11 @@ async function main(argv) {
   const workRoot = fs.mkdtempSync(path.join(workBase, "oe-run-"));
   try {
     try { assertCleanAncestors(workRoot); } catch (e) { process.stderr.write(`${e.message}\n`); return 2; }
-    return await runAll({ argv, opt, parallel, workRoot, keepRoot, tasks, model, reps, judgeModel, arms, probeMutants, effort });
+    return await runAll({ argv, opt, parallel, workRoot, workBase, keepRoot, tasks, model, reps, judgeModel, arms, probeMutants, effort });
   } finally { fs.rmSync(workRoot, { recursive: true, force: true }); }
 }
 
-async function runAll({ argv, opt, parallel, workRoot, keepRoot, tasks, model, reps, judgeModel, arms, probeMutants, effort }) {
+async function runAll({ argv, opt, parallel, workRoot, workBase, keepRoot, tasks, model, reps, judgeModel, arms, probeMutants, effort }) {
   let framework = null;
   if (arms.includes("framework")) {
     const sha = opt("--framework-sha", null);
@@ -895,7 +1068,7 @@ async function runAll({ argv, opt, parallel, workRoot, keepRoot, tasks, model, r
   if (maxUsd != null && !(maxUsd > 0)) { process.stderr.write("--max-usd must be a positive number of dollars\n"); return 2; }
   const budget = new Budget(maxUsd, jobs.length);
   process.stderr.write(`running ${jobs.length} jobs on ${model}, ${parallel} in parallel${maxUsd != null ? ` within $${maxUsd}` : ""}\n`);
-  const ctx = { model, effort, judgeModel, workRoot, keepRoot, framework };
+  const ctx = { model, effort, judgeModel, workRoot, keepRoot, framework, hide: [workBase, keepRoot] };
   const settled = [];
   const rows = await pool(jobs, parallel, async (job) => {
     const t0 = Date.now();
@@ -931,7 +1104,7 @@ async function runJob(job, budget, ctx) {
     const r = await attemptJob(job, claim, ctx, n, prior);
     prior += (r.cost_usd || 0) + (r.judge_cost_usd || 0);
     return r;
-  });
+  }, { model: ctx.model });
   budget.settle(claim, (row.cost_usd || 0) + (row.judge_cost_usd || 0));
   process.stderr.write(`${job.task}/${job.arm}#${job.rep}: ${row.error ? "ERROR " + row.error : `${row.hidden_pass}/${row.hidden_total}${row.solved ? " solved" : ""} $${row.cost_usd}`}${row.fail_open_rerun ? " (re-run after fail-open)" : ""}\n`);
   return row;
@@ -939,6 +1112,7 @@ async function runJob(job, budget, ctx) {
 
 async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
   const { model, effort, judgeModel, workRoot, keepRoot, framework } = ctx;
+  const hideRoots = ctx.hide || [];
   const fw = job.arm === "framework" ? framework : null;
   const dir = prepare(job.task, workRoot);
   const cfg = taskConfig(job.task);
@@ -948,13 +1122,14 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
   let wrap;
   try {
     assertCleanAncestors(dir);
-    wrap = builderWrap(dir, { framework: fw, model, workRoot, exposeRoot: job.arm === "bounded" });
+    wrap = builderWrap(dir, { framework: fw, model, workRoot, hideRoots, exposeRoot: job.arm === "bounded" });
     jobHome = wrap.job_home;
   } catch (e) { cleanup(); return { ...job, builder_sandbox: null, error: e.message }; }
   // Multi-step scenarios run each step as a fresh session in the same directory: only
   // what an earlier session left on disk carries over, as between real sessions.
   let agent = { cost_usd: 0, turns: 0, duration_ms: 0, steps: 0 };
   let usage = {};
+  const outerIds = new Set();
   const replies = [];
   // Hash the prompts actually sent, not the files as they are when the row is written.
   const prompts = armPrompts(job.task, job.arm, { checkpointMode: fw?.checkpoint_mode });
@@ -966,12 +1141,21 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
     const step = await runAgent(dir, prompt, model, cfg.timeout_ms * lim.time, isPillarArm(job.arm) ? cfg.tools : armTools(cfg.tools, job.arm), cfg.max_turns * lim.turns, effort, stepCap != null ? ["--max-budget-usd", String(stepCap)] : [], wrap);
     replies.push(String(step.text || "").slice(-400));
     usage = mergeModelUsage(usage, step.model_usage);
-    if (step.error) { agent = { ...agent, error: `step ${agent.steps + 1}: ${step.error}`, stopped_by: step.stopped_by ?? agent.stopped_by ?? null }; break; }
-    agent = { ...step, cost_usd: (agent.cost_usd || 0) + (step.cost_usd || 0), turns: (agent.turns || 0) + (step.turns || 0), duration_ms: (agent.duration_ms || 0) + (step.duration_ms || 0), steps: agent.steps + 1, stopped_by: agent.stopped_by ?? step.stopped_by ?? null };
+    if (step.session_id) outerIds.add(step.session_id);
+    // Whatever accounting the step reported counts, also when it was killed.
+    const acct = { cost_usd: (agent.cost_usd || 0) + (step.cost_usd || 0), turns: (agent.turns || 0) + (step.turns || 0), duration_ms: (agent.duration_ms || 0) + (step.duration_ms || 0) };
+    if (step.error) { agent = { ...agent, ...acct, error: `step ${agent.steps + 1}: ${step.error}`, stopped_by: step.stopped_by ?? agent.stopped_by ?? null }; break; }
+    agent = { ...step, ...acct, steps: agent.steps + 1, stopped_by: agent.stopped_by ?? step.stopped_by ?? null };
   }
-  delete agent.model_usage;
+  delete agent.model_usage; delete agent.session_id;
+  // Sessions the outer envelope does not cover (Bash-launched `claude -p`, a killed session):
+  // read from the job home's transcripts, priced from the repo table, added to the cost.
+  const nested = nestedUsage(jobHome, outerIds);
+  usage = mergeModelUsage(usage, nested.model_usage);
+  agent.outer_cost_usd = agent.cost_usd;
+  agent.cost_usd = +((agent.cost_usd || 0) + nested.usd).toFixed(6);
   // The end of each step's final reply, so a run that wrote nothing still says why.
-  const row = { ...job, ...(claim.usd != null ? { budget_usd: +claim.usd.toFixed(2) } : {}), builder_sandbox: wrap?.name ?? null, model, ...(effort ? { effort } : {}), pillar: cfg.pillar, prompt_sha: sha, started_at: new Date(t).toISOString(), wall_ms: Date.now() - t, ...agent, stopped_by: agent.stopped_by ?? null, model_usage: usage, step_replies: replies };
+  const row = { ...job, ...(claim.usd != null ? { budget_usd: +claim.usd.toFixed(2) } : {}), builder_sandbox: wrap?.name ?? null, model, ...(effort ? { effort } : {}), pillar: cfg.pillar, prompt_sha: sha, started_at: new Date(t).toISOString(), wall_ms: Date.now() - t, ...agent, stopped_by: agent.stopped_by ?? null, model_usage: usage, nested_cost_usd: nested.usd, nested_sessions: nested.sessions, ...(nested.unpriced.length ? { nested_unpriced_models: nested.unpriced } : {}), foreign_cli: wrap.foreign_cli ?? null, step_replies: replies };
   if (fw) {
     Object.assign(row, { framework_sha: fw.sha, checkpoint_mode: fw.checkpoint_mode, slot_pin: wrap.slot_pin, ...readFailOpen(dir, fw), ...countReceipts(dir), ...chainFacts(dir, fw, fw.src, jobHome) });
   }
@@ -982,10 +1166,12 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
   // count, not an error to hide. Only a crash, a timeout or off-model work is an error.
   if (!row.error) {
     const maxUsd = claim.usd != null ? Math.max(0.05, +(claim.usd - spentBefore - (agent.cost_usd || 0)).toFixed(2)) : null;
+    const sandbox = { workRoot, hideRoots };
     try {
       Object.assign(row, await gradeAndCleanup(dir, job.task, {
-        componentsFn: () => gradeComponentsFor(dir, job.task),
-        judgeFn: judgeModel ? () => judgeInSandbox(dir, job.task, judgeModel, maxUsd, workRoot) : null,
+        sandbox,
+        componentsFn: () => gradeComponentsFor(dir, job.task, { sandbox }),
+        judgeFn: judgeModel ? () => judgeInSandbox(dir, job.task, judgeModel, maxUsd, workRoot, hideRoots) : null,
       }));
     } catch (e) { Object.assign(row, e.partial || {}); row.error = `grading failed: ${e.message}`; }
   }
@@ -1000,8 +1186,8 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
 }
 
 // The judge reads the build in a sandbox of its own: a private empty home, no skills.
-async function judgeInSandbox(dir, task, model, maxUsd, workRoot) {
-  const w = builderWrap(dir, { model, workRoot });
+async function judgeInSandbox(dir, task, model, maxUsd, workRoot, hideRoots = []) {
+  const w = builderWrap(dir, { model, workRoot, hideRoots });
   try { return await judge(dir, task, model, maxUsd, w); }
   finally { fs.rmSync(w.job_home, { recursive: true, force: true }); }
 }

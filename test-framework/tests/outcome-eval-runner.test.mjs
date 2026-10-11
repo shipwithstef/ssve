@@ -259,7 +259,14 @@ case "$FAKE_MODE" in
   *) USAGE='{"claude-haiku-5-5":{"inputTokens":10,"outputTokens":2000,"costUSD":0.01}}' ;;
 esac
 if [ "$FAKE_MODE" = "maxturns" ]; then SUB=error_max_turns; else SUB=success; fi
-printf '{"type":"result","subtype":"%s","is_error":false,"result":"done","total_cost_usd":0.02,"num_turns":4,"duration_ms":5,"modelUsage":%s}' "$SUB" "$USAGE"
+if [ -n "$FAKE_NESTED" ]; then
+  mkdir -p "$HOME/.claude/projects/p"
+  echo '{"type":"assistant","sessionId":"outer-1","message":{"id":"m0","model":"claude-haiku-5-5","usage":{"input_tokens":5,"output_tokens":7}}}' > "$HOME/.claude/projects/p/outer-1.jsonl"
+  if [ "$FAKE_NESTED" = opus ]; then NM=claude-opus-5-5; NO=5000; else NM=claude-haiku-5-5; NO=300; fi
+  L='{"type":"assistant","sessionId":"nested-1","message":{"id":"n1","model":"'$NM'","usage":{"input_tokens":100,"output_tokens":'$NO',"cache_read_input_tokens":1000,"cache_creation_input_tokens":200}}}'
+  echo "$L" > "$HOME/.claude/projects/p/nested-1.jsonl"; echo "$L" >> "$HOME/.claude/projects/p/nested-1.jsonl"
+fi
+printf '{"type":"result","subtype":"%s","session_id":"outer-1","is_error":false,"result":"done","total_cost_usd":0.02,"num_turns":4,"duration_ms":5,"modelUsage":%s}' "$SUB" "$USAGE"
 `, { mode: 0o755 });
   return bin;
 }
@@ -294,6 +301,9 @@ test("solo arm end to end (fake claude): private home, no SVC env, model usage r
   assert.equal(probe.fast, "haiku");
   assert.equal(probe.realclaude, "0", "the real ~/.claude is invisible");
   assert.equal(probe.skills, "", "solo has no skills");
+  assert.equal(row.foreign_cli, "blocked");
+  assert.equal(row.nested_cost_usd, 0);
+  assert.equal(row.cost_usd, 0.02);
   assert.equal(fs.existsSync(path.join(row.artifact, "__hidden.test.mjs")), false);
 });
 
@@ -460,4 +470,181 @@ test("--tasks-root works before every subcommand: regrade finds external tasks, 
   assert.equal(fs.existsSync(path.join(row.artifact, "__hidden.test.mjs")), false);
   const missing = spawnSync(process.execPath, [script, "check", "--tasks-root", path.join(base, "nope")], { encoding: "utf8" });
   assert.equal(missing.status, 2);
+});
+
+// ---- round 2 -------------------------------------------------------------------------
+
+function hiddenTaskRoot(id, testBody) {
+  const r = tmp("oe-gtroot-");
+  fs.mkdirSync(path.join(r, id));
+  fs.writeFileSync(path.join(r, id, "spec.md"), "x\n");
+  fs.writeFileSync(path.join(r, id, "hidden.test.mjs"), testBody);
+  return r;
+}
+
+test("hidden tests run inside the sandbox: private home, no real home, no escape, task roots empty", { skip: !bwrapOk }, async () => {
+  const outside = tmp("oe-outside-");
+  const tr = hiddenTaskRoot("jail", `import test from "node:test"; import assert from "node:assert/strict"; import fs from "node:fs"; import path from "node:path";
+test("jailed", () => {
+  assert.equal(process.env.HOME, "/tmp/oe-home");
+  assert.equal(fs.existsSync(path.join(process.env.OE_REAL_HOME, ".claude")), false, "real home is hidden");
+  assert.equal(fs.existsSync(process.env.OE_OUTSIDE), false, "host /tmp is not visible");
+  assert.throws(() => fs.writeFileSync(path.join(process.env.OE_OUTSIDE, "pwn"), "x"));
+  assert.equal(fs.existsSync(process.env.OE_TASKS), false, "the hidden task dir is not readable");
+  fs.writeFileSync("built-ok", "x");
+});
+`);
+  const dir = tmp("oe-jail-");
+  fs.writeFileSync(path.join(dir, "package.json"), '{"type":"module"}');
+  Object.assign(process.env, { OE_REAL_HOME: os.homedir(), OE_OUTSIDE: outside, OE_TASKS: path.join(tr, "jail", "hidden.test.mjs") });
+  try {
+    oe.addTaskRoot(tr);
+    const bare = oe.grade(dir, "jail");
+    assert.equal(bare.solved, false, "unsandboxed, the same test sees the host (control)");
+    fs.rmSync(path.join(dir, "__hidden.test.mjs"), { force: true });
+    const r = await oe.gradeAndCleanup(dir, "jail", { sandbox: { workRoot: tmp("oe-jw-") } });
+    assert.equal(r.solved, true, JSON.stringify(r.hidden_failures));
+    assert.ok(fs.existsSync(path.join(dir, "built-ok")), "the build dir is writable");
+    assert.equal(fs.existsSync(path.join(dir, "__hidden.test.mjs")), false);
+    assert.deepEqual(fs.readdirSync(outside), []);
+  } finally { oe.resetTaskRoots(); for (const k of ["OE_REAL_HOME", "OE_OUTSIDE", "OE_TASKS"]) delete process.env[k]; }
+});
+
+test("component graders run inside the sandbox too", { skip: !bwrapOk }, async () => {
+  const outside = tmp("oe-outside-");
+  const ns = tmp("oe-ns-");
+  fs.mkdirSync(path.join(ns, "graders"));
+  fs.writeFileSync(path.join(ns, "bar.json"), JSON.stringify({ matrix: { t: ["E", "S"] } }));
+  fs.writeFileSync(path.join(ns, "graders", "index.mjs"), `import fs from "node:fs"; import path from "node:path";
+export async function gradeComponents() {
+  let wrote = false; try { fs.writeFileSync(path.join(process.env.OE_OUTSIDE, "pwn"), "x"); wrote = true; } catch {}
+  return { E: fs.existsSync(path.join(process.env.OE_REAL_HOME, ".claude")) ? 0 : 1, S: wrote ? 0 : 1 };
+}
+`);
+  const dir = tmp("oe-comp-");
+  Object.assign(process.env, { OE_REAL_HOME: os.homedir(), OE_OUTSIDE: outside });
+  try {
+    const r = await oe.gradeComponentsFor(dir, "t", { northstar: ns, sandbox: { workRoot: tmp("oe-cw-") } });
+    assert.deepEqual(r.components, { E: 1, S: 1 }, JSON.stringify(r));
+    assert.deepEqual(fs.readdirSync(outside), []);
+  } finally { for (const k of ["OE_REAL_HOME", "OE_OUTSIDE"]) delete process.env[k]; }
+});
+
+test("run-level directories outside /tmp and the home are hidden; only the job's own dir is bound", { skip: !bwrapOk }, () => {
+  let base;
+  try { base = fs.mkdtempSync("/var/tmp/oe-hide-"); } catch { return; }
+  try {
+    fs.mkdirSync(path.join(base, "kept")); fs.writeFileSync(path.join(base, "kept", "artifact.txt"), "SECRET");
+    fs.mkdirSync(path.join(base, "run", "other-job"), { recursive: true }); fs.writeFileSync(path.join(base, "run", "other-job", "f.txt"), "SIBLING");
+    const dir = path.join(base, "run", "job"); fs.mkdirSync(dir);
+    const w = oe.builderWrap(dir, { credentials: creds(), workRoot: tmp("oe-hw-"), hideRoots: [base] });
+    const iHide = w.argv.findIndex((a, i) => a === "--tmpfs" && w.argv[i + 1] === base), iBind = w.argv.findIndex((a, i) => a === "--bind" && w.argv[i + 1] === dir);
+    assert.ok(iHide > 0 && iBind > iHide, "the run root is emptied before the job dir is bound back");
+    const r = spawnSync(w.argv[0], [...w.argv.slice(1), "sh", "-c", 'cat "$B/kept/artifact.txt" "$B/run/other-job/f.txt" 2>/dev/null; touch "$D/mine" && echo job-ok'], { env: { ...process.env, ...w.env, B: base, D: dir }, encoding: "utf8" });
+    assert.ok(!/SECRET|SIBLING/.test(r.stdout), r.stdout);
+    assert.match(r.stdout, /job-ok/);
+  } finally { fs.rmSync(base, { recursive: true, force: true }); }
+});
+
+test("foreign agent CLIs are unavailable inside the sandbox; claude still runs", { skip: !bwrapOk }, () => {
+  const bin = tmp("oe-fbin-");
+  for (const n of oe.FOREIGN_CLIS) fs.writeFileSync(path.join(bin, n), "#!/bin/sh\necho REAL\n", { mode: 0o755 });
+  assert.deepEqual(oe.foreignCliMasks(bin).map((f) => path.basename(f)).sort(), [...oe.FOREIGN_CLIS].sort());
+  assert.deepEqual(oe.foreignCliMasks(bin, { hidden: () => true }), []);
+  const dir = tmp("oe-fc-");
+  const saved = process.env.PATH;
+  try {
+    process.env.PATH = `${bin}${path.delimiter}${saved}`;
+    const w = oe.builderWrap(dir, { credentials: creds(), workRoot: tmp("oe-fw-") });
+    assert.equal(w.foreign_cli, "blocked");
+    for (const n of oe.FOREIGN_CLIS) {
+      const r = spawnSync(w.argv[0], [...w.argv.slice(1), "sh", "-c", `${n} --version`], { env: { ...process.env, ...w.env }, encoding: "utf8" });
+      assert.notEqual(r.status, 0, n);
+      assert.ok(!r.stdout.includes("REAL"), n);
+      assert.match(r.stderr, /blocked/, n);
+    }
+  } finally { process.env.PATH = saved; }
+  const claude = spawnSync("sh", ["-c", "command -v claude"], { encoding: "utf8" }).stdout.trim();
+  if (claude && !claude.startsWith(os.tmpdir())) {
+    const w = oe.builderWrap(dir, { credentials: creds(), workRoot: tmp("oe-fw-") });
+    const r = spawnSync(w.argv[0], [...w.argv.slice(1), "claude", "--version"], { env: { ...process.env, ...w.env }, encoding: "utf8" });
+    assert.match(r.stdout, /Claude Code/, "the real claude binary starts in the sandbox");
+  }
+});
+
+test("a fail-open rerun keeps the first attempt's off-model rejection and judges the combined usage", async () => {
+  const run = (a, b, model = "haiku") => oe.withFailOpenRerun(async (n) => ({ ...(n === 1 ? a : b) }), { model });
+  let r = await run({ fail_open: 1, error: "off-model work: claude-opus-5-5", model_usage: { "claude-haiku-5-5": { outputTokens: 100 }, "claude-opus-5-5": { outputTokens: 4000 } } }, { fail_open: 0, model_usage: { "claude-haiku-5-5": { outputTokens: 90000 } } });
+  assert.match(r.error, /^off-model work/, "a clean second attempt does not forgive it");
+  r = await run({ fail_open: 1, model_usage: { "claude-haiku-5-5": { outputTokens: 20000 }, "claude-opus-5-5": { outputTokens: 900 } } }, { fail_open: 0, model_usage: { "claude-haiku-5-5": { outputTokens: 100 }, "claude-opus-5-5": { outputTokens: 900 } } });
+  assert.equal(r.error, "off-model work: claude-opus-5-5", "combined 1800 tokens over 5% of 21100");
+  r = await run({ fail_open: 1, model_usage: { "claude-haiku-5-5": { outputTokens: 20000 }, "claude-opus-5-5": { outputTokens: 300 } } }, { fail_open: 0, model_usage: { "claude-haiku-5-5": { outputTokens: 20000 } } });
+  assert.equal(r.error, undefined);
+});
+
+function transcript(file, records) { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, records.map((x) => JSON.stringify(x)).join("\n") + "\n"); }
+const msg = (sessionId, id, model, usage) => ({ type: "assistant", sessionId, message: { id, model, usage } });
+
+test("nested sessions are read from the job home's transcripts and priced from the repo table", () => {
+  const home = tmp("oe-tx-");
+  const proj = path.join(home, ".claude", "projects", "p");
+  transcript(path.join(proj, "outer.jsonl"), [msg("outer", "a", "claude-haiku-5-5", { input_tokens: 1, output_tokens: 1000 })]);
+  transcript(path.join(proj, "outer", "subagents", "agent-1.jsonl"), [msg("outer", "s1", "claude-haiku-5-5", { input_tokens: 1, output_tokens: 1000 })]);
+  const dup = msg("nested", "n1", "claude-opus-5-5", { input_tokens: 100, output_tokens: 2000, cache_read_input_tokens: 1000, cache_creation_input_tokens: 200 });
+  transcript(path.join(proj, "nested.jsonl"), [msg("nested", "n1", "claude-opus-5-5", { input_tokens: 100, output_tokens: 10 }), dup, dup, msg("nested", "n2", "<synthetic>", { output_tokens: 99999 })]);
+  transcript(path.join(proj, "killed.jsonl"), [msg("killed", "k1", "claude-haiku-5-5", { input_tokens: 0, output_tokens: 500 }), msg("killed", "k2", "weird-model", { output_tokens: 10 })]);
+  const n = oe.nestedUsage(home, new Set(["outer"]));
+  assert.equal(n.sessions, 2);
+  assert.equal(n.model_usage["claude-opus-5-5"].outputTokens, 2000, "de-duplicated by message id, last record wins");
+  assert.equal(n.model_usage["claude-haiku-5-5"].outputTokens, 500, "the outer session and its subagents are excluded");
+  assert.deepEqual(n.unpriced, ["weird-model"]);
+  // opus: 20 USD/Mtok out; input 4; cache read 0.4; cache write 5
+  const opus = 2000 * 20e-6 + 100 * 4e-6 + 1000 * 0.4e-6 + 200 * 5e-6;
+  assert.ok(Math.abs(n.model_usage["claude-opus-5-5"].costUSD - opus) < 1e-6, String(n.model_usage["claude-opus-5-5"].costUSD));
+  const all = oe.nestedUsage(home, new Set());
+  assert.equal(all.sessions, 3, "with no known outer session (a killed step) everything counts");
+  assert.equal(oe.nestedUsage(tmp("oe-empty-"), new Set()).usd, 0);
+});
+
+test("spend by a nested claude -p is added to cost_usd and judged for off-model work", { skip: !bwrapOk }, () => {
+  const tr = taskRootWith("tiny");
+  let { result } = runEval(["--arms", "solo", "--tasks", "tiny", "--tasks-root", tr, "--parallel", "1"], { extraEnv: { FAKE_NESTED: "haiku" } });
+  let row = result.rows[0];
+  assert.equal(row.error, undefined, JSON.stringify(row));
+  assert.equal(row.nested_sessions, 1, "the outer session's own transcript is not counted");
+  assert.ok(Math.abs(row.nested_cost_usd - 0.000195) < 1e-9, String(row.nested_cost_usd));
+  assert.ok(Math.abs(row.cost_usd - (0.02 + row.nested_cost_usd)) < 1e-9);
+  assert.equal(row.outer_cost_usd, 0.02);
+  assert.equal(row.model_usage["claude-haiku-5-5"].outputTokens, 2300);
+  ({ result } = runEval(["--arms", "solo", "--tasks", "tiny", "--tasks-root", tr, "--parallel", "1"], { extraEnv: { FAKE_NESTED: "opus" } }));
+  row = result.rows[0];
+  assert.equal(row.error, "off-model work: claude-opus-5-5");
+  assert.ok(row.nested_cost_usd > 0.1);
+});
+
+test("a killed run keeps the accounting its JSON carried", async () => {
+  const bin = tmp("oe-slowjson-");
+  fs.writeFileSync(path.join(bin, "claude"), `#!/bin/sh\ncat >/dev/null\nprintf '{"session_id":"s1","total_cost_usd":0.5,"num_turns":9,"duration_ms":77,"modelUsage":{"claude-haiku-5-5":{"outputTokens":3}}}'\nsleep 5\n`, { mode: 0o755 });
+  const saved = process.env.PATH;
+  try {
+    process.env.PATH = `${bin}${path.delimiter}${saved}`;
+    const r = await oe.runAgent(tmp("oe-to2-"), "p", "haiku", 1500, undefined, 3);
+    assert.equal(r.stopped_by, "timeout");
+    assert.match(r.error, /^timeout/);
+    assert.deepEqual([r.cost_usd, r.turns, r.duration_ms, r.session_id], [0.5, 9, 77, "s1"]);
+    assert.equal(r.model_usage["claude-haiku-5-5"].outputTokens, 3);
+  } finally { process.env.PATH = saved; }
+});
+
+test("summarize and promote do not read option values as result files", () => {
+  assert.deepEqual(oe.positionalArgs(["a.json", "--candidate", "x", "b.json", "--tasks-root", "/r", "--flag"]), ["a.json", "b.json"]);
+  const d = tmp("oe-sum-");
+  const f = path.join(d, "r.json");
+  fs.writeFileSync(f, JSON.stringify({ rows: [{ task: "t", arm: "plain", rep: 0, solved: true, score: 1, cost_usd: 1, turns: 1 }, { task: "t", arm: "x", rep: 0, solved: true, score: 1, cost_usd: 1, turns: 1 }] }));
+  const sum = spawnSync(process.execPath, [script, "summarize", "--tasks-root", d, f], { encoding: "utf8" });
+  assert.equal(sum.status, 0, sum.stderr);
+  assert.equal(JSON.parse(sum.stdout).runs, 2);
+  const pro = spawnSync(process.execPath, [script, "promote", "--candidate", "x", "--baseline", "plain", "--tasks-root", d, f], { encoding: "utf8" });
+  assert.equal(pro.status, 0, pro.stderr);
+  assert.equal(JSON.parse(pro.stdout).promote, false);
 });
