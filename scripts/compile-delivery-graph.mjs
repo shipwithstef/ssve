@@ -2,6 +2,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { createHash } from "node:crypto";
 import { writeJsonAtomic } from "./state-io.mjs";
 import { injectMandatoryDeliveryChain, validateMandatoryDeliveryChain } from "./lib/mandatory-delivery-chain.mjs";
 import {
@@ -429,16 +430,29 @@ const EXECUTION_PREREQUISITES = ["write-e2e", "test-journeys"];
 
 function orderPrerequisites(steps) {
   const at = (skill) => steps.findIndex((step) => step.skill === skill);
+  // Research a stage asked for runs before that stage, so it moves with it.
+  const takeResearch = (skills) => {
+    const taken = [];
+    for (let i = steps.length - 1; i >= 0; i -= 1) {
+      if (steps[i].skill === "research" && skills.includes(steps[i].before)) taken.unshift(...steps.splice(i, 1));
+    }
+    return taken;
+  };
   for (const [skill, anchors] of Object.entries(UPSTREAM_PREREQUISITES)) {
     const plan = at("plan-changeset");
     const from = at(skill);
     if (plan === -1 || from === -1 || from < plan) continue;
     const [entry] = steps.splice(from, 1);
+    const research = takeResearch([skill]);
     const anchor = anchors.map(at).find((i) => i !== -1 && i < plan);
-    steps.splice(anchor ?? at("plan-changeset"), 0, entry);
+    steps.splice(anchor ?? at("plan-changeset"), 0, ...research, entry);
   }
   const execute = steps.find((step) => step.skill === "execute-changeset");
   if (!execute) return steps;
+  // Research asked for by a folded stage is now asked for by execute-changeset. The chain
+  // must stay contiguous, so it runs upstream of plan-changeset.
+  const folded = takeResearch(EXECUTION_PREREQUISITES);
+  if (folded.length) steps.splice(at("plan-changeset"), 0, ...folded);
   for (const skill of EXECUTION_PREREQUISITES) {
     const k = at(skill);
     if (k === -1) continue;
@@ -570,15 +584,27 @@ function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrat
   return out;
 }
 
+// A process receipt counts only when it names a digest-bound evidence file that still
+// exists with the recorded contents (the same test task-graph applies on completion).
+function receiptHolds(row) {
+  const evidence = row?.evidence;
+  if (!evidence || typeof evidence.path !== "string" || !/^[0-9a-f]{64}$/.test(String(evidence.sha256 || ""))) return false;
+  try {
+    const file = resolve(evidence.path);
+    return createHash("sha256").update(readFileSync(file)).digest("hex") === evidence.sha256;
+  } catch { return false; }
+}
+
 // A completed execute-changeset that gains a required process step has not done that step:
-// reopen it and every completed stage downstream until a digest-bound process receipt exists.
+// reopen it and every started or completed stage downstream until a digest-bound process
+// receipt exists. In-progress dependents go back to pending so none is active but blocked.
 function reopenForNewProcessSteps(out, pairs, notes) {
   const pair = pairs.find(({ task }) => task.metadata?.skill === "execute-changeset");
   if (!pair?.prev || pair.prev.status !== "completed") return;
   const had = (pair.prev.metadata?.required_process_steps || []);
   const missing = (pair.clone.metadata?.required_process_steps || []).filter((step) =>
     !had.some((old) => old.skill === step.skill && String(old.mode || "") === String(step.mode || "")) &&
-    !(pair.clone.process_receipts || []).some((row) => row?.skill === step.skill && String(row?.mode || "") === String(step.mode || "")));
+    !(pair.clone.process_receipts || []).some((row) => row?.skill === step.skill && String(row?.mode || "") === String(step.mode || "") && receiptHolds(row)));
   if (!missing.length) return;
   const why = `required process evidence missing: ${missing.map((step) => step.skill + (step.mode ? "/" + step.mode : "")).join(", ")}`;
   const downstream = new Set([pair.clone.id]);
@@ -587,9 +613,10 @@ function reopenForNewProcessSteps(out, pairs, notes) {
     for (const task of out) if (!downstream.has(task.id) && (task.blocked_by || []).some((id) => downstream.has(id))) { downstream.add(task.id); grew = true; }
   }
   for (const task of out) {
-    if (!downstream.has(task.id) || task.status !== "completed") continue;
+    if (!downstream.has(task.id) || !["completed", "in_progress"].includes(task.status)) continue;
+    const previous = task.status;
     task.status = "pending";
-    task.metadata.reopened = { reason: why, previous: "completed", at: new Date().toISOString() };
+    task.metadata.reopened = { reason: why, previous, at: new Date().toISOString() };
     notes.reopened.push({ id: task.id, skill: task.metadata?.skill, reason: why });
   }
 }
@@ -607,7 +634,7 @@ function assertAcyclic(tasks) {
   for (const task of tasks) visit(task.id, []);
 }
 
-function attachResearchRequestors(tasks, questions) {
+function attachResearchRequestors(tasks, questions, foldedIds = new Set()) {
   const defaultRequestor = tasks.find(task => task.metadata?.skill === "design-tech")
     || tasks.find(task => task.metadata?.skill === "explore-solutions")
     || tasks.find(task => task.metadata?.skill === "plan-changeset");
@@ -622,8 +649,13 @@ function attachResearchRequestors(tasks, questions) {
     if (task.metadata?.skill !== "research") continue;
     const question = questions.find(item => item.id === task.metadata.requesting_decision_id);
     const requestedId = question?.requesting_task_id ?? task.metadata.requesting_task_id;
-    const requestor = requestedId != null ? tasks.find(item => item.id === requestedId)
+    let requestor = requestedId != null ? tasks.find(item => item.id === requestedId)
       : question?.requesting_skill ? tasks.find(item => item.metadata?.skill === question.requesting_skill) : defaultRequestor;
+    // A stage folded into execute-changeset (e2e, journey proof) no longer has its own task;
+    // its research is requested by execute-changeset instead.
+    if (!requestor && (EXECUTION_PREREQUISITES.includes(question?.requesting_skill) || foldedIds.has(requestedId))) {
+      requestor = tasks.find(item => item.metadata?.skill === "execute-changeset");
+    }
     if (!requestor || requestor === task) throw new Error("research has no valid requesting task");
     task.metadata.requesting_task_id = requestor.id;
     if (task.status === "completed" && !researchInputMatches(question, task) && researchDecision(question) === EXTERNAL_RESEARCH_REQUIRED) {
@@ -796,7 +828,7 @@ export function compileDeliveryGraph(input) {
   };
 
   const notes = { reopened: [], migrated: [] };
-  const tasks = attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph, notes), questions);
+  const tasks = attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph, notes), questions, new Set(notes.migrated.map((row) => row.task.id)));
   assertAcyclic(tasks);
   deliveryGraph.migrated_prerequisites = [...(existingGraph?.delivery_graph?.migrated_prerequisites || []), ...notes.migrated];
   if (notes.reopened.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "reopen_for_process_steps", reason: "E2E/journey proof moved into execute-changeset process steps; execution and downstream stages reopened until process evidence exists.", tasks: notes.reopened });

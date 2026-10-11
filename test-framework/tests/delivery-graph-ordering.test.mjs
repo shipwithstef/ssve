@@ -208,15 +208,107 @@ for (const legacyStatus of ["pending", "completed"]) {
   });
 }
 
-test("execute-changeset with digest-bound process receipts for the new steps is not reopened", () => {
-  const old = legacyGraph({ legacyStatus: "completed", rest: "completed" });
-  const execute = old.tasks.find((t) => skillOf(t) === "execute-changeset");
-  execute.process_receipts = ["write-e2e", "test-journeys"].map((skill) => ({ skill, evidence: { path: "e.txt", sha256: "a".repeat(64) } }));
-  const { next } = resume(old);
-  assert.equal(next.tasks.find((t) => skillOf(t) === "execute-changeset").status, "completed");
-});
-
 test("a pending execute-changeset gaining process steps needs no reopen", () => {
   const { next } = resume(legacyGraph({ legacyStatus: "pending", rest: "pending" }));
   assert.equal(next.delivery_graph.mutation_history.some((m) => m.action === "reopen_for_process_steps"), false);
+});
+
+// ---- round 2 -----------------------------------------------------------------------
+import crypto from "node:crypto";
+import { validateResearchGraph } from "../../scripts/lib/research-decision.mjs";
+
+const question = (id, requesting_skill) => ({ id, claim: `Does ${id} work?`, evidence: [], consequential: true, external_resolvable: true, confidence: 6, explicit_request: false, freshness_required: false, requesting_skill });
+
+test("research requested by a moved stage moves with it: no cycle, compiles", () => {
+  const g = compileDeliveryGraph({ ...INPUT, questions: [question("persona-q", "build-personas")] });
+  assert.equal(cyclic(g.tasks), false);
+  const order = g.tasks.map(skillOf);
+  assert.ok(order.indexOf("research") < order.indexOf("build-personas"));
+  assert.ok(order.indexOf("build-personas") < order.indexOf("write-spec"));
+  assert.deepEqual(validateResearchGraph(g), []);
+  assert.equal(validate(g).status, 0);
+});
+
+for (const skill of ["write-e2e", "test-journeys"]) {
+  test(`research requested by ${skill} is remapped to execute-changeset and kept upstream`, () => {
+    const g = compileDeliveryGraph({ ...INPUT, questions: [question(`${skill}-q`, skill)] });
+    assert.equal(cyclic(g.tasks), false);
+    const research = g.tasks.find((t) => skillOf(t) === "research");
+    assert.ok(research, "research prerequisite is kept");
+    const execute = g.tasks.find((t) => skillOf(t) === "execute-changeset");
+    assert.equal(research.metadata.requesting_task_id, execute.id);
+    assert.ok(execute.blocked_by.includes(research.id));
+    const order = g.tasks.map(skillOf);
+    assert.ok(order.indexOf("research") < order.indexOf("plan-changeset"), "chain stays contiguous");
+    assert.deepEqual(validateResearchGraph(g), []);
+    assert.equal(validate(g).status, 0);
+  });
+}
+
+test("resuming a legacy graph keeps research that was requested by a folded e2e task", () => {
+  const q = question("legacy-q", "write-e2e");
+  const old = legacyGraph({ legacyStatus: "pending", rest: "pending" });
+  const e2e = old.tasks.find((t) => skillOf(t) === "write-e2e");
+  const r = { id: old.tasks.length + 1, subject: "research", status: "pending", blocked_by: [], metadata: { skill: "research", requesting_decision_id: q.id, question_id: q.id, requesting_task_id: e2e.id } };
+  old.tasks.push(r);
+  e2e.blocked_by.push(r.id);
+  const next = compileDeliveryGraph({ ...INPUT, questions: [q], existing_graph: old });
+  assert.equal(cyclic(next.tasks), false);
+  const research = next.tasks.find((t) => skillOf(t) === "research");
+  assert.equal(research.id, r.id);
+  assert.equal(next.tasks.find((t) => t.id === research.metadata.requesting_task_id).metadata.skill, "execute-changeset");
+  assert.deepEqual(validateResearchGraph(next), []);
+});
+
+function receiptFor(skill, content) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rcpt-"));
+  const file = path.join(dir, `${skill}.txt`);
+  fs.writeFileSync(file, content);
+  return { file, row: { skill, evidence: { type: "file", path: file, sha256: crypto.createHash("sha256").update(content).digest("hex") } } };
+}
+const executeStatus = (g) => g.tasks.find((t) => skillOf(t) === "execute-changeset").status;
+const withReceipts = (rows) => { const old = legacyGraph({ legacyStatus: "completed", rest: "completed" }); old.tasks.find((t) => skillOf(t) === "execute-changeset").process_receipts = rows; return old; };
+
+test("a receipt holding only a matching skill name does not suppress reopening", () => {
+  const { next } = resume(withReceipts([{ skill: "write-e2e" }, { skill: "test-journeys" }]));
+  assert.equal(executeStatus(next), "pending");
+  assert.equal(next.tasks.find((t) => skillOf(t) === "verify-promotion").status, "pending");
+});
+
+test("a receipt with a missing file, a bad digest or a malformed hash does not count", () => {
+  const good = receiptFor("test-journeys", "ok");
+  const e2e = receiptFor("write-e2e", "ok");
+  for (const bad of [
+    { skill: "write-e2e", evidence: { path: path.join(os.tmpdir(), "does-not-exist-xyz"), sha256: "a".repeat(64) } },
+    { skill: "write-e2e", evidence: { path: e2e.file, sha256: "b".repeat(64) } },
+    { skill: "write-e2e", evidence: { path: e2e.file, sha256: "short" } },
+  ]) assert.equal(executeStatus(resume(withReceipts([bad, good.row])).next), "pending");
+});
+
+test("a receipt whose file changed after it was recorded does not count", () => {
+  const a = receiptFor("write-e2e", "v1"), b = receiptFor("test-journeys", "v1");
+  fs.writeFileSync(a.file, "v2 edited after recording");
+  assert.equal(executeStatus(resume(withReceipts([a.row, b.row])).next), "pending");
+});
+
+test("digest-bound receipts that match the current file contents keep execution completed", () => {
+  const a = receiptFor("write-e2e", "proof a"), b = receiptFor("test-journeys", "proof b");
+  assert.equal(executeStatus(resume(withReceipts([a.row, b.row])).next), "completed");
+});
+
+test("reopening execution also resets in_progress dependents to pending, so task-graph next works", () => {
+  const old = legacyGraph({ legacyStatus: "pending", rest: "completed" });
+  for (const s of ["review-exec", "land-changeset"]) old.tasks.find((t) => skillOf(t) === s).status = "in_progress";
+  old.tasks.find((t) => skillOf(t) === "verify-promotion").status = "pending";
+  const { next } = resume(old);
+  for (const s of ["review-exec", "land-changeset"]) assert.equal(next.tasks.find((t) => skillOf(t) === s).status, "pending", s);
+  const done = new Set(next.tasks.filter((t) => t.status === "completed").map((t) => t.id));
+  for (const t of next.tasks.filter((x) => x.status === "in_progress")) assert.ok(t.blocked_by.every((id) => done.has(id)), `${skillOf(t)} is in_progress but blocked`);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tg-"));
+  const file = path.join(dir, "g.json");
+  // task-graph wants a skill receipt on every completed task; the receipt content is not under test here.
+  for (const t of next.tasks) if (t.status === "completed") t.skill_receipt = { skill: skillOf(t), loaded_at: new Date().toISOString(), loaded_via: "fixture" };
+  fs.writeFileSync(file, JSON.stringify(next));
+  const r = spawnSync(process.execPath, [path.join(ROOT, "scripts/task-graph.mjs"), "next", file], { encoding: "utf8" });
+  assert.equal(r.status, 0, r.stdout + r.stderr);
 });
