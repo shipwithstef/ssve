@@ -3031,6 +3031,7 @@
       "source": "scripts/svc-next.mjs",
       "status": "tested",
       "evidence": [
+        "test-framework/tests/lane-stop-guard.test.mjs",
         "test-framework/tests/svc-next-plan-sequence.test.mjs",
         "test-framework/tests/svc-next.test.mjs"
       ]
