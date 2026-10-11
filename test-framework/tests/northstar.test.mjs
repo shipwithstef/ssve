@@ -49,19 +49,27 @@ test("bar.json carries the pre-registration from the plan", () => {
 });
 
 // ---- decide ----
-test("clear win: zeros and missing components count, headline passes", () => {
+test("clear win: a finished run without an applicable component score makes that cell incomplete evidence", () => {
   const d = dev("dev-pass");
-  assert.equal(d.headline.cells_numbered, 4);
-  assert.equal(d.headline.cells_excluded, 10); // the 10 dev cells of tasks with no rows are reported, not numbered
+  assert.equal(d.headline.cells_numbered, 3); // yoga E and P, continuity K
+  assert.equal(d.headline.cells_excluded, 11); // yoga S plus the 10 cells of tasks with no rows
   assert.deepEqual(d.headline.tasks_without_rows, ["ai-quest", "waitlist-feature", "bugfix-rootcause", "security-payments"]);
-  // yoga framework S: [0.6, 0.5, missing -> 0]
+  // yoga framework S: [0.6, 0.5, missing]: not a measured zero, the cell is excluded
   const s = cell(d, "yoga-studio", "S");
-  near(s.framework.mean, 1.1 / 3); assert.equal(s.framework.missing_component_runs, 1); assert.equal(s.framework.n_runs, 3);
-  near(d.headline.R.value, (0.8 + 1.1 / 3 + 0.9 + 1) / (0.2 + 0.1 + 0.3 + 0), 1e-3);
-  near(d.headline.delta, (0.6 + (1.1 / 3 - 0.1) + 0.6 + 1) / 4, 1e-3);
+  assert.equal(s.numbered, false); assert.equal(s.incomplete_evidence, true);
+  assert.equal(s.framework.missing_component_runs, 1); assert.equal(s.framework.n_runs, 3);
+  assert.match(s.excluded_reason, /incomplete evidence: framework has 1 finished run\(s\) without a S score/);
+  assert.equal(d.overall, "incomplete");
+  assert.ok(d.incomplete_reasons.some((r) => /1 cell\(s\) with incomplete evidence/.test(r)));
+  near(d.headline.R.value, (0.8 + 0.9 + 1) / (0.2 + 0.3 + 0), 1e-3);
+  near(d.headline.delta, (0.6 + 0.6 + 1) / 3, 1e-3);
   assert.ok(d.headline.ci95[0] > 0);
   assert.equal(d.headline.pass, true);
   assert.equal(d.pass, true);
+  // zeros are kept only for unfinished runs: an errored run is a measured 0
+  const crashed = dev("interrupted");
+  assert.equal(cell(crashed, "yoga-studio", "E").numbered, true);
+  near(cell(crashed, "yoga-studio", "E").framework.mean, 0.6);
 });
 
 test("a cell the matrix does not apply to is never numbered (typo-readme has no cells)", () => {
@@ -205,7 +213,7 @@ test("overall is never PASS while a registered task has no rows or a cell is exc
   assert.equal(d.pass, true); // the headline is still computed and passes
   assert.equal(d.overall, "incomplete");
   assert.ok(d.incomplete_reasons.some((r) => /no rows for registered task\(s\): ai-quest, waitlist-feature, bugfix-rootcause, security-payments/.test(r)));
-  assert.ok(d.incomplete_reasons.some((r) => /10 cell\(s\) excluded/.test(r)));
+  assert.ok(d.incomplete_reasons.some((r) => /11 cell\(s\) excluded/.test(r)));
   const thin = dev("two-finished");
   assert.equal(thin.overall, "incomplete");
   assert.ok(thin.incomplete_reasons.some((r) => /excluded without a number/.test(r)));
@@ -533,4 +541,98 @@ test("a row with no model_usage is unfinished evidence (usage missing)", () => {
   assert.equal(cell(d, "yoga-studio", "E").numbered, false);
   assert.equal(cell(d, "yoga-studio", "E").framework.mean, 0);
   assert.notEqual(d.overall, "pass");
+});
+
+// ---- round 3 ----
+const reps3 = (task, arm, o = {}) => [1, 2, 3].map((i) => runRow(task, arm, i, typeof o === "function" ? o(i) : o));
+const yogaRows = (soloO = {}, fwO = {}) => [...reps3("yoga-studio", "solo", { components: { E: 0.2, S: 0.2, P: 0.2 }, ...soloO }), ...reps3("yoga-studio", "framework", { components: { E: 0.8, S: 0.8, P: 0.8 }, ...fwO })];
+
+test("one decision compares one model and one framework build", () => {
+  const other = { model: "n", model_usage: { n: { outputTokens: 100 } } };
+  assert.throws(() => decide(yogaRows({}, other), { slice: "dev", bar }), (e) => e instanceof NorthstarError && /mix models/.test(e.message) && /"m"/.test(e.message) && /"n"/.test(e.message));
+  // the mismatch can sit on one row of one task
+  const rows = [...yogaRows(), ...reps3("continuity-rules", "solo", { components: { K: 0 } }), ...reps3("continuity-rules", "framework", (i) => ({ components: { K: 1 }, ...(i === 2 ? other : {}) }))];
+  assert.throws(() => decide(rows, { slice: "dev", bar }), /mix models/);
+  assert.throws(() => decide(yogaRows({}, (/* sha per row */ {}) ).map((r, i) => (r.arm === "framework" && i === 5 ? { ...r, framework_sha: "sha2" } : r)), { slice: "dev", bar }), /mix framework_sha values \["sha1","sha2"\]/);
+  assert.doesNotThrow(() => decide(yogaRows(), { slice: "dev", bar }));
+  // skipped rows never ran and do not count as a second model
+  const withSkipped = [...yogaRows(), { ...runRow("yoga-studio", "framework", 4), skipped: true, model: "zzz", builder_sandbox: null, model_usage: undefined }];
+  assert.doesNotThrow(() => decide(withSkipped, { slice: "dev", bar }));
+  // the CLI refuses with exit 1
+  const f = path.join(os.tmpdir(), `ns-mixed-${process.pid}.json`);
+  fs.writeFileSync(f, JSON.stringify({ rows: yogaRows({}, other) }));
+  try { const r = cli("decide", f, "--slice", "dev"); assert.equal(r.status, 1); assert.match(r.stderr, /mix models/); } finally { fs.rmSync(f, { force: true }); }
+});
+
+test("a missing component score on a finished run is incomplete evidence, never a measured zero", () => {
+  const rows = yogaRows({}, { components: { E: 0.8, P: 0.8 } }); // framework S absent on all 3 finished runs
+  const d = decide(rows, { slice: "dev", bar });
+  const s = cell(d, "yoga-studio", "S");
+  assert.equal(s.numbered, false); assert.equal(s.incomplete_evidence, true);
+  assert.equal(s.framework.missing_component_runs, 3);
+  assert.equal(cell(d, "yoga-studio", "E").numbered, true);
+  assert.equal(d.overall, "incomplete");
+  // an errored run is still a zero (unfinished), and does not make the cell incomplete evidence
+  const crashed = yogaRows({}, {}).map((r) => (r.arm === "framework" && r.rep === 3 ? { ...r, error: "crash", components: undefined } : r));
+  const c = cell(decide(crashed, { slice: "dev", bar }), "yoga-studio", "S");
+  assert.equal(c.incomplete_evidence, false); assert.equal(c.framework.missing_component_runs, 0);
+});
+
+test("missing H evidence is unmeasured, not a 0-vs-0 comparison", () => {
+  const noH = { score: undefined, hidden_pass: undefined, hidden_total: undefined, solved: undefined };
+  const rows = [...reps3("typo-readme", "solo", noH), ...reps3("typo-readme", "framework", { ...noH, upstream_stages: [] })];
+  const d = decide(rows, { slice: "dev", bar });
+  assert.equal(con(d, "typo-readme", "h_drop").status, "unmeasured");
+  assert.match(con(d, "typo-readme", "h_drop").note, /H evidence missing on 6 finished run/);
+  assert.equal(con(d, "typo-readme", "h_miss").status, "unmeasured");
+  assert.equal(d.per_task["typo-readme"].solo.h_missing_runs, 3);
+  assert.notEqual(d.overall, "pass");
+  // hidden_pass/hidden_total alone is enough evidence for H
+  const counts = [...reps3("typo-readme", "solo", { score: undefined, solved: undefined }), ...reps3("typo-readme", "framework", { score: undefined, solved: undefined, upstream_stages: [] })];
+  assert.equal(con(decide(counts, { slice: "dev", bar }), "typo-readme", "h_drop").status, "pass");
+});
+
+test("an unfinished run missing cost or wall time makes the constraint unmeasured; skipped-for-budget is excepted", () => {
+  const base = yogaRows();
+  const crash = (o) => [...base, runRow("yoga-studio", "framework", 4, { error: "crash", components: undefined, ...o })];
+  const noCost = decide(crash({ cost_usd: undefined }), { slice: "dev", bar });
+  assert.equal(con(noCost, "yoga-studio", "cost_ratio").status, "unmeasured");
+  assert.match(con(noCost, "yoga-studio", "cost_ratio").note, /cost_usd missing/);
+  assert.equal(con(noCost, "yoga-studio", "wall_ratio").status, "pass");
+  assert.equal(noCost.per_task["yoga-studio"].framework.missing_cost_runs, 1);
+  const noWall = decide(crash({ wall_ms: null }), { slice: "dev", bar });
+  assert.equal(con(noWall, "yoga-studio", "wall_ratio").status, "unmeasured");
+  assert.equal(con(noWall, "yoga-studio", "cost_ratio").status, "pass");
+  assert.notEqual(noWall.overall, "pass");
+  // a run skipped for budget never ran: no cost or wall is expected of it
+  const skipped = [...base, { task: "yoga-studio", arm: "framework", rep: 4, error: "skipped: budget", builder_sandbox: null, model: "m" }];
+  const sk = decide(skipped, { slice: "dev", bar });
+  assert.equal(con(sk, "yoga-studio", "cost_ratio").status, "pass");
+  assert.equal(con(sk, "yoga-studio", "wall_ratio").status, "pass");
+});
+
+test("solved is derived from hidden_pass/hidden_total when the flag is absent", () => {
+  const solo = reps3("yoga-studio", "solo", { solved: undefined, score: 1, hidden_pass: 10, hidden_total: 10, components: { E: 0.2, S: 0.2, P: 0.2 } });
+  const fw = reps3("yoga-studio", "framework", (i) => ({ solved: undefined, score: i === 3 ? 0.97 : 1, hidden_pass: i === 3 ? 9 : 10, hidden_total: 10, components: { E: 0.8, S: 0.8, P: 0.8 } }));
+  const d = decide([...solo, ...fw], { slice: "dev", bar });
+  assert.equal(d.per_task["yoga-studio"].solo.solved_all, true);
+  assert.equal(con(d, "yoga-studio", "h_drop").status, "pass"); // 0.01 under the 0.05 allowance
+  const miss = con(d, "yoga-studio", "h_miss");
+  assert.equal(miss.status, "fail"); assert.equal(miss.value, 1); // solo passed every hidden test, framework missed one
+  // flag absent and no counts: no solved verdict, so the miss rule is unmeasured
+  const none = [...reps3("yoga-studio", "solo", { solved: undefined, hidden_pass: undefined, hidden_total: undefined, components: { E: 0.2, S: 0.2, P: 0.2 } }), ...reps3("yoga-studio", "framework", { components: { E: 0.8, S: 0.8, P: 0.8 } })];
+  const n = decide(none, { slice: "dev", bar });
+  assert.equal(con(n, "yoga-studio", "h_miss").status, "unmeasured");
+  assert.equal(con(n, "yoga-studio", "h_drop").status, "pass"); // score is still present
+  assert.equal(n.per_task["yoga-studio"].solo.solved_missing_runs, 3);
+});
+
+test("catalog overhead rows get the same task/arm/rep uniqueness check", () => {
+  const oh = fx("overhead");
+  const triple = (r) => [1, 2, 3].map(() => ({ ...r }));
+  const dup = [...triple(oh.find((r) => r.arm === "solo")), ...triple(oh.find((r) => r.arm === "framework"))];
+  assert.throws(() => catalogOverhead(dup, bar), (e) => e instanceof NorthstarError && /duplicate task\/arm\/rep rows: empty\/solo#1 x3, empty\/framework#1 x3/.test(e.message));
+  assert.throws(() => dev("dev-pass", { overheadRows: dup }), /duplicate task\/arm\/rep/);
+  assert.equal(catalogOverhead(dup, bar, null, { allowDuplicateReps: true }).n[0], 3); // explicit opt-in counts them separately
+  assert.equal(catalogOverhead(oh, bar).n[0], 3);
 });

@@ -94,15 +94,26 @@ export const isFinished = (r) => unfinishedReason(r) == null;
 // score or a cost. A skipped row never ran, so it has no sandbox and is not void.
 export const isVoid = (r) => !isSkipped(r) && !r.builder_sandbox;
 
-// Run score for one component. Unfinished runs score 0 on every component; so does a
-// finished run whose grader left the component out (counted and reported as missing).
+// H evidence on a row: the graded score, else hidden_pass / hidden_total. A finished run with
+// neither has no H evidence (null), never a measured 0.
+export function hScore(r) {
+  const s = num(r.score);
+  if (s != null) return s;
+  return num(r.hidden_total) > 0 && num(r.hidden_pass) != null ? r.hidden_pass / r.hidden_total : null;
+}
+// Solved: the runner's flag when present, else every hidden test passed; null when neither exists.
+export function solvedOf(r) {
+  if (typeof r.solved === "boolean") return r.solved;
+  return num(r.hidden_total) > 0 && num(r.hidden_pass) != null ? r.hidden_pass === r.hidden_total : null;
+}
+
+// Run score for one component. An unfinished run scores 0 on every component (missing:false).
+// A finished run whose grader left the component out has no evidence: value 0 is only a
+// placeholder and `missing` is true, so the cell is excluded as incomplete evidence rather
+// than measured as a zero.
 export function runScore(r, comp) {
   if (!isFinished(r)) return { value: 0, missing: false };
-  if (comp === "H") {
-    const s = num(r.score) ?? (num(r.hidden_total) ? (num(r.hidden_pass) ?? 0) / r.hidden_total : null);
-    return s == null ? { value: 0, missing: true } : { value: s, missing: false };
-  }
-  const v = num(r.components?.[comp]);
+  const v = comp === "H" ? hScore(r) : num(r.components?.[comp]);
   return v == null ? { value: 0, missing: true } : { value: v, missing: false };
 }
 
@@ -146,9 +157,13 @@ function armSummary(rows) {
   return {
     // Unrounded means: constraints are decided on these, the fields below are for display.
     raw: { h_mean: mh, cost_mean_usd: mc, wall_mean_ms: mw },
-    // A finished run missing a cost or time measurement cannot support a cost or wall constraint.
-    missing_cost_runs: fin.filter((r) => num(r.cost_usd) == null).length,
-    missing_wall_runs: fin.filter((r) => num(r.wall_ms) == null).length,
+    // Every attempted run (skipped-for-budget excepted), finished or not, must carry cost_usd
+    // and wall_ms; a gap there cannot be read as 0 in a cost or wall constraint.
+    missing_cost_runs: rows.filter((r) => !isSkipped(r) && num(r.cost_usd) == null).length,
+    missing_wall_runs: rows.filter((r) => !isSkipped(r) && num(r.wall_ms) == null).length,
+    // Finished runs without H evidence (no score / hidden counts) or without a solved verdict.
+    h_missing_runs: fin.filter((r) => hScore(r) == null).length,
+    solved_missing_runs: fin.filter((r) => solvedOf(r) == null).length,
     off_model_runs: rows.filter((r) => unfinishedReason(r) === "off-model").length,
     usage_missing_runs: rows.filter((r) => unfinishedReason(r) === "usage missing").length,
     n_runs: rows.length,
@@ -165,13 +180,24 @@ function armSummary(rows) {
     turns_mean: r4(mean(rows.map((r) => num(r.turns) ?? 0))),
     tokens_mean: rows.length ? Math.round(mean(rows.map((r) => tokensOf(r.model_usage)))) : null,
     h_mean: r4(mh),
-    solved_all: rows.length > 0 && rows.every((r) => isFinished(r) && r.solved === true),
+    solved_all: rows.length > 0 && rows.every((r) => isFinished(r) && solvedOf(r) === true),
     rules_not_loaded: rows.filter((r) => r.rules_not_loaded).length,
     fail_open: rows.reduce((a, r) => a + (num(r.fail_open) ?? 0), 0),
   };
 }
 
 // ---------- decide ----------
+
+// One decision compares one model and one framework build: all decided rows of both arms
+// share a single model, and framework rows a single framework_sha. Skipped rows never ran
+// and are ignored.
+export function requireCommonPins(rows, bar = loadBar()) {
+  const ran = rows.filter((r) => !isSkipped(r));
+  const models = [...new Set(ran.map((r) => r.model ?? null))].sort();
+  if (models.length > 1) throw new NorthstarError(`decided rows mix models ${JSON.stringify(models)}: both arms must run one common model`);
+  const shas = [...new Set(ran.filter((r) => r.arm === bar.arms[1]).map((r) => r.framework_sha ?? null))].sort();
+  if (shas.length > 1) throw new NorthstarError(`framework rows mix framework_sha values ${JSON.stringify(shas)}: one build per decision`);
+}
 
 export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, iterations = 10000, allowDuplicateReps = false } = {}) {
   if (slice !== "dev" && slice !== "reserve") throw new NorthstarError("decide needs --slice dev|reserve (each slice is judged separately)");
@@ -180,6 +206,7 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   const [soloArm, fwArm] = bar.arms;
   const inSlice = rawRows.filter((r) => tasks.includes(r.task) && bar.arms.includes(r.arm));
   const { rows, voided } = usableRows(inSlice, { allowDuplicateReps });
+  requireCommonPins(rows, bar);
   const of = (task, arm) => rows.filter((r) => r.task === task && r.arm === arm);
 
   // cells
@@ -193,9 +220,14 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
       framework: { n_runs: f.length, n_finished: f.filter(isFinished).length, mean: r4(mean(fv.map((x) => x.value))), missing_component_runs: fv.filter((x) => x.missing).length },
     };
     const thin = [["solo", cell.solo], ["framework", cell.framework]].filter(([, a]) => a.n_finished < minFin);
-    cell.numbered = thin.length === 0;
+    const gaps = [["solo", cell.solo], ["framework", cell.framework]].filter(([, a]) => a.missing_component_runs > 0);
+    cell.incomplete_evidence = gaps.length > 0;
+    cell.numbered = thin.length === 0 && gaps.length === 0;
     if (!cell.numbered) {
-      cell.excluded_reason = thin.map(([n, a]) => `${n}: ${a.n_finished} finished run(s) < ${minFin}`).join("; ");
+      cell.excluded_reason = [
+        ...thin.map(([n, a]) => `${n}: ${a.n_finished} finished run(s) < ${minFin}`),
+        ...gaps.map(([n, a]) => `incomplete evidence: ${n} has ${a.missing_component_runs} finished run(s) without a ${comp} score`),
+      ].join("; ");
     } else {
       cell.delta = r4(mean(fv.map((x) => x.value)) - mean(sv.map((x) => x.value)));
       cell.both_zero = mean(sv.map((x) => x.value)) === 0 && mean(fv.map((x) => x.value)) === 0;
@@ -247,11 +279,15 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
       if (K.product_tasks.includes(task)) { push(task, "cost_ratio", "unmeasured", { note: why }); push(task, "wall_ratio", "unmeasured", { note: why }); }
       continue;
     }
+    const hGap = t.solo.h_missing_runs + t.framework.h_missing_runs;
+    const solvedGap = t.solo.solved_missing_runs + t.framework.solved_missing_runs;
     const drop = t.solo.raw.h_mean - t.framework.raw.h_mean;
     const hLimit = task === K.typo_task ? (K.typo_h_max_drop ?? 0) : K.h_max_drop; // typo: "H not worse"
-    push(task, "h_drop", drop <= hLimit + EPS ? "pass" : "fail", { value: r4(drop), limit: hLimit });
+    if (hGap) push(task, "h_drop", "unmeasured", { note: `H evidence missing on ${hGap} finished run(s) (no score or hidden_pass/hidden_total)` });
+    else push(task, "h_drop", drop <= hLimit + EPS ? "pass" : "fail", { value: r4(drop), limit: hLimit });
     const missed = t.solo.solved_all ? f_unsolved(of(task, fwArm)) : 0;
-    push(task, "h_miss", missed === 0 ? "pass" : "fail", { value: missed, note: t.solo.solved_all ? "solo solved every run" : "solo did not solve every run: not applicable" });
+    if (hGap || solvedGap) push(task, "h_miss", "unmeasured", { note: `solved verdict missing on ${hGap || solvedGap} finished run(s) (no solved flag or hidden_pass/hidden_total)` });
+    else push(task, "h_miss", missed === 0 ? "pass" : "fail", { value: missed, note: t.solo.solved_all ? "solo solved every run" : "solo did not solve every run: not applicable" });
     if (K.product_tasks.includes(task)) {
       const missing = (k) => (t.solo[k] || t.framework[k]) ? `a finished run lacks the measurement (solo ${t.solo[k]}, framework ${t.framework[k]})` : null;
       const mcost = missing("missing_cost_runs"), mwall = missing("missing_wall_runs");
@@ -264,7 +300,7 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   }
   // Catalog overhead is validated (empty task, enough runs, same model and framework sha as
   // the decided rows) whenever one is supplied; a refusal throws.
-  const ov = overheadRows ? catalogOverhead(overheadRows, bar, rows) : null;
+  const ov = overheadRows ? catalogOverhead(overheadRows, bar, rows, { allowDuplicateReps }) : null;
   if (tasks.includes(K.typo_task) && per_task[K.typo_task]) {
     const t = per_task[K.typo_task];
     // No lane-upstream stages beyond the invariant tail: read from the optional row field
@@ -293,6 +329,8 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   const incomplete_reasons = [];
   if (headline.tasks_without_rows.length) incomplete_reasons.push(`no rows for registered task(s): ${headline.tasks_without_rows.join(", ")}`);
   if (headline.cells_excluded) incomplete_reasons.push(`${headline.cells_excluded} cell(s) excluded without a number`);
+  const incEv = cells.filter((c) => c.incomplete_evidence).length;
+  if (incEv) incomplete_reasons.push(`${incEv} cell(s) with incomplete evidence (finished runs lack a component score)`);
   if (voided.length) incomplete_reasons.push(`${voided.length} void run(s) (no builder sandbox) excluded from scores and costs`);
   if (unmeasured.length) incomplete_reasons.push(`${unmeasured.length} constraint(s) unmeasured`);
   // A failing headline is a "fail" only when numbered cells back it; with no numbered cell
@@ -316,18 +354,19 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   };
 }
 
-const f_unsolved = (fwRows) => fwRows.filter((r) => !(isFinished(r) && r.solved === true)).length;
+const f_unsolved = (fwRows) => fwRows.filter((r) => !(isFinished(r) && solvedOf(r) === true)).length;
 
 // Measured fixed catalog overhead: mean cost of framework runs minus solo's, on the registered
 // empty task only. Refused (NorthstarError) unless the rows come from that task, hold at least
 // min_finished_runs_per_cell_arm finished, costed runs per arm, and share the model and
 // framework sha of the rows being decided.
-export function catalogOverhead(overheadRows, bar = loadBar(), decided = null) {
+export function catalogOverhead(overheadRows, bar = loadBar(), decided = null, { allowDuplicateReps = false } = {}) {
   const [soloArm, fwArm] = bar.arms;
   const task = bar.overhead_task;
   const live = overheadRows.filter((r) => !isVoid(r));
   const wrong = [...new Set(live.filter((r) => r.task !== task).map((r) => String(r.task)))];
   if (wrong.length) throw new NorthstarError(`catalog overhead must be measured on the registered empty task "${task}", got: ${wrong.join(", ")}`);
+  checkDuplicates(live, { allowDuplicateReps }); // one row per task/arm/rep: triplicating a row is not 3 runs
   const usable = live.filter((r) => isFinished(r) && num(r.cost_usd) != null);
   const s = usable.filter((r) => r.arm === soloArm), f = usable.filter((r) => r.arm === fwArm);
   const need = bar.min_finished_runs_per_cell_arm;
