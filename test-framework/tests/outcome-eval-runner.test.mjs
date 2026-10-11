@@ -413,20 +413,33 @@ function archiveWithAnswers() {
   return { src: fs.realpathSync(src), home };
 }
 
-test("the argv masks the archive's tasks, results and northstar dirs, and an extra root's counterparts", () => {
-  const { src, home } = archiveWithAnswers();
-  const dir = tmp("oe-ans-b-");
-  const extra = tmp("oe-ans-extra-");
-  const reserveTasks = path.join(extra, "tasks"); fs.mkdirSync(reserveTasks);
-  fs.mkdirSync(path.join(extra, "northstar"));
+test("sandbox masks cover the archive's tasks, results and northstar dirs and an extra root's counterparts, on any machine", () => {
+  // Every path is a fixture under a temp dir: nothing depends on HOME, the checkout location or bwrap.
+  const base = tmp("oe-masks-");
+  const mk = (...p) => { const d = path.join(base, ...p); fs.mkdirSync(d, { recursive: true }); return d; };
+  const repoRoot = mk("repo"), dir = mk("work", "job"), extra = mk("reserve");
+  const src = mk("cache", "src");
+  for (const root of [repoRoot, src]) for (const d of ["tasks", "results", "northstar"]) mk(path.relative(base, root), "test-framework", "outcome-evals", d);
+  const reserveTasks = mk("reserve", "tasks"); mk("reserve", "northstar");
   try {
     oe.addTaskRoot(reserveTasks);
-    for (const arm of ["solo", "framework"]) {
-      const w = oe.builderWrap(dir, { credentials: creds(), framework: arm === "framework" ? { home, src, checkpoint_mode: "prompt-sentence" } : null, model: "haiku", workRoot: tmp("oe-ans-w-") });
-      const masked = (m) => w.argv.some((a, i) => a === "--tmpfs" && w.argv[i + 1] === m);
-      if (arm === "framework") for (const d of ["tasks", "results", "northstar"]) assert.ok(masked(path.join(src, "test-framework", "outcome-evals", d)), `${d} in the archive is masked`);
-      assert.ok(masked(reserveTasks) && masked(path.join(extra, "northstar")), "an extra root and its counterpart are masked");
+    for (const home of [path.join(base, "elsewhere-home"), path.join(base, "cache")]) {
+      const keepRo = home === path.join(base, "cache") ? [src] : [];
+      const { maskRoots } = oe.sandboxMasks({ dir, framework: { src }, exposeRoot: true, keepRo, realHome: home, repoRoot, kept: path.join(base, "kept") });
+      const want = [
+        ...["tasks", "results", "northstar"].map((d) => path.join(src, "test-framework", "outcome-evals", d)),
+        ...["tasks", "results", "northstar"].map((d) => path.join(repoRoot, "test-framework", "outcome-evals", d)),
+        reserveTasks, path.join(extra, "northstar"),
+      ];
+      for (const m of want) assert.ok(maskRoots.includes(m), `${m} is masked (real home ${path.basename(home)})`);
+      assert.ok(!maskRoots.includes(repoRoot), "an exposed repo root is not itself masked");
+      assert.ok(!maskRoots.some((m) => dir.startsWith(m + path.sep)), "no mask swallows the job dir");
     }
+    // A mask inside a hidden real home is dropped unless that path was brought back read-only.
+    const hidden = oe.sandboxMasks({ dir, framework: { src }, exposeRoot: true, keepRo: [], realHome: path.join(base, "cache"), repoRoot, kept: path.join(base, "kept") });
+    assert.ok(!hidden.maskRoots.includes(path.join(src, "test-framework", "outcome-evals", "tasks")));
+    // Solo builders do not see the live repo at all.
+    assert.ok(oe.sandboxMasks({ dir, exposeRoot: false, realHome: path.join(base, "none"), repoRoot }).maskRoots.includes(repoRoot));
   } finally { oe.resetTaskRoots(); }
 });
 

@@ -34,6 +34,7 @@ import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
+import { writeJsonAtomic } from "./state-io.mjs";
 import { probe } from "./quality-probes.mjs";
 import { probe as chaosProbe } from "./chaos-probe.mjs";
 
@@ -370,6 +371,26 @@ export function builderEnvBase(env = process.env) {
 
 export function realCredentialsFile() { return process.env.OE_CREDENTIALS || path.join(os.homedir(), ".claude", ".credentials.json"); }
 
+// Which directories a sandbox shows empty (and which single paths come back read-only after
+// that). Pure over its inputs: the real home and the eval roots are parameters, so the result
+// does not depend on the machine it is computed on.
+export function sandboxMasks({ dir, framework = null, extraMaskRoots = [], exposeRoot = false, role = "build", task = null, northstar = NORTHSTAR, keepRo = [], realHome = os.homedir(), repoRoot = ROOT, kept = path.join(realHome, ".svc", "outcome-eval-artifacts") }) {
+  const evalRoots = [path.join(repoRoot, "test-framework", "outcome-evals"), ...(framework ? [path.join(framework.src, "test-framework", "outcome-evals")] : []), ...[...taskRoots, ...extraMaskRoots].map((r) => path.dirname(r))];
+  let answers = [...taskRoots, ...extraMaskRoots, ...answerDirs(evalRoots)];
+  const reBind = [];
+  if (role === "components") {
+    // The grader needs its own code and this one task; everything else stays masked.
+    answers = answers.filter((m) => !isUnder(northstar, m) && !isUnder(m, northstar));
+    const t = task ? taskDir(task) : null;
+    if (t && fs.existsSync(t)) reBind.push(t);
+  }
+  // A mask under the hidden real home would only recreate directory names there: skip those
+  // unless the path was brought back read-only. (Never a mask that would swallow `dir`.)
+  const visible = (m) => fs.existsSync(m) && (!isUnder(m, realHome) || keepRo.some((k) => isUnder(m, k)));
+  const maskRoots = [...answers, kept, ...(exposeRoot ? [] : [repoRoot])].filter((m) => visible(m) && !isUnder(dir, m));
+  return { maskRoots, reBind };
+}
+
 // Build the sandbox for one job. `jobHome` is created here: empty for the solo-style arms,
 // a clone of the prebuilt framework home for the framework arm. Throws when there is no
 // bubblewrap: nothing is scored without a sandbox. One helper serves every role:
@@ -404,21 +425,7 @@ export function builderWrap(dir, { jobHome = null, framework = null, model = nul
   const keepFiles = [...(needsCreds ? claudeBinds() : []), ...(hiddenByDefault(process.execPath) ? [[fs.realpathSync(process.execPath), process.execPath]] : [])].filter(([, to]) => hiddenByDefault(to));
   const extraKeep = [...(role === "components" ? [northstar] : [])];
   const keepRo = [...(exposeRoot ? [ROOT] : []), ...(framework ? [framework.src] : []), ...pw.keep, ...extraKeep].filter(hiddenByDefault);
-  const kept = path.join(os.homedir(), ".svc", "outcome-eval-artifacts");
-  const evalRoots = [path.join(ROOT, "test-framework", "outcome-evals"), ...(framework ? [path.join(framework.src, "test-framework", "outcome-evals")] : []), ...[...taskRoots, ...extraMaskRoots].map((r) => path.dirname(r))];
-  let answers = [...taskRoots, ...extraMaskRoots, ...answerDirs(evalRoots)];
-  const reBind = [];
-  if (role === "components") {
-    // The grader needs its own code and this one task; everything else stays masked.
-    answers = answers.filter((m) => !isUnder(northstar, m) && !isUnder(m, northstar));
-    const t = task ? taskDir(task) : null;
-    if (t && fs.existsSync(t)) reBind.push(t);
-  }
-  // A mask under the hidden real home would only recreate directory names there: skip those
-  // unless the path was brought back read-only.
-  const visible = (m) => fs.existsSync(m) && (!isUnder(m, realHome) || keepRo.some((k) => isUnder(m, k)));
-  // (never a mask that would swallow the directory this sandbox exists to expose)
-  const maskRoots = [...answers, kept, ...(exposeRoot ? [] : [ROOT])].filter((m) => visible(m) && !isUnder(dir, m));
+  const { maskRoots, reBind } = sandboxMasks({ dir, framework, extraMaskRoots, exposeRoot, role, task, northstar, keepRo, realHome });
   // Run-level directories outside /tmp and the home (a custom --work-root or --keep) would
   // otherwise show every sibling build and kept artifact.
   const hide = hideRoots.filter((h) => fs.existsSync(h) && !hiddenByDefault(h));
@@ -479,10 +486,13 @@ export function writeFrameworkPolicies(home, src, model, hookMode = "advisory") 
   const svcDir = path.join(home, ".svc");
   fs.mkdirSync(svcDir, { recursive: true, mode: 0o700 });
   fs.chmodSync(svcDir, 0o700);
-  fs.writeFileSync(path.join(svcDir, "hook-policy.json"), JSON.stringify({ mode: hookMode }) + "\n", { mode: 0o600 });
+  // Owner-protected policy files (the resolvers require 0600-style ownership): written through
+  // the state writer, then tightened.
+  const put = (name, doc) => { const f = path.join(svcDir, name); writeJsonAtomic(f, doc); fs.chmodSync(f, 0o600); };
+  put("hook-policy.json", { mode: hookMode });
   const def = path.join(src, "references", "default-dispatch-policy.json");
   if (!model || !fs.existsSync(def)) return { slot_pin: "env-only" };
-  fs.writeFileSync(path.join(svcDir, "dispatch-policy.json"), JSON.stringify(pinDispatchPolicy(JSON.parse(fs.readFileSync(def, "utf8")), model), null, 2) + "\n", { mode: 0o600 });
+  put("dispatch-policy.json", pinDispatchPolicy(JSON.parse(fs.readFileSync(def, "utf8")), model));
   return { slot_pin: "dispatch-policy" };
 }
 
