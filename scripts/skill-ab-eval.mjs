@@ -59,7 +59,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const DEFAULT_RUNNER = 'claude -p --output-format json --setting-sources "" --strict-mcp-config --no-session-persistence';
 
 export function parseArgs(argv, env = process.env) {
-  const o = { repeat: 3, margin: 0.15, runner: null, only: null, json: false, out: null, tasks: null, cwd: null };
+  const o = { repeat: 3, margin: null, runner: null, only: null, json: false, out: null, tasks: null, cwd: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--json") { o.json = true; continue; }
@@ -72,7 +72,9 @@ export function parseArgs(argv, env = process.env) {
   if (o.help) return o;
   if (!o.tasks) throw new Error("--tasks is required");
   if (!Number.isInteger(o.repeat) || o.repeat < 1 || o.repeat > 20) throw new Error("--repeat must be an integer 1..20");
-  if (!(o.margin >= 0 && o.margin < 1)) throw new Error("--margin must be in [0, 1)");
+  // A regrade keeps the margin its report was scored at unless --margin is given.
+  if (o.margin === null && !o.regrade) o.margin = 0.15;
+  if (o.margin !== null && !(o.margin >= 0 && o.margin < 1)) throw new Error("--margin must be in [0, 1)");
   if (!o.runner && !o.regrade) {
     if (env.EVALS !== "1") throw new Error(`default runner '${DEFAULT_RUNNER}' spends paid tokens; set EVALS=1 or pass --runner`);
     o.runner = DEFAULT_RUNNER;
@@ -212,7 +214,8 @@ export function regrade(o) {
     if (cut.length) return { ...r, regrade_skipped: `artifact stored truncated: ${cut.join(", ")}` };
     return { ...r, pass: !isCrashed(r) && grade(t.grader, r.answer, ROOT, (r.artifacts || []).map((a) => ({ path: a.path, text: a.text }))) };
   });
-  return { ...report, regraded_from: o.regrade, margin: o.margin, tasks: summarize(runs, o.margin), runs };
+  const margin = o.margin ?? report.margin ?? 0.15;
+  return { ...report, regraded_from: o.regrade, margin, tasks: summarize(runs, margin), runs };
 }
 
 export function run(o) {

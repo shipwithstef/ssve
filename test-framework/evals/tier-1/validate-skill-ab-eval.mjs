@@ -206,3 +206,18 @@ test("--regrade never grades a truncated artifact prefix: such a run keeps its g
     for (const x of runs) assert.match(x.regrade_skipped, /truncated: docs\/brief\.md/);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
+
+test("--regrade keeps the margin the report was scored at unless --margin is given", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "svc-ab-regrade-margin-"));
+  try {
+    const report = path.join(tmp, "r.json");
+    const first = cli(["--tasks", tasks, "--runner", fake, "--repeat", "1", "--only", "write-spec", "--margin", "0.4", "--out", report, "--json"]);
+    assert.equal(first.status, 0, first.stderr);
+    const kept = cli(["--tasks", tasks, "--regrade", report, "--json"], { EVALS: "0" });
+    assert.equal(kept.status, 0, kept.stderr);
+    assert.equal(JSON.parse(kept.stdout).margin, 0.4);
+    const set = cli(["--tasks", tasks, "--regrade", report, "--margin", "0.05", "--json"], { EVALS: "0" });
+    assert.equal(set.status, 0, set.stderr);
+    assert.equal(JSON.parse(set.stdout).margin, 0.05);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});

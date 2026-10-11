@@ -1,4 +1,4 @@
-<!-- Status: proposed 2026-10-11, NOT approved. Under owner + external review. Source of truth for review; execution waits for owner approval. -->
+<!-- Status: proposed 2026-10-11, revision 2 after owner review 5482766246, NOT approved. Under owner + external review. Source of truth for review; execution waits for owner approval. -->
 
 # Plan: one organism that beats solo — component-by-component redesign, with proof
 
@@ -100,25 +100,34 @@ Models and harnesses change every week. Anything hard-wired dies in the first we
 - Tasks 2 and 5, plus a separate probe set, are **held out**: harden and the improvement loop never see them. The loop iterates only on tasks 1, 3, 4 and 6.
 - The headline result counts only if the held-out tasks also pass.
 
-**Pass bar.** Decided by a new `northstar decide` step that uses the existing `compareSamples` bootstrap CI (review M9, M10):
-- **Score:** the geometric mean of per-task score ratios is ≥ 2×, with the CI lower bound > 1.
-- **Inapplicable components** (E, S, P on the typo task) are dropped and the remaining weights renormalised.
-- **H, per task:** never more than 0.05 below solo, and never a failure where solo passes every hidden test.
-- **Cost and wall time:** medians over 3 runs per task and arm, at most 1.5× and 1.3× solo. `ARM_LIMITS.framework` turns and time are aligned to that bar.
-- **The Opus confirmation is also 3 runs,** forecast first.
+**Pass bar (revised after the owner review of `dc358c0`).** Decided by a new `northstar decide` step that uses the existing `compareSamples` bootstrap CI.
+- **Headline (the 2×):**
+  - The geometric mean of the **E, S and P** ratios (framework ÷ solo), taken only over tasks where that component applies.
+  - It must be ≥ 2×, with the CI lower bound > 1.
+  - These are the things solo does not think about. Ceiling components (H, J) are not averaged in, so a real gain there can't be hidden by a tie.
+- **H is a constraint, per task:**
+  - never more than 0.05 below solo;
+  - never a miss where solo passes every hidden test.
+- **The typo task is a constraint, outside the 2× mean:**
+  - at most 4 stages;
+  - cost at most 1.3× solo;
+  - H not worse.
+- **J** is reported, never in the headline.
+- **Cost** is reported as three numbers per task and arm: prompt tokens, turns, and paid reviewer calls. The ≤1.5× cost and ≤1.3× wall-time caps apply to the **single-model advisory arm**: every slot pinned to one model, no cross-family review.
+- **Zone review** (a second family on auth/money) is a separate column. It is not part of the north star unless the owner asks.
+- **The router and the reviewer ladder stay out of the measured arm.** The router follows priors and may never un-pin a baseline.
+- **Graders** are written from a task spec that does not cite the pilot postmortems (quest 0/3, SSO gap). Their hashes are frozen **before** `harden.mjs` and the security patterns are written, so the held-out tasks measure generalisation, not the probes.
 
-**Budget per phase.**
-- Haiku baseline: 36 runs, about $10.
-- Loop iterations on dev tasks only: about $10.
-- Re-measure after wave 2: about $10.
-- Total Haiku about $30, with `--max-usd` on every call.
-- The Opus confirmation (about $40 × 3 runs) needs the owner's yes.
+**One budget.** Every run uses `--max-usd`. A step marked "owner yes" waits for a forecast and the owner's approval.
 
-Haiku is the iteration builder (about $0.05–0.5 per run). Opus confirms the final result once.
-
-**Budget.**
-- Haiku iteration under $15 total.
-- The Opus confirmation run needs the owner's yes, with a forecast first (about $40 for 6 tasks × 2 arms × 1 run). It is never run without a `--max-usd` cap.
+| Step | Runs | Cap | Owner yes |
+|---|---|---|---|
+| P1.1 Frozen baseline at `dc358c0`, Haiku, solo vs framework | 6 tasks × 2 arms × 3 = 36 | $20 | no |
+| P1.2 Build swarm (Haiku about $5, Sonnet about $15) | agents | $20 | no |
+| P1.3 After-number on the Program 1 organism | 36 | $20 | no |
+| P1.4 Loop iterations, dev tasks only | variable | $10 | no |
+| P2 waves: each batch's dev-slice re-measure | 12 per batch | $5 per batch | no |
+| Opus confirmation (3 runs) | 36 | forecast first (about $150) | **yes** |
 
 ## 3. Component map — every component, decision, reason, proof
 Legend: **K** keep · **S** sharpen · **M** merge · **R** rewrite · **X** remove (each gets a removals.md entry) · **N** new.
@@ -135,14 +144,16 @@ Two full audits read all 108 SKILL.md files.
 **So the redesign moves weight from review volume to the "done" definition, hardening and memory.**
 
 **Cross-cutting fixes. Each is direct, proven by a tier-1 check:**
-- **X1 Script paths (counts re-verified by the review):**
-  - **Scope:** 86 SKILL.md files with 760 relative `node|bash scripts/` calls, plus 39 skill reference files and 31 agent/rule files.
-  - **How:**
-    - A scripted codemod, run in lane batches, rewrites them to `"${SVC_ROOT:-.}"/scripts/…`.
-    - SessionStart always exports `SVC_ROOT`, including inside the framework repo (fixing `svc-origin-orchestrator-prompt.mjs:55` and `framework-root.mjs:21`).
-    - The rules index tells non-Claude hosts to export it.
-  - **Pinned strings:** `validate-framework-self-management.sh:67,95-96` and `validate-phase-receipt-migration.sh:46` are updated in the same batch.
-  - **Validator:** no bare relative call in skills, references, agents or rules.
+- **X1 Script paths: one resolver, no codemod (owner review).**
+  - **Scope:** 86 SKILL.md files with 760 `node|bash scripts/…` calls keep their single relative form.
+  - **Resolver:** one resolver maps a leading `scripts/` (or `bash scripts/`) that does not exist in the working directory to the framework root.
+    - On Claude: a PreToolUse Bash rewrite (`updatedInput`), in the existing single injector process.
+    - On other hosts: the same function, called from each host dispatcher.
+    - The resolver uses `SVC_ROOT`, which SessionStart always exports (including inside the framework repo; this fixes `svc-origin-orchestrator-prompt.mjs:55` and `framework-root.mjs:21`).
+  - **Absorbs layout changes:** a new layout is one resolver change, not another codemod. No bulk hot-path edit.
+  - **Validator:** a script call in skills, references, agents or rules must use the relative `scripts/` form the resolver handles.
+  - **Measured:** the hook latency added per Bash call, with `hook-bench.mjs`.
+  - **Scheduling:** Program 2, unless the frozen baseline shows path failures cost the framework arm.
 - **X2 Boilerplate:**
   - Re-counted: Task-Graph Mode in 82 skills, phase receipts in 78, compaction in 60.
   - This is also a codemod, in lane batches, never one bulk edit of the hot path.
@@ -241,7 +252,8 @@ Wire the existing parts. Add no parallel module (the rejected `stage-conditions`
 2. **Conditions (S).** Add `DEFAULT_CONDITIONS` entries for `ui`, `user-flow`, `security`, `live-proof` and `compliance`, and set them in `references/stage-registry.json` where the condition is now `null`.
    - Patterns match code and config extensions only, never docs about them.
    - `security` matches auth, payment, secret, crypto and migration paths and the flags `auth`/`auth-sensitive`. This unifies the vocabulary and closes the SSO gap.
-   - Prototype keeps `security` in `delivery-profiles.json`.
+   - **One commit, condition first:** add the `security` condition, point the registry stage at it, then add `security` to prototype `conditional_stages`. Landing the keep-list first would bring back the no-op the current head just removed.
+   - A tier-1 case checks two diffs. A prototype diff under `android/` or an auth path keeps `security`. A docs-only diff does not.
 3. **The compiler reads activation (R).** `compile-delivery-graph.mjs` starts from the lane's skills as today.
    - When planned files are known, it calls `evaluateActivation`.
    - It drops a non-chain skill only when every registry stage mapping to that skill is `na`/`deferred` (this handles the shared skills qa-companion/test-run → test-journeys and device/visuals → track-visuals).
@@ -526,33 +538,42 @@ Each stays in the ledger with a status and reason:
 - Finops, game economy and artwork checks: these become S/P probes in the northstar game task.
 - Managed Agents workflows, meta-harness, fleet 14→1, conversion loop, paid upgrades, 016U3 alignment, harness-agnostic boxes, constrained vs free path: deferred until the north-star proof passes. The ledger says so explicitly.
 
-## 4. Order and parallelism
-1. **Commit the pending docs:**
-   - The removals entry, the design doc and ledger row 18.
-   - Add ledger rows 64+ for the asks missing from the 63 rows (adversarial fallback, slots, caching order, the fast loop, plan-simulate-check, the north star).
-   - One small batch, then wait for CI.
-2. **Wave 1**, in parallel worktrees from HEAD:
-   - Scopes are checked by `scripts/lib/disjoint-scopes.mjs` before dispatch.
-   - **Ownership:**
-     - A owns `compile-delivery-graph.mjs`, including the base44 fix, and stage-activation/registry/profiles.
-     - B owns X4 model names and the resolver.
-     - C owns the northstar dir and the `outcome-eval.mjs` sandbox model pinning.
-     - D owns the loop tooling, without touching `outcome-eval.mjs`. Its `northstar decide` lives in a new file.
-     - E owns X1/X3/X5 on skill files **except** route-workflow, plan-changeset and improve-framework, which go to wave 2.
-   - **Serial integrator:** one batch makes all edits to `skills-manifest.json`, README, EXTERNAL_ADDONS, REPO_MODES, the route-workflow Core Pack, removals.md and capability-coverage.json.
-3. **Integrate,** run the full tier-1 suite once, then wait for CI.
-4. **Pre-register** the score, weights, grader hashes and held-out set. These are reviewed independently.
-5. **Baseline before any rewrite (review B4):**
-   - Northstar on Haiku, solo vs framework, 3 runs each, with every slot pinned to Haiku.
-   - This is the first real framework datapoint and the "before" for every later claim.
-6. **Wave 2:**
-   - X2 boilerplate, the X6 chain cores and the skill R/S/M/X rows, batched by group.
-   - Each batch is gated on a dev-task northstar slice (no score loss, token drop measured).
-   - Each merge or removal comes with its removals entry.
-   - The "measure first" rows (company-role, review-gate, review-exec profiles, greenfield mvp, C3, C4) are adopted only on a measured win.
-7. **Loop iterations** aimed at the biggest score gap or cost overrun, on dev tasks only. Then a re-measure that includes the held-out tasks.
-6. **Hooks:** the Go front door decision, then caching order.
-7. **Opus confirmation run,** after the owner approves its forecast. Then the ledger rows are updated with the evidence.
+## 4. Order and parallelism (revised: prove, then build; owner review options 1 + 2, with the gates of option 4)
+
+**Program 1: the proof.** The smallest organism that can clear the bar.
+
+1. **P1.0 Plan edits:** the bar, the baseline order and the single budget. Done in this revision.
+2. **P1.1 Frozen baseline (Gate A).**
+   - Score solo vs the install at `dc358c0` on Haiku. Slots are pinned, the arm is advisory, and there are no compiler edits.
+   - Graders, weights and hashes are pre-registered first.
+   - Publish H, E, S, P and J per task, plus the three cost numbers.
+3. **P1.2 Branch on the baseline:**
+   - If the headline is under 1.1× or cost is over 3×, the only allowed next edits are the token cut (X6 on the chain cores) and `harden.mjs`.
+   - If H is below solo on a task, stop and fix the done-definition first.
+   - If E or S is 0 for both arms, build `harden.mjs` first.
+4. **P1.3 The Program 1 organism.** Each piece is measured as its own treatment:
+   - one ≤60-line route-workflow;
+   - one done-means checklist in plan-changeset (the yoga win, made explicit);
+   - one `harden.mjs`, selected by file type;
+   - one owner-rule memory file (the 19/20 win);
+   - the §3b activation wiring, condition first, plus its scenario test.
+5. **P1.4 After-number** on dev tasks, then on held-out tasks.
+6. **P1.5 Loop iterations** on dev tasks only, aimed at the biggest gap.
+
+**Program 2: the full organism.** It runs after the first scored framework run, and each item is gated.
+
+1. **Gate B:** the skill merges and rewrites run only if Program 1 shows the gap is in skill text, not in missing probes.
+2. **Gate C:** the receipt rebuild (§3j) runs side by side until the baseline numbers exist. Invariant 2 never requires a paid external review inside the Haiku arm.
+3. **Waves, in this order:**
+   1. X1 resolver, X3 safety bugs, X4 phantom references, X5 consumer leftovers.
+   2. §3c slots and ladder, then §3i router.
+   3. §3j receipts: the deletion is a serial batch.
+   4. X2/X6 skill rows, after the receipt deletion, because they touch the same files.
+   5. §3k cockpit.
+   6. §3l founder layer.
+4. **The hooks decision:** the Go front door, then caching order.
+5. **Ownership and the serial integrator** follow the wave 1 split in §7: disjoint scopes, plus one batch for the five source-of-truth files.
+6. **Opus confirmation run** (owner yes). Then each ledger row is updated with its evidence.
 
 ### Build transport (owner ask: build with a swarm, then review)
 - **The work goes to the cheapest model that can do it.** Every worker runs in its own worktree from HEAD, owns a disjoint set of files, and has a deterministic check as its gate.
@@ -692,3 +713,14 @@ All 16 findings were accepted. Where an amendment conflicts with a section above
 - §3k: cockpit, wave 2.
 - §3l: activation and registry parts in A; formulas, tokens and the founder context in wave 2.
 - The change-absorption test (§1b) is in wave 1 B.
+
+## 8. Owner review on `dc358c0` (review 5482766246): disposition
+All findings are accepted and edited in above:
+- **Bar:** E/S/P geometric mean, H and the typo task as constraints, three cost numbers, zone review as its own column, router and ladder out of the measured arm.
+- **Baseline:** frozen at `dc358c0` before any wiring; wave 1's wiring is the first treatment.
+- **Graders:** frozen from a spec that does not cite pilot numbers.
+- **Budget:** one table.
+- **X1:** a resolver instead of a codemod.
+- **Security keep-list:** in the same commit as its condition, with a tier-1 case.
+- **Order:** §4 renumbered as Program 1 (proof) then Program 2 (full organism), with Gates A–C.
+- **Code:** the open `regrade --margin` note is fixed in this commit. A regrade keeps the report's margin unless `--margin` is given, with a tier-1 case.
