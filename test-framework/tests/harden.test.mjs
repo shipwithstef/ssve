@@ -164,12 +164,97 @@ test("a path outside the project root is rejected", () => {
   assert.match(escaped.stderr, /escapes root|not a file|ENOENT/);
 });
 
-test("execute-changeset self-verify runs harden before finishing", () => {
+test("jsx expression children count as button names", () => {
+  const dir = project({
+    "App.jsx": [
+      "export function App({ label }) {",
+      "  return (",
+      "    <div>",
+      "      <button>{\"Save\"}</button>",
+      "      <button>{label}</button>",
+      "      <button>{null}</button>",
+      "      <button></button>",
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "ui-button-name").map((f) => f.line), [6, 7]);
+});
+
+test("preceding app.use(requireAuth) authorizes later routes on that receiver", () => {
+  const dir = project({
+    "server.js": [
+      "app.get(\"/open\", (req, res) => { res.end(\"nope\"); });",
+      "app.use(\"/admin\", requireAuth);",
+      "app.get(\"/admin/users\", (req, res) => { res.end(\"u\"); });",
+      "app.get(\"/health\", (req, res) => { res.end(\"h\"); });",
+      "app.use(requireAuth);",
+      "app.get(\"/a\", (req, res) => { res.end(\"a\"); });",
+      "router.get(\"/z\", (req, res) => { res.end(\"z\"); });",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "http-authz").map((f) => f.line), [1, 4, 7]);
+});
+
+test("http checks match executable code and honor public comments", () => {
+  const dir = project({
+    "server.js": [
+      "// app.post(\"/old\", (req, res) => { res.end(req.body.z); throw new Error(\"z\"); });",
+      "app.post(\"/open\", async (req, res) => {",
+      "  const note = \"requireAuth missing\";",
+      "  const retry = \"try again\";",
+      "  res.end(req.body.name);",
+      "  const rows = await db.list();",
+      "  res.end(retry);",
+      "});",
+      "// public",
+      "app.get(\"/health\", (req, res) => { res.end(\"ok\"); });",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "http-authz").map((f) => f.line), [2]);
+  assert.deepEqual(rulesOf(report, "http-input-validation").map((f) => f.line), [5]);
+  assert.deepEqual(rulesOf(report, "http-error-handling").map((f) => f.line), [6]);
+  assert.equal(report.findings.some((f) => f.line === 1 || f.line === 10), false);
+});
+
+test("idempotency is checked on each charge, not once per file", () => {
+  const dir = project({
+    "billing.js": [
+      "export function chargeCustomer(sku) {",
+      "  stripe.paymentIntents.create({ amount: 100, currency: \"usd\", idempotencyKey: sku });",
+      "  stripe.paymentIntents.create({",
+      "    amount: 200,",
+      "    currency: \"usd\",",
+      "  });",
+      "}",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "money-idempotency").map((f) => f.line), [3]);
+});
+
+test("commas inside a then callback object are not a rejection handler", () => {
+  const dir = project({
+    "util.js": [
+      "export function go(p) {",
+      "  p.then(v => { const x = {a:1,b:2}; throw Error(); });",
+      "  p.then(v => v, () => null);",
+      "  p.then(v => [1, 2]);",
+      "}",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "unhandled-promise").map((f) => f.line), [2, 4]);
+});
+
+test("harden runs before execute-changeset finishes, without changing execute-changeset's bound bytes (X7)", () => {
+  const shared = fs.readFileSync(new URL("../../_shared/before-starting.md", import.meta.url), "utf8");
+  assert.match(shared, /node "\$SVC_ROOT"\/scripts\/harden\.mjs --root \./);
+  assert.match(shared, /fix or justify each finding/);
   const skill = fs.readFileSync(new URL("../../skills/execute-changeset/SKILL.md", import.meta.url), "utf8");
-  const start = skill.indexOf("### Self-Verify");
-  const end = skill.indexOf("### Chaining");
-  const self = skill.slice(start, end);
-  assert.ok(start > 0 && end > start);
-  assert.match(self, /node "\$SVC_ROOT"\/scripts\/harden\.mjs --root \./);
-  assert.match(self, /fix or justify each finding/);
+  assert.doesNotMatch(skill, /harden\.mjs/, "execute-changeset stays byte-identical (plan X7)");
 });

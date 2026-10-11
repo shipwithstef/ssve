@@ -368,8 +368,6 @@ Task-graph mode — source of truth: `.svc/lane-tasks-<WI>.json`. Read and updat
 
 Before declaring done, verify:
 
-Before finishing, run `node "$SVC_ROOT"/scripts/harden.mjs --root .` and fix or justify each finding.
-
 | # | Check | How | PASS/FAIL |
 |---|-------|-----|-----------|
 | 1 | All manifest tasks have checkpoint commits | `git log --oneline` shows checkpoint commits for every task in the manifest | |

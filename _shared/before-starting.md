@@ -72,3 +72,7 @@ The pattern was imported from coreyhaines/marketingskills v1.9.0 and adapted fro
 ## Validation
 
 Skills authored on or after 2026-04-28 are validated by `test-framework/evals/tier-1/validate-skill-before-starting.sh`. Older skills are exempt (advisory mode) until they receive a substantive edit; at that point the validator becomes blocking for them as well.
+
+## Harden before execute-changeset finishes
+
+Before `execute-changeset` reports done, run `node "$SVC_ROOT"/scripts/harden.mjs --root .` from the project directory and fix or justify each finding. execute-changeset's own bytes are bound to its Two-Box executor key (plan X7), so this step lives here.

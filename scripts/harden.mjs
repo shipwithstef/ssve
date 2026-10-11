@@ -58,11 +58,11 @@ const LEAK_IDENT = /\b(?:password|passwd|secret|api_?key|apiKey|accessToken|acce
 const MONEY_DECIMAL = /\b(price|amount|cost|total|fee|subtotal|unit_amount|unitAmount|price_cents|amount_cents|unit_amount_cents)\b\s*[:=]\s*(?:parseFloat|Number)\s*\(|\b(price|amount|cost|total|fee|subtotal|unit_amount|unitAmount|price_cents|amount_cents|unit_amount_cents)\b\s*[:=]\s*-?\d+\.\d+/;
 const CLIENT_PRICE = /\b(?:req|request)\s*\.\s*(?:body|query)\s*\.\s*(?:price|amount|total|fee|unit_amount|unitAmount)\b|(?:const|let|var)\s*\{[^}\n]*\b(?:price|amount|total|fee)\b[^}\n]*\}\s*=\s*(?:req|request)\s*\.\s*body\b/;
 const CHARGE_CALL = /\b(?:paymentIntents|charges|refunds)\s*\.\s*create\s*\(|\bcheckout(?:\s*\.\s*\w+)+\s*\.\s*create\s*\(|\bstripe(?:\s*\.\s*\w+)+\s*\.\s*create\s*\(|\b(?:chargeCustomer|createCharge|capturePayment|createPayment)\s*\(/;
-const CHARGE_DECL = /\b(?:async\s+)?function\s+(?:chargeCustomer|createCharge|capturePayment|createPayment)\s*\(/g;
 const INPUT_READ = /\b(?:req|request)\s*\.\s*(?:body|query|params)\b|\bawait\s+(?:req|request)\s*\.\s*json\s*\(|\b(?:req|request)\s*\.\s*json\s*\(/;
 const VALIDATION = /\b(?:safeParse|z\.\w+|zod|joi|ajv|validator|\.validate\s*\(|schema|typeof\s|Number\.isFinite|Number\.isInteger|if\s*\(\s*!)/i;
 const AUTHZ = /\b(?:requireAuth|requireUser|ensureAuth|ensureLoggedIn|isAuthenticated|authorize|withAuth|verifyToken|jwtVerify|passport|req\.user|request\.user|currentUser|getServerSession|getSession|assertCan|permission|authenticate|authenticated)\b/;
-const PUBLIC_ROUTE = /(?:\/\/|\*)\s*public\b|\b(?:publicRoute|allowAnonymous|skipAuth)\b/;
+const PUBLIC_COMMENT = /(?:\/\/|\*)\s*public\b/;
+const PUBLIC_CODE = /\b(?:publicRoute|allowAnonymous|skipAuth)\b/;
 const THROWS = /\b(?:await|throw)\b/;
 const HANDLED = /\btry\b|\basyncHandler\b|\bcatchAsync\b|\bwrapAsync\b/;
 const ROUTE_PATTERNS = [
@@ -222,7 +222,9 @@ function balancedEnd(text, openIdx) {
 }
 
 function callInfo(text, openParen) {
-  let depth = 0;
+  let paren = 0;
+  let brace = 0;
+  let bracket = 0;
   let topComma = false;
   let quote = null;
   for (let i = openParen; i < text.length; i++) {
@@ -237,12 +239,21 @@ function callInfo(text, openParen) {
       while (i < text.length && text[i] !== "\n") i++;
       continue;
     }
-    if (c === "(") {
-      depth++;
-    } else if (c === ")") {
-      depth--;
-      if (depth === 0) return { end: i + 1, topComma };
-    } else if (c === "," && depth === 1) topComma = true;
+    if (c === "/" && text[i + 1] === "*") {
+      i += 2;
+      while (i < text.length && !(text[i] === "*" && text[i + 1] === "/")) i++;
+      i = Math.min(text.length, i + 2);
+      continue;
+    }
+    if (c === "(") paren++;
+    else if (c === ")") {
+      paren--;
+      if (paren === 0) return { end: i + 1, topComma };
+    } else if (c === "{") brace++;
+    else if (c === "}") brace = Math.max(0, brace - 1);
+    else if (c === "[") bracket++;
+    else if (c === "]") bracket = Math.max(0, bracket - 1);
+    else if (c === "," && paren === 1 && brace === 0 && bracket === 0) topComma = true;
   }
   return { end: text.length, topComma };
 }
@@ -367,23 +378,71 @@ function scanJs(text) {
   return hits;
 }
 
+function commentText(text) {
+  const parts = [];
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    if (c === "/" && text[i + 1] === "/") {
+      const start = i;
+      while (i < text.length && text[i] !== "\n") i++;
+      parts.push(text.slice(start, i));
+      continue;
+    }
+    if (c === "/" && text[i + 1] === "*") {
+      const start = i;
+      i += 2;
+      while (i < text.length && !(text[i] === "*" && text[i + 1] === "/")) i++;
+      const end = Math.min(text.length, i + 2);
+      parts.push(text.slice(start, end));
+      i = end;
+      continue;
+    }
+    if (c === "'" || c === "\"" || c === "`") {
+      const q = c;
+      i++;
+      while (i < text.length) {
+        if (text[i] === "\\") { i += 2; continue; }
+        if (q !== "`" && text[i] === "\n") break;
+        if (text[i] === q) { i++; break; }
+        i++;
+      }
+      continue;
+    }
+    i++;
+  }
+  return parts.join("\n");
+}
+
 function collectRoutes(text) {
+  const masked = maskNonCode(text);
   const routes = [];
   const seen = new Set();
   for (const { re } of ROUTE_PATTERNS) {
     re.lastIndex = 0;
     let m;
-    while ((m = re.exec(text))) {
+    while ((m = re.exec(masked))) {
       const openAt = m.index + m[0].length - 1;
+      if (text[openAt] !== "(" && text[openAt] !== "{") continue;
       const end = balancedEnd(text, openAt);
       if (end == null || seen.has(m.index)) continue;
       seen.add(m.index);
-      routes.push({ start: m.index, end });
+      routes.push({
+        start: m.index,
+        end,
+        receiver: receiverOf(text, m.index),
+        path: text[openAt] === "(" ? readStringArg(text, openAt) : null,
+      });
       if (m.index === re.lastIndex) re.lastIndex++;
     }
   }
   routes.sort((a, b) => a.start - b.start);
   return routes;
+}
+
+function receiverOf(text, index) {
+  const ident = readIdent(text, index);
+  return ident ? ident.word : "";
 }
 
 function leadingNotes(text, index) {
@@ -407,18 +466,75 @@ function firstIn(text, from, to, regex) {
   return lineAt(text, from + m.index);
 }
 
-function checkHttp(text, findings) {
-  for (const route of collectRoutes(text)) {
-    const body = text.slice(route.start, route.end);
-    const notes = leadingNotes(text, route.start);
-    if (INPUT_READ.test(body) && !VALIDATION.test(body)) {
-      findings.push({ line: firstIn(text, route.start, route.end, INPUT_READ), rule: "http-input-validation" });
+function readStringArg(text, openParen) {
+  const at = skipWsComments(text, openParen + 1);
+  const q = text[at];
+  if (q !== "'" && q !== "\"" && q !== "`") return null;
+  let i = at + 1;
+  let value = "";
+  while (i < text.length && text[i] !== q) {
+    if (text[i] === "\\") {
+      value += text[i + 1] || "";
+      i += 2;
+      continue;
     }
-    if (!AUTHZ.test(body) && !PUBLIC_ROUTE.test(notes) && !PUBLIC_ROUTE.test(body)) {
+    if (q === "`" && text[i] === "$") return null;
+    value += text[i];
+    i++;
+  }
+  return value;
+}
+
+function collectMiddleware(text) {
+  const masked = maskNonCode(text);
+  const guards = [];
+  const re = /\b(app|router|server|fastify)\s*\.\s*use\s*\(/g;
+  let m;
+  while ((m = re.exec(masked))) {
+    const open = m.index + m[0].length - 1;
+    if (text[open] !== "(") continue;
+    const end = balancedEnd(text, open);
+    if (end == null) continue;
+    if (!AUTHZ.test(masked.slice(open, end))) continue;
+    guards.push({
+      receiver: m[1],
+      index: m.index,
+      path: readStringArg(text, open),
+    });
+    if (m.index === re.lastIndex) re.lastIndex++;
+  }
+  return guards;
+}
+
+function middlewareCovers(guard, route) {
+  if (guard.receiver !== route.receiver || guard.index >= route.start) return false;
+  if (guard.path == null) return true;
+  if (route.path == null) return false;
+  if (route.path === guard.path) return true;
+  const base = guard.path.endsWith("/") ? guard.path.slice(0, -1) : guard.path;
+  return base.length > 0 && route.path.startsWith(`${base}/`);
+}
+
+function routeIsPublic(text, route, codeBody) {
+  const notes = leadingNotes(text, route.start);
+  const comments = `${notes}\n${commentText(text.slice(route.start, route.end))}`;
+  return PUBLIC_COMMENT.test(comments) || PUBLIC_CODE.test(codeBody);
+}
+
+function checkHttp(text, findings) {
+  const masked = maskNonCode(text);
+  const guards = collectMiddleware(text);
+  for (const route of collectRoutes(text)) {
+    const body = masked.slice(route.start, route.end);
+    if (INPUT_READ.test(body) && !VALIDATION.test(body)) {
+      findings.push({ line: firstIn(masked, route.start, route.end, INPUT_READ), rule: "http-input-validation" });
+    }
+    const covered = guards.some((guard) => middlewareCovers(guard, route));
+    if (!covered && !AUTHZ.test(body) && !routeIsPublic(text, route, body)) {
       findings.push({ line: lineAt(text, route.start), rule: "http-authz" });
     }
     if (THROWS.test(body) && !HANDLED.test(body)) {
-      findings.push({ line: firstIn(text, route.start, route.end, THROWS), rule: "http-error-handling" });
+      findings.push({ line: firstIn(masked, route.start, route.end, THROWS), rule: "http-error-handling" });
     }
   }
   const lines = text.split("\n");
@@ -435,26 +551,134 @@ function checkHttp(text, findings) {
   }
 }
 
-function isChargeInvocation(visible) {
-  if (!CHARGE_CALL.test(visible)) return false;
-  // A declaration (`function chargeCustomer(`) is not a charge. Strip those
-  // so a real call on the same line still counts.
-  return CHARGE_CALL.test(visible.replace(CHARGE_DECL, ""));
+function maskNonCode(text) {
+  const chars = text.split("");
+  const blankAt = (k) => {
+    if (k < chars.length && chars[k] !== "\n") chars[k] = " ";
+  };
+  const frames = [{ kind: "code", brace: 0 }];
+  let i = 0;
+  while (i < text.length) {
+    const frame = frames[frames.length - 1];
+    const c = text[i];
+    if (frame.kind === "tmpl") {
+      if (c === "\\") {
+        blankAt(i);
+        blankAt(i + 1);
+        i += 2;
+        continue;
+      }
+      if (c === "`") {
+        blankAt(i);
+        i++;
+        frames.pop();
+        continue;
+      }
+      if (c === "$" && text[i + 1] === "{") {
+        blankAt(i);
+        blankAt(i + 1);
+        i += 2;
+        frames.push({ kind: "code", brace: 0 });
+        continue;
+      }
+      blankAt(i);
+      i++;
+      continue;
+    }
+    if (c === "/" && text[i + 1] === "/") {
+      while (i < text.length && text[i] !== "\n") {
+        blankAt(i);
+        i++;
+      }
+      continue;
+    }
+    if (c === "/" && text[i + 1] === "*") {
+      blankAt(i);
+      blankAt(i + 1);
+      i += 2;
+      while (i < text.length && !(text[i] === "*" && text[i + 1] === "/")) {
+        blankAt(i);
+        i++;
+      }
+      blankAt(i);
+      blankAt(i + 1);
+      i += 2;
+      continue;
+    }
+    if (c === "'" || c === "\"") {
+      const q = c;
+      blankAt(i);
+      i++;
+      while (i < text.length) {
+        if (text[i] === "\\") {
+          blankAt(i);
+          blankAt(i + 1);
+          i += 2;
+          continue;
+        }
+        if (text[i] === "\n") break;
+        const done = text[i] === q;
+        blankAt(i);
+        i++;
+        if (done) break;
+      }
+      continue;
+    }
+    if (c === "`") {
+      blankAt(i);
+      i++;
+      frames.push({ kind: "tmpl" });
+      continue;
+    }
+    if (c === "{") {
+      frame.brace++;
+      i++;
+      continue;
+    }
+    if (c === "}") {
+      if (frame.brace > 0) frame.brace--;
+      else if (frames.length > 1) frames.pop();
+      i++;
+      continue;
+    }
+    i++;
+  }
+  return chars.join("");
+}
+
+function isDeclarationAt(text, index) {
+  const before = text.slice(Math.max(0, index - 40), index);
+  return /(?:async\s+)?function\s*$/.test(before);
+}
+
+function findChargeCalls(text) {
+  const masked = maskNonCode(text);
+  const calls = [];
+  const re = new RegExp(CHARGE_CALL.source, "g");
+  let m;
+  while ((m = re.exec(masked))) {
+    if (isDeclarationAt(text, m.index)) {
+      if (m.index === re.lastIndex) re.lastIndex++;
+      continue;
+    }
+    const open = m.index + m[0].length - 1;
+    const end = text[open] === "(" ? balancedEnd(text, open) : null;
+    const span = masked.slice(m.index, end == null ? masked.length : end);
+    calls.push({ line: lineAt(text, m.index), idempotent: /idempotency/i.test(span) });
+    if (m.index === re.lastIndex) re.lastIndex++;
+  }
+  return calls;
 }
 
 function checkMoney(text, findings) {
   const lines = text.split("\n");
-  let idempotent = false;
-  const chargeAt = [];
   for (let n = 0; n < lines.length; n++) {
     const visible = visibleLine(lines[n]);
-    if (/idempotency/i.test(visible)) idempotent = true;
     if (MONEY_DECIMAL.test(visible)) findings.push({ line: n + 1, rule: "money-integer-cents" });
     if (CLIENT_PRICE.test(visible)) findings.push({ line: n + 1, rule: "money-server-price" });
-    if (isChargeInvocation(visible)) chargeAt.push(n + 1);
   }
-  if (!idempotent) {
-    for (const line of chargeAt) findings.push({ line, rule: "money-idempotency" });
+  for (const call of findChargeCalls(text)) {
+    if (!call.idempotent) findings.push({ line: call.line, rule: "money-idempotency" });
   }
 }
 
@@ -496,11 +720,40 @@ function inputLabeled(text, attrs) {
   return new RegExp("\\b(?:for|htmlFor)\\s*=\\s*[\"'{]" + id + "[\"'}]").test(text);
 }
 
+function expressionCountsAsName(expr) {
+  const trimmed = expr.trim();
+  if (!trimmed || trimmed.startsWith("/*") || trimmed.startsWith("//")) return false;
+  if (/^(?:null|undefined|false|true)$/.test(trimmed)) return false;
+  const literal = /^(['"`])([\s\S]*)\1$/.exec(trimmed);
+  if (literal && (literal[1] !== "`" || !literal[2].includes("${"))) {
+    return literal[2].trim().length > 0;
+  }
+  // A dynamic child may render a name. Do not report it as absent.
+  return true;
+}
+
 function buttonName(text, afterOpen) {
   const close = text.toLowerCase().indexOf("</button", afterOpen);
   const inner = text.slice(afterOpen, close === -1 ? afterOpen : close);
-  const plain = inner.replace(/<[^>]*>/g, "").replace(/\{[^}]*\}/g, "").trim();
-  return plain.length > 0;
+  let i = 0;
+  while (i < inner.length) {
+    if (inner[i] === "<") {
+      const end = inner.indexOf(">", i);
+      if (end < 0) return true;
+      i = end + 1;
+      continue;
+    }
+    if (inner[i] === "{") {
+      const end = balancedEnd(inner, i);
+      if (end == null) return true;
+      if (expressionCountsAsName(inner.slice(i + 1, end - 1))) return true;
+      i = end;
+      continue;
+    }
+    if (!/\s/.test(inner[i])) return true;
+    i++;
+  }
+  return false;
 }
 
 function checkUi(text, findings) {
