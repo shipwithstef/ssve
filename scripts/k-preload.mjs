@@ -20,6 +20,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
 
 export const DEFAULT_CAP_BYTES = 2048;
 const MAX_MARKDOWN_BYTES = 64 * 1024;
@@ -391,5 +392,4 @@ function main() {
   }
 }
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
-if (isMain) main();
+if (isMain(import.meta.url)) main();
