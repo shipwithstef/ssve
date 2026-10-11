@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 const FIELDS = ["Kind", "Existed for", "Evidence", "Why removed", "Intent now delivered by", "Date / record", "Reintroduction check"];
 const text = fs.readFileSync(path.join(ROOT, "docs/removals.md"), "utf8");
 const entries = text.split(/^## /m).slice(1).map((block) => ({ name: block.split("\n")[0].trim(), body: block }));
@@ -18,7 +19,7 @@ const entries = text.split(/^## /m).slice(1).map((block) => ({ name: block.split
 test("every removal entry states its purpose, evidence, reason and replacement", () => {
   assert.ok(entries.length > 0);
   for (const e of entries) for (const field of FIELDS) {
-    const m = e.body.match(new RegExp(`^- \\*\\*${field.replace(/[/]/g, "\\/")}:\\*\\* (.+)$`, "m"));
+    const m = e.body.match(new RegExp(`^- \\*\\*${escapeRegExp(field)}:\\*\\* (.+)$`, "m"));
     assert.ok(m && m[1].trim().length > 3, `${e.name}: missing "${field}"`);
   }
 });
