@@ -138,6 +138,7 @@ function findingProblem(dir, f, c = {}) {
   if (text == null) return `names a file that does not exist: ${rel}`;
   if (!Number.isInteger(f.line) || f.line < 1 || f.line > text.split("\n").length) return `line ${f.line} is outside ${rel}`;
   if (!sev.includes(String(f.severity || "").toUpperCase())) return `severity "${f.severity}" is not one of ${sev.join("|")}`;
+  if (typeof f.issue !== "string" || !f.issue.trim()) return "is missing the required issue text";
   if (String(f.issue || "").trim().length < (c.min_issue_chars ?? 15)) return "has no real description of the attack";
   return affirmativeProblem(f.issue);
 }
@@ -167,7 +168,9 @@ const SOFT_DENIAL = [
   /\b(?:is|are|was|were|appears|seems|looks|remains|found|deemed|considered)\s+(?:to be\s+)?(?:\w+\s+and\s+)?(?:safe|secure|fine|ok|okay|mitigated|protected|sanitised|sanitized|sound|correct|adequate)\b/gi,
   /\b(?:parameteri[sz]ed|sanitis?zed|escaped|validated)\b[^.;\n]{0,30}\b(?:and|,)\s*(?:safe|secure)\b/gi,
 ];
-const NEGATION = /\b(?:not|never|no|without|improperly|incorrectly|inadequately|insufficiently|isn'?t|aren'?t|wasn'?t|weren'?t|doesn'?t|don'?t|didn'?t|cannot|can'?t|lacks?|lacking|missing|fails? to|failed to|un\w+)\b|n't\b/i;
+const NEGATION = /\b(?:not|never|no|without|improperly|incorrectly|inadequately|insufficiently|isn'?t|aren'?t|wasn'?t|weren'?t|doesn'?t|don'?t|didn'?t|cannot|can'?t|lacks?|lacking|missing|fails? to|failed to|un(?:validated|checked|verified|saniti[sz]ed|escaped|protected|guarded|handled|safe|secured)|insecure)\b|n't\b/i;
+const BARE = /\b(?:is|are|was|were)\s+(?:validated|checked|handled|verified)\b/gi;
+const DEFECT_QUALIFIER = /\b(?:wrong|incorrect(?:ly)?|only|insufficient(?:ly)?|weak(?:ly)?|partial(?:ly)?|client|too late|after|before|without|against the wrong)\b/i;
 function softDenial(text) {
   for (const re of SOFT_DENIAL) {
     for (const m of text.matchAll(re)) {
@@ -176,25 +179,91 @@ function softDenial(text) {
       if (!NEGATION.test(lead) && !NEGATION.test(m[0].replace(/^\w+\s+/, "").split(/\s+/).slice(0, 1).join(" "))) return true;
     }
   }
+  // A bare "is validated" denies only when its clause names no defect and states no impact.
+  for (const m of text.matchAll(BARE)) {
+    const lead = text.slice(0, m.index).split(/[.;:!?\n]/).pop().split(",").pop().split(/\s+/).slice(-6).join(" ");
+    if (!NEGATION.test(lead) && !DEFECT_QUALIFIER.test(text) && !impactScan(text).positive) return true;
+  }
   return false;
 }
-const IMPACT = /\b(?:attackers?|attack\w*|exploit\w*|forg\w+|bypass\w*|steal\w*|tamper\w*|leak\w*|expos\w+|impersonat\w+|unauthori[sz]ed|arbitrary|inject\w*|escalat\w+|replay\w*|spoof\w*|abus\w+|take ?over|anyone|any (?:user|customer|client|caller|person)|(?:another|other) (?:user|customer|account|person)s?|for free|pay(?:s|ing)? (?:less|nothing|1|a cent|only)|without (?:paying|authenticat\w+|authori[sz]\w+|a valid|any|the signature|a signature|checking)|can (?:be )?(?:read|refund\w*|obtain\w*|trigger\w*|pay|cancel\w*|reuse\w*|access\w*|modif\w+|delet\w+|overwrit\w+|forg\w+|steal\w*|see|view)|allows?|lets?|written to (?:the )?(?:logs?|console|stdout)|(?:secret|signing material|credential|password|token|key|hmac)\b[^.\n]{0,60}\b(?:logs?|logged)|\blogs?\b[^.\n]{0,60}\b(?:secret|signing material|credential|password|token|key|hmac))/i;
+const IMPACT = /\b(?:attackers?|attack\w*|exploit\w*|forg\w+|bypass\w*|steal\w*|tamper\w*|leak\w*|expos\w+|impersonat\w+|unauthori[sz]ed|arbitrary|inject\w*|escalat\w+|replay\w*|spoof\w*|abus\w+|take ?over|anyone|any (?:user|customer|client|caller|person)|(?:another|other) (?:user|customer|account|person)s?|for free|pay(?:s|ing)? (?:less|nothing|1|a cent|only)|without (?:paying|authenticat\w+|authori[sz]\w+|a valid|any|the signature|a signature|checking)|can (?:be )?(?:read|refund\w*|obtain\w*|trigger\w*|pay|cancel\w*|reuse\w*|access\w*|modif\w+|delet\w+|overwrit\w+|forg\w+|steal\w*|see|view)|allows?|lets?|written to (?:the )?(?:logs?|console|stdout)|crash\w*|denial[- ]of[- ]service|\bdos\b|tak(?:es?|ing) (?:the )?\w*\s?(?:\w+ )?down|\bhang\w*|unhandled (?:exception|error|rejection)s?|\b500s?\b|\bstuck\b|left (?:in|with)\b[^.\n]{0,40}\bstate|never (?:rolled back|reverted|restored|released|cleaned up)|\blost\b|double[- ](?:charg\w+|refund\w*|book\w*|spen\w+|count\w*|pay\w*)|corrupt\w*|inconsisten\w+|\brace\b|\brace condition|overdr\w+|negative balance|(?:secret|signing material|credential|password|token|key|hmac)\b[^.\n]{0,60}\b(?:logs?|logged)|\blogs?\b[^.\n]{0,60}\b(?:secret|signing material|credential|password|token|key|hmac))/i;
+const DENIES = "denies a defect (it says the code is safe, mitigated or not vulnerable) instead of describing an exploit";
+const NO_IMPACT = "does not state an attack or its impact";
+const HEDGED = "is a question or a hedge, not an affirmative statement";
+// Only a double hedge ("might possibly", "could maybe") or an admission of not knowing is not a
+// claim; a single hedge ("may crash", "could allow") is ordinary phrasing in an honest report.
+const HEDGE = /\b(?:might|could|may)\s+(?:possibly|maybe|perhaps)\b|\b(?:maybe|perhaps|possibly)\s+(?:might|could|may)\b|\bnot sure\b|\bunsure\b|\bno idea\b/i;
+// A "?" inside code, a URL, a query string, optional chaining or a ternary is not a question.
+const stripCode = (t) => t.replace(/`[^`]*`/g, " ").replace(/https?:\/\/\S+/gi, " ").replace(/\S\?[\w=&./%-]\S*/g, " ").replace(/\?\./g, ".").replace(/\s\?\s[^?]*?\s:\s/g, " ");
+// A finding is a question when it ends with "?" (ignoring trailing quotes, backticks, emphasis
+// and closing brackets), or when it asks something and no other sentence states an impact.
+const TRAIL = /[\s"'`*_)\]}>\u201d\u2019]+$/;
+const endsAsked = (t) => t.replace(TRAIL, "").endsWith("?");
+function isQuestion(text) {
+  if (endsAsked(text)) return true;
+  const t = stripCode(text).trim();
+  if (!t) return false;
+  const sentences = t.split(/(?<=[.!?])\s+/).filter((x) => x.trim());
+  const asked = sentences.some(endsAsked);
+  return asked && !sentences.some((x) => !endsAsked(x) && hasImpact(x));
+}
+// An impact counts only when not negated: no negator among the 4 words before it, within its own
+// clause (a comma, colon, "so", "but", "which", "and" or "and then" ends the window; so does a
+// verb like "lets"/"allows", and those verbs themselves look back only 2 words, so "No rate limit
+// lets attackers ..." stays affirmative). An impact joined to a negated one by or/and/to/a comma
+// ("no race, never double charges or double refunds") is negated with it.
+const NEGATOR = /^(?:not|no|never|nor|without|cannot|neither|nothing)$|n't$/i;
+const FILLER = /\b(?:subject|vulnerable|susceptible|prone|open|exposed)\s+to\b/gi;
+const WINDOW_END = /[;:.!?\n,]|\b(?:so|but|which|and then|and|lets?|allows?|allowing|permits?|enables?)\b/i;
+const PERMISSIVE = /^(?:lets?|allows?|allowing|permits?|enables?)$/i;
+function impactScan(text) {
+  const t = text.replace(FILLER, " ");
+  let prev = null; let negatedSeen = false;
+  for (const m of t.matchAll(new RegExp(IMPACT.source, "gi"))) {
+    const clause = t.slice(0, m.index).split(new RegExp(WINDOW_END.source, "gi")).pop();
+    const words = clause.split(/\s+/).filter((w) => w && !/^(?:or|nor)$/i.test(w));
+    let negated = words.slice(PERMISSIVE.test(m[0]) ? -2 : -4).some((w) => NEGATOR.test(w));
+    if (!negated && prev && prev.negated && /^[\s,]*(?:(?:or|and|nor|to)\s*)?$/i.test(t.slice(prev.end, m.index))) negated = true;
+    prev = { end: m.index + m[0].length, negated };
+    if (!negated) return { positive: true, negated: negatedSeen };
+    negatedSeen = true;
+  }
+  return { positive: false, negated: negatedSeen };
+}
+const hasImpact = (t) => impactScan(t).positive;
+const CLAUSE_SPLIT = /\b(?:but|however|although|though|except)\b|;/i;
 export function affirmativeProblem(issue) {
   const t = String(issue || "");
-  if (WHOLE_DENIAL.some((re) => re.test(t))) return "denies a defect (it says the code is safe, mitigated or not vulnerable) instead of describing an exploit";
-  if (IMPACT.test(t)) return null;
-  if (softDenial(t)) return "denies a defect (it says the code is safe, mitigated or not vulnerable) instead of describing an exploit";
-  return "does not state an attack or its impact";
+  if (WHOLE_DENIAL.some((re) => re.test(t))) return DENIES;
+  // "properly mitigated" and friends deny a defect whatever impact words sit beside them, but
+  // per clause: a denying clause does not suppress an affirmative exploit clause beside it.
+  const clauses = t.split(CLAUSE_SPLIT);
+  const denying = clauses.some((c) => softDenial(c));
+  if (denying && !clauses.some((c) => !softDenial(c) && hasImpact(c))) return DENIES;
+  if (HEDGE.test(t) || isQuestion(t)) return HEDGED;
+  const imp = impactScan(t);
+  if (imp.positive) return null;
+  // a recognised negated impact ("does not crash") is a denial, like "not vulnerable"
+  return imp.negated ? DENIES : NO_IMPACT;
 }
 const credible = (dir, findings, c) => findings.filter((f) => !findingProblem(dir, f, c)).map((f) => ({ ...f, file: insideBuild(dir, f.file) }));
+// A report is valid when it is well formed, holds no denial and has at least one credited
+// finding. A finding that states no impact (or only hedges) is not credited and does not
+// invalidate the report, but a report with nothing credited earns no point, so a vague-only
+// report cannot raise a stub's score.
+const UNCREDITED_ONLY = new Set([NO_IMPACT, HEDGED, "has no real description of the attack"]);
 function reportValid(dir, c) {
   const rep = readReport(dir, c.file);
   if (rep.error) return check(c.name || "report_valid", false, rep.error);
+  let credited = 0;
   for (const [i, f] of rep.findings.entries()) {
     const p = findingProblem(dir, f, c);
-    if (p) return check(c.name || "report_valid", false, `finding ${i + 1} ${p}`);
+    if (!p) { credited++; continue; }
+    const denial = UNCREDITED_ONLY.has(p) && affirmativeProblem(f.issue) === DENIES;
+    if (!UNCREDITED_ONLY.has(p) || denial) return check(c.name || "report_valid", false, `finding ${i + 1} ${denial ? DENIES : p}`);
   }
-  return check(c.name || "report_valid", true, `${rep.findings.length} well-formed findings`);
+  if (!credited) return check(c.name || "report_valid", false, "no finding in the report is credible (each needs a real file and line, a severity and a stated attack or impact)");
+  return check(c.name || "report_valid", true, `${rep.findings.length} findings, ${credited} credited`);
 }
 function hashTree(root, rel) {
   const base = path.join(root, rel);

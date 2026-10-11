@@ -794,6 +794,201 @@ test("S security-payments: a report that denies the planted vulnerabilities scor
   assert.equal((await S.grade(ok, "security-payments", spec)).score, 1);
 });
 
+// Robustness findings (crash, stuck state, double charge) state an impact without an attacker.
+test("S findings: availability, integrity and state impacts count as stated impacts", () => {
+  const IMPACTS = [
+    "JSON.parse on the raw body is not guarded: a malformed payload throws an unhandled exception from the handler instead of answering 400, so one bad request can crash or 500 the endpoint",
+    "the booking is set to refunding before the gateway call and never rolled back when gateway.refund throws, so a failed refund leaves it stuck in that state",
+    "a slow upstream call can hang the request handler and take down the whole worker",
+    "unbounded request bodies make the endpoint easy to knock over: a denial of service (DoS)",
+    "a retry of the same webhook event produces a double charge because nothing dedupes by event id",
+    "two concurrent refunds race on the balance and leave the account with a negative balance",
+    "a failure half way leaves the ledger inconsistent and the stored record corrupt",
+  ];
+  for (const t of IMPACTS) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
+});
+
+const SP_REF_EP = path.join(OE, "northstar", "ref-ep", "security-payments", "SECURITY.json");
+const spBuild = (report) => {
+  const d = refBuild("security-payments");
+  if (report === undefined) fs.rmSync(path.join(d, "SECURITY.json"), { force: true });
+  else fs.writeFileSync(path.join(d, "SECURITY.json"), typeof report === "string" ? report : JSON.stringify(report));
+  return d;
+};
+test("S security-payments: the ref-ep report, robustness findings included, scores S = 1 on the reference build", async () => {
+  const spec = S.loadSpec("security-payments", "S");
+  const epReport = JSON.parse(fs.readFileSync(SP_REF_EP, "utf8"));
+  assert.equal(epReport.length, 6);
+  const r = await S.grade(spBuild(epReport), "security-payments", spec);
+  assert.equal(r.score, 1, JSON.stringify(r.checks.filter((c) => !c.pass)));
+  assert.equal(byName(r, "report-well-formed").pass, true);
+});
+
+// Round 3: negated impacts, question marks in code, clause scope.
+test("S findings: a negated impact is not an impact", () => {
+  for (const t of ["The checkout handler does not crash on a bad body", "There is no race condition in the refund path", "A retry never double charges the customer", "The webhook won't hang on a slow upstream", "Nothing is lost: no corrupt state and no 500 on bad input", "The endpoint is not subject to denial of service"]) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  // a negator before a comma or in another clause does not cancel a later impact
+  for (const t of ["With no auth check, anyone can refund another customer's booking", "No rate limit exists, so a flood of requests can crash the handler"]) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
+});
+
+test("S findings: a question mark in a URL, optional chaining or code is not a question", () => {
+  for (const t of ["GET /checkout?foo=bar reads the amount from the query string, so a customer can pay 1 cent", "req.body?.amountCents is trusted from the client, so anyone can pay a cent", "`price ?? body.amount` falls back to the client amount, which lets an attacker pay 1 cent", "see https://x.test/pay?id=1: any customer can read another customer's booking"]) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
+  for (const t of ["Can the client set the price?", "Does it crash? Who knows.", "What if the body is not JSON?"]) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  assert.equal(S.affirmativeProblem("What if the body is not JSON? The handler throws an unhandled exception and crashes."), null);
+});
+
+test("S findings: soft denials are judged per clause", () => {
+  for (const t of [
+    "The signature is validated but not checked against the correct key, so anyone can forge an event",
+    "The amount is properly validated; however the refund path lets any customer refund another customer's booking",
+    "Price is already mitigated for cards although the wallet path lets an attacker pay 1 cent",
+  ]) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
+  for (const t of ["The signature is validated but that is all fine", "Amounts are properly validated; however nothing else to report"]) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+});
+
+// Round 4 (the cap): wider negation, negated impacts as denials, decorated questions, bare "is validated".
+test("S findings: negation reaches 4 words back but stops at a clause boundary", () => {
+  for (const t of ["The handler never causes a crash on bad input", "There is no possibility of a race condition in the refund path", "It is not possible to take down the endpoint with a bad body"]) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  for (const t of [
+    "The request is not signed, so attackers can forge a paid event",
+    "The check is not enforced and lets anyone forge a paid event",
+    "No rate limit lets attackers brute-force the login",
+    "The refund is not idempotent, but a retry causes a double charge",
+    "Nothing validates the amount, which lets an attacker pay 1 cent",
+    "The handler never validates the body and then crashes on a malformed payload",
+    "The server does not allow retries to be deduplicated, so a retry causes a double charge",
+  ]) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
+  assert.ok(S.affirmativeProblem("The server does not allow attackers to forge events"));
+});
+
+test("S findings: a recognised negated impact is a denial, not just vague", async () => {
+  for (const t of ["The handler does not crash on a bad body", "never causes a crash", "There is no race condition here"]) assert.match(S.affirmativeProblem(t), /denies a defect/, t);
+  // vague text with no impact word at all stays merely uncredited
+  assert.match(S.affirmativeProblem("bad code here, fix it"), /does not state/);
+  const spec = { secrets: false, checks: [{ type: "report_valid", name: "valid" }] };
+  const src = { "src/a.mjs": "l1\nl2\nl3\n" };
+  const run = async (report) => byName(await S.grade(put(tmp(), { ...src, "SECURITY.json": JSON.stringify(report) }), "x", spec), "valid");
+  const good = { file: "src/a.mjs", line: 3, severity: "HIGH", issue: "anyone can forge a paid event without a signature" };
+  assert.equal((await run([good])).pass, true);
+  assert.equal((await run([good, { file: "src/a.mjs", line: 2, severity: "LOW", issue: "The handler does not crash on bad input" }])).pass, false);
+  assert.equal((await run([good, { file: "src/a.mjs", line: 2, severity: "LOW", issue: "bad code here, fix it" }])).pass, true);
+});
+
+test("S findings: decorated questions are questions", () => {
+  for (const t of ["`Is the price trusted?`", "**Crashes?**", "_Can the client set the price?_", "(does it crash?)", "\"Is it safe to retry?\"  ", "Client price: *double charges?*"]) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  assert.equal(S.affirmativeProblem("`req.body?.amountCents` is trusted from the client, so anyone can pay a cent"), null);
+});
+
+test("S findings: a bare 'is validated' denies only without a defect qualifier or impact", () => {
+  for (const t of ["The signature is validated.", "Amounts are checked server-side.", "The body is handled correctly in the route", "The webhook payload is verified"]) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  for (const t of [
+    "The signature is validated against the wrong key, so anyone can forge a paid event",
+    "The amount is checked only on the client, so a customer can pay 1 cent",
+    "The signature is validated after the event is processed, so anyone can forge an event",
+    "The body is handled without a try/catch, so a malformed payload can crash the endpoint",
+    "The owner is checked, and a race lets a customer refund twice",
+  ]) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
+});
+
+test("S security-payments: a report made only of negated robustness lines scores no more than the stub", async () => {
+  const spec = S.loadSpec("security-payments", "S");
+  const stub = await S.grade(prepare("security-payments"), "security-payments", spec);
+  assert.equal(stub.score, 0.25);
+  const d = prepare("security-payments");
+  fs.writeFileSync(path.join(d, "SECURITY.json"), JSON.stringify([
+    { file: "src/checkout.mjs", line: 7, severity: "CRITICAL", issue: "The client price handling does not crash and the amount cannot be abused to pay less" },
+    { file: "src/checkout.mjs", line: 14, severity: "HIGH", issue: "Refund ownership: no race condition, never double charges or double refunds" },
+    { file: "src/webhook.mjs", line: 12, severity: "CRITICAL", issue: "Unsigned webhook events won't hang or crash the handler and are not a 500" },
+    { file: "src/webhook.mjs", line: 16, severity: "HIGH", issue: "Signing secret handling: nothing is lost, no corrupt state, never stuck" },
+  ]));
+  const r = await S.grade(d, "security-payments", spec);
+  assert.equal(byName(r, "report-well-formed").pass, false);
+  assert.ok(r.score <= stub.score, `denial-only ${r.score} vs stub ${stub.score}`);
+});
+
+test("S security-payments: a vague finding keeps the report valid but earns no credit", async () => {
+  const spec = S.loadSpec("security-payments", "S");
+  const epReport = JSON.parse(fs.readFileSync(SP_REF_EP, "utf8"));
+  const vague = { file: "src/checkout.mjs", line: 7, severity: "LOW", issue: "bad code here, fix it" };
+  assert.ok(S.affirmativeProblem(vague.issue), "no impact words");
+  // valid: an extra vague finding does not invalidate an otherwise good report
+  const withVague = await S.grade(spBuild([...epReport, vague]), "security-payments", spec);
+  assert.equal(byName(withVague, "report-well-formed").pass, true, byName(withVague, "report-well-formed").detail);
+  assert.equal(withVague.score, 1);
+  // no credit, and no free point: a vague-only report must not raise any stub or no-op score
+  const stub = await S.grade(prepare("security-payments"), "security-payments", spec);
+  assert.equal(stub.score, 0.25);
+  for (const report of [[{ ...vague, severity: "CRITICAL" }], [vague], []]) {
+    const d = prepare("security-payments");
+    fs.writeFileSync(path.join(d, "SECURITY.json"), JSON.stringify(report));
+    const r = await S.grade(d, "security-payments", spec);
+    assert.equal(byName(r, "report-well-formed").pass, false, "no credited finding, no report_valid point");
+    assert.equal(byName(r, "client-price-handled").pass, false);
+    assert.ok(r.score <= 0.25, `vague-only ${r.score}`);
+  }
+});
+
+test("S findings: soft denials reject whatever impact words they carry, and questions or hedges earn nothing", async () => {
+  const SOFT = [
+    "The payment defects are properly mitigated, so no attacker crashes it",
+    "Client price: the amount is already validated, a double charge cannot happen",
+    "The webhook handler is handled and safe, it would never crash or hang",
+    "Refunds are correctly protected against a race",
+  ];
+  for (const t of SOFT) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  const HEDGES = ["Client price: crashes?", "might possibly crash the handler", "could maybe let someone double charge", "Does the webhook hang? not sure"];
+  for (const t of HEDGES) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  // single hedges are standard phrasing in honest reports and stay accepted
+  for (const t of ["Client price handling may crash the checkout", "the price validation may allow double charges", "this could allow anyone to forge an event", "I suspect the retry allows double charges", "perhaps an attacker can forge events"]) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
+  assert.equal(S.affirmativeProblem("this can be mitigated by recomputing server-side; until then an attacker pays 1 cent"), null);
+  // end to end: a report saying the money defects are mitigated scores no more than the stub, on unchanged code
+  const spec = S.loadSpec("security-payments", "S");
+  const stub = await S.grade(prepare("security-payments"), "security-payments", spec);
+  const d = prepare("security-payments");
+  fs.writeFileSync(path.join(d, "SECURITY.json"), JSON.stringify([
+    { file: "src/checkout.mjs", line: 7, severity: "CRITICAL", issue: "The client price is properly mitigated, nothing can crash or be lost here" },
+    { file: "src/checkout.mjs", line: 14, severity: "HIGH", issue: "Refund ownership is already validated, no double refund possible" },
+    { file: "src/webhook.mjs", line: 12, severity: "CRITICAL", issue: "Unsigned events are correctly handled and safe, no 500 either" },
+    { file: "src/webhook.mjs", line: 16, severity: "HIGH", issue: "Secrets in the logs: properly protected, nothing is corrupt" },
+  ]));
+  const r = await S.grade(d, "security-payments", spec);
+  assert.ok(r.score <= stub.score, `mitigated report ${r.score} vs stub ${stub.score}`);
+  const q = prepare("security-payments");
+  fs.writeFileSync(path.join(q, "SECURITY.json"), JSON.stringify([{ file: "src/checkout.mjs", line: 7, severity: "CRITICAL", issue: "Client price: crashes?" }]));
+  const rq = await S.grade(q, "security-payments", spec);
+  assert.equal(byName(rq, "client-price-handled").pass, false);
+  assert.ok(rq.score <= stub.score);
+});
+
+test("S report_valid: structural problems and denials still invalidate, a finding without impact does not", async () => {
+  const spec = { secrets: false, checks: [{ type: "report_valid", name: "valid" }] };
+  const src = { "src/a.mjs": "l1\nl2\nl3\n" };
+  const run = async (report) => byName(await S.grade(put(tmp(), { ...src, "SECURITY.json": JSON.stringify(report) }), "x", spec), "valid");
+  const ok = { file: "src/a.mjs", line: 2, severity: "LOW", issue: "bad code here, fix it" };
+  // a credited finding is needed beside the vague ones
+  const good = { file: "src/a.mjs", line: 3, severity: "HIGH", issue: "anyone can forge a paid event without a signature" };
+  assert.equal((await run([ok, good])).pass, true);
+  assert.equal((await run([good, { ...ok, issue: "tidy" }])).pass, true);
+  assert.equal((await run([ok])).pass, false);
+  assert.equal((await run([])).pass, false);
+  // required fields: types checked before any vague-text exemption
+  const noIssue = { file: "src/a.mjs", line: 2, severity: "LOW" };
+  assert.equal((await run([good, noIssue])).pass, false);
+  assert.equal((await run([good, { ...ok, issue: 42 }])).pass, false);
+  assert.equal((await run([good, { ...ok, issue: "   " }])).pass, false);
+  assert.equal((await run([good, { ...ok, file: 7 }])).pass, false);
+  assert.equal((await run([good, { ...ok, line: "2" }])).pass, false);
+  assert.equal((await run([good, { ...ok, line: 0 }])).pass, false);
+  assert.equal((await run([good, { ...ok, severity: undefined }])).pass, false);
+  assert.equal((await run([{ ...ok, severity: "SHRUG" }])).pass, false);
+  assert.equal((await run([{ ...ok, file: "../etc/passwd" }])).pass, false);
+  assert.equal((await run([{ ...ok, file: "src/missing.mjs" }])).pass, false);
+  assert.equal((await run([{ ...ok, issue: "This is a false positive, the code is not vulnerable." }])).pass, false);
+  assert.equal((await run([{ ...ok, issue: "Signatures are properly validated here." }])).pass, false);
+  assert.equal((await run([{ ...ok, issue: "not vulnerable" }])).pass, false);
+  assert.equal((await run({ not: "an array" })).pass, false);
+});
+
 test("S guest checkout: a bare {ok:true}, unrecorded or duplicate bookings, and lost bookings fail", async () => {
   const run = async (from, to) => S.grade(build({ "server.mjs": swap(GUEST_APP, from, to) }), "yoga-studio", yogaSpec());
   const FULL = "db.bookings.push(b); save();\n        return send(res, 201, { id: b.id, amountCents: b.amountCents, cancelCode: b.cancelCode });";
