@@ -39,7 +39,7 @@ chain:
 
 ## Purpose
 
-To provide deep expertise in cloud financial operations (FinOps), enabling informed decisions about cloud infrastructure, hosting platforms, cost optimization, and solo developer launch strategies. This skill combines current pricing knowledge, cost optimization strategies, and practical guidance for managing cloud costs across all major platforms. It is the framework's primary mechanism for ensuring project economic viability and positive ROI.
+Cloud financial operations (FinOps) expertise for decisions about infrastructure, hosting platforms, cost optimization and solo-developer launch strategy, grounded in current pricing across the major platforms. This is the framework's primary mechanism for keeping a project economically viable with positive ROI.
 
 **Announce at start:** "I'm using `manage-finops` to optimize costs, select platforms, and project ROI."
 
@@ -47,49 +47,44 @@ To provide deep expertise in cloud financial operations (FinOps), enabling infor
 
 Use `_shared/product-question-format.md` for unresolved platform, pricing or cost choices. Ground recommendations in verified current pricing, actual usage/code and owner constraints. Preserve meaningful alternatives, cost/risk, persona fit, reversibility and success signals without fixed competitor or question counts. Reuse accepted decisions; do not invent balances or conversion estimates to fill an analysis template.
 
-## The FinOps Spec (MANDATORY for system-wide estimations)
+## The FinOps Spec (for system-wide estimations)
 
-When providing a comprehensive financial projection for a product or major integration (e.g., Square POS, Global Launch), use the **FinOps Spec** template:
-- `references/finops-spec-template.md` — Components: Executive Summary, Infrastructure Breakdown (Small/Medium/Large), Unit Economics (CAC/LTV), Profitability Plan, and Free Tier Guardrails.
-
-This ensures the user gets a "standardized document" that can serve as the project's financial source of truth.
+For a comprehensive financial projection of a product or major integration (e.g., Square POS, Global Launch), use the **FinOps Spec** template, `references/finops-spec-template.md` — Executive Summary, Infrastructure Breakdown (Small/Medium/Large), Unit Economics (CAC/LTV), Profitability Plan and Free Tier Guardrails. A standard shape lets the document serve as the project's financial source of truth.
 
 ## Output Schema
 
-The `docs/specs/finops-audit.md` artifact MUST contain these sections (per `references/finops-spec-template.md`):
-- **Executive Summary** — One-paragraph financial health verdict
-- **Infrastructure Breakdown (Small/Medium/Large)** — Cost projections at three scale points
-- **Unit Economics** — CAC, LTV, payback period, and margin at each scale
-- **Funnel Impact (MANDATORY for comparisons)** — For any platform/vendor comparison, include: `Cost_per_attempt = infra_cost × P(attempt_fails_due_to_friction) × LTV_lost_per_failed_attempt`. Completion-rate deltas between options usually dominate infra-cost deltas at SaaS scale. Red Flag: "Cost comparison without quantifying conversion delta between options is incomplete — at any realistic funnel, infra cost is 10-100x smaller than LTV impact of a completion-rate difference."
-- **Profitability Plan** — Timeline to breakeven and monthly run-rate targets
-- **Free Tier Guardrails** — Exact free-tier limits, cliff thresholds, and upgrade triggers
-- **Platform Recommendations** — Primary and fallback choices with rationale
-- **Risk Register** — Cost risks, mitigations, and early-warning signals
+`docs/specs/finops-audit.md` contains these sections (per `references/finops-spec-template.md`):
+- **Executive Summary** — one-paragraph financial health verdict
+- **Infrastructure Breakdown (Small/Medium/Large)** — cost projections at three scale points, each with its stated traffic/usage assumptions
+- **Unit Economics** — CAC, LTV, payback period and margin at each scale
+- **Funnel Impact (for every comparison)** — for any platform/vendor comparison, include `Cost_per_attempt = infra_cost × P(attempt_fails_due_to_friction) × LTV_lost_per_failed_attempt`. Completion-rate deltas between options usually dominate infra-cost deltas at SaaS scale. Red Flag: "Cost comparison without quantifying conversion delta between options is incomplete — at any realistic funnel, infra cost is 10-100x smaller than LTV impact of a completion-rate difference."
+- **Profitability Plan** — timeline to breakeven and monthly run-rate targets
+- **Free Tier Guardrails** — exact free-tier limits, cliff thresholds and upgrade triggers
+- **Platform Recommendations** — primary and fallback choices with rationale
+- **Risk Register** — cost risks, mitigations and early-warning signals
 
-## Provenance Tagging (MANDATORY)
+## Provenance Tagging
 
-Every factual claim in your reports must be tagged with its provenance:
+Tag every factual claim with its provenance, so readers can tell verified pricing from guesses:
 - `[FROM-CODE]` — observed in the codebase or config via grep/read
 - `[FROM-SPEC]` — derived from the feature spec, vision, or project state
 - `[FROM-RESEARCH]` — from web search, `research` skill, or library documentation
 - `[ASSUMED]` — not verified, inference or best guess
 
-Untagged claims will be flagged as unverified in `review-gate`.
+`review-gate` flags untagged claims as unverified.
 
 ## When to Use This Skill
 
-Activate this skill when:
-
-1. **Selecting cloud infrastructure** — Choosing between Hetzner, AWS, Google Cloud, or other providers
-2. **Comparing hosting platforms** — Evaluating Railway, Render, Vercel, Netlify, Fly.io, or similar
-3. **Planning mobile app builds** — Understanding Expo EAS Build pricing and alternatives
-4. **Designing launch strategy** — Planning phased launches with cost considerations
-5. **Optimizing costs** — Reducing cloud spending while maintaining performance
-6. **Budgeting and forecasting** — Planning cloud costs for solo developer projects
-7. **Selecting revenue models** — Choosing freemium, SaaS, or other pricing strategies
-8. **Comparing pricing** — Understanding current pricing across multiple platforms
-9. **Optimizing MMR** — Identifying and proposing revenue improvement opportunities
-10. **Optimizing domain costs** — Selecting registrars, managing TLD choices, reducing hidden costs
+1. **Selecting cloud infrastructure** — Hetzner, AWS, Google Cloud or other providers
+2. **Comparing hosting platforms** — Railway, Render, Vercel, Netlify, Fly.io, or similar
+3. **Planning mobile app builds** — Expo EAS Build pricing and alternatives
+4. **Designing launch strategy** — phased launches with cost considerations
+5. **Optimizing costs** — reducing cloud spend while maintaining performance
+6. **Budgeting and forecasting** — cloud costs for solo developer projects
+7. **Selecting revenue models** — freemium, SaaS, or other pricing strategies
+8. **Comparing pricing** — current pricing across multiple platforms
+9. **Optimizing MMR** — identifying and proposing revenue improvements
+10. **Optimizing domain costs** — registrars, TLD choices, hidden costs
 
 See `references/decision-index.md` for the full lookup table of decisions → reference files.
 
@@ -98,8 +93,8 @@ See `references/decision-index.md` for the full lookup table of decisions → re
 | Skill | Integration |
 |---|---|
 | `monetization-architecture` | `manage-finops` decides **how much to charge** and **what platform to use**; `monetization-architecture` decides **what to gate** and **where**. |
-| `validate-feature` | **MANDATORY**: Answer Q7 (ROI/Cost) of the Feature Ship Brief using `manage-finops`. |
-| `design-tech` | **MANDATORY**: Populates the `Cost Model` pillar. FinOps constraints drive architectural decisions. |
+| `validate-feature` | Required: answers Q7 (ROI/Cost) of the Feature Ship Brief. |
+| `design-tech` | Required: populates the `Cost Model` pillar. FinOps constraints drive architectural decisions. |
 | `research` | Use `research` for deep dives into specific API pricing or domain trends not covered in references. |
 | `find-opportunity` | `find-opportunity` identifies market winners; `manage-finops` analyzes their **cost structure** and **unit economics**. |
 | `stage-revenue` | `stage-revenue` breaks the plan into stages; `manage-finops` provides the **budget and cost projections** for each stage. |
@@ -121,12 +116,12 @@ See `references/decision-index.md` for the full lookup table of decisions → re
 |---------|---------|
 | "We're pre-revenue, costs don't matter yet." | Pre-revenue is when cash burn is most dangerous. Scale-traps built now will kill the project later. |
 | "Let's just use AWS, it's the standard." | AWS is often 10x more expensive than Hetzner or Railway for solo devs. Defaulting to AWS is a failure of `manage-finops` discipline. |
-| "I'll optimize the costs after we launch." | You won't. You'll be busy with features. Build for cost-efficiency from the start. |
-| "The free tier is enough for now." | Know the EXACT limit. Is it 100 requests or 10,000? What's the cost of the first 1,000 paid requests? |
+| "I'll optimize the costs after we launch." | You won't — you'll be busy with features. Build for cost-efficiency from the start. |
+| "The free tier is enough for now." | Know the exact limit. Is it 100 requests or 10,000? What does the first 1,000 paid requests cost? |
 
 ### Red Flags
 
-- **Defaulting to expensive providers** without comparing with cheaper alternatives (Hetzner, Railway).
+- **Defaulting to expensive providers** without comparing cheaper alternatives (Hetzner, Railway).
 - **No mention of free tiers** in a greenfield project.
 - **Cost projections assume infinite free usage** without identifying the "cliff" where paid tiers start.
 - **Revenue models disconnected from infrastructure costs** (e.g., selling a $10/mo sub that costs $15/mo in API points).
@@ -135,45 +130,20 @@ See `references/decision-index.md` for the full lookup table of decisions → re
 
 ### Core Workflow
 
-**Step 0: Gather Context (MANDATORY)**
-Read what exists. Don't ask for information the project already has.
+**Step 0: Gather Context (first)**
+Read what exists rather than asking for information the project already has: `docs/specs/vision.md` (purpose, target market), `docs/specs/project-state.md` (current focus), `~/.svc/builder-profile.md` (budget, skills, time — the ground truth for recommendations), `docs/specs/router-context.md` (deployment matrix, platform constraints).
 
-1. `docs/specs/vision.md` — product purpose, target market
-2. `docs/specs/project-state.md` — current focus and status
-3. `~/.svc/builder-profile.md` — builder's budget, skills, and time constraints (GROUND TRUTH for recommendations)
-4. `docs/specs/router-context.md` — deployment matrix and platform constraints
+**Step 1: Understand Your Requirements** — with `references/solo-developer.md` (launch phases), compare needs against the builder profile: MVP requirements, expected traffic, growth projections, budget constraints, revenue model, scaling needs. Write the traffic and usage assumptions behind each scale point down; every estimate inherits them.
 
-**Step 1: Understand Your Requirements**
-- Load `references/solo-developer.md` to understand launch phases
-- Compare requirements against the **builder profile**
-- Determine: MVP requirements, expected traffic, growth projections
-- Identify: Budget constraints, revenue model, scaling needs
+**Step 2: Compare Platform Options** — `references/platform-pricing.md` covers cloud providers (Hetzner, AWS, GCP, etc.) and PaaS/serverless (Railway, Render, Vercel, Netlify, Fly.io). Estimate with `scripts/cost-calculator.py`, weighing free tiers, pricing models and scaling costs.
 
-**Step 2: Compare Platform Options**
-- Load `references/platform-pricing.md` — covers both cloud providers (Hetzner, AWS, GCP, etc.) and PaaS/serverless (Railway, Render, Vercel, Netlify, Fly.io)
-- Use `scripts/cost-calculator.py` to estimate costs
-- Consider: Free tiers, pricing models, scaling costs
+**Step 3: Plan Mobile App Builds** — `references/expo-eas-pricing-guide.md`: build frequency, priority needs, alternatives, free-tier limits vs paid benefits.
 
-**Step 3: Plan Mobile App Builds**
-- Load `references/expo-eas-pricing-guide.md` for Expo EAS Build pricing
-- Consider: Build frequency, priority needs, alternatives
-- Evaluate: Free tier limits, paid plan benefits
+**Step 4: Design Revenue Model** — `references/zero-investment.md`: freemium tiers, subscription or usage-based pricing, feature gating.
 
-**Step 4: Design Revenue Model**
-- Load `references/zero-investment.md` for pricing strategies
-- Determine: Freemium tiers, subscription pricing, usage-based models
-- Plan: Pricing tiers, feature gating, monetization approach
+**Step 5: Optimize Costs** — `references/cost-optimization.md`: resource scheduling, right-sizing, reserved instances; monitor usage patterns and cost anomalies.
 
-**Step 5: Optimize Costs**
-- Load `references/cost-optimization.md` for optimization techniques
-- Implement: Resource scheduling, right-sizing, reserved instances
-- Monitor: Usage patterns, cost anomalies, optimization opportunities
-
-**Step 6: Optimize Domain Costs**
-- Load `references/domain-cost-optimization-comprehensive.md` for registrar comparison and optimization strategies
-- Evaluate: Registrar pricing, privacy protection costs, DNS hosting costs
-- Select: Cost-effective registrar
-- Plan: Domain portfolio consolidation, transfer strategy
+**Step 6: Optimize Domain Costs** — `references/domain-cost-optimization-comprehensive.md`: registrar pricing, privacy protection and DNS hosting costs, portfolio consolidation and transfer strategy.
 
 ### Reference Materials
 
@@ -186,7 +156,7 @@ Read what exists. Don't ask for information the project already has.
 - `references/workflow-integration.md` — Best practices, development workflow integration, cross-skill MMR collaboration, multi-persona orchestration, AI service cost analysis
 - `references/quick-reference-guide.md` — Quick comparison tables, decision trees, official pricing URLs
 
-**CRITICAL**: Always check ALL free tier options extensively before recommending paid services. Only recommend paid services when free tier limits are reached AND revenue > 3x upgrade cost.
+**Free-tier rule:** check every free-tier option thoroughly before recommending a paid service. Recommend paid services only when free-tier limits are reached and revenue > 3x the upgrade cost — a solo builder's runway is the scarcest resource.
 
 ## Self-Verify
 
@@ -237,20 +207,13 @@ response so an orchestrator can backfill the receipt.
 
 ## Key Principles
 
-- **Free Tier First**: Maximize free tier usage before paying
-- **API Understanding Requirement**: Deep understanding of third-party APIs (pricing models, point costs per operation, rate limits) is critical before proposing improvements involving those APIs
-- **Cross-Skill Collaboration**: Collaborate systematically with `write-spec` and `design-tech` to optimize Monthly Recurring Revenue (MMR)
-- **Multi-Scale Cost Breakdowns + ROI Analysis**: Proactively provide Small/Medium/Large cost estimates and ROI analysis for every recommendation. Never settle for surface-level cost guesses.
+- **Free Tier First**: maximize free-tier usage before paying.
+- **API Understanding Requirement**: understand third-party APIs in depth (pricing models, point costs per operation, rate limits) before proposing improvements that involve them.
+- **Cross-Skill Collaboration**: work with `write-spec` and `design-tech` to optimize Monthly Recurring Revenue (MMR).
+- **Multi-Scale Cost Breakdowns + ROI Analysis**: give Small/Medium/Large cost estimates and ROI analysis for every recommendation, each with its assumptions stated — a single surface-level guess hides the cliffs.
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
+If context was compacted and you lost track of framework state: `.svc/lane-tasks-<WI>.json` is the sole source of truth. Resume the first `in_progress` task (else the first `pending` with blockers satisfied), re-load it with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Verify a `skill_receipt` exists before marking any task complete — no ghost-completes.
 
 If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.

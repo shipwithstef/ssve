@@ -65,7 +65,7 @@ Marketing pages join copy, visuals, trust, and a measurable conversion goal. Thi
 
 ### Step 0 — Preconditions
 
-Mandatory before any generation:
+In place before any generation:
 
 1. **Relevant captured references:** reuse the sector bank for real marketing pages serving a comparable audience and decision. `benchmark-landing` needs its captured anchor evidence; if fewer than three relevant captured examples exist, capture only what that gate needs and name the evidence limit. Do not expand a bank solely to meet a catalog quota.
 2. **Cross-sector references:** use high performers only when their page solves a comparable communication or conversion problem. Record why each selected page is relevant; decorative resemblance alone is insufficient.
@@ -74,7 +74,7 @@ Mandatory before any generation:
 
 #### Anchor `pattern.md` schema (WI-158: Below-fold required)
 
-Every anchor `pattern.md` MUST include — in addition to the existing hero blocks (Layout / Visual treatment / Copy / Feature mix / Why this is best-in-class) — a `## Below-fold` block capturing the progressive product reveal beneath the hero:
+Every anchor `pattern.md` includes — in addition to the existing hero blocks (Layout / Visual treatment / Copy / Feature mix / Why this is best-in-class) — a `## Below-fold` block capturing the progressive product reveal beneath the hero:
 
 ```markdown
 ## Below-fold
@@ -99,9 +99,9 @@ Write `docs/specs/landing/<page>-market-gap.md` with the page goal, selected ref
 
 ### Step 0.5b — Ship-readiness gate vs anchor (WI-139)
 
-After Market-Gap analysis and BEFORE finalizing the brief for `track-visuals` and `design-tech`, emit a binary ship-readiness verdict against the most relevant captured anchor.
+After Market-Gap analysis and before finalizing the brief for `track-visuals` and `design-tech`, emit a binary ship-readiness verdict against the most relevant captured anchor.
 
-**Output format (REQUIRED — surfaced inline in lane-tasks `skill_receipt`):**
+**Output format (required, surfaced inline in lane-tasks `skill_receipt`):**
 
 ```
 ship-ready vs <ANCHOR_TOP_1>: yes | no
@@ -144,7 +144,7 @@ If `docs/specs/project-state.md` does not exist or is unreadable, halt and invok
 
 #### 1b — Recommendation-set gating
 
-Every recommendation in the brief MUST declare its lifecycle compatibility:
+Every recommendation in the brief declares its lifecycle compatibility, so post-launch levers cannot slip into a pre-launch page:
 
 ```yaml
 recommendations:
@@ -157,7 +157,7 @@ recommendations:
     blocked_at_pre_launch: true
 ```
 
-If a recommendation has `blocked_at_pre_launch: true` and `project_lifecycle.stage == "pre-launch"`, the brief MUST exclude it OR include an explicit override justification of ≥1 sentence (e.g., "Override: included because launch is in 5 days and pricing model is validated via beta interviews").
+If a recommendation has `blocked_at_pre_launch: true` and `project_lifecycle.stage == "pre-launch"`, the brief excludes it or includes an explicit override justification of ≥1 sentence (e.g., "Override: included because launch is in 5 days and pricing model is validated via beta interviews").
 
 The compatibility matrix for all known levers is in `references/recommendations-by-lifecycle.md`. If a lever is not in that table, add it before recommending it.
 
@@ -243,7 +243,7 @@ If the brief includes a hero section, specify its layout, typography, and compon
 
 ## Video Background Layer
 
-If the hero uses a background video, the brief MUST specify:
+If the hero uses a background video, the brief specifies:
 
 - **Video URL** — CDN-hosted MP4, < 10MB for hero loading performance
 - **Overlay opacity** — `bg-black/10` for light text, `bg-white/10` for dark text

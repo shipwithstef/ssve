@@ -31,7 +31,7 @@ outputs:
     - { path: "docs/specs/logo-pack/iterations/", artifact: refinement-loop, note: "≥3 refinement passes on top picks with delta scoring" }
     - { path: "docs/specs/logo-pack/system/", artifact: brand-system, note: "animation, brand patterns, icon style derived from mark" }
     - { path: "docs/specs/logo-pack/contexts/", artifact: app-context-mockups, note: "mark in real app contexts (nav, favicon tab, OG card, app switcher)" }
-    - { path: "docs/specs/design-logo/in-app-verification/", artifact: live-page-screenshots, note: "MANDATORY: live screenshots of the deployed landing/home page in BOTH light AND dark theme, with the new logo wired in. The skill cannot declare DONE without these." }
+    - { path: "docs/specs/design-logo/in-app-verification/", artifact: live-page-screenshots, note: "Terminal evidence: live screenshots of the deployed landing/home page in both light and dark theme, with the new logo wired in. The skill is not done without these." }
     - { path: "docs/specs/logo-pack/final/", artifact: final-pack }
     - { path: "docs/specs/logo-pack/audit.md", artifact: polish-audit }
     - { path: "docs/specs/logo-pack/concept-ledger.md", artifact: concept-ledger, note: "Round-by-round mode tracker (exploration | refinement | polish | terminal). New concepts after round 2 = skill failure." }
@@ -45,11 +45,11 @@ chain:
   human_checkpoint: true
 ---
 
-> **Cognitive routing:** 🧠 [STRAT] for concept selection, ⚙️ [EXEC] for SVG hand-coding, 🎨 [SENSE] for evaluation, 🔁 codex CLI as cross-model judge. Diffusion image-gen used ONLY for moodboard inspiration, NEVER for final marks. Final marks are SVG by construction.
+> **Cognitive routing:** 🧠 [STRAT] for concept selection, ⚙️ [EXEC] for SVG hand-coding, 🎨 [SENSE] for evaluation, 🔁 codex CLI as cross-model judge. Diffusion image-gen is for moodboard inspiration only; final marks are hand-built SVG by construction, because raster generations cannot be kerned, optically corrected or scaled cleanly.
 
 # Design Logo (v3 — iterative + cross-domain + cross-judge)
 
-A 10/10 logo is rare. Tier-2 generic is the default outcome of any one-shot AI process. This skill structures the work to break out of pattern-memory grooves and pushes toward a higher ceiling — constraint escalation and multi-tool refinement replace the old handoff exit.
+A 10/10 logo is rare. Tier-2 generic is the default outcome of any one-shot AI process, because the model falls back on pattern memory for the sector. This skill structures the work to break out of those grooves: outside inspiration, an independent judge, real iteration, and constraint escalation in place of the old handoff exit.
 
 **Announce at start:** "I'm using design-logo v3 — 20+ concepts, cross-domain inspiration, cross-model judging, iteration loop, system extension. Hard rubric threshold 65/70."
 
@@ -69,23 +69,25 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## The 7 honest constraints
 
-1. **Cross-domain inspiration is mandatory** — sector references alone produce sector-shaped output. Architecture, nature, science, art history, industrial design, abstract geometry, motion physics — pick 3+ outside the product's category.
-   - **AND** consult `references/exemplar-bank-2026.md` — pick ≥3 entries whose *transferable principle* maps to the brief. Record in `brand-brief.yaml` under `exemplar_inspiration:`. The bank is the world-class benchmark; without it, the rubric self-grades against sector mediocrity.
-2. **Structural-primitive diversity quota** — concepts MUST span: ≥30% path-based (Bezier curves, custom geometry), ≥20% no-container (mark-only without rounded square), ≥15% negative-space (FedEx-arrow / Stripe-S register), ≥15% custom letterform.
-3. **Cross-model judging is mandatory** — codex CLI ranks the concept set blind. Disagreements with self-score are investigated, not suppressed.
-4. **Persona simulation is mandatory** — for top picks, simulate the target persona's first-impression read. If it lands as "looks like a software icon" it fails.
+Each one closes a known route back to generic output.
+
+1. **Cross-domain inspiration is required** — sector references alone produce sector-shaped output. Pick 3+ sources outside the product's category (architecture, nature, science, art history, industrial design, abstract geometry, motion physics).
+   - Also consult `references/exemplar-bank-2026.md` and pick ≥3 entries whose *transferable principle* maps to the brief; record them in `brand-brief.yaml` under `exemplar_inspiration:`. The bank is the world-class benchmark — without it the rubric self-grades against sector mediocrity.
+2. **Structural-primitive diversity quota** — concepts span ≥30% path-based (Bezier curves, custom geometry), ≥20% no-container (mark-only without rounded square), ≥15% negative-space (FedEx-arrow / Stripe-S register), ≥15% custom letterform.
+3. **Cross-model judging is required** — codex CLI ranks the concept set blind. Investigate disagreements with the self-score; they are evidence.
+4. **Persona simulation is required** — for top picks, simulate the target persona's first-impression read. "Looks like a software icon" is a fail.
 5. **Iteration loop, not one-shot** — top 3 concepts get ≥3 refinement passes (kerning / optical / weight / curve / asymmetry).
-6. **System extension is mandatory** — winner ships with animation reveal, brand pattern set (5+), icon-style sheet, color-token export. A logo without a system is half a deliverable.
-7. **Honest saturation ceiling** — if rubric score plateaus below 65/70 across 3 iterations, the skill escalates constraints (Phase 8b) and re-runs the 5-stage refinement pipeline. Real 10/10 marks require constraint-stacking, not external substitution.
+6. **System extension is required** — the winner ships with animation reveal, brand pattern set (5+), icon-style sheet and color-token export. A logo without a system is half a deliverable.
+7. **Honest saturation ceiling** — if the rubric score plateaus below 65/70 across 3 iterations, escalate constraints (Phase 8b) and re-run the 5-stage refinement pipeline. Real 10/10 marks come from constraint-stacking, not external substitution.
 
 ## Process
 
 ### Phase 0 — Brand brief gate
-Read `docs/specs/brand-brief.yaml`. If it is missing, draft it from `docs/specs/vision.md`, `docs/specs/marketing-context.md` and the personas (name, audience, voice, palette direction, anti-references) and propose 3+ non-sector `cross_domain_sources`. Ask the owner only about what those sources cannot answer, in one message, and record their answers in the brief. Required before Phase 1: `cross_domain_sources` (3+ non-sector domains).
+Read `docs/specs/brand-brief.yaml`. If it is missing, draft it from `docs/specs/vision.md`, `docs/specs/marketing-context.md` and the personas (name, audience, voice, palette direction, anti-references) and propose 3+ non-sector `cross_domain_sources`. Ask the owner only about what those sources cannot answer, in one message, and record their answers in the brief. Phase 1 needs `cross_domain_sources` (3+ non-sector domains).
 
 ### Phase 1 — Exemplar bank consult + cross-domain moodboard (both mandatory)
 
-**Phase 1a — Exemplar bank.** Read `references/exemplar-bank-2026.md` end-to-end. Pick ≥3 entries whose *transferable principle* (not visual) maps to the brief. Write into `brand-brief.yaml`:
+**Phase 1a — Exemplar bank.** Read `references/exemplar-bank-2026.md` end-to-end. Pick ≥3 entries whose *transferable principle* (not visual) maps to the brief and write them into `brand-brief.yaml`:
 
 ```yaml
 exemplar_inspiration:
@@ -102,9 +104,7 @@ If you cannot find 3 entries with genuine principle alignment, the brief is too 
 codex exec "Generate a moodboard image: <domain> meets <product attribute>. Abstract geometric, no text, no literal objects. Inspiration only — for shape language, not for the logo itself."
 ```
 
-Save to `docs/specs/logo-pack/moodboard/<domain>/<n>.png`. Output is **inspiration only** — never final asset. Read the moodboard before generating any concept; if your concepts don't reference shape language from the moodboard, regenerate.
-
-Hard rule: if you skip this phase, the output regresses to sector-pattern-matching, which is the failure mode v3 exists to fix.
+Save to `docs/specs/logo-pack/moodboard/<domain>/<n>.png`. These images are inspiration only, never a final asset. Study the moodboard before generating concepts; concepts that show no shape language from it get regenerated. Skipping this phase regresses the output to sector-pattern-matching, the failure mode v3 exists to fix.
 
 ### Phase 1c — Concept commitment ledger
 
@@ -118,46 +118,46 @@ concepts_advanced: 3
 new_concepts_allowed_next_round: 0  # AFTER round 2, no new concepts
 ```
 
-**Hard rule:** after round 2 the mode flips to `refinement`. No new concepts may be introduced. Rounds 3–5 are 4-variation deep-dives on survivors. Round 6+ flips to `polish` mode (sand-grain refinement on the single chosen mark). New concepts in refinement/polish mode = skill failure.
+After round 2 the mode flips to `refinement` and no new concepts may enter; rounds 3–5 are 4-variation deep-dives on survivors. Round 6+ flips to `polish` (sand-grain refinement on the single chosen mark). New concepts in refinement or polish mode count as skill failure, because late exploration resets the depth the iteration loop is building.
 
 ### Phase 2 — Reference + adversarial capture (Playwright)
 
-As v2: capture 8 sector references and render 6 anti-patterns. Same as before.
+As v2: capture 8 sector references and render 6 anti-patterns.
 
 ### Phase 3 — Generate ≥20 concepts with structural quota
 
 | Quota | Min count | What |
 |---|---|---|
-| Path-based (Bezier / custom geometry) | 6 | NOT rect/circle/line primitives. Real paths. |
+| Path-based (Bezier / custom geometry) | 6 | Real paths, not rect/circle/line primitives. |
 | No-container (mark only, no rounded square) | 4 | Mark stands alone. |
 | Negative-space (FedEx / Stripe register) | 3 | The cutout / hidden shape carries meaning. |
 | Custom letterform | 3 | Wordmark glyphs are drawn, not Inter defaults. |
 | Free / wildcard | 4 | Anything. |
 | **Total** | **≥20** | spans all 7 logo types |
 
-If a quota cell is unfilled, the phase fails — generate more.
+An unfilled quota cell fails the phase — generate more.
 
 ### Phase 4 — Render ladder + WCAG + kerning gates
 
-Same as v2: 16/32/64/256/512 px renders, contrast ≥ 4.5/3, kerning audit. Concepts that fail 16 px are killed.
+As v2: 16/32/64/256/512 px renders, contrast ≥ 4.5/3, kerning audit. Concepts that fail at 16 px are killed.
 
 ### Phase 5 — Self-score (7-axis rubric, /70) + exemplar 2-up benchmark
 
-Score each top concept on the 7 axes (same axes as v2). THEN, for each top-3 concept, place it in a 2-up next to ITS claimed exemplar from `references/exemplar-bank-2026.md` (same principle alignment recorded in the brief). Save to `docs/specs/logo-pack/judging/exemplar-2up/<concept-id>-vs-<exemplar-id>.png`.
+Score each top concept on the 7 axes (same as v2). Then place each top-3 concept in a 2-up next to its claimed exemplar from `references/exemplar-bank-2026.md` (the principle alignment recorded in the brief) and save to `docs/specs/logo-pack/judging/exemplar-2up/<concept-id>-vs-<exemplar-id>.png`.
 
-**Hard rule:** if the exemplar visibly outclasses the concept on the same principle, the concept's score is capped at 60/70 — no matter what the rubric says. The bank is the world-class floor; rubric numbers cannot override eyeball comparison against a real top-tier mark.
+If the exemplar visibly outclasses the concept on the same principle, cap the concept at 60/70 whatever the rubric says. The bank is the world-class floor; rubric numbers do not override an eyeball comparison against a real top-tier mark.
 
 ### Phase 5b — Love-test gate (the 5 questions that actually matter)
 
-After self-score and exemplar-2up, before cross-model judge, run on top 3:
+After self-score and exemplar 2-up, before the cross-model judge, run on the top 3:
 
-1. **Tattoo test:** "Would the founder tattoo this on their forearm?" If no — concept is competent, not lovable. Flag for deeper iteration.
-2. **$5k test:** "If a top-tier studio handed this to the founder for $5k, would they accept it as the deliverable?" If no — flag.
-3. **Reverse-jealousy test:** "If a competitor shipped this tomorrow, would the founder be impressed or shrug?" Shrug = flag.
-4. **5-year test:** "Will this look intentional or dated in 2031?" Dated = disqualified outright (catches gradients, AI-render-of-the-month, palette-of-the-year).
-5. **Stranger test:** "Show this to one person OUTSIDE the project for 2 seconds. Ask 'what does this company do?' If wrong/unknown → semantic fit fail.
+1. **Tattoo test:** "Would the founder tattoo this on their forearm?" No means competent, not lovable — flag for deeper iteration.
+2. **$5k test:** "If a top-tier studio handed this to the founder for $5k, would they accept it as the deliverable?" No — flag.
+3. **Reverse-jealousy test:** "If a competitor shipped this tomorrow, would the founder be impressed or shrug?" Shrug — flag.
+4. **5-year test:** "Will this look intentional or dated in 2031?" Dated disqualifies outright (catches gradients, AI-render-of-the-month, palette-of-the-year).
+5. **Stranger test:** show it to one person outside the project for 2 seconds and ask "what does this company do?" Wrong or unknown is a semantic-fit fail.
 
-Failures here do NOT trigger handoff — they trigger **constraint-tightening Phase 8** (see Phase 8b).
+Failures here lead to constraint-tightening (Phase 8b), not handoff.
 
 ### Phase 6 — Cross-model judge (codex CLI, mandatory)
 
@@ -167,67 +167,47 @@ Send the concept grid PNG + the brand brief to codex CLI:
 codex exec "You are a senior brand designer. Rank these 20 logo concepts for <product> serving <audience>. Score each /70 on: silhouette legibility, distinctiveness vs sector, distance from anti-patterns, semantic fit, type quality, color discipline, scalability. Return JSON: [{id, score, top_3_strengths, top_3_weaknesses}]."
 ```
 
-**Compare codex's ranking to mine.** If top picks differ:
-- If codex has a higher-scored concept I underrated → investigate WHY → correct my rubric weight or kill my biased pick
-- If I have a higher-scored concept codex hates → simulate persona read on that concept → if persona also dislikes, kill it
-- Disagreements ARE evidence, not noise. Suppressing them = self-grading regression.
+Compare codex's ranking to yours. Where top picks differ:
+- Codex scores a concept you underrated → find out why, then correct your rubric weight or kill your biased pick.
+- You score a concept codex dislikes → simulate the persona read on it; if the persona also dislikes it, kill it.
+- Treat disagreements as evidence. Suppressing them is a self-grading regression.
 
-Final ranking = MIN(my_score, codex_score) per concept (prevents either model from auto-promoting its own bias).
+Final ranking = MIN(my_score, codex_score) per concept, so neither model can promote its own bias.
 
 ### Phase 7 — Persona simulation (mandatory for top 5)
 
-For each top-5 concept, simulate the target ICP's first-impression read. For Example Marketplace: small-business owner, age 35–55, runs 1–3 cafés. Show concept at 256 px. Ask plain-English questions:
+For each top-5 concept, simulate the target ICP's first-impression read at 256 px. For Example Marketplace: small-business owner, age 35–55, runs 1–3 cafés. Ask plain-English questions:
 
-1. "What does this brand do?" — if answer is "I don't know" or "software" → fail
-2. "Would you trust this with your payroll?" — must be yes
-3. "Does it remind you of any brand you already use?" — if YES, name it; that's an inspiration tax
-4. "If you saw this on a competitor's storefront window, would it stand out?" — must be yes
+1. "What does this brand do?" — "I don't know" or "software" fails.
+2. "Would you trust this with your payroll?" — must be yes.
+3. "Does it remind you of any brand you already use?" — if yes, name it; that's an inspiration tax.
+4. "If you saw this on a competitor's storefront window, would it stand out?" — must be yes.
 
-Concepts that fail any question are demoted regardless of rubric score. **The rubric is a sieve; the persona read is the floor.**
+A concept that fails any question is demoted regardless of rubric score. **The rubric is a sieve; the persona read is the floor.**
 
 ### Phase 7b — Lockup-stutter test (mandatory for monogram-class marks)
 
-If the chosen mark is a single letter AND that letter is the first letter of the brand name, render mark + wordmark side-by-side at 4:1 horizontal lockup. If the letter visually duplicates against the wordmark's first character (Pinterest P + "Pinterest", Example Marketplace H + "Example Marketplace"), the mark is **disqualified for production lockup use** regardless of rubric score. The skill loops back to Phase 3 and generates non-letterform alternatives.
+If the chosen mark is a single letter that is also the brand name's first letter, render mark + wordmark side-by-side at a 4:1 horizontal lockup. If the letter visually duplicates the wordmark's first character (Pinterest P + "Pinterest", Example Marketplace H + "Example Marketplace"), the mark is disqualified for production lockup use regardless of rubric score; loop back to Phase 3 for non-letterform alternatives.
 
 ### Phase 8 — Multi-tool refinement pipeline (mandatory)
 
-Replace the old 3-pass loop with a 5-stage toolchain pipeline that mimics how senior designers actually work. Run on each top-3 concept.
+A 5-stage toolchain that mirrors how senior designers work, run on each top-3 concept:
 
-**Stage A — Geometry refinement (hand-edit SVG)**
-  - Vectorize the image-gen sketch (potrace → manual cleanup)
-  - Optical correction: weights, balance, asymmetric tension
-  - Bezier curve smoothing (no kinks, no over-anchored points)
-  - Save vector pre-polish
+**Stage A — Geometry refinement (hand-edit SVG)** — vectorize the image-gen sketch (potrace → manual cleanup); optical correction of weights, balance, asymmetric tension; Bezier smoothing (no kinks, no over-anchored points); save the vector pre-polish.
 
-**Stage B — Style transfer iteration (image-gen img-to-img)**
-  - Send Stage-A vector + 3 different style prompts back to image-gen
-  - "Same composition, executed in [Pentagram, Collins, Sagmeister] style"
-  - "Same composition, with one ASYMMETRIC tension element added"
-  - "Same composition, find and embed a HIDDEN second meaning"
-  - Pick best of 3 by eyeball + score
+**Stage B — Style transfer iteration (image-gen img-to-img)** — send the Stage-A vector back with 3 style prompts: "Same composition, executed in [Pentagram, Collins, Sagmeister] style"; "Same composition, with one ASYMMETRIC tension element added"; "Same composition, find and embed a HIDDEN second meaning". Pick the best of 3 by eyeball + score.
 
-**Stage C — Vector trace + kerning + curve audit**
-  - Re-trace Stage-B winner to clean SVG
-  - Per-pair kerning (Tr, AV, LT, Wo, rs)
-  - Bezier smoothing pass 2
-  - Optical compensation at 16px, 32px, 64px
+**Stage C — Vector trace + kerning + curve audit** — re-trace the Stage-B winner to clean SVG; per-pair kerning (Tr, AV, LT, Wo, rs); second Bezier smoothing pass; optical compensation at 16, 32 and 64 px.
 
-**Stage D — Motion + context test**
-  - Animate mark draw-on (~600ms reveal) — does the geometry FLOW?
-  - Render in 5 contexts (nav header, favicon, app icon, OG card, storefront mockup)
-  - Eyeball on each — passes Phase 5b love-test in EVERY context?
+**Stage D — Motion + context test** — animate a ~600ms draw-on reveal (does the geometry flow?); render in 5 contexts (nav header, favicon, app icon, OG card, storefront mockup); it must pass the Phase 5b love-test in every context.
 
-**Stage E — Sand-grain polish**
-  - Sub-pixel adjustments (anchor point cleanup, stroke endpoints, micro-radii)
-  - Color value tuning (hex codes vary by ±2 for optical balance)
-  - Final 2-up against the named exemplar from Phase 5
-  - If exemplar still outclasses → re-enter Stage A with constraint added
+**Stage E — Sand-grain polish** — sub-pixel adjustments (anchor cleanup, stroke endpoints, micro-radii); color value tuning (hex ±2 for optical balance); final 2-up against the named exemplar from Phase 5. If the exemplar still outclasses it, re-enter Stage A with a constraint added.
 
-Each stage MUST improve combined score by ≥2 points or the stage is failed and retried with new constraint.
+Each stage has to improve the combined score by ≥2 points; otherwise the stage failed and is retried with a new constraint.
 
 ### Phase 8b — Constraint-escalation when plateau hits
 
-When a refinement round produces zero score improvement (combined-score delta ≤1), escalate constraints:
+When a refinement round produces no improvement (combined-score delta ≤1), add a constraint:
 
 | Plateau # | Added constraint |
 |---|---|
@@ -237,26 +217,22 @@ When a refinement round produces zero score improvement (combined-score delta �
 | 4 | Must be drawable in ≤5 path operations (force radical reduction) |
 | 5 | Must embed a brand-vocabulary glyph (e.g. for Example Marketplace: a clock-mark, time-mark, or hours-glyph) |
 
-Each constraint forces the agent out of safe territory. Plateaus stop being "the AI hit its ceiling" — they become "we haven't constrained the search hard enough."
+Each constraint forces the search out of safe territory, turning "the AI hit its ceiling" into "we haven't constrained the search hard enough."
 
 ### Phase 9 — Saturation gate WITHOUT handoff exit
 
 | Combined score | Action |
 |---|---|
-| ≥ 65/70 | Promote. Run Phase 5b love-test once more. If 5/5 pass → terminal Phase 13. If <5/5 → Phase 8 Stage A with new constraint. |
+| ≥ 65/70 | Promote. Run the Phase 5b love-test once more. 5/5 pass → terminal Phase 13. <5/5 → Phase 8 Stage A with a new constraint. |
 | 60–64 | Phase 8 full pipeline rerun + Phase 8b plateau escalation |
-| 56–59 | Phase 8b ALL constraints stacked simultaneously + cross-model judge re-score (Phase 6) |
-| < 56 | Brief itself is broken — re-enter Phase 0 with constraint forensics ("which axis are concepts failing on?") |
+| 56–59 | Phase 8b with all constraints stacked simultaneously + cross-model re-score (Phase 6) |
+| < 56 | The brief itself is broken — re-enter Phase 0 with constraint forensics ("which axis are concepts failing on?") |
 
-**No handoff exit. Ever.** The skill terminates only at ≥65/70 with 5/5 love-test pass.
-
-If the agent finds itself plateaued for 3+ rounds despite constraint escalation, it MUST log a framework-gap entry naming the specific failure mode — not punt to a human.
+There is no handoff exit. The skill terminates only at ≥65/70 with a 5/5 love-test pass. If you stay plateaued for 3+ rounds despite constraint escalation, log a framework-gap entry naming the specific failure mode instead of passing the problem to a person.
 
 ## Why the skill cannot stop below 65/70
 
-The skill is responsible for reaching designer-grade output via AI orchestration alone. Plateau is a search-space problem, not a craft-ceiling problem. Every plateau has a constraint that breaks it. Find the constraint or log the framework gap.
-
-There is no external escape hatch.
+The skill is responsible for reaching designer-grade output through AI orchestration alone. A plateau is a search-space problem, not a craft ceiling, and every plateau has a constraint that breaks it. Find the constraint or log the framework gap. There is no external escape hatch.
 
 ### Phase 10 — System extension (mandatory for delivered marks)
 
@@ -270,11 +246,11 @@ The chosen mark ships with:
 | `final/icon-style/{home,calendar,bell,settings,user}.svg` | 5 product icons drawn in the mark's geometric language (corner radius, stroke weight, accent rule) |
 | `final/color-tokens.json` | Color tokens — primary/accent/neutral/semantic — exportable to design system |
 
-A mark without a system is half a deliverable. This phase is **non-skippable**.
+This phase is non-skippable: a mark without a system is half a deliverable.
 
 ### Phase 11 — App-context mockups (mandatory)
 
-Render the mark in real-world contexts using sharp + screenshot composites:
+Render the mark in real-world contexts with sharp + screenshot composites:
 
 | Context | What's shown |
 |---|---|
@@ -284,17 +260,17 @@ Render the mark in real-world contexts using sharp + screenshot composites:
 | `contexts/app-switcher.png` | iOS app-switcher card with mark as app icon |
 | `contexts/storefront.png` | The mark on a fictional café storefront window decal |
 
-Show the user the contexts. Ask: "Does this stand out vs blend in?"
+Show the user the contexts and ask: "Does this stand out vs blend in?"
 
 ### Phase 12 — Final variant matrix
 
-Same 7 variants as v2 (horizontal/vertical/mark/wordmark/favicon/dark-mode/monochrome) but now generated from the **iterated** winner, not the raw concept.
+The same 7 variants as v2 (horizontal/vertical/mark/wordmark/favicon/dark-mode/monochrome), generated from the **iterated** winner rather than the raw concept.
 
-### Phase 13 — Live in-app verification (MANDATORY terminal gate)
+### Phase 13 — Live in-app verification (terminal gate)
 
-The skill **cannot declare done** until the logo is verified in the actual deployed product, in both themes. Self-graded rubrics, isolated mark previews, and adversarial composites all miss palette / context / theme issues that only show up in the running app.
+The skill is done only when the logo is verified in the deployed product, in both themes. Self-graded rubrics, isolated previews and adversarial composites all miss palette, context and theme issues that only appear in the running app.
 
-Steps (after deploy lands):
+After deploy lands:
 
 1. **Capture both themes via Playwright:**
    ```js
@@ -309,40 +285,31 @@ Steps (after deploy lands):
    ```
    Save both to `docs/specs/design-logo/in-app-verification/`.
 
-2. **Eyeball check** (with the actual screenshots):
-   - Top-left logo + wordmark renders cleanly in BOTH themes — no orphan text, no broken kerning, no debug strings, no color mismatch
-   - The logo's silhouette holds against whatever the page background is (light → light contexts, dark → dark contexts)
-   - The wordmark's accent color is visible on whatever the page nav bg is
-   - No raster fallback, no broken `<img>` placeholder, no visible cache-bust artifact
+2. **Eyeball check** on the actual screenshots: the top-left logo + wordmark renders cleanly in both themes (no orphan text, broken kerning, debug strings or color mismatch); the silhouette holds against the page background; the wordmark accent is visible on the nav background; no raster fallback, broken `<img>` placeholder or cache-bust artifact.
 
-3. **Hard fails (skill MUST loop back, NOT declare done):**
+3. **Hard fails** — loop back instead of declaring done:
    - Raw text from JSX leaking onto the page (orphan attribute bug — observed live 2026-04-30 with `fetchPriority="high"` rendering as text after a logo-swap mass edit)
    - Logo invisible against background (slate-on-slate, iris-on-iris)
    - Wordmark wrong color for theme (iris on dark hero failing WCAG)
    - Cached old logo serving (Cloudflare TTL — bust with `?v=N`)
 
-4. **Compare to live anchors** (sector references): does the logo's brand register MATCH the rest of the page's UI, or feel imported from a different design system?
+4. **Compare to live anchors** (sector references): does the logo's brand register match the rest of the page's UI, or feel imported from another design system?
 
-5. **Persist the screenshots** as the terminal artifact. They go in the audit and the manage-learnings entry. Future runs of design-logo on this project use them as the "before" baseline for the next iteration.
+5. **Persist the screenshots** as the terminal artifact, in the audit and the manage-learnings entry. Future runs use them as the "before" baseline.
 
-**Hard rule:** if Phase 13 screenshots reveal any hard-fail, the skill loops back to Phase 8 (iteration) or Phase 4 (re-render) — NOT Phase 14 (declare done). Self-rated success in isolation is no longer a valid termination state.
+A hard-fail sends the skill back to Phase 8 (iteration) or Phase 4 (re-render), not to Phase 14. Success rated in isolation is not a valid termination state.
 
 **Phase 13 amendment — Founder-eyeball as the saturation truth:**
 
-After capturing in-app verification screenshots, the skill asks the founder ONE question:
+After capturing the screenshots, ask the founder one question:
 
 > "Looking at this on the live site with fresh eyes — does this impress you, or does it just look fine?"
 
-A "fine" / "okay" / "I guess" / "sure" answer is the same as a hard-fail. The skill drops back to Phase 8 Stage A with constraint escalation. **A shrug from the founder is decisive — it cannot be overridden by rubric score.**
+"Fine", "okay", "I guess" or "sure" counts as a hard-fail: drop back to Phase 8 Stage A with constraint escalation. **A founder's shrug is decisive and is not overridden by rubric score.**
 
 ### Phase 14 — Declare done
 
-Only after Phase 13 screenshots pass eyeball check. Emit final summary with:
-- Score (self + cross-model + persona)
-- Both live screenshots inline
-- Path to `final/` pack
-- Constraint-escalation history (which plateaus, which constraints broke them)
-- Learnings appended to project + framework jsonl
+Only after the Phase 13 screenshots pass the eyeball check. Emit a final summary with: score (self + cross-model + persona); both live screenshots inline; the path to the `final/` pack; the constraint-escalation history (which plateaus, which constraints broke them); learnings appended to the project + framework jsonl.
 
 ## Pipeline Continuation
 
@@ -381,14 +348,14 @@ Before marking the active lane task complete in `.svc/lane-tasks-<WI>.json`:
 | 13 | App-context mockups rendered | 5 context PNGs | |
 | 14 | Anti-references avoided | each anti-ref checked off in audit.md | |
 | 15 | Human checkpoint logged | user picked among delivered top 3 | |
-| 15b | **Founder-shrug check passed** | Founder response to "does this impress you?" is NOT "fine / okay / I guess / sure" | |
+| 15b | **Founder-shrug check passed** | Founder response to "does this impress you?" is not "fine / okay / I guess / sure" | |
 | 15c | **Lockup-stutter test passed** | If monogram = wordmark first letter, non-letterform alternative chosen | |
-| 16 | **Phase 13 in-app verification screenshots present** | `docs/specs/design-logo/in-app-verification/landing-light.png` + `landing-dark.png` exist, captured AFTER deploy landed | |
+| 16 | **Phase 13 in-app verification screenshots present** | `docs/specs/design-logo/in-app-verification/landing-light.png` + `landing-dark.png` exist, captured after deploy landed | |
 | 17 | **No raw-text-leak / orphan JSX in either screenshot** | eyeball check passed; if any debug string visible, skill loops back | |
 | 18 | **Logo silhouette holds in both themes** | no slate-on-slate or iris-on-iris invisibility | |
 
-If any check FAILs, fix before declaring complete. Render-ladder failure, missing cross-model judge, missing iteration loop, missing system extension are all blocking — there are no "soft fails" in v3.
+Fix any FAIL before declaring complete. Render-ladder failure, a missing cross-model judge, a missing iteration loop and a missing system extension are all blocking — v3 has no soft fails.
 
 ## Provenance
 
-This skill explicitly rejects the v2 failure mode of "ship a competent generic at 56/70 and call it world-class". v3 either earns ≥ 65/70 through cross-domain inspiration + cross-model judging + 5-stage refinement + constraint escalation, or logs a framework gap naming the specific failure mode. The user gets a real outcome — production-grade or documented gap — never a self-graded mid. There is no external escape hatch.
+This skill rejects the v2 failure mode of "ship a competent generic at 56/70 and call it world-class". v3 either earns ≥ 65/70 through cross-domain inspiration + cross-model judging + 5-stage refinement + constraint escalation, or logs a framework gap naming the specific failure mode. The user gets a real outcome — production-grade or a documented gap — never a self-graded mid. There is no external escape hatch.

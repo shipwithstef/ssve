@@ -117,7 +117,7 @@ pricing tiers and audit enforcement."
 
 ### Step 0: Gather Context
 
-Read what exists. Don't ask for information the project already has.
+Read what exists rather than asking for information the project already has.
 
 **Required reads:**
 1. `docs/specs/vision.md` — product purpose, target market
@@ -210,7 +210,7 @@ For each gated feature, choose a mechanism:
 
 ```
 Is this feature the adoption wedge?
-  YES → Usage limit or Time trial (NEVER hard paywall)
+  YES → Usage limit or Time trial (not a hard paywall — see the wedge rule)
   NO ↓
 
 Does the feature have natural consumption units?
@@ -222,8 +222,8 @@ Is the value obvious without experiencing it?
   NO → Time trial or Feature preview (user needs to experience value first)
 ```
 
-**Critical rule:** Never hard-paywall the wedge feature of a pre-revenue product.
-If no one is paying yet, your job is to get them hooked, not to lock the door.
+**Wedge rule:** do not hard-paywall the wedge feature of a pre-revenue product.
+If no one is paying yet, the job is to get users hooked, not to lock the door.
 Usage limits or time trials let users experience value and convert naturally.
 
 ### Step 4: Wedge Protection Analysis
@@ -237,9 +237,9 @@ The wedge is the feature that makes users come back. Identify it, protect it.
 4. Which feature would make your product indistinguishable from competitors if removed?
 
 **Wedge protection rules:**
-- The wedge MUST be accessible in the free tier (with limits if needed)
+- The wedge stays accessible in the free tier (with limits if needed)
 - Gating the wedge kills adoption at the top of the funnel
-- If you must gate the wedge, use usage limits, not hard paywalls
+- If the wedge has to be gated, use usage limits, not hard paywalls
 - Monitor: if free→paid conversion drops after gating the wedge, the limit is too aggressive
 
 **Example (WI-008 context):** If Flash Offers is the wedge feature for a
@@ -406,25 +406,15 @@ response.
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
 - Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
-
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
 - Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
+  cross-session, cross-subagent source of truth for task status, skip reasons, and resume.
 - Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
+  happens only in the parent/top-level session. Detect via: host exposes
+  TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either check fails,
+  skip host mirroring — file state is the durable record, and the orchestrator
+  parent re-reads and re-mirrors after the subagent returns.
+- Subagents do not attempt TaskUpdate calls: a failed attempt is silent drift
+  between the subagent's intent and the host UI, not graceful degradation.
 - Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
 - Evaluate the next task's conditions from its description
 - If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
@@ -433,23 +423,13 @@ response.
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
-
 **Standalone mode:**
 - After producing the gating matrix, the natural next step depends on context:
   - If features need spec updates → `write-spec` (delta mode, incorporating gating decisions)
   - If enforcement bugs found → `plan-changeset` (to fix guard components)
   - If competitor data was missing → `analyze-competitors` (then re-run this skill)
 
-**`**Next:**` trailer is mandatory.** Every response ends with a concrete next action.
+**End every response with a `**Next:**` trailer** naming a concrete next action, so the owner never has to infer what happens after the matrix.
 
 ### Key Principles
 
@@ -462,13 +442,6 @@ response.
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
+If context was compacted and you lost track of framework state: `.svc/lane-tasks-<WI>.json` is the sole source of truth. Resume the first `in_progress` task (else the first `pending` with blockers satisfied), re-load it with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Verify a `skill_receipt` exists before marking any task complete — no ghost-completes.
 
 If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.

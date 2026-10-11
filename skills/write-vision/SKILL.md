@@ -89,9 +89,9 @@ Default intent selection:
 
 - **First: check `docs/specs/project-state.md`** for an existing vision at a
   non-canonical path (e.g., `VISION.md` instead of `vision.md`). If project-state
-  lists the vision as existing at a different path, use THAT path as the target
-  and set `intent=refine`. Do not create a duplicate at the canonical path —
-  the compatibility note in project-state.md takes precedence.
+  lists the vision as existing at a different path, use that path as the target
+  and set `intent=refine` rather than creating a duplicate at the canonical
+  path — the compatibility note in project-state.md takes precedence.
 - If project-state.md does not exist or does not mention a vision: check the
   canonical target path.
 - If target exists: `intent=refine`
@@ -138,7 +138,8 @@ And confidence:
 - Canonical target is `docs/specs/vision.md`.
 - In `convert`, detect legacy locations (`VISION.md`, `docs/specs/CORE_VISION.md`,
   other local variants) and map them to canonical sections.
-- Never destroy legacy files by default. Prefer pointer-note migration.
+- Keep legacy files by default; prefer pointer-note migration, so nothing that
+  links to them breaks.
 
 ### Step 2: Collect Evidence
 
@@ -265,25 +266,15 @@ When invoked with `--audit` or when vision.md already exists and the user asks t
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
 - Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
-
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
 - Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
+  cross-session, cross-subagent source of truth for task status, skip reasons, and resume.
 - Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
+  happens only in the parent/top-level session. Detect via: host exposes
+  TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either check fails,
+  skip host mirroring — file state is the durable record, and the orchestrator
+  parent re-reads and re-mirrors after the subagent returns.
+- Subagents do not attempt TaskUpdate calls: a failed attempt is silent drift
+  between the subagent's intent and the host UI, not graceful degradation.
 - Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
 - Evaluate the next task's conditions from its description
 - If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
@@ -304,16 +295,6 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
-
 **If `--progressive` flag is present AND self-verify passed:**
 - Check `--skip` list. If this skill is in the skip list, pass through to next.
 - Invoke next skill: `analyze-domain --progressive --lane greenfield`
@@ -324,13 +305,6 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
+If context was compacted and you lost track of framework state: `.svc/lane-tasks-<WI>.json` is the sole source of truth. Resume the first `in_progress` task (else the first `pending` with blockers satisfied), re-load it with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Verify a `skill_receipt` exists before marking any task complete — no ghost-completes.
 
 If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.

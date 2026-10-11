@@ -123,14 +123,14 @@ write-vision or write-spec directly.
 
 ## Stage 1: Revenue Project (1-2 Weeks)
 
-The Stage 1 project exists to generate income fast. It is NOT a prototype of the
+The Stage 1 project exists to generate income fast. It is not a prototype of the
 big idea. It is a separate, shippable product that earns money within the first
 month of launch.
 
 ### Selection Priority
 
-Stage 1 projects are ranked by how well they connect to the big idea. Always
-prefer related over unrelated.
+Stage 1 projects are ranked by how well they connect to the big idea; prefer
+related over unrelated, because a related project feeds Stage 3.
 
 #### Tier A: Related to the Big Idea (Best)
 
@@ -177,8 +177,8 @@ Pure revenue play. Doesn't feed the big idea but funds it.
 
 ### Selection Criteria
 
-Every Stage 1 project MUST pass the first-project rules. These are non-negotiable
-regardless of tier.
+Every Stage 1 project passes all nine first-project rules, regardless of tier.
+Each rule encodes a common reason first revenue projects die, so none is optional.
 
 #### First-Project Rules
 
@@ -280,7 +280,7 @@ reflects a different person than the one who started at Stage 1:
 
 ## The "Build My Idea Anyway" Escape
 
-**This escape hatch is ALWAYS available.** At any point during the staging
+**This escape hatch is always available.** At any point during the staging
 conversation — before, during, or after presenting the staging plan — the
 builder can say "build my idea anyway" and the pipeline respects it immediately.
 
@@ -317,7 +317,7 @@ Routing to write-vision."
 ### When to Mention Staging Without Pushing
 
 In the normal pipeline flow (not stage-revenue), P0 may notice a builder
-with no capital working on a 3-month idea. P0 can mention staging ONCE:
+with no capital working on a 3-month idea. P0 can mention staging once:
 
 "This is a 3-month build with no revenue until launch. stage-revenue can
 break this into stages where you earn money from month 1. Want to stage it,
@@ -378,25 +378,15 @@ phase ids appear in `skill_receipt.phases_executed`.
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
 - Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
-
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
 - Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
+  cross-session, cross-subagent source of truth for task status, skip reasons, and resume.
 - Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
+  happens only in the parent/top-level session. Detect via: host exposes
+  TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either check fails,
+  skip host mirroring — file state is the durable record, and the orchestrator
+  parent re-reads and re-mirrors after the subagent returns.
+- Subagents do not attempt TaskUpdate calls: a failed attempt is silent drift
+  between the subagent's intent and the host UI, not graceful degradation.
 - Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
 - Evaluate the next task's conditions from its description
 - If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
@@ -404,16 +394,6 @@ phase ids appear in `skill_receipt.phases_executed`.
 - Per `route-workflow` Task-Graph Execution Protocol
 
 ### Chaining
-
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
 
 **If `--progressive` flag is present AND self-verify passed:**
 - Check `--skip` list. If this skill is in the skip list, pass through to next.
@@ -453,13 +433,6 @@ nothing.
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
+If context was compacted and you lost track of framework state: `.svc/lane-tasks-<WI>.json` is the sole source of truth. Resume the first `in_progress` task (else the first `pending` with blockers satisfied), re-load it with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Verify a `skill_receipt` exists before marking any task complete — no ghost-completes.
 
 If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.

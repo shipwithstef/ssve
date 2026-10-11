@@ -122,11 +122,11 @@ output alone.
 
 ## Bash Execution Rules (enforce every call)
 
-**Short commands (curl, npx tsx, SDK scripts — complete in <30s):** run **foreground** with `timeout: 15000`. Never `run_in_background: true`.
+**Short commands (curl, npx tsx, SDK scripts — complete in <30s):** run in the **foreground** with `timeout: 15000`, not with `run_in_background: true`.
 
-**Long-running processes (full E2E suites, builds >30s):** `run_in_background: true` is allowed — but you OWN cleanup. Kill the process after reading output. Do not leave orphaned shells.
+**Long-running processes (full E2E suites, builds >30s):** `run_in_background: true` is allowed, and cleanup is yours: kill the process after reading its output so no orphaned shells remain.
 
-Source: `~/.claude/rules/bash-hygiene.md`. These rules are non-negotiable — open shells require manual cleanup by the user.
+Source: `~/.claude/rules/bash-hygiene.md`. These rules are non-negotiable because every open shell left behind is manual cleanup for the user.
 
 ## Authentication — JWT Bearer vs api_key
 
@@ -183,23 +183,23 @@ with provider/API diagnosis instead of token recovery.
 
 ## Secrets API — manage Base44 Secrets (env vars) programmatically
 
-**Secrets API** — Base44 functions read env vars via `Deno.env.get('X')` from the app's Secrets store, so manage it through the API, not the dashboard: `GET https://app.base44.com/api/apps/$APP_ID/secrets` lists keys with masked values, `POST` to the same URL with a JSON object of name-to-value upserts one or many secrets, and `jq 'has("NAME")'` on the GET verifies one (token from `jq -r .accessToken ~/.base44/auth/auth.json`). Verify the secret exists BEFORE deploying any commit that adds a strict `Deno.env.get('X')` check (no fallback), or the function fails to compile and returns 404 "Deployment does not exist"; also use it before rotation (POST overwrites, no rebuild) and in preflight checks (`validate-required-secrets.sh`). The required Example Marketplace secret names are listed in the reference. Details: `references/secrets-and-deploy-gotchas.md`.
+**Secrets API** — Base44 functions read env vars via `Deno.env.get('X')` from the app's Secrets store, so manage it through the API, not the dashboard: `GET https://app.base44.com/api/apps/$APP_ID/secrets` lists keys with masked values, `POST` to the same URL with a JSON object of name-to-value upserts one or many secrets, and `jq 'has("NAME")'` on the GET verifies one (token from `jq -r .accessToken ~/.base44/auth/auth.json`). Verify the secret exists **before** deploying any commit that adds a strict `Deno.env.get('X')` check (no fallback), or the function fails to compile and returns 404 "Deployment does not exist"; also use it before rotation (POST overwrites, no rebuild) and in preflight checks (`validate-required-secrets.sh`). The required Example Marketplace secret names are listed in the reference. Details: `references/secrets-and-deploy-gotchas.md`.
 
 ## coding/write response-shape gotcha (read this before you ever check `.error == null`)
 
-**coding/write response-shape gotcha** — `coding/write` has NO `.error` field on either outcome: success returns the full app config (confirm with `.last_git_commit_hash`), failure returns a flat `{error_type, message, detail, request_id, traceback}`. NEVER test `.error == null` (always true); test `.error_type` instead, e.g. `jq 'if .error_type then {error_type, message: .message[:200]} else {ok: true} end'`, or `response.data.error_type` in JS. Watch for `SandboxExecutionError` (non-fast-forward push rejected; recover per `rules/base44/auth-refresh.md`) and `HTTPException` (read `.message`). Details: `references/secrets-and-deploy-gotchas.md`.
+**coding/write response-shape gotcha** — `coding/write` has no `.error` field on either outcome: success returns the full app config (confirm with `.last_git_commit_hash`), failure returns a flat `{error_type, message, detail, request_id, traceback}`. So `.error == null` is always true and proves nothing; test `.error_type` instead, e.g. `jq 'if .error_type then {error_type, message: .message[:200]} else {ok: true} end'`, or `response.data.error_type` in JS. Watch for `SandboxExecutionError` (non-fast-forward push rejected; recover per `rules/base44/auth-refresh.md`) and `HTTPException` (read `.message`). Details: `references/secrets-and-deploy-gotchas.md`.
 
 ## Static asset deploy gotchas — public/* must be tracked AND verified by Content-Type
 
-**Static asset deploy gotchas** — HTTP 200 is NOT proof a `public/*` asset deployed, because the SPA returns 200 with `Content-Type: text/html` for unknown routes. For every new public asset: (1) the file exists locally, (2) `git ls-files public/<asset>` shows it tracked (blanket ignores like `*.png` hide it; use `git add -f`), (3) code references match the path exactly, (4) after push and deploy, `curl -sI https://<app>/<asset>` returns the matching MIME type, not `text/html`. Recover from untracked files by force-adding and redeploying, from a CDN-cached SPA fallback by cache-busting references with `?v=YYYYMMDD` or purging the zone, and never treat a local `dist/` build as deploy proof (it reads the working tree, not git). Details: `references/secrets-and-deploy-gotchas.md` and `rules/base44/static-assets-public-dir.md`.
+**Static asset deploy gotchas** — HTTP 200 is not proof a `public/*` asset deployed, because the SPA returns 200 with `Content-Type: text/html` for unknown routes. For every new public asset: (1) the file exists locally, (2) `git ls-files public/<asset>` shows it tracked (blanket ignores like `*.png` hide it; use `git add -f`), (3) code references match the path exactly, (4) after push and deploy, `curl -sI https://<app>/<asset>` returns the matching MIME type, not `text/html`. Recover from untracked files by force-adding and redeploying, from a CDN-cached SPA fallback by cache-busting references with `?v=YYYYMMDD` or purging the zone, and do not treat a local `dist/` build as deploy proof (it reads the working tree, not git). Details: `references/secrets-and-deploy-gotchas.md` and `rules/base44/static-assets-public-dir.md`.
 
 ## "Deployment does not exist" 404 — the misleading deploy error
 
-**"Deployment does not exist" 404** — This 404 on `POST /api/apps/{id}/functions/<name>` usually means the module threw an exception during load, so compile produced no runnable artifact; it does NOT mean the function is unregistered, a stale artifact, git divergence, TypeScript syntax, or (check last) a size limit. Check FIRST the Base44 dashboard, Functions, the failing function, which shows the real exception (e.g. `REDEEM_SECRET not configured`). The most common cause is a required `Deno.env.get('X')` secret missing from Base44 Secrets (see `rules/base44/function-deploy-404-check-secrets.md`); if several functions return the same 404, grep the shared secret across `base44/functions/` and probe each function to confirm. Details: `references/secrets-and-deploy-gotchas.md`.
+**"Deployment does not exist" 404** — This 404 on `POST /api/apps/{id}/functions/<name>` usually means the module threw an exception during load, so compile produced no runnable artifact; it does not mean the function is unregistered, a stale artifact, git divergence, TypeScript syntax, or (check last) a size limit. Check the Base44 dashboard first — Functions, the failing function — which shows the real exception (e.g. `REDEEM_SECRET not configured`). The most common cause is a required `Deno.env.get('X')` secret missing from Base44 Secrets (see `rules/base44/function-deploy-404-check-secrets.md`); if several functions return the same 404, grep the shared secret across `base44/functions/` and probe each function to confirm. Details: `references/secrets-and-deploy-gotchas.md`.
 
 ## Primary Deploy Flow (2026-04-18 update — headless-safe deploy)
 
-**For UI changes (pages/components/lib/api), NEVER use `coding/write`. Use: `git push` → wait 120s → `POST /deploy` → wait 60s → validate.**
+**UI changes (pages/components/lib/api) deploy only via `git push` → wait 120s → `POST /deploy` → wait 60s → validate — not `coding/write`, which can revert real changes (see below).**
 
 | Change type | Deploy method | Timing |
 |---|---|---|
@@ -212,16 +212,16 @@ with provider/API diagnosis instead of token recovery.
 - Calling `coding/write` for `pages/*` runs an internal Base44 sandbox that does its own `git push origin main`. If that sandbox's local HEAD is behind origin, the push is rejected as non-fast-forward, the endpoint errors with `SandboxExecutionError`, Base44's deploy ref ends up stale, and `base44-builder[bot]` can commit a spurious "Manual code change" that reverts real changes. Observed WI-066, 2026-04-17.
 - The only safe headless flow for UI: let `git push` land, let Base44's sandbox catch up (120s), then explicitly call `POST /deploy` to force the rebuild off the known-synced commit. Then wait 60s for the build + CDN propagation before asserting on the deployed bundle.
 
-**Agent behavior (mandatory):**
+**Agent behavior (required):**
 
-1. **UI changes — 4-step flow (git push + deploy, NO coding/write):**
+1. **UI changes — 4-step flow (git push + deploy, no coding/write):**
    ```bash
    # 1. Push your PR merge / commit
    git push origin main
    # 2. Wait 120s for Base44's internal git sandbox to catch up with origin.
    #    Shorter waits risk phantom-ref / non-fast-forward errors.
    sleep 120
-   # 3. Trigger deploy explicitly. Do NOT rely on auto-detect — it requires a human-open UI tab.
+   # 3. Trigger deploy explicitly. Auto-detect needs a human-open UI tab, so it never fires headless.
    ACCESS_TOKEN=$(cat ~/.base44/auth/auth.json | python3 -c "import json,sys; print(json.load(sys.stdin)['accessToken'])")
    curl -s -X POST "https://app.base44.com/api/apps/$APP_ID/deploy" \
      -H "Authorization: Bearer $ACCESS_TOKEN" \
@@ -236,9 +236,9 @@ with provider/API diagnosis instead of token recovery.
    has moved, and target the production URL (for example
    `PLAYWRIGHT_BASE_URL=https://example-marketplace.app`). Local or pre-deploy test output
    cannot satisfy a post-deploy validation request.
-2. **Functions only:** `git push` USUALLY auto-deploys in ~30s — but can silently fail when Base44's GitHub sync falls behind. **Always API-test the function after push.** If the function returns 422/404 or runs old code, force-redeploy via `coding/write functions/<name>` (see Function Deploy Recovery below). Observed 2026-05-05 PR #110: 4 dodo functions merged to main, `git push` reported success, `/github/sync` reported `already_up_to_date`, but functions kept running pre-PR code with old product IDs — `coding/write` per function fixed it.
+2. **Functions only:** `git push` usually auto-deploys in ~30s, but can silently fail when Base44's GitHub sync falls behind — so **API-test the function after every push.** If the function returns 422/404 or runs old code, force-redeploy via `coding/write functions/<name>` (see Function Deploy Recovery below). Observed 2026-05-05 PR #110: 4 dodo functions merged to main, `git push` reported success, `/github/sync` reported `already_up_to_date`, but functions kept running pre-PR code with old product IDs — `coding/write` per function fixed it.
 3. **Entity schemas:** `coding/write entities/<Name>` with JSON round-trip → verify via round-trip read.
-4. **`coding/write` for `pages/*` is RESTRICTED to `pages/BuildCanary` only** (sandbox-sync emergency recovery). For `functions/*`, `coding/write` is ALLOWED as the recovery path when auto-deploy didn't pick up — it's the only reliable way to force Base44 to register updated function content when the GitHub sync is stale.
+4. **`coding/write` for `pages/*` is restricted to `pages/BuildCanary` only** (sandbox-sync emergency recovery). For `functions/*`, `coding/write` is allowed as the recovery path when auto-deploy didn't pick up — it's the only reliable way to force Base44 to register updated function content when the GitHub sync is stale.
 
 **Bash guard for entity schemas:** direct `coding/write entities/*` commands are blocked unless the command includes `SVC_BASE44_SCHEMA_WRITE_ARTIFACT=<repo-relative-path>` or `--schema-change-artifact <path>` pointing to a durable schema-change artifact. The artifact must include rollback plus round-trip, persistence, RLS, probe, or WI-308 evidence. Emergency bypasses must be logged in `.svc/pipeline-decisions.jsonl` with `base44_schema_write_override=true`, `reasoning`, and `approved_by`. This guard does not block function `coding/write` recovery.
 
@@ -278,13 +278,13 @@ done
 
 **Why this works when `git push` doesn't:** Base44's GitHub sync (`/github/sync`) reports `already_up_to_date` even when the sandbox snapshot used by the function runtime is behind origin. `coding/write` bypasses the sync — it writes directly into the sandbox AND triggers a function-scope redeploy. Same mechanism class as the BuildCanary pattern for the UI bundle.
 
-The sections below document the legacy `coding/write` + `/deploy` pattern. Use them ONLY for entity schemas.
+The sections below document the legacy `coding/write` + `/deploy` pattern; use them only for entity schemas.
 
 ---
 
 ## Legacy: coding/write + deploy API (entities + emergency fallback)
 
-**Legacy: coding/write + deploy API** — `coding/write` writes and deploys entities (`entities/EntityName`, JSON), backend functions (`functions/functionName`, TypeScript, instant) and pages (`pages/PageName`, JSX; then POST `/api/apps/{APP_ID}/deploy` to publish). NEVER use `src/` or any other prefix with `coding/write`: it creates an extensionless duplicate that shadows the real file and breaks the build, so commit and `git push origin main` `src/` files instead (and `git rm` any such duplicate). If `/deploy` returns `fatal: reference is not a tree: <sha>` (phantom ref from calling coding/write before `git push`), STOP and ask the user to disconnect and reconnect the GitHub repo in Base44 Settings, then `git pull`, push, `coding/write` a real page, and `/deploy`; do NOT loop coding/write, use empty-commit tricks, or force-push. In round-trip entity updates `file_path` MUST match the file passed as `content` or it silently overwrites a live page. Call functions from the frontend with `base44.functions.invoke(name, payload)` (not `base44.functions.name(...)`), with telemetry fire-and-forget (`.catch(() => {})`, state updates first). Details: `references/legacy-coding-write-deploy.md`.
+**Legacy: coding/write + deploy API** — `coding/write` writes and deploys entities (`entities/EntityName`, JSON), backend functions (`functions/functionName`, TypeScript, instant) and pages (`pages/PageName`, JSX; then POST `/api/apps/{APP_ID}/deploy` to publish). **Do not use `src/` or any other prefix with `coding/write`:** it creates an extensionless duplicate that shadows the real file and breaks the build, so commit and `git push origin main` `src/` files instead (and `git rm` any such duplicate). If `/deploy` returns `fatal: reference is not a tree: <sha>` (phantom ref from calling coding/write before `git push`), **stop** and ask the user to disconnect and reconnect the GitHub repo in Base44 Settings, then `git pull`, push, `coding/write` a real page, and `/deploy`; looping coding/write, empty-commit tricks and force-pushes make it worse. In round-trip entity updates, **`file_path` has to match the file passed as `content`**, or it silently overwrites a live page. Call functions from the frontend with `base44.functions.invoke(name, payload)` (not `base44.functions.name(...)`), with telemetry fire-and-forget (`.catch(() => {})`, state updates first). Details: `references/legacy-coding-write-deploy.md`.
 
 ## Quick Reference
 
@@ -409,13 +409,6 @@ base44, example-marketplace, backend functions, database, api, stripe, subscript
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
+If context was compacted and you lost track of framework state: `.svc/lane-tasks-<WI>.json` is the sole source of truth. Resume the first `in_progress` task (else the first `pending` with blockers satisfied), re-load it with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Verify a `skill_receipt` exists before marking any task complete — no ghost-completes.
 
 If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.

@@ -225,7 +225,7 @@
     {
       "skill": "base44-environment",
       "path": "skills/base44-environment/SKILL.md",
-      "content_hash": "5514d0f7a945252204d4092b019d66d4a9201dd819379d9fc9ea31afab3c7015",
+      "content_hash": "927916ac547af8b606eca009459884ac2f7b860dfec9f03831968324a5dbb891",
       "description": "Base44 backend operations: auth, secrets, entity schema and function deploys, DB queries, and known deploy and API gotchas. Use when calling Base44 APIs, deploying functions or entities, or debugging Base44 integrations.",
       "aliases": [],
       "positive_triggers": [],
@@ -243,7 +243,7 @@
     {
       "skill": "benchmark-landing",
       "path": "skills/benchmark-landing/SKILL.md",
-      "content_hash": "47b7ae5955ab8462b6256977f84379e1662645a60e6ed8cf1c3d6b107a36e545",
+      "content_hash": "4d1d7491187bb134107a74feb26684cc874c57820f4e353411427ff5e7d40d96",
       "description": "Scores a rendered landing page against the curated sector reference bank on 8 dimensions at every shipped viewport; blocks promotion below 7 without written override. Use after a marketing page is implemented, before promotion.",
       "aliases": [],
       "positive_triggers": [],
@@ -279,7 +279,7 @@
     {
       "skill": "blend-private",
       "path": "skills/blend-private/SKILL.md",
-      "content_hash": "fbdb0be52c915940a3251788608d2eb35ced8d0715764081c385297291c1d5c0",
+      "content_hash": "d5c3bbb90bf307a766d6f07f1ec24c211da7a9890275339e996c3a060d41afdd",
       "description": "Blends patterns from a private repo you own into svc while scrubbing source identifiers (repo, org, client names, private URLs). Use for \"blend from my private repo\", \"take this pattern but scrub the source\", \"blend without attribution\".",
       "aliases": [],
       "positive_triggers": [],
@@ -459,7 +459,7 @@
     {
       "skill": "craft-prompt",
       "path": "skills/craft-prompt/SKILL.md",
-      "content_hash": "23c2b41e64998fdefd7a5fc81a5a41715f2260f3f3524e7dd5f06a69b0f51fdf",
+      "content_hash": "4fd007bea577dc99c6abab2853d94550622fa9201f313539a5b041c7ba5602cc",
       "description": "Crafts a standalone, output-shaped prompt for a task and checks it beats a bare baseline with a best-of-2 floor. Use for \"craft me a prompt\", \"make this prompt better\", \"beat this viral prompt\". Not for routing svc work. Opt-in, default off.",
       "aliases": [],
       "positive_triggers": [],
@@ -549,7 +549,7 @@
     {
       "skill": "design-logo",
       "path": "skills/design-logo/SKILL.md",
-      "content_hash": "74208171cb4e74491016fdff45bbf9cf2b2ba972dd0d5a1b2cbb37940ea22c97",
+      "content_hash": "8cada72d8eb1c49a83d60f3cdda8d509d2c2ad60fbdd8ce0715dd6a8e98a542c",
       "description": "Design or redesign a logo, wordmark or favicon as a scalable SVG pack with iterative refinement and in-app-context checks. Use for \"design a logo\", \"make a logo\", \"redesign the logo\", \"logo is bad\", \"favicon\", \"wordmark\".",
       "aliases": [],
       "positive_triggers": [],
@@ -1089,7 +1089,7 @@
     {
       "skill": "landing-page",
       "path": "skills/landing-page/SKILL.md",
-      "content_hash": "6d1d1d56a2deb73edde144ff1289f54c64e1a30deda8d7f03961a232fe4c2d68",
+      "content_hash": "43f01c72fa68e20e6884d9e24804dc856f2f068d274c809d531eeb773270ba77",
       "description": "Build or redesign a marketing page (home, feature, pricing) from marketing context, references and copy into an implementation-ready brief, gated on the rendered result. Use when: build a landing, ship the home page, redesign hero, marketing page, fix the landing.",
       "aliases": [],
       "positive_triggers": [],
@@ -1107,7 +1107,7 @@
     {
       "skill": "launch-knowledge",
       "path": "skills/launch-knowledge/SKILL.md",
-      "content_hash": "6430694ac77484375503264184d39191148270ae96113ae9246b317ac4ba9905",
+      "content_hash": "d4b777c5b7344215d7554bfab801406be29e5589860bc03c4094726fdd73372c",
       "description": "Founder launch knowledge: legal entities by jurisdiction (BG, EE, US-DE), startup credits, hosting bundles, first-100-customers playbooks, tuned to the builder profile. Use when: should I incorporate, register a company, startup credits, Stripe Atlas, Delaware LLC, свободна професия, БУЛСТАТ, how do I launch.",
       "aliases": [],
       "positive_triggers": [],
@@ -1143,7 +1143,7 @@
     {
       "skill": "manage-finops",
       "path": "skills/manage-finops/SKILL.md",
-      "content_hash": "4b3d15f3f22dfea467ba45ddf74e13f0e19b481db16eef71de30bef597947b20",
+      "content_hash": "946e6f7214c927bd12250080beaf9d1ae0bb0f948abc212743294dcb93e5ef68",
       "description": "Cloud cost and hosting decisions with sourced pricing: provider comparisons, monthly cost at scale, free-tier cliffs, launch budgets. Use when: what will my monthly cost be, AWS vs Hetzner, Vercel vs Netlify pricing, is this API affordable at scale, free tier cliff.",
       "aliases": [
         "hosting cost",
@@ -1230,7 +1230,7 @@
     {
       "skill": "monetization-architecture",
       "path": "skills/monetization-architecture/SKILL.md",
-      "content_hash": "d4deacaddd5eda9b32ad4b01b5c1eca164307f614fb82e2132c94f1416e2b6c6",
+      "content_hash": "288c9ea2082d1cc4bbf61bd344b78e86dba7cb2b0479ebc2f001799ef334a9c1",
       "description": "Decide which features are free, usage-limited or paid, and audit whether code guards match the stated pricing. Use when: free vs paid, paywall strategy, feature gating, tier enforcement, what goes in which tier.",
       "aliases": [],
       "positive_triggers": [],
@@ -1721,7 +1721,7 @@
     {
       "skill": "stage-revenue",
       "path": "skills/stage-revenue/SKILL.md",
-      "content_hash": "ffaf881113cdf090caad9075311276592014880e5719c9d61e6556345e55ea71",
+      "content_hash": "dc0215d6a55e2db247bcf80299ef04078cc6c4e047a7410bbaf81a6ad57597ce",
       "description": "Split a big idea into revenue stages: a 1-2 week money-maker, a reinvestment stage, then the real build. Use for 'I have an idea but no money', 'how do I fund this', 'this will take months', 'revenue first', 'staging plan'.",
       "aliases": [],
       "positive_triggers": [],
@@ -1774,7 +1774,7 @@
     {
       "skill": "suno-architect",
       "path": "skills/suno-architect/SKILL.md",
-      "content_hash": "bf971c15fa87c12a7b2002453acee7fcc129d409702bf8b4577d6deeabed4a6f",
+      "content_hash": "55974101ac20d38e413d0b8f17c51fe714ba7469d8fcb8115ee752033d21cde6",
       "description": "Turn a Spotify playlist or theme into Suno AI song recipes or full album concepts with meta-tags, vocal commands and phonetic lyric mapping. Use when asked for Suno prompts, track recipes, lyric structure or credit-efficient song generation.",
       "aliases": [],
       "positive_triggers": [],
@@ -2063,7 +2063,7 @@
     {
       "skill": "write-vision",
       "path": "skills/write-vision/SKILL.md",
-      "content_hash": "f7f4599f7f3e73148a1f87b415f32d23bf2157ab0fd509c9b87451477535c181",
+      "content_hash": "3735c603aaff6a5920e4de5d3fb1ae89db26aebac5f9aeed3655d07f02be6012",
       "description": "Create, refine or convert the product vision doc (docs/specs/vision.md) from evidence, proposal first. Use for 'create vision', 'refine vision', 'update north star', 'align vision with code', 'vision drift'.",
       "aliases": [],
       "positive_triggers": [],

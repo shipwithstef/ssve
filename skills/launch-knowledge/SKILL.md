@@ -51,50 +51,50 @@ chain:
 
 Single source of truth for **how a software founder launches** — independent of who they are. Knowledge base covers legal vehicles, startup credit programs, hosting bundles, payment processors, and early-distribution playbooks, with citations and dates on every non-trivial claim.
 
-A thin per-builder overlay at `~/.svc/founder-profile.md` accretes over time and biases recommendations. **Crucial: the skill works GREAT with an empty or missing profile** — it falls back to generic best-practice advice for the 80% case.
+A thin per-builder overlay at `~/.svc/founder-profile.md` accretes over time and biases recommendations. **The skill works fully with an empty or missing profile** — it falls back to generic best-practice advice for the 80% case.
 
 **Announce at start:** "I'm using `launch-knowledge` to draft your launch vehicle, credit stack, runway, and distribution plan."
 
 ## Step 0: Emit Invocation Receipt (G-4 mandatory)
 
-**BEFORE any artifact write** (launch-vehicle-decision.md, credit-stack-plan.md, runway-projection.md, distribution-plan.md, founder-profile.md updates, or refresh writes to the knowledge base), emit a `skill_invocation` receipt to `.svc/pipeline-decisions.jsonl`. The G-4 hook (`hooks/svc-skill-artifact-authenticity.mjs`) blocks writes to canonical paths without a recent receipt.
+**Before any artifact write** (launch-vehicle-decision.md, credit-stack-plan.md, runway-projection.md, distribution-plan.md, founder-profile.md updates, or refresh writes to the knowledge base), emit a `skill_invocation` receipt to `.svc/pipeline-decisions.jsonl`. The G-4 hook (`hooks/svc-skill-artifact-authenticity.mjs`) blocks writes to canonical paths without a recent receipt.
 
 ```bash
 mkdir -p .svc && printf '{"timestamp":"%s","skill":"launch-knowledge","event":"skill_invocation","mode":"<initial|refresh|qa>","topic":"<short-slug>","decision_type":"taste"}\n' \
   "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> .svc/pipeline-decisions.jsonl
 ```
 
-Required fields: `timestamp` (ISO-8601), `skill: "launch-knowledge"`. Run this ONCE at the top of the invocation; subsequent writes within the 90-min window are covered.
+Required fields: `timestamp` (ISO-8601), `skill: "launch-knowledge"`. Run it once at the top of the invocation; later writes within the 90-min window are covered.
 
 ## Process
 
-1. **Read the per-builder profile** — `~/.svc/founder-profile.md` if it exists. If missing or empty, treat all profile-conditional recommendations as "generic" and continue. NEVER hard-fail on missing profile.
+1. **Read the per-builder profile** — `~/.svc/founder-profile.md` if it exists. If missing or empty, treat all profile-conditional recommendations as "generic" and continue — a missing profile is never a failure.
 2. **Read the project capability registry** — `.svc/capability-registry.json` for revenue model, customer geography, scale targets. If missing, treat geography as "unspecified" and surface that as an explicit assumption in outputs.
 3. **Read the knowledge base** — `references/knowledge/launch/INDEX.md` first; descend into `jurisdictions/`, `credit-programs/`, `platforms/`, `distribution/` only as needed for this invocation.
-3a. **Read competitor knowledge for BG founders** — when jurisdiction is BG, ALSO read:
+3a. **Read competitor knowledge for BG founders** — when jurisdiction is BG, also read:
    - `references/knowledge/competitors/legalconsult-bg/CAPABILITIES.md` — verified licensed-advocate platform with €125 EOOD pricing + applied-knowledge.md for legal positions on AI risks, freelance contracts, EUR transition
    - `references/knowledge/competitors/b-trust-bg/CAPABILITIES.md` — КЕП (qualified electronic signature) provider; Cloud КЕП at €3-26/year is the modern path; precondition for ALL BG digital filings (TR portal, NAP, БУЛСТАТ, чл. 97а)
-   These are NOT optional reads — КЕП is a precondition for incorporation, and LegalConsult is the cheapest verified incorporation route.
+   Both reads are required for BG: КЕП is a precondition for incorporation, and LegalConsult is the cheapest verified incorporation route.
 4. **Produce the four outputs** (each ≤200 lines, citations inline):
-   - `docs/specs/launch-vehicle-decision.md` — recommended legal entity for THIS project + when to revisit (revenue trigger / PII trigger / fundraising trigger)
+   - `docs/specs/launch-vehicle-decision.md` — recommended legal entity for this project + when to revisit (revenue trigger / PII trigger / fundraising trigger)
    - `docs/analysis/credit-stack-plan.md` — ranked credit programs to apply to, eligibility-cut against profile, expected $-value × approval-probability, stackability check
    - `docs/analysis/runway-projection.md` — months of free runway given the chosen stack, broken down by line item with sources
    - `docs/analysis/distribution-plan.md` — first-100-customer playbook for the product type identified
-5. **Update the founder profile** — append anything the user volunteered during this conversation (jurisdiction, employment status above/below social-security cap, spouse/co-founder context, programs already applied to, programs rejected and why). Idempotent — never overwrite previously verified facts unless user explicitly corrects them.
+5. **Update the founder profile** — append anything the user volunteered during this conversation (jurisdiction, employment status above/below social-security cap, spouse/co-founder context, programs already applied to, programs rejected and why). Idempotent — previously verified facts stay unless the user explicitly corrects them.
 
 ## Empty-profile graceful handling (AC-06)
 
-**If `~/.svc/founder-profile.md` does not exist OR is effectively empty (header only, no facts), the skill MUST still produce all four outputs.**
+**If `~/.svc/founder-profile.md` does not exist or is effectively empty (header only, no facts), the skill still produces all four outputs.**
 
-In that mode, every recommendation that would normally be profile-conditional MUST be expressed as a parameterized clause:
+In that mode, express every recommendation that would normally be profile-conditional as a parameterized clause, so the founder can apply it to their own situation:
 
 > "If you are a BG resident already employed above the max insurable income cap (~4,130 BGN/month, 2026), registering as свободна професия adds €0 net social-security cost — see `references/knowledge/launch/jurisdictions/bg.md`. If you are below the cap or not employed, expect ~€1,600/year fixed contribution. Confirm your employment status to sharpen this recommendation."
 
 ### BG-specific load-bearing facts (must surface in output for BG founders, parameterized if profile is empty)
 
-When jurisdiction is or might be BG, the launch-vehicle-decision MUST include:
+When jurisdiction is or might be BG, the launch-vehicle-decision includes all five of these (each changes real cost or legal exposure):
 
-1. **Three-layer EOOD cost framing** — Layer 1 (legal existence, ~€153 one-time) vs Layer 2 (activity-triggered, €0/mo if dormant) vs Layer 3 (optional risk insurance, €600-900 one-off). Do NOT conflate into single "Year 1" estimate.
+1. **Three-layer EOOD cost framing** — Layer 1 (legal existence, ~€153 one-time) vs Layer 2 (activity-triggered, €0/mo if dormant) vs Layer 3 (optional risk insurance, €600-900 one-off). Keep the layers separate rather than one "Year 1" estimate, because they trigger at different times.
 2. **КЕП precondition** — Cloud КЕП via B-Trust (€3-26/year) is required for incorporation, NAP, чл. 97а filings. Mobile-app onboarding, no hardware. This is a precondition (Layer 0), not "future friction".
 3. **Чл. 97а ЗДДС triggered Day-1** by foreign SaaS suppliers (Vercel/OpenAI/Dodo/etc.) — registration before first such transaction, not at the 100K BGN general VAT threshold.
 4. **31.12.2026 EUR-amendment deadline** for founding-act denomination — recommend EUR from day 1 if incorporating in 2026.
@@ -102,11 +102,11 @@ When jurisdiction is or might be BG, the launch-vehicle-decision MUST include:
 
 If founder profile reveals an employer-IP-clause concern (trudov договор with broad IP assignment), the spouse-as-owner pattern becomes load-bearing — flag it explicitly.
 
-Outputs MUST NOT contain placeholder strings like `<TODO: ask user>`, `<jurisdiction>`, or `[FILL IN]`. Generic best-practice covers the 80% case; user-specific sharpening is offered, never demanded. **No errors. No degraded UX.** This is enforced by the tier-1 validator `validate-launch-knowledge-empty-profile-graceful.sh`.
+Placeholder strings are forbidden in outputs — no `<TODO: ask user>`, `<jurisdiction>`, or `[FILL IN]`. Generic best-practice covers the 80% case; user-specific sharpening is offered, never demanded. **No errors. No degraded UX.** This is enforced by the tier-1 validator `validate-launch-knowledge-empty-profile-graceful.sh`.
 
 ## Profile-biased mode (AC-07)
 
-When `~/.svc/founder-profile.md` contains user-specific facts, the skill bias the four outputs accordingly. Two reference fixtures live at `skills/launch-knowledge/references/fixtures/`:
+When `~/.svc/founder-profile.md` contains user-specific facts, the skill biases the four outputs accordingly. Two reference fixtures live at `skills/launch-knowledge/references/fixtures/`:
 
 - `fixture-bg-above-cap-solo.md` — BG resident, employed at >max insurable cap, solo founder. Expected biases: recommend свободна професия (€0 net SS cost), defer EOOD until first €5k MRR, prioritize MS Founders Hub + NVIDIA Inception (no incorporation gate), de-prioritize Stripe Atlas (CFC trap for BG residents).
 - `fixture-us-llc-dual-cofounder.md` — US Delaware LLC, two co-founders. Expected biases: skip BG content entirely, default to Stripe Atlas + Mercury, surface AWS Activate Founders ($1k) with NVIDIA Inception escalation path ($100k), flag Vercel Pro per-seat cost (2 cofounders → $40/mo base).
@@ -143,7 +143,7 @@ For every recommendation involving money or time, use the parameterized calculat
 - "Migration to platform X is net-positive if you'll burn ≥$Z/mo of free credits there"
 - "Annual cost of incorporation breakeven point at revenue R"
 
-**Never recommend an action with an implicit cost; always surface the math.**
+**Surface the math behind every recommendation that costs money or time** — an implicit cost is one the founder cannot check.
 
 ## Self-Verify
 
