@@ -8,6 +8,8 @@ import { spawn } from "node:child_process";
 import { lexSimpleCommand } from "./codex/lib/argv-lex.mjs";
 import { resolveHookMode, hookPolicyWarning, repoOptOut } from "./lib/hook-policy.mjs";
 import { diagnosticReason, steeringReason } from "./lib/advisory-diagnostic.mjs";
+// Optional: a bundle without the counter simply does not count.
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 
 const MAX_INPUT = 8 * 1024 * 1024;
 const MAX_OUTPUT = 1024 * 1024;
@@ -48,6 +50,20 @@ export function isBlockingPayload(payload) {
   return [payload.decision, payload.permission, payload.permissionDecision, nested.permissionDecision]
     .some((value) => BLOCK_VALUES.has(String(value || "").toLowerCase()))
     || payload.continue === false || payload.allow === false;
+}
+
+// A confirmed policy denial: exit 2, no signal/timeout/overflow, and a well-formed deny
+// decision, either a blocking JSON payload on stdout or the machine denial record
+// ({svc_denial:true, hook_id, reason_code, cause}) a blocking hook writes on stderr.
+export function isPolicyDenial(result) {
+  if (result.code !== 2 || result.signal || result.timedOut || result.oversized || result.spawnError) return false;
+  const parse = (text) => { try { return JSON.parse(text); } catch { return null; } };
+  const out = parse(result.stdout.toString("utf8").trim());
+  if (isBlockingPayload(out)) return true;
+  return result.stderr.toString("utf8").split("\n").some((line) => {
+    const record = line.trim().startsWith("{") ? parse(line.trim()) : null;
+    return record?.svc_denial === true && ["hook_id", "reason_code", "cause"].every((k) => typeof record[k] === "string" && record[k].trim());
+  });
 }
 
 export function advisoryPayload(payload, message, { rewritten = false } = {}) {
@@ -232,9 +248,22 @@ async function main() {
   // Per-repo switch (scripts/svc-repo.mjs off); an owner "enforce" always wins.
   if (repoOptOut(process.env, process.env.HOME || os.homedir(), mode)) { process.stdout.write("{}\n"); return; }
   const marker = process.argv.slice(2, process.argv.indexOf("--spec")).join(" ") || "svc-hook";
+  // Every advisory-mode path below that swallows an error and lets the call continue is
+  // counted (hook name + error class only). Enforce mode fails closed, so it is not counted.
+  // The count belongs to the operation's canonical root, the same one the boundary resolves
+  // below (explicit workdir / target worktree), falling back to the payload's cwd or
+  // working_directory when no operation scope can be resolved.
+  let countCwd;
+  let operationRoots = () => [];
+  const open = (error) => {
+    if (mode.mode === "enforce") return;
+    let at = countCwd;
+    try { at = operationRoots().find((root) => fs.existsSync(path.join(root, ".svc"))) || operationRoots()[0] || countCwd; } catch { /* fall back to the payload cwd */ }
+    failOpen(marker, error, at ? { cwd: at } : undefined);
+  };
   let spec;
   try { spec = decodeSpec(process.argv[process.argv.indexOf("--spec") + 1]); }
-  catch (error) { process.stderr.write(warning(marker, error.message) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
+  catch (error) { open(error); process.stderr.write(warning(marker, error.message) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
   if (mode.mode === "advisory") {
     const deferred = deferredAdvisoryCommand(spec);
     if (deferred) { process.stderr.write(warning(marker, deferred) + "\n"); return; }
@@ -242,9 +271,10 @@ async function main() {
   const deadline = Date.now() + spec.timeoutMs;
   let input;
   try { input = await readInputBounded(deadline); }
-  catch (error) { process.stderr.write(warning(marker, `cannot read hook payload: ${error.message}`) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
+  catch (error) { open(error); process.stderr.write(warning(marker, `cannot read hook payload: ${error.message}`) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
   let original;
   try { original = JSON.parse(input.toString("utf8")); } catch {}
+  countCwd = [original?.cwd, original?.working_directory].find((value) => typeof value === "string" && value) || undefined;
   const pretool = /^(?:PreToolUse|BeforeTool|preToolUse|beforeShellExecution)$/i.test(spec.event);
   const toolEvent = pretool || /^(?:PostToolUse|AfterTool|postToolUse|afterShellExecution)$/i.test(spec.event);
   const hasTool = original?.tool_name || original?.toolName || original?.command;
@@ -254,6 +284,11 @@ async function main() {
     if (runtimeSource) {
       ({ evaluatePreToolObservation, evaluateAdvisoryObservation } = await import(pathToFileURL(path.join(runtimeSource, "lib/pretool-decision-engine.mjs"))));
       ({ resolveOperationScope } = await import(pathToFileURL(path.join(runtimeSource, "lib/operation-scope.mjs"))));
+      operationRoots = () => {
+        const scope = resolveOperationScope(original, { host: spec.host });
+        return [scope.operation_repository?.worktree_root, scope.session_repository?.worktree_root,
+          ...(scope.targets || []).map((t) => t.worktree_root)].filter(Boolean);
+      };
     }
   }
   const observation = evaluatePreToolObservation?.(original) || (mode.mode === "advisory" && evaluateAdvisoryObservation?.(original));
@@ -268,10 +303,7 @@ async function main() {
   }
   let repository = original?.cwd || original?.working_directory || process.cwd();
   if (mode.mode === "advisory" && pretool && hasTool && resolveOperationScope) {
-    const scope = resolveOperationScope(original, { host: spec.host });
-    const roots = [scope.operation_repository?.worktree_root, scope.session_repository?.worktree_root,
-      ...(scope.targets || []).map(t => t.worktree_root)].filter(Boolean);
-    const governed = roots.filter(root => fs.existsSync(path.join(root, ".svc")));
+    const governed = operationRoots().filter(root => fs.existsSync(path.join(root, ".svc")));
     if (!governed.length) { process.stdout.write("{}\n"); return; }
     repository = governed[0];
   }
@@ -283,7 +315,7 @@ async function main() {
   const diagnostic = reason => diagnosticReason(reason, original, repository);
   let result;
   try { result = await runChild(spec, input, deadline); }
-  catch (error) { process.stderr.write(warning(marker, error.message) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
+  catch (error) { open(error); process.stderr.write(warning(marker, error.message) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
   if (result.interrupted) {
     process.exitCode = { SIGHUP: 129, SIGINT: 130, SIGTERM: 143 }[result.interrupted] || 2;
     return;
@@ -301,6 +333,11 @@ async function main() {
   }
   if (result.timedOut || result.oversized || result.spawnError || result.code !== 0) {
     const cause = result.timedOut ? "timed out" : result.oversized ? "output limit exceeded" : result.spawnError ? result.spawnError.message : `exited ${result.code}`;
+    // Only a confirmed policy denial is a decision; every other failure (a crash, a signal,
+    // a bare exit 2, an svc-enforce internal error) is the child failing, so it is counted.
+    if (!isPolicyDenial(result)) {
+      open(result.timedOut ? { name: "Timeout" } : result.oversized ? { name: "OutputLimit" } : result.spawnError || (result.signal ? { name: `Signal${result.signal}` } : { name: `Exit${result.code}` }));
+    }
     if (!visible(diagnostic(result.stderr.toString("utf8") || cause))) return;
     process.stderr.write(warning(marker, steering(cause)) + "\n");
     if (result.stdout.length) {
@@ -361,5 +398,10 @@ async function main() {
 let invokedAsMain = false;
 try { invokedAsMain = Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)); } catch {}
 if (invokedAsMain) {
-  main().catch((error) => { process.stderr.write(warning("svc-hook", error.message) + "\n"); process.exitCode = resolveHookMode().mode === "enforce" ? 2 : 0; });
+  main().catch((error) => {
+    const enforce = resolveHookMode().mode === "enforce";
+    if (!enforce) failOpen("svc-hook-boundary", error);
+    process.stderr.write(warning("svc-hook", error.message) + "\n");
+    process.exitCode = enforce ? 2 : 0;
+  });
 }

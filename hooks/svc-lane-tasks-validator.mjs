@@ -8,6 +8,8 @@
  *   - exit 1 (visible to the agent in the next turn)
  */
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -45,6 +47,7 @@ const call = readHookPayload();
 if (!call) process.exit(0);
 const filePath = extractFilePath(call.toolInput);
 if (!filePath) process.exit(0);
+failOpenAt({ cwd: path.dirname(path.resolve(call.cwd || process.cwd(), filePath)) });
 
 // Only care about lane-tasks JSON files
 if (!/\.svc\/lane-tasks-[^/]+\.json$/.test(filePath)) {
@@ -164,6 +167,7 @@ try {
     }
   }
 } catch (e) {
+  failOpen("svc-lane-tasks-validator", e);
   // Don't block on the diff check itself failing in unusual environments —
   // the schema check above already enforces structural integrity.
   console.error(

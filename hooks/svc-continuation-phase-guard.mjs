@@ -9,6 +9,8 @@
 // scope, deny before the skill loads. Sessions with no active continuation
 // baton are completely unaffected (fail open by absence, not by default).
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -32,6 +34,7 @@ if (disabled()) process.exit(0);
 
 const call = readHookPayload();
 if (!call) process.exit(0);
+failOpenAt({ cwd: call.cwd });
 if (call.toolName !== "Skill") process.exit(0);
 
 const skillName = call.toolInput?.skill || call.toolInput?.name || "";
@@ -53,7 +56,7 @@ try {
   // Unrelated sessions still fail open by absence.
   const looksLikeChild = Boolean(process.env.SVC_CONTINUATION_TOKEN)
     || String(sessionId).startsWith("svc-continuation-");
-  if (!looksLikeChild) process.exit(0);
+  if (!looksLikeChild) { failOpen("svc-continuation-phase-guard", error); process.exit(0); }
   const reason = `restart-boundary continuation ledger is unreadable for child session; fail-closed (${error.message})`;
   if (emitDenial) {
     emitDenial({

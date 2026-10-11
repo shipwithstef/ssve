@@ -63,6 +63,8 @@ suno-outputs/
 .svc/rule-injections-*.json
 # Per-session learning-injection memos (machine-local, WI-384)
 .svc/learning-injections-*.json
+.svc/fail-open-counter.json
+.svc/fail-open-counter.json.lock.d
 # Per-session owner-injection memos (machine-local, WI-392)
 .svc/owner-injections-*.json
 

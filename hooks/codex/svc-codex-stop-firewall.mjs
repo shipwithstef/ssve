@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Optional: a bundle without the counter simply does not count.
+const { failOpen, failOpenAt } = await import("../lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,8 +28,10 @@ function claimPathFor(repoRoot, target) {
 
 const raw = fs.readFileSync(0, "utf8");
 const payload = parseHookInput(raw);
+failOpenAt({ cwd: payload?.cwd });
 let ctx;
-try { ctx = hookContext(payload); } catch { allow(); process.exit(0); }
+try { ctx = hookContext(payload); } catch (error) { failOpen("svc-codex-stop-firewall", error); allow(); process.exit(0); }
+failOpenAt({ root: ctx.repo_root });
 if (!ctx.repo_root || !ctx.session_id || !ctx.turn_id || !ctx.session_dir) { allow(); process.exit(0); }
 const authority = readJson(authorityPath(ctx));
 const ttlMs = Math.max(1, Number(process.env.SVC_CODEX_AUTHORITY_TTL_MIN || 1440)) * 60_000;
@@ -44,7 +48,7 @@ try {
       (!ctx.governance_worktree || fs.realpathSync(ctx.governance_worktree) !== fs.realpathSync(authority.governance_worktree))) {
     allow(); process.exit(0);
   }
-} catch { allow(); process.exit(0); }
+} catch (error) { failOpen("svc-codex-stop-firewall", error); allow(); process.exit(0); }
 const binding = bindingFor(ctx.repo_root, ctx.session_id, ctx.turn_id, process.env);
 const target = authority.explicit_wi || ((binding && Date.parse(binding.ts || binding.timestamp || 0) >= Date.parse(authority.recorded_at)) ? binding.wi : "");
 if (!WI_ID_RE.test(String(target || ""))) { allow(); process.exit(0); }
@@ -58,7 +62,7 @@ try {
     // through a valid fresh same-session claim or a provably stale claim.
     if (!owner || !hasValidStart || (owner !== ctx.session_id && !claimIsProvablyStale(claim))) { allow(); process.exit(0); }
   }
-} catch { allow(); process.exit(0); }
+} catch (error) { failOpen("svc-codex-stop-firewall", error); allow(); process.exit(0); }
 if (binding) {
   if (binding.repo_root && path.resolve(binding.repo_root) !== path.resolve(ctx.repo_root)) { allow(); process.exit(0); }
   if (binding.worktree && path.resolve(binding.worktree) !== path.resolve(governanceWorktree)) { allow(); process.exit(0); }
@@ -71,10 +75,10 @@ const guard = process.env.SVC_CODEX_TEST_MODE === "1" && process.env.SVC_CODEX_C
   ? path.resolve(process.env.SVC_CODEX_COMPLETION_GUARD)
   : path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "svc-task-completion-guard.sh");
 const result = spawnSync("bash", [guard], { cwd: governanceWorktree, input: raw, encoding: "utf8", env: { ...process.env, SVC_WORKER_WI: target, CODEX_SESSION_ID: ctx.session_id, SVC_GOVERNANCE_WORKTREE: governanceWorktree } });
-if (result.status !== 0 || !result.stdout?.trim()) { allow(); process.exit(0); }
+if (result.status !== 0 || !result.stdout?.trim()) { if (result.status !== 0) failOpen("svc-codex-stop-firewall", result.error || { name: `Exit${result.status}` }); allow(); process.exit(0); }
 try {
   const output = JSON.parse(result.stdout.trim());
   const text = JSON.stringify(output);
   if (!text.includes(target) && output.decision === "block") { allow(); process.exit(0); }
   process.stdout.write(`${JSON.stringify(output)}\n`);
-} catch { allow(); }
+} catch (error) { failOpen("svc-codex-stop-firewall", error); allow(); }

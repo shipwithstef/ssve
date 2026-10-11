@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,6 +52,7 @@ if (disabled()) process.exit(0);
 
 const call = readHookPayload();
 if (!call) process.exit(0);
+failOpenAt({ cwd: call.session_cwd || call.cwd });
 
 if (!/^(Edit|Write|WriteFile|StrReplaceFile|Update)$/.test(call.toolName)) {
   process.exit(0);
@@ -62,7 +65,8 @@ if (!content) process.exit(0);
 let registry;
 try {
   registry = loadRegistry(defaultRegistryPath(repoRoot));
-} catch {
+} catch (error) {
+  failOpen("svc-inertia-check", error);
   process.exit(0);
 }
 

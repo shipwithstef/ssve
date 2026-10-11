@@ -90,6 +90,7 @@ Output: ${SDKG_OUTPUT:-<empty>}
 Fix references/sdkg-registry.json or scripts/lib/post-task-trigger-router.mjs before closing framework work. Set SVC_SDKG_FAIL_OPEN=true only for an explicit emergency bypass and log the decision."
         exit 0
       fi
+      node "$HOOK_DIR/../scripts/lib/fail-open-counter.mjs" record svc-task-completion-guard RouterError >/dev/null 2>&1 || true
       echo "svc SDKG router: fail-open after router error: ${SDKG_OUTPUT:-exit $SDKG_STATUS}" >&2
     }
   fi
@@ -969,6 +970,7 @@ if (warnings.length > 0) {
 NODE
 ); then
   if truthy "${SVC_COMPLETION_FAIL_OPEN:-false}"; then
+    node "$HOOK_DIR/../scripts/lib/fail-open-counter.mjs" record svc-task-completion-guard ParseError >/dev/null 2>&1 || true
     echo "svc completion guard: unable to parse hook payload or lane tasks, fail-open enabled" >&2
     exit 0
   fi
@@ -1248,6 +1250,7 @@ Correction: record the missing phases before stopping. Example:
     ;;
   *)
     if truthy "${SVC_COMPLETION_FAIL_OPEN:-false}"; then
+      node "$HOOK_DIR/../scripts/lib/fail-open-counter.mjs" record svc-task-completion-guard ParserStatus >/dev/null 2>&1 || true
       echo "svc completion guard: unexpected parser status '$STATUS', fail-open enabled" >&2
       exit 0
     fi

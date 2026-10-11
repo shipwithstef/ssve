@@ -4,6 +4,8 @@
  * of the active task's skill phases. One event -> at most one phase (first
  * unrecorded in declaration order). Judgment phases never auto-fire.
  * Fail-open; sync (Stop-guard reads receipts immediately after). */
+// Optional: a bundle without the counter simply does not count.
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
@@ -101,6 +103,7 @@ function main() {
   const target = evaluateAutoemitTarget(call);
   if (!target) process.exit(0);
   const cwd = target.cwd;
+  failOpenAt({ cwd });
   let touched = target.touched;
 
   const act = activeGraph(cwd);
@@ -137,10 +140,10 @@ function main() {
     const ev = `${ph.evidence_kind === "file" ? "file" : "command_output"}:${wp}`;
     try {
       execFileSync(process.execPath, [SELF_TASK_GRAPH, "record-phase", graphPath, String(t.id), ph.id, "--evidence", ev], { cwd, stdio: "ignore" });
-    } catch { /* fail-open: absent script (cross-project) or any error */ }
+    } catch (error) { failOpen("svc-phase-receipt-autoemit", error); /* fail-open: absent script (cross-project) or any error */ }
     break; // one event, one phase
   }
   process.exit(0);
 }
 
-try { main(); } catch { process.exit(0); }
+try { main(); } catch (error) { failOpen("svc-phase-receipt-autoemit", error); process.exit(0); }

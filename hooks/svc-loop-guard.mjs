@@ -19,6 +19,8 @@
  * Host-agnostic via hooks/lib/hook-payload.mjs + hook-decision.mjs.
  */
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -108,7 +110,7 @@ function loadState(stateFile) {
 function saveState(stateFile, state) {
   try {
     writeJsonAtomic(stateFile, state);
-  } catch { /* fail open */ }
+  } catch (error) { failOpen("svc-loop-guard", error); /* fail open */ }
 }
 
 // -------------------------------------------------------------------
@@ -166,7 +168,8 @@ async function checkNoProgress(state) {
       state.lastGitChecksum = checksum;
     }
     return { stuck: false };
-  } catch {
+  } catch (error) {
+    failOpen("svc-loop-guard", error);
     return { stuck: false };
   }
 }
@@ -179,6 +182,7 @@ async function main() {
   const call = readHookPayload();
   // Fail open on unparseable/empty payloads.
   if (!call) process.exit(0);
+  failOpenAt({ cwd: call.session_cwd || call.cwd });
 
   const { toolName, toolInput } = call;
   if (!toolName) process.exit(0);
@@ -201,6 +205,7 @@ async function main() {
     : (call.session_cwd || call.cwd || process.cwd());
   const svcDir = resolveSvcStateDir(stateRoot);
   if (!svcDir) process.exit(0);
+  failOpenAt({ root: path.dirname(svcDir) });
 
   const fp = fingerprint(toolName, toolInput);
   const stateFile = stateFileFor(svcDir, call.sessionId);
@@ -208,7 +213,8 @@ async function main() {
     if (shouldPruneLoopGuardState(stateFile)) {
       pruneExpiredLoopGuardStates({ svcDir, currentStateFile: stateFile });
     }
-  } catch {
+  } catch (error) {
+    failOpen("svc-loop-guard", error);
     // Stale-state retirement is best-effort maintenance. Loop enforcement
     // continues even if the lifecycle helper itself regresses unexpectedly.
   }
@@ -290,4 +296,4 @@ async function main() {
   process.exit(0);
 }
 
-main().catch(() => process.exit(0));
+main().catch((error) => { failOpen("svc-loop-guard", error); process.exit(0); });

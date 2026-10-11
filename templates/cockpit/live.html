@@ -165,6 +165,13 @@ function toast(key, kind, title, text) {
   setTimeout(() => t.remove(), 9000);
 }
 
+// Times a hook swallowed an error and let the action continue: a clean run shows 0, never nothing.
+function failOpenKpi(s) {
+  const t = s.totals.fail_open ?? 0, ps = (s.orchestrator.projects || []).filter((p) => p.fail_open > 0);
+  const note = ps.length ? ps.map((p) => `${esc(p.name)} ${p.fail_open}`).join(" · ") : "no hook has failed open";
+  return `<div class="kpi"><div class="l">Hook fail-opens</div><div class="v">${t}</div><div class="n">${note}</div></div>`;
+}
+
 function kpis(s) {
   const c = s.orchestrator.capacity, t = s.totals;
   const slots = Array.from({ length: Math.min(c.slots, 24) }, (_, i) => `<span class="slot ${i < c.in_use ? "used" : ""}"></span>`).join("") + (c.in_use > c.slots ? Array.from({ length: Math.min(c.in_use - c.slots, 12) }, () => `<span class="slot" style="background:var(--blocked);border-color:var(--blocked)"></span>`).join("") : "");
@@ -173,6 +180,7 @@ function kpis(s) {
     `<div class="kpi"><div class="l">Open goals</div><div class="v">${t.open}</div><div class="n">${t.active} running · ${t.blocked} blocked · ${t.stalled} stalled</div></div>`,
     `<div class="kpi"><div class="l">Work left</div><div class="v">${t.remaining_agent_hours} h</div><div class="n">agent time, from measured stage history</div></div>`,
     `<div class="kpi"><div class="l">At full capacity</div><div class="v">${t.days_at_capacity ?? "–"} d</div><div class="n">8-hour days with ${c.slots} parallel slot${c.slots === 1 ? "" : "s"}</div></div>`,
+    failOpenKpi(s),
     `<div class="kpi"><div class="l">Done</div><div class="v">${t.done}</div><div class="n">of ${t.goals} goals</div></div>`,
   ].join("");
 }
@@ -213,7 +221,7 @@ function goalCard(g) {
 function render() {
   if (!state) return;
   $("#kpis").innerHTML = kpis(state);
-  $("#repos").innerHTML = state.orchestrator.repos.map((r) => `<span class="tag">${esc(r)}</span>`).join("");
+  $("#repos").innerHTML = state.orchestrator.repos.map((r) => { const n = (state.orchestrator.projects || []).find((p) => p.name === r)?.fail_open || 0; return `<span class="tag">${esc(r)}${n ? ` · ${n} fail-open${n === 1 ? "" : "s"}` : ""}</span>`; }).join("");
   const counts = { open: state.totals.open, active: state.totals.active, blocked: state.totals.blocked, stalled: state.totals.stalled, done: state.totals.done, all: state.totals.goals };
   $("#filters").innerHTML = FILTERS.map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${filter === k}">${l} <span style="opacity:.6">${counts[k]}</span></button>`).join(" ");
   const q = query.toLowerCase();

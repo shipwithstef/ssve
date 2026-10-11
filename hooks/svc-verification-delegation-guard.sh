@@ -24,6 +24,7 @@ fi
 
 OUTPUT=""
 if ! OUTPUT="$(printf '%s' "$INPUT" | node "$REPO_ROOT/scripts/verification-stop-guard.mjs" 2>&1)"; then
+  node "$REPO_ROOT/scripts/lib/fail-open-counter.mjs" record svc-verification-delegation-guard ScannerError >/dev/null 2>&1 || true
   echo "svc verification guard: fail-open after scanner error: $OUTPUT" >&2
   exit 0
 fi

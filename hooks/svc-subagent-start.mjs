@@ -4,6 +4,8 @@
 // Reads the hook payload on stdin: { session_id, cwd, hook_event_name,
 // agent_name|agent_type, prompt, ... }. OBSERVE only — never blocks, always
 // exits 0. Writes via state-io.mjs (state-io-discipline), NOT raw fs.append.
+// Optional: a bundle without the counter simply does not count.
+const { failOpen, failOpenAt } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {}, failOpenAt() {} }));
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { appendJsonlLine } from "../scripts/state-io.mjs";
@@ -16,6 +18,8 @@ try {
   payload = {};
 }
 
+// Telemetry targets the payload's project, so a swallowed failure is counted against it.
+failOpenAt({ cwd: payload.cwd || process.env.SVC_PROJECT_DIR || process.cwd() });
 try {
   const cwd = payload.cwd || process.env.SVC_PROJECT_DIR || process.cwd();
   const svcDir = resolveSvcStateDir(cwd);   // WI-452: skip if not in an svc repo (no /tmp pollution)
@@ -28,7 +32,8 @@ try {
     prompt_chars: typeof payload.prompt === "string" ? payload.prompt.length : 0,
   };
   appendJsonlLine(resolve(svcDir, "dispatch-log.jsonl"), entry);
-} catch {
+} catch (error) {
+  failOpen("svc-subagent-start", error);
   // telemetry must never block subagent lifecycle
 }
 process.exit(0);
