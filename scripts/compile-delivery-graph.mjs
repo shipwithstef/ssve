@@ -419,6 +419,36 @@ function buildTaskSteps(baseSkills, conditionals) {
   return steps;
 }
 
+// Prerequisite stages must come before the authority chain's late stages in every lane and
+// profile (T3, review 6108295955). The chain is one contiguous transition, so a prerequisite
+// either sits upstream of plan-changeset or, when it needs the implementation, becomes a
+// required, evidence-backed process step of execute-changeset that runs before review-gate
+// (the same shape as the visual diff). Which skills are compiled is not changed here.
+const UPSTREAM_PREREQUISITES = { "build-personas": ["write-spec"], "write-journeys": ["design-ux"], "design-tech": [] };
+const EXECUTION_PREREQUISITES = ["write-e2e", "test-journeys"];
+
+function orderPrerequisites(steps) {
+  const at = (skill) => steps.findIndex((step) => step.skill === skill);
+  for (const [skill, anchors] of Object.entries(UPSTREAM_PREREQUISITES)) {
+    const plan = at("plan-changeset");
+    const from = at(skill);
+    if (plan === -1 || from === -1 || from < plan) continue;
+    const [entry] = steps.splice(from, 1);
+    const anchor = anchors.map(at).find((i) => i !== -1 && i < plan);
+    steps.splice(anchor ?? at("plan-changeset"), 0, entry);
+  }
+  const execute = steps.find((step) => step.skill === "execute-changeset");
+  if (!execute) return steps;
+  for (const skill of EXECUTION_PREREQUISITES) {
+    const k = at(skill);
+    if (k === -1) continue;
+    const [entry] = steps.splice(k, 1);
+    const present = (execute.required_process_steps || []).some((step) => step.skill === skill);
+    if (!present) execute.required_process_steps = [...(execute.required_process_steps || []), { skill, before: "review-gate", evidence_required: true, signal: entry.signal }];
+  }
+  return steps;
+}
+
 function taskList(steps, solutionConfidence) {
   const tasks = steps.map((step, index) => ({
     id: index + 1,
@@ -519,6 +549,9 @@ function applyExistingGraph(tasks, existingGraph) {
     // Retain completed evidence and unrelated work. Unstarted research that is
     // no longer needed is archived separately, never marked completed.
     if ((prev.metadata?.skill || prev.skill) === "research" && prev.status !== "completed") continue;
+    // Unstarted e2e/journey tasks from an older graph are now process steps of
+    // execute-changeset; keeping them would trail the chain again.
+    if (EXECUTION_PREREQUISITES.includes(prev.metadata?.skill || prev.skill) && prev.status !== "completed") continue;
     out.push(structuredClone(prev));
   }
   const ids = new Set(out.map(task => task.id));
@@ -666,24 +699,7 @@ export function compileDeliveryGraph(input) {
   const conditionals = conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence, researchInsertions });
   const requiredSkills = unique([...laneSkills, ...conditionals.map((item) => item.skill)]);
   const requiredSteps = buildTaskSteps(laneSkills, conditionals);
-  // Without the design skills as anchors, persona coverage would trail the chain; in a
-  // bounded plan it feeds the brief, so it runs before plan-changeset.
-  if (planning.mode === "bounded") {
-    const i = requiredSteps.findIndex((step) => step.skill === "build-personas");
-    const plan = requiredSteps.findIndex((step) => step.skill === "plan-changeset");
-    if (i > plan && plan !== -1) requiredSteps.splice(plan, 0, ...requiredSteps.splice(i, 1));
-    // Without the design skills as anchors, e2e and journey proof would trail the chain
-    // and run after promotion. The chain must stay contiguous, so they become required,
-    // evidence-backed process steps of execute-changeset that run before review-gate
-    // (the same shape as the visual diff).
-    const execute = requiredSteps.find((step) => step.skill === "execute-changeset");
-    if (execute) for (const skill of ["write-e2e", "test-journeys"]) {
-      const k = requiredSteps.findIndex((step) => step.skill === skill);
-      if (k === -1) continue;
-      const [entry] = requiredSteps.splice(k, 1);
-      execute.required_process_steps = [...(execute.required_process_steps || []), { skill, before: "review-gate", evidence_required: true, signal: entry.signal }];
-    }
-  }
+  orderPrerequisites(requiredSteps);
   const chainValidation = validateMandatoryDeliveryChain(requiredSteps.map((step) => step.skill));
   if (!chainValidation.pass) {
     throw new Error(`compiler produced an invalid mandatory delivery chain: ${chainValidation.errors.join("; ")}`);

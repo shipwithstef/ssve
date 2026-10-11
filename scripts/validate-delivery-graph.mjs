@@ -41,6 +41,10 @@ const BACKEND_FLAGS = new Set([
   "concurrency",
   "high-blast-radius",
 ]);
+// Stages that feed the authority chain. They must be ordered before land-changeset and
+// verify-promotion, whatever the lane or profile (T3, review 6108295955).
+const PREREQUISITE_SKILLS = new Set(["build-personas", "write-journeys", "write-e2e", "test-journeys", "design-tech"]);
+const LATE_CHAIN_SKILLS = ["land-changeset", "verify-promotion"];
 const USER_RUNTIME_FLAGS = new Set(["user-facing", "admin-facing"]);
 const RETROACTIVE_FLAGS = new Set(["retroactive", "graph-mismatch", "user-challenged-closeout"]);
 const PROVIDER_FIDELITY_FLAGS = new Set([
@@ -130,6 +134,23 @@ function addIssue(issues, issue) {
   issues.push(issue);
 }
 
+// Prerequisites are ordered by position. A task position decides "after"; a process step
+// is owned by its task, so it is late when its owner is, or when it names a late stage.
+function addOrderingIssues(issues, tasks) {
+  const lateIndex = Math.min(...LATE_CHAIN_SKILLS.map((skill) => tasks.findIndex((task) => taskSkill(task) === skill)).filter((i) => i >= 0));
+  if (!Number.isFinite(lateIndex)) return;
+  const late = taskSkill(tasks[lateIndex]);
+  tasks.forEach((task, index) => {
+    const skill = taskSkill(task);
+    if (PREREQUISITE_SKILLS.has(skill) && index > lateIndex) addIssue(issues, `prerequisite ${skill} is ordered after ${late}`);
+    for (const step of task?.metadata?.required_process_steps || []) {
+      if (!PREREQUISITE_SKILLS.has(step?.skill)) continue;
+      if (index > lateIndex) addIssue(issues, `prerequisite ${step.skill} is a process step of ${skill}, ordered after ${late}`);
+      if (LATE_CHAIN_SKILLS.includes(step.before)) addIssue(issues, `prerequisite ${step.skill} process step runs before ${step.before}, not before the chain's late stages`);
+    }
+  });
+}
+
 function validateGraph(graph, filePath, validSkipIds) {
   const issues = [];
   if (!graph.delivery_graph) {
@@ -144,6 +165,7 @@ function validateGraph(graph, filePath, validSkipIds) {
   const tasks = graph.tasks || [];
   const taskSkills = new Set(tasks.flatMap((task) => [taskSkill(task), ...(task?.metadata?.required_process_steps || []).map((step) => step?.skill)]).filter(Boolean));
   const skipped = dg.skipped_skills || [];
+  addOrderingIssues(issues, tasks);
   const riskFlags = Array.isArray(dg.risk_flags) ? dg.risk_flags : [];
   const platformContracts = Array.isArray(dg.platform_contracts) ? dg.platform_contracts : [];
   const completed = graph.status === "completed";

@@ -15,29 +15,38 @@
 //                     requirement cell are hashed).
 //   SENSITIVE to    — real AC requirement-text changes, additions, removals
 //                     (exactly the revisions WI-381 AC1 must catch).
+// Every Acceptance Criteria section of the spec is bound, not only the first.
 // Both formats svc uses are handled: markdown AC tables (`| AC | Description | …`)
 // and checklist ACs (`- [ ] …`). Distiller and validator share THIS function, so
 // the binding is internally consistent by construction.
 
 import { createHash } from "node:crypto";
 
-// Extract the Acceptance Criteria section: from the first heading whose text
-// contains "Acceptance Criteria" to the next heading of the same-or-higher level
-// (or EOF).
-export function extractAcSection(specText) {
+// Extract every Acceptance Criteria section: each heading whose text contains
+// "Acceptance Criteria" runs to the next heading of the same-or-higher level (or
+// EOF). The spec template writes one such section per user story, so taking only
+// the first would leave later stories unbound (review 6108295729). A section nested
+// inside an earlier one is already covered and is not counted twice.
+export function extractAcSections(specText) {
   const lines = String(specText).split("\n");
-  let start = -1, startLevel = 0;
+  const sections = [];
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(/^(#{1,6})\s+.*acceptance criteria/i);
-    if (m) { start = i; startLevel = m[1].length; break; }
+    if (!m) continue;
+    let end = lines.length;
+    for (let j = i + 1; j < lines.length; j++) {
+      const h = lines[j].match(/^(#{1,6})\s+/);
+      if (h && h[1].length <= m[1].length) { end = j; break; }
+    }
+    sections.push(lines.slice(i + 1, end).join("\n"));
+    i = end - 1;
   }
-  if (start === -1) return "";
-  let end = lines.length;
-  for (let i = start + 1; i < lines.length; i++) {
-    const m = lines[i].match(/^(#{1,6})\s+/);
-    if (m && m[1].length <= startLevel) { end = i; break; }
-  }
-  return lines.slice(start + 1, end).join("\n");
+  return sections;
+}
+
+// All AC sections, joined; "" when the spec has none.
+export function extractAcSection(specText) {
+  return extractAcSections(specText).join("\n");
 }
 
 const norm = (s) => String(s).replace(/\s+/g, " ").trim().toLowerCase();
@@ -67,6 +76,19 @@ export function acSignatures(specText) {
     }
   }
   return sigs;
+}
+
+// Ids that appear on more than one criterion (table rows and labeled bullets carry an id;
+// plain checklist items do not). Callers treat a non-empty result as an invalid spec.
+export function acDuplicateIds(specText) {
+  const seen = new Set(), dup = new Set();
+  for (const sig of acSignatures(specText)) {
+    if (!sig.includes("::")) continue;
+    const id = sig.split("::")[0];
+    if (seen.has(id)) dup.add(id);
+    seen.add(id);
+  }
+  return [...dup];
 }
 
 // sha256 over the normalized AC signatures (the value stored in the baton and
