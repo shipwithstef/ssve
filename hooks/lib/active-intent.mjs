@@ -138,6 +138,19 @@ function hasAffirmativeStop(text) {
   return /\bstop\b/i.test(withoutNegatedStops);
 }
 
+// A pause or abort request is a stop request in other words. Negated forms ("don't pause",
+// "never abort") do not count, and neither does a bare noun use such as "a pause button".
+const PAUSE_WORDS = /\b(?:pause|halt|abort|stand\s+down|hold\s+(?:off|everything)|take\s+a\s+break|enough\s+for\s+now|that['’]?s\s+enough)\b/iu;
+const NEGATED_PAUSE_SPAN = /\b(?:do\s+not|don['’]?t|dont|never)(?:\s+[\p{L}\p{N}_'’-]+){0,3}\s+(?:pause|halt|abort|stand\s+down|hold\s+off|hold\s+everything|take\s+a\s+break)\b/giu;
+
+function hasAffirmativePause(text) {
+  const withoutNegated = String(text || "").replace(NEGATED_PAUSE_SPAN, "");
+  if (!PAUSE_WORDS.test(withoutNegated)) return false;
+  // "pause button/menu/screen/state" etc. name a feature rather than ask for a pause.
+  const noFeature = withoutNegated.replace(/\b(?:pause|halt|abort)\s+(?:button|menu|screen|state|key|icon|overlay|logic|feature|function|handler|handling|signal|controller|error|request)s?\b/giu, "");
+  return PAUSE_WORDS.test(noFeature);
+}
+
 export function detectReferencedWI(text) {
   const match = String(text || "").match(/\bWI[-\s]?(\d{2,5})\b/i);
   return match ? `WI-${match[1]}` : "";
@@ -172,6 +185,17 @@ export function classifyActiveIntent(text) {
       reason: referencedWi
         ? `stop suppresses ${referencedWi}`
         : "stop suppresses stale WI continuation pressure"
+    };
+  }
+
+  if (hasAffirmativePause(raw)) {
+    return {
+      classification: "pause",
+      suppress: true,
+      wi: referencedWi || "*",
+      reason: referencedWi
+        ? `pause suppresses ${referencedWi}`
+        : "pause suppresses stale WI continuation pressure"
     };
   }
 

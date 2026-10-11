@@ -9,6 +9,7 @@ import { spawnSync } from "node:child_process";
 import { test, before, after } from "node:test";
 import { fileURLToPath } from "node:url";
 import { missingEssential, chainSteps } from "../../scripts/lane-stop-guard.mjs";
+import { classifyActiveIntent } from "../../hooks/lib/active-intent.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const BOUNDARY = path.join(ROOT, "hooks", "svc-hook-boundary.mjs");
@@ -259,4 +260,44 @@ test("missingEssential walks the registry chain in order", () => {
   assert.deepEqual(missingEssential(graph(), REGISTRY, idx).map((m) => m.skill), ["land-changeset", "verify-promotion"]);
   // A graph with no chain skills is not a delivery lane.
   assert.deepEqual(missingEssential({ tasks: [task(1, "write-spec")] }, REGISTRY, null), []);
+});
+
+test("R1-1: a recorded pause or stop intent suppresses continuation; a negated or feature use does not", () => {
+  for (const [text, suppress] of [
+    ["pause everything for now", true], ["please halt", true], ["stand down", true], ["stop", true],
+    ["don't pause, keep going", false], ["add a pause button to the game", false], ["handle the abort signal", false],
+  ]) assert.equal(classifyActiveIntent(text).suppress, suppress, text);
+  const record = (dir, prompt) => {
+    const r = spawnSync(process.execPath, [path.join(ROOT, "hooks", "lib", "active-intent.mjs"), "record"], {
+      cwd: dir, input: JSON.stringify({ prompt, session_id: "sess-1", cwd: dir }), encoding: "utf8",
+    });
+    assert.equal(r.status, 0, r.stderr);
+    return r.stdout;
+  };
+  const dir = project();
+  assert.ok(blocked(viaBoundary(dir, {}, baseEnv())), "lane blocks before any pause request");
+  assert.match(record(dir, "pause, I need to think about this"), /^suppressed\tpause/);
+  const r = viaBoundary(dir, {}, baseEnv());
+  assert.ok(!blocked(r), r.stdout + r.stderr);
+  const other = project();
+  assert.match(record(other, "actually don't pause, carry on"), /^recorded/);
+  assert.ok(blocked(viaBoundary(other, {}, baseEnv())));
+});
+
+test("R1-2: an explicit WI target applies to a single legacy graph too", () => {
+  const dir = project();
+  assert.ok(!blocked(viaBoundary(dir, {}, baseEnv({ SVC_WORKER_WI: "WI-OTHER" }))), "env target elsewhere");
+  assert.ok(!blocked(viaBoundary(dir, { wi: "WI-OTHER" }, baseEnv())), "payload target elsewhere");
+  assert.ok(blocked(viaBoundary(dir, { wi: "WI-T1" }, baseEnv())), "payload target here");
+  assert.ok(blocked(viaBoundary(dir, {}, baseEnv({ SVC_WORKER_WI: "WI-T1" }))), "env target here");
+  // A WI branch that names a different WI also points elsewhere.
+  spawnSync("git", ["checkout", "-q", "-b", "WI-77-other"], { cwd: dir });
+  assert.ok(!blocked(viaBoundary(dir, {}, baseEnv())), "branch target elsewhere");
+});
+
+test("R1-3: SVC_SUBAGENT=1 marks a child session that can always end", () => {
+  const dir = project();
+  const r = viaBoundary(dir, {}, baseEnv({ SVC_SUBAGENT: "1" }));
+  assert.ok(!blocked(r), r.stdout + r.stderr);
+  assert.ok(blocked(viaBoundary(dir, {}, baseEnv())));
 });

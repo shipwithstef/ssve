@@ -46,6 +46,19 @@ export function chainSteps(registry) {
   return out;
 }
 
+export function graphMatchesWi(graph, wi) {
+  const deps = Array.isArray(graph?.depends_on) ? graph.depends_on.map(String) : [];
+  return String(graph?.wi || "") === wi || String(graph?.parent_wi || graph?.parent || "") === wi || deps.includes(wi);
+}
+
+function targetWi(payload, cwd) {
+  const explicit = process.env.SVC_WORKER_WI || (typeof payload?.wi === "string" ? payload.wi : "");
+  if (explicit) return explicit;
+  const branch = git(cwd, ["symbolic-ref", "--short", "HEAD"]);
+  const m = /WI-(\d+)/i.exec(branch);
+  return m ? `WI-${m[1]}` : "";
+}
+
 export function isDeliveryLane(graph) {
   const skills = new Set((Array.isArray(graph?.tasks) ? graph.tasks : []).map(taskSkill));
   return skills.has("plan-changeset") && skills.has("execute-changeset");
@@ -210,7 +223,7 @@ function reasonFor(skill, missing) {
 
 export function decide({ cwd, session = "", graph = "", payload = null, checker = "", svcRoot = "" }) {
   const allow = { decision: "allow" };
-  if (isSubagentPayload(payload)) return allow;
+  if (isSubagentPayload(payload) || truthy(process.env.SVC_SUBAGENT)) return allow;
   let files = graph ? [path.resolve(graph)] : findLaneFiles(cwd);
   if (!files.length) return allow;
   const svcDir = path.dirname(files[0]);
@@ -221,10 +234,10 @@ export function decide({ cwd, session = "", graph = "", payload = null, checker 
   // Only a compiled delivery lane (plan -> execute) is continued here; any other task graph keeps
   // the completion guard's own bounded pressure.
   loaded = loaded.filter((x) => isDeliveryLane(x.g));
-  if (!graph && loaded.length > 1) {
-    const want = process.env.SVC_WORKER_WI || payload?.wi || "";
-    if (want) loaded = loaded.filter((x) => String(x.g.wi || "") === want);
-  }
+  // An explicit WI target (env, payload, or a WI branch) applies to any number of graphs,
+  // a single legacy graph included: a session aimed at another WI is not this lane's session.
+  const want = targetWi(payload, cwd);
+  if (want) loaded = loaded.filter((x) => graphMatchesWi(x.g, want));
   if (loaded.length !== 1) return allow; // none, or ambiguous: stay quiet
   const { file, g } = loaded[0];
   const projectRoot = path.dirname(path.dirname(file));
