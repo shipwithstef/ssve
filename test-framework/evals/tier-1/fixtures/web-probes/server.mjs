@@ -13,9 +13,14 @@ const leak = [];
 const hits = new Map();
 
 const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Probe Keep</title>
-<style>body{margin:0;font:16px Georgia,serif;background:${BAD ? "#888" : "#1d2a24"};color:${BAD ? "#7a7a7a" : "#f2ead8"}}main{padding:16px}${BAD ? ".wide{width:1200px;height:4px;background:#999}" : ""}canvas{display:block;max-width:100%;background:#2f4a3c}
-button{font:inherit;padding:6px 10px;background:#c9a24a;color:#1d2a24;border:0}#log{min-height:40px}</style></head><body><main>
-<h1>Probe Keep</h1><p id="who">joining…</p>${BAD ? '<div class="wide"></div>' : ""}
+<style>body{margin:0;font:${BAD ? "11px" : "17px"} Georgia,serif;background:${BAD ? "#888" : "#1d2a24"};color:${BAD ? "#7a7a7a" : "#f2ead8"}}main{padding:16px}${BAD ? ".wide{width:1200px;height:4px;background:#999}" : ""}canvas{display:block;max-width:100%;background:#2f4a3c}
+button{font:inherit;${BAD ? "padding:0 2px;height:16px;" : "padding:6px 10px;min-height:44px;"}background:#c9a24a;color:#1d2a24;border:0}#log{min-height:40px}${BAD ? "" : "input{min-height:44px;font:inherit}"}
+.story{${BAD ? "width:1500px" : "max-width:65ch"}}</style></head><body><main>
+<h1>Probe Keep</h1><p id="who">joining…</p><p id="status"></p>
+<p class="story">${BAD
+  ? "Notwithstanding considerable organisational interdependencies, the aforementioned infrastructural reconfiguration necessitates comprehensive interdepartmental authorisation, subsequently facilitating operationalisation of supplementary administrative functionalities, notwithstanding unprecedented methodological heterogeneity, institutional irregularities, and multidimensional complications."
+  : "You wake up on a small island. The tide is low and the boat is gone. A cook waves from the inn. A parrot sits on a post. Walk to the inn and ask the cook what she needs. Then find the boat."}</p>
+${BAD ? Array.from({ length: 40 }, (_, i) => `<button>Option ${i + 1}</button>`).join("") : ""}${BAD ? '<div class="wide"></div>' : ""}
 <canvas id="c" width="320" height="200"></canvas>
 ${BAD ? '<input id="say">' : '<label for="say">Say</label> <input id="say">'}
 ${BAD ? '<button id="go"></button>' : '<button id="go">Send</button>'}
@@ -32,7 +37,7 @@ window.__game = { state: () => (me ? { you: state.players.find((p) => p.id === m
   actions: () => ["north", "south", "east", "west", "say"],
   act: (a, text) => (a === "say" ? say(text || "hello") : post("/api/act", { ...auth(), action: a })) };
 document.getElementById("say").addEventListener("keydown", (e) => { if (e.key === "Enter") say(e.target.value); });
-document.getElementById("go").addEventListener("click", () => say(document.getElementById("say").value));
+document.getElementById("go").addEventListener("click", () => { const show = () => { document.getElementById("status").textContent = "Sent."; }; ${BAD ? "setTimeout(show, 600);" : "show();"} say(document.getElementById("say").value); });
 const ctx = document.getElementById("c").getContext("2d");
 function frame() { ${BAD ? "const t = performance.now(); while (performance.now() - t < 35) {}" : ""}
   ctx.fillStyle = "#2f4a3c"; ctx.fillRect(0, 0, 320, 200);

@@ -22,6 +22,11 @@
     "wcag-2-2": "https://www.w3.org/TR/WCAG22/",
     "rail": "https://web.dev/articles/rail",
     "owasp-top-10": "https://owasp.org/Top10/",
+    "hicks-law": "https://lawsofux.com/hicks-law/",
+    "wcag-target-size": "https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html",
+    "doherty": "https://lawsofux.com/doherty-threshold/",
+    "flesch": "https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests",
+    "line-length": "https://baymard.com/blog/line-length-readability",
     "funsearch": "https://www.nature.com/articles/s41586-023-06924-6",
     "alphaevolve": "https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/",
     "opus-haiku-demos-2026-10": "https://x.com/ClaudeDevs/status/2107895955144208813 and https://x.com/IndependentEco/status/2109011691576975632 (egg drop; EcoBench sprint)"
@@ -430,6 +435,46 @@
       "measure": "scripts/web-probes.mjs security.throttled (a 300-request flood on the app's own endpoint gets 429 or 503)",
       "better": "true",
       "source": "owasp-top-10"
+    },
+    {
+      "id": "readable-text",
+      "layer": "perception",
+      "class": "gate",
+      "measure": "scripts/web-probes.mjs perception.body_font_px (median body text size, at least 16 px) and perception.line_length_chars (45-75 characters)",
+      "better": "higher",
+      "source": "line-length"
+    },
+    {
+      "id": "choice-load",
+      "layer": "perception",
+      "class": "efficiency",
+      "measure": "scripts/web-probes.mjs perception.choices_on_screen (controls visible at once; decision time grows with the number of choices)",
+      "better": "lower",
+      "source": "hicks-law"
+    },
+    {
+      "id": "thumb-targets",
+      "layer": "perception",
+      "class": "gate",
+      "measure": "scripts/web-probes.mjs perception.tap_targets (share of targets under 44 px at 390 px width; under 24 px fails WCAG 2.2 AA)",
+      "better": "lower",
+      "source": "wcag-target-size"
+    },
+    {
+      "id": "instant-feedback",
+      "layer": "perception",
+      "class": "gate",
+      "measure": "scripts/web-probes.mjs perception.click_response_ms (click to first visible change; 100 ms feels instant, 400 ms keeps attention)",
+      "better": "lower",
+      "source": "doherty"
+    },
+    {
+      "id": "plain-language",
+      "layer": "perception",
+      "class": "efficiency",
+      "measure": "scripts/web-probes.mjs perception.reading_ease (Flesch reading ease of on-screen text; 60+ is plain English)",
+      "better": "higher",
+      "source": "flesch"
     }
   ]
 }

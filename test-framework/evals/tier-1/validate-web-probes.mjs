@@ -2,7 +2,8 @@
 /** Tier 1: the design/UI, performance and security web probes are proven graders. On a
  * planted good build and a planted bad one (fixtures/web-probes/server.mjs), every metric
  * must score the good build better: axe violations, contrast, phone overflow, console
- * errors, frame time, memory growth, XSS, impersonation, security headers and throttling.
+ * errors, frame time, memory growth, XSS, impersonation, security headers, throttling, and
+ * perception: text size, line length, choices on screen, tap targets, click response, reading ease.
  * Where no browser is installed (CI's tier-1 runner), the probe must refuse with exit 3 and
  * say why, never report a pass. */
 import test from "node:test";
@@ -22,7 +23,7 @@ test("web probes separate every planted defect from the good build, or refuse wi
   assert.equal(r.status, 0, r.stderr.slice(0, 2000));
   const out = JSON.parse(r.stdout);
   assert.equal(out.ok, true);
-  assert.deepEqual(out.checks.map((c) => c.metric).sort(), ["design.axe", "design.console_errors", "design.contrast", "design.phone_overflow", "performance.frame_p95_1p", "performance.memory_growth_mb", "security.headers", "security.impersonation", "security.throttled", "security.xss"]);
+  assert.deepEqual(out.checks.map((c) => c.metric).sort(), ["design.axe", "design.console_errors", "design.contrast", "design.phone_overflow", "performance.frame_p95_1p", "performance.memory_growth_mb", "perception.body_font_px", "perception.choices_on_screen", "perception.click_response_ms", "perception.line_length_chars", "perception.reading_ease", "perception.tap_targets", "security.headers", "security.impersonation", "security.throttled", "security.xss"].sort());
   assert.ok(out.checks.every((c) => c.separates));
 });
 

@@ -370,7 +370,7 @@
     },
     {
       "id": "web-probes-separate-planted-defects",
-      "claim": "Each of the 10 web-probe metrics (axe, contrast, phone overflow, console errors, frame time, memory growth, XSS, impersonation, security headers, throttling) scores a planted good build better than a planted bad one",
+      "claim": "Each of the 16 web-probe metrics (accessibility, contrast, phone overflow, console errors, frame time, memory growth, XSS, impersonation, security headers, throttling, text size, line length, choices on screen, tap targets, click response, reading ease) scores a planted good build better than a planted bad one",
       "source": "scripts/web-probes.mjs",
       "command": ["node", "scripts/web-probes.mjs", "prove"],
       "exit": 0

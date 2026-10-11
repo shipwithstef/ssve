@@ -18,6 +18,10 @@
  * Performance load to first interactive state, JS bytes transferred, p95 frame interval
  *             with 1 and 4 players, server p95 for GET / while 4 players act, server memory
  *             growth over the play period.
+ * Perception  median body text size and line length (45-75 characters), choices on screen
+ *             at once (Hick's law), share of tap targets under 44 px at phone width (WCAG
+ *             2.2 target size; 24 px is the AA floor), click-to-response time (RAIL 100 ms,
+ *             Doherty 400 ms), Flesch reading ease of the on-screen text.
  * Security    script execution from player-supplied text (XSS), acting as another player
  *             by swapping ids in captured requests or socket frames, security headers on /,
  *             throttling of a request flood.
@@ -71,7 +75,8 @@ async function openPlayer(browser, base, viewport = { width: 1280, height: 800 }
   page.on("websocket", (ws) => ws.on("framesent", (f) => frames.push({ url: ws.url(), payload: typeof f.payload === "string" ? f.payload : null })));
   const t0 = Date.now();
   await page.goto(base + entry, { waitUntil: "load" });
-  const game = await page.waitForFunction(() => window.__game && window.__game.state() && window.__game.state().you, null, { timeout: 15000 }).then(() => true, () => false);
+  const game = await page.waitForFunction(() => (window.__game && window.__game.state() && window.__game.state().you) || (window.__quest && window.__quest.state()), null, { timeout: 15000 }).then(() => true, () => false);
+  if (game && await page.evaluate(() => !window.__game && !!window.__quest)) await page.evaluate(() => { window.__game = { state: () => ({ ...window.__quest.state(), you: { id: "solo", x: 0, y: 0 } }), actions: () => window.__quest.actions(), act: (a, t) => window.__quest.act(a, t) }; window.__singlePlayer = true; });
   return { page, errors, requests, frames, game, ready_ms: Date.now() - t0 };
 }
 
@@ -118,6 +123,47 @@ async function design(browser, base, axePath, p1) {
     for (const c of document.querySelectorAll("canvas")) { try { const ctx = c.getContext("2d"); if (!ctx) continue; const d = ctx.getImageData(0, 0, c.width, c.height).data; for (let i = 0; i < d.length; i += 4 * 97) if (d[i + 3] > 25) set.add(q(d[i], d[i + 1], d[i + 2])); } catch {} }
     return set.size;
   }) }));
+  return out;
+}
+
+// How people perceive and handle the page: readable text, a manageable number of choices,
+// targets a thumb can hit, and a response that feels immediate.
+async function perception(browser, base, p1) {
+  const out = {};
+  const text = await safe(async () => ({ value: await p1.page.evaluate(() => {
+    const blocks = [...document.querySelectorAll("p, li, dd, td, blockquote, pre, div, span, label, button")].filter((e) => e.offsetParent !== null && [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 20));
+    if (!blocks.length) return null;
+    const sizes = blocks.map((e) => parseFloat(getComputedStyle(e).fontSize)).sort((a, b) => a - b);
+    const lens = blocks.map((e) => { const fs = parseFloat(getComputedStyle(e).fontSize) || 16; return Math.round(e.getBoundingClientRect().width / (fs * 0.5)); }).filter((n) => n > 10).sort((a, b) => a - b);
+    return { font_px: sizes[Math.floor(sizes.length / 2)], line_chars: lens.length ? lens[Math.floor(lens.length / 2)] : null };
+  }) }));
+  out.body_font_px = text.value ? { value: text.value.font_px } : text;
+  out.line_length_chars = text.value ? { value: text.value.line_chars } : text;
+  out.choices_on_screen = await safe(async () => ({ value: await p1.page.evaluate(() => [...document.querySelectorAll("button,a[href],input,select,textarea,[data-action],[role=button]")].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight; }).length) }));
+  out.tap_targets = await safe(async () => {
+    const phone = await openPlayer(browser, base, { width: 390, height: 844 });
+    const t = await phone.page.evaluate(() => [...document.querySelectorAll("button,a[href],input,select,textarea,[data-action],[role=button]")].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0).map((r) => Math.min(r.width, r.height)));
+    await phone.page.context().close();
+    if (!t.length) return { value: null, reason: "no tap targets on the page" };
+    return { value: +(t.filter((m) => m < 44).length / t.length).toFixed(2), under_24px: t.filter((m) => m < 24).length, targets: t.length };
+  });
+  out.click_response_ms = await safe(async () => {
+    const page = (await openPlayer(browser, base)).page;
+    const target = await page.$("[data-action], button");
+    if (!target) { await page.context().close(); return { value: null, reason: "nothing to click" }; }
+    const ms = await page.evaluate((el) => new Promise((done) => { const t0 = performance.now(); const mo = new MutationObserver(() => { mo.disconnect(); done(Math.round(performance.now() - t0)); }); mo.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true }); el.click(); setTimeout(() => { mo.disconnect(); done(5000); }, 5000); }), target);
+    await page.context().close();
+    return { value: ms };
+  });
+  out.reading_ease = await safe(async () => {
+    const t = await p1.page.evaluate(() => document.body.innerText);
+    const words = t.match(/[A-Za-z][A-Za-z'’-]*/g) || [];
+    const sentences = Math.max(1, (t.match(/[.!?](\s|$)/g) || []).length);
+    if (words.length < 30) return { value: null, reason: "too little text to score" };
+    const syl = (w) => { w = w.toLowerCase().replace(/e$/, ""); return Math.max(1, (w.match(/[aeiouy]+/g) || []).length); };
+    const s = words.reduce((a, w) => a + syl(w), 0);
+    return { value: Math.round(206.835 - 1.015 * (words.length / sentences) - 84.6 * (s / words.length)), words: words.length };
+  });
   return out;
 }
 
@@ -211,10 +257,11 @@ export async function probeWeb(dir, { playS = 20, port = 48000 + Math.floor(Math
   try {
     const p1 = await openPlayer(browser, base);
     const d = await design(browser, base, axePath, p1);
+    const per = await perception(browser, base, p1);
     const perf = await performance(browser, base, p1, server, playS);
     d.console_errors = { value: p1.errors.length, sample: p1.errors.slice(0, 3) };
     const sec = await security(browser, base, p1);
-    return { dir, game_hook: p1.game, design: d, performance: perf, security: sec };
+    return { dir, game_hook: p1.game, design: d, perception: per, performance: perf, security: sec };
   } finally {
     await browser.close().catch(() => {});
     try { process.kill(-server.pid, "SIGKILL"); } catch {}
@@ -245,6 +292,12 @@ export async function prove({ playS = 8 } = {}) {
     ["security.impersonation", v(good, "security", "impersonation") === false && v(bad, "security", "impersonation") === true],
     ["security.headers", v(good, "security", "headers") === 3 && v(bad, "security", "headers") === 0],
     ["security.throttled", v(good, "security", "throttled") === true && v(bad, "security", "throttled") === false],
+    ["perception.body_font_px", v(good, "perception", "body_font_px") >= 16 && v(bad, "perception", "body_font_px") < 14],
+    ["perception.line_length_chars", v(good, "perception", "line_length_chars") <= 80 && v(bad, "perception", "line_length_chars") > 100],
+    ["perception.choices_on_screen", v(good, "perception", "choices_on_screen") < v(bad, "perception", "choices_on_screen") - 15],
+    ["perception.tap_targets", v(good, "perception", "tap_targets") === 0 && v(bad, "perception", "tap_targets") > 0.5],
+    ["perception.click_response_ms", v(good, "perception", "click_response_ms") < 100 && v(bad, "perception", "click_response_ms") >= 400],
+    ["perception.reading_ease", v(good, "perception", "reading_ease") - v(bad, "perception", "reading_ease") >= 20],
   ].map(([metric, separates]) => ({ metric, separates: Boolean(separates) }));
   return { ok: checks.every((c) => c.separates), checks, good, bad };
 }
