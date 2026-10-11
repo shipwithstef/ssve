@@ -1,3 +1,4 @@
+// @organism-suite
 /**
  * craft-prompt floor: the author (orchestrator) family is REQUIRED and comes from the host.
  * It is never defaulted, so a same-family review can never be certified as independent.

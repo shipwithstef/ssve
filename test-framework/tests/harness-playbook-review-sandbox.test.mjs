@@ -1,3 +1,4 @@
+// @organism-suite
 /**
  * No review-role invocation in the harness playbook may disable or bypass the sandbox.
  * A reviewer must not be able to write. Hermetic, no model calls.
@@ -39,4 +40,11 @@ test("the cursor review role keeps its sandbox enabled", () => {
 test("codex probe flags do not require the bypass flag", () => {
   assert.ok(!pb.hosts.codex.probe.flags.some((f) => BYPASS.test(f)));
   assert.ok(pb.hosts.codex.probe.flags.includes("--sandbox"));
+});
+
+test("the live review launcher does not use the Codex sandbox bypass flag", async () => {
+  const fs = await import("node:fs");
+  const src = fs.readFileSync(new URL("../../scripts/run-external-review.mjs", import.meta.url), "utf8");
+  assert.ok(!src.includes("--dangerously-bypass-approvals-and-sandbox"));
+  assert.ok(src.includes("'--sandbox', 'read-only'"));
 });

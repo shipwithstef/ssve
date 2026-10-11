@@ -239,7 +239,7 @@ test('unproved blocker is advisory with the raw claim retained; concrete proof r
   assert.equal(normalizeReviewFindings({...report, findings:[{...raw, proof:{kind:'call-path', path:'caller → helper'}}]}).findings[0].blocking, false);
 });
 
-test('Codex shell reads succeed with VM bypass; edits invalidate review and preserve dirty work', async t => {
+test('Codex shell reads succeed in the read-only sandbox; edits invalidate review and preserve dirty work', async t => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rv1-codex-readonly-'));
   t.after(() => fs.rmSync(dir, {recursive:true, force:true}));
   const repo = path.join(dir, 'repo'), artifacts = path.join(dir, 'artifacts');
@@ -255,7 +255,7 @@ test('Codex shell reads succeed with VM bypass; edits invalidate review and pres
   fs.writeFileSync(cli, `#!/usr/bin/env node
 const fs=require('fs'),path=require('path');
 const args=process.argv.slice(2),prompt=fs.readFileSync(0,'utf8');
-if(!args.includes('--dangerously-bypass-approvals-and-sandbox') || args.includes('--sandbox') || !prompt.includes('Read-only contract'))process.exit(9);
+if(args.some(a=>/bypass|dangerously|danger-full-access/.test(a)) || args[args.indexOf('--sandbox')+1]!=='read-only' || !prompt.includes('Read-only contract'))process.exit(9);
 const caller=fs.readFileSync('caller.mjs','utf8');
 if(!caller.includes('1 / denominator'))process.exit(10);
 if(prompt.includes('MUTATE'))fs.appendFileSync('helper.mjs','// reviewer edit\\n');

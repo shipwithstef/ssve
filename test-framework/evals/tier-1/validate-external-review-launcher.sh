@@ -20,7 +20,7 @@ expect() { local label="$1"; shift; if "$@"; then ok "$label"; else bad "$label"
 printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' '
 if [[ "${1:-}" == "exec" && "${2:-}" == "--help" ]]; then
   if [[ "${SVC_FAKE_CAPABILITY_MISSING:-0}" == 1 ]]; then printf "%s\n" "--model"; exit 0; fi
-  printf "%s\n" "stdin --config --strict-config --model --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check --ephemeral --ignore-user-config --ignore-rules --output-schema --json --output-last-message --color"
+  printf "%s\n" "stdin --config --strict-config --model --sandbox --skip-git-repo-check --ephemeral --ignore-user-config --ignore-rules --output-schema --json --output-last-message --color"
   exit 0
 fi
 for arg in "$@"; do if [[ "$arg" == "--version" ]]; then printf "%s\n" "codex-cli-exec 0.144.4"; exit 0; fi; done
@@ -388,7 +388,8 @@ SVC_FAKE_MODE=success run_review claude "package-one" "$TMP/out/codex-1" > "$TMP
 expect "Claude orchestration succeeds through Codex" test -s "$TMP/codex-1.summary"
 expect "Codex package includes hashed worktree rules and the byte-exact review request" bash -c "grep -q '^SVC_REVIEW_CONTEXT_MANIFEST_V1 ' '$SVC_FAKE_LOG/codex.stdin' && grep -q 'target:AGENTS.md' '$SVC_FAKE_LOG/codex.stdin' && grep -q 'framework:skills/review-plan/SKILL.md' '$SVC_FAKE_LOG/codex.stdin' && grep -q 'package-one' '$SVC_FAKE_LOG/codex.stdin'"
 expect "Codex exact gpt-5.6-sol model and high effort pinned" grep -q -- '--model gpt-5.6-sol.*model_reasoning_effort="high"' "$SVC_FAKE_LOG/codex.argv"
-expect "Codex uses the VM bypass with isolated configuration" grep -q -- '--dangerously-bypass-approvals-and-sandbox.*--ephemeral.*--ignore-user-config.*--ignore-rules.*--strict-config' "$SVC_FAKE_LOG/codex.argv"
+expect "Codex reviews in the read-only sandbox with isolated configuration" grep -q -- '--sandbox read-only.*--ephemeral.*--ignore-user-config.*--ignore-rules.*--strict-config' "$SVC_FAKE_LOG/codex.argv"
+expect "Codex review argv never carries a sandbox bypass" bash -c "! grep -qE -- 'dangerously|bypass|danger-full-access' '$SVC_FAKE_LOG/codex.argv'"
 expect "Codex output is schema/stream separated" grep -q -- '--output-schema .*--json.*--output-last-message .*--color never -' "$SVC_FAKE_LOG/codex.argv"
 expect "CODEX_HOME authentication path preserved" grep -qx "$CODEX_HOME" "$SVC_FAKE_LOG/codex.home"
 FIRST_RECEIPT="$(receipt_from_summary "$TMP/codex-1.summary")"
