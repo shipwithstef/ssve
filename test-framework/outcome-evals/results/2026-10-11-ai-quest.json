@@ -39,9 +39,9 @@
       "arm": "bounded",
       "runs": 3,
       "errors": 0,
-      "solved": "0/3",
-      "solve_rate": 0,
-      "mean_hidden_score": 0.833,
+      "solved": "1/3",
+      "solve_rate": 0.333,
+      "mean_hidden_score": 0.9,
       "mean_cost_usd": 6.0743,
       "mean_turns": 92.7,
       "judged": 3,
@@ -152,7 +152,7 @@
           "reason": "no commits"
         }
       },
-      "regraded_at": "2026-10-11T06:25:27.556Z",
+      "regraded_at": "2026-10-11T06:37:41.762Z",
       "hidden_failures": [
         "no dead ends: one wrong move at any point along the walkthrough can always be recovered from: error: |-",
         "no dead ends: skipping a step and then making a risky move can always be recovered from: error: |-",
@@ -258,7 +258,7 @@
           "reason": "no commits"
         }
       },
-      "regraded_at": "2026-10-11T06:25:48.364Z",
+      "regraded_at": "2026-10-11T06:38:02.345Z",
       "hidden_failures": [
         "no dead ends: one wrong move at any point along the walkthrough can always be recovered from: error: |-",
         "no dead ends: skipping a step and then making a risky move can always be recovered from: error: |-"
@@ -361,7 +361,7 @@
           "reason": "no commits"
         }
       },
-      "regraded_at": "2026-10-11T06:26:04.219Z",
+      "regraded_at": "2026-10-11T06:38:18.058Z",
       "hidden_failures": [
         "no dead ends: after 40 random walks, the walkthrough's own steps still finish the game: error: |-",
         "no dead ends: one wrong move at any point along the walkthrough can always be recovered from: error: |-",
@@ -470,7 +470,7 @@
           "reason": "no commits"
         }
       },
-      "regraded_at": "2026-10-11T06:26:12.630Z"
+      "regraded_at": "2026-10-11T06:38:26.776Z"
     },
     {
       "task": "ai-quest",
@@ -569,7 +569,7 @@
           "reason": "no commits"
         }
       },
-      "regraded_at": "2026-10-11T06:26:23.002Z"
+      "regraded_at": "2026-10-11T06:38:37.571Z"
     },
     {
       "task": "ai-quest",
@@ -660,7 +660,7 @@
           "reason": "no commits"
         }
       },
-      "regraded_at": "2026-10-11T06:26:30.865Z"
+      "regraded_at": "2026-10-11T06:38:44.884Z"
     },
     {
       "task": "ai-quest",
@@ -682,9 +682,9 @@
       "step_replies": [
         "ter playing, using unseen interview-style questions, compared against people who read an explainer and people who play a version with no AI meaning.\n- `roadmap.md`: next steps, with a rough delivery estimate.\n\nThe plan and decision log are in `BRIEF.md`.\n\nThe commits are unsigned. Git is set to sign with `/tmp/code-sign`, which doesn't exist on this machine, so I committed with signing turned off."
       ],
-      "hidden_pass": 8,
+      "hidden_pass": 9,
       "hidden_total": 10,
-      "score": 0.8,
+      "score": 0.9,
       "solved": false,
       "judge_model": "opus",
       "judge_total": 18,
@@ -760,10 +760,9 @@
           "commits_per_10_min": 1.4
         }
       },
-      "regraded_at": "2026-10-11T06:26:55.236Z",
+      "regraded_at": "2026-10-11T06:39:10.525Z",
       "hidden_failures": [
-        "no dead ends: skipping a step and then making a risky move can always be recovered from: error: |-",
-        "point and click: the walkthrough plays by clicking in the browser, and the keyboard works: error: 'step 26: something clickable performs \"give abacus result to parrot\"'"
+        "no dead ends: skipping a step and then making a risky move can always be recovered from: error: |-"
       ]
     },
     {
@@ -861,7 +860,7 @@
           "commits_per_10_min": 2.7
         }
       },
-      "regraded_at": "2026-10-11T06:27:03.009Z",
+      "regraded_at": "2026-10-11T06:39:18.276Z",
       "hidden_failures": [
         "no dead ends: one wrong move at any point along the walkthrough can always be recovered from: error: |-",
         "no dead ends: skipping a step and then making a risky move can always be recovered from: error: |-"
@@ -887,10 +886,10 @@
       "step_replies": [
         "* Three cheap AI attempts tried different overflow rules for Polly's memory. \"Oldest item falls out\" won. The \"refuse new items\" version failed 2 of the 7 tests.\n- **I wrote the curriculum.** No one else has checked the puzzles or the learning claims. `docs/learning.md` describes how to test whether players actually learn.\n\nRun it with `npm install` then `npm start` and open http://localhost:3000."
       ],
-      "hidden_pass": 9,
+      "hidden_pass": 10,
       "hidden_total": 10,
-      "score": 0.9,
-      "solved": false,
+      "score": 1,
+      "solved": true,
       "judge_model": "opus",
       "judge_total": 17,
       "judge_scores": {
@@ -965,10 +964,7 @@
           "commits_per_10_min": 2.6
         }
       },
-      "regraded_at": "2026-10-11T06:27:07.533Z",
-      "hidden_failures": [
-        "point and click: the walkthrough plays by clicking in the browser, and the keyboard works: error: 'step 8: something clickable performs \"use ice on polly\"'"
-      ]
+      "regraded_at": "2026-10-11T06:39:26.202Z"
     }
   ]
 }
