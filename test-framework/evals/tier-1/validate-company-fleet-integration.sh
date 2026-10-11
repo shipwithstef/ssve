@@ -75,7 +75,8 @@ node "$CLI" resolve --state-dir "$PARENT/company-state" --id "$decision_id" --ve
 check test -f "$PARENT/company-state/product-lead/ledger.jsonl"
 
 briefing="$(node "$CLI" briefing --repo "$PRODUCT" --today 2026-07-22)"
-check grep -q "company briefing @ $PARENT/company-state" <<< "$briefing"
+check grep -q "=== company briefing ===" <<< "$briefing"
+check test -z "$(grep -F "$PARENT" <<< "$briefing")"
 dashboard="$(node "$CLI" dashboard --repo "$PRODUCT" --today 2026-07-22 --json)"
 check grep -q '"registry_health": "healthy"' <<< "$dashboard"
 check grep -q '"mesh_health"' <<< "$dashboard"
@@ -173,7 +174,7 @@ fi
 CACHE_ROOT="$FIXTURE_ROOT/cache"
 HOOK_PAYLOAD="{\"cwd\":\"$PRODUCT\"}"
 briefing_first="$(printf '%s' "$HOOK_PAYLOAD" | XDG_CACHE_HOME="$CACHE_ROOT" SVC_HOOK_TEST=1 SVC_NOW_MS=1000 node "$REPO_ROOT/hooks/cos-briefing.mjs")"
-check grep -q "company briefing @ $PARENT/company-state" <<< "$briefing_first"
+check grep -q "=== company briefing ===" <<< "$briefing_first"
 cache_file="$(find "$CACHE_ROOT/svc/cos-briefing" -type f -name '*.json' -print -quit)"
 check test -n "$cache_file"
 check test "$(node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).created_at_ms))' "$cache_file")" = 1000

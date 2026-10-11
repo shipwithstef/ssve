@@ -27,6 +27,11 @@
  *   hints      optional per-variant approach hints, to spread the search
  *   model, effort, max_turns, timeout_s, tools   worker settings (default haiku, 25 turns,
  *              600 s, outcome-eval's tool list)
+ *   expect_base "pass" (default) or "fail": what the check must do on the unmodified base.
+ *              Rewrite, simplify, merge and remove variants keep behaviour, so the base must
+ *              pass; a repair experiment starts red and sets "fail". Any other base result,
+ *              or a check that crashes, times out or cannot start, stops the run with status
+ *              "checker broken" before any worker starts: a broken checker condemns no one.
  *   budget_usd stop starting new variants once spent cost reaches this
  *   worker_cmd optional shell command instead of the Claude worker (another harness, or
  *              a test double); it runs in the variant directory with PROBE_VARIANT set
@@ -41,6 +46,12 @@
  * confine is refused. With no sandbox, model workers do not run (exit 2; install
  * bubblewrap, and check with sandbox-check). A worker_cmd is the caller's own command: it
  * gets the sandbox when there is one, and otherwise runs with contained: false recorded.
+ * The check runs under the same sandbox and private home as the worker, because it executes
+ * worker-produced code. Ownership is inspected after the worker and again after the check,
+ * and the produced files are hashed into the result (result_hash). apply refuses a result
+ * whose files no longer match, walks every destination path with lstat (no symlink
+ * component), validates the whole result before the first write, and rolls back if a write
+ * fails midway.
  * On top of that, each variant is a copy with real files (no links back to the source),
  * a new link pointing outside the copy fails the variant, and the original project is
  * fingerprinted before and after: any change aborts the run.
@@ -194,17 +205,51 @@ async function runVariant(spec, i, root, spent, sandbox) {
     worker = await runAgent(dir, workerPrompt(spec, i), spec.model ?? "haiku", (spec.timeout_s ?? 600) * 1000, spec.tools, spec.max_turns ?? 25, spec.effort ?? null, isolated, { prefix: sandbox.prefix, env: sandboxEnv });
   }
   spent.usd += worker.cost_usd ?? 0;
-  const changed = changedFiles(before, snapshot(dir));
-  const outside = [...changed.filter((f) => !insideOwned(f, spec.owned)), ...escapingLinks(dir).map((f) => `${f} (link outside the copy)`)];
-  // The starting hash of every changed file, so apply() can refuse to overwrite a file
-  // that changed in the target after the probe started.
-  const baseline = Object.fromEntries(changed.map((f) => [f, before[f] ?? null]));
-  const base = { variant: i + 1, dir, contained: Boolean(sandbox), sandbox: sandbox?.name ?? null, changed, baseline, cost_usd: worker.cost_usd ?? null, worker_ms: Date.now() - t0, note: (worker.text || "").trim().split("\n").slice(-2).join(" ").slice(0, 400) };
-  if (!worker.ok && changed.length === 0) return { ...base, status: "worker_error", score: 0, reason: worker.error || worker.stop || "worker failed" };
-  if (outside.length) return { ...base, status: "out_of_bounds", score: 0, outside };
-  const r = spawnSync("sh", ["-c", spec.check], { cwd: dir, encoding: "utf8", timeout: (spec.check_timeout_s ?? 300) * 1000 });
+  const mk = (after) => {
+    const changed = changedFiles(before, after);
+    const outside = [...changed.filter((f) => !insideOwned(f, spec.owned)), ...escapingLinks(dir).map((f) => `${f} (link outside the copy)`)];
+    // The starting hash of every changed file, so apply() can refuse to overwrite a file
+    // that changed in the target after the probe started; files holds the produced content.
+    const baseline = Object.fromEntries(changed.map((f) => [f, before[f] ?? null]));
+    const files = Object.fromEntries(changed.map((f) => [f, after[f] ?? null]));
+    return { changed, outside, baseline, files };
+  };
+  const meta = (m) => ({ variant: i + 1, dir, contained: Boolean(sandbox), sandbox: sandbox?.name ?? null, changed: m.changed, baseline: m.baseline, files: m.files, result_hash: resultHash(m, spec.owned), cost_usd: worker.cost_usd ?? null, worker_ms: Date.now() - t0, note: (worker.text || "").trim().split("\n").slice(-2).join(" ").slice(0, 400) });
+  const m1 = mk(snapshot(dir));
+  if (!worker.ok && m1.changed.length === 0) return { ...meta(m1), status: "worker_error", score: 0, reason: worker.error || worker.stop || "worker failed" };
+  if (m1.outside.length) return { ...meta(m1), status: "out_of_bounds", score: 0, outside: m1.outside };
+  // The check runs worker-produced code, so it runs where the worker ran; whatever it
+  // writes is inspected again and is part of the bound result.
+  const r = runCheck(spec, dir, home, sandbox);
   const out = `${r.stdout || ""}`;
-  return { ...base, status: r.status === 0 ? "pass" : "fail", score: score(r.status, out), check_tail: `${out}\n${r.stderr || ""}`.trim().slice(-600) };
+  const m2 = mk(snapshot(dir));
+  if (m2.outside.length) return { ...meta(m2), status: "out_of_bounds", score: 0, outside: m2.outside, outside_phase: "check" };
+  return { ...meta(m2), status: r.status === 0 ? "pass" : "fail", score: score(r.status, out), check_contained: Boolean(sandbox), check_tail: `${out}\n${r.stderr || ""}`.trim().slice(-600) };
+}
+
+// The check command in dir, inside the sandbox when there is one, with the private home.
+function runCheck(spec, dir, home, sandbox) {
+  const cmd = sandbox ? `${sandbox.prefix} sh -c ${shq(spec.check)}` : spec.check;
+  return spawnSync("sh", ["-c", cmd], { cwd: dir, encoding: "utf8", timeout: (spec.check_timeout_s ?? 300) * 1000, env: { ...process.env, PROBE_DIR: dir, PROBE_HOME: home, HOME: home } });
+}
+
+// Why a check run on the unmodified base proves the checker unusable, or null when it is
+// sound: it started, finished, and did what expect_base says.
+export function baseCheckProblem(r, expect = "pass") {
+  if (r.error) return `the check could not run to completion (${r.error.code || r.error.message})`;
+  if (r.signal) return `the check was killed by ${r.signal}`;
+  if (r.status === 126 || r.status === 127) return `the check command could not start (exit ${r.status})`;
+  if (r.status >= 128 && r.status <= 159) return `the check crashed (exit ${r.status})`;
+  if (expect === "fail" && r.status === 0) return "the check passes on the unmodified base but a failing base was expected (expect_base: fail)";
+  if (expect !== "fail" && r.status !== 0) return `the check fails on the unmodified base (exit ${r.status}); if the base is meant to start red, set expect_base: "fail"`;
+  return null;
+}
+
+// Canonical digest of what a variant produced: the changed paths, where each started, the
+// hash of what it produced, and the ownership it was held to.
+export function resultHash(v, owned) {
+  const sorted = (o) => Object.keys(o).sort().map((k) => [k, o[k]]);
+  return crypto.createHash("sha256").update(JSON.stringify({ changed: [...v.changed].sort(), baseline: sorted(v.baseline), files: sorted(v.files), owned: [...owned].sort() })).digest("hex");
 }
 
 // options.sandbox (programmatic only, for tests): a resolved sandbox, or null for none.
@@ -221,51 +266,194 @@ export async function run(spec, { lanes, sandbox } = {}) {
   // Workers must never touch the original project. Its fingerprint is taken before and
   // after; any difference aborts the run rather than reporting variants as clean.
   const original = snapshot(spec.base);
+  // The checker is proven on an unmodified copy before any worker starts. A checker that
+  // is broken would fail every variant for the wrong reason; the run stops instead.
+  const baseDir = path.join(root, "base-check");
+  copyBase(spec.base, baseDir);
+  const baseHome = fs.mkdtempSync(path.join(root, "home-base-"));
+  const baseRun = runCheck(spec, baseDir, baseHome, sandbox);
+  const problem = baseCheckProblem(baseRun, spec.expect_base);
+  if (problem) {
+    const touchedBase = changedFiles(original, snapshot(spec.base));
+    if (touchedBase.length) throw new Error(`the check changed the original project: ${touchedBase.join(", ")}`);
+    return {
+      question: spec.question, check: spec.check, owned: spec.owned, status: "checker broken", reason: problem,
+      base_check: { exit: baseRun.status, signal: baseRun.signal ?? null, tail: `${baseRun.stdout || ""}\n${baseRun.stderr || ""}`.trim().slice(-600) },
+      sandbox: sandbox?.name ?? null, contained: Boolean(sandbox), lanes: 0, wall_ms: Date.now() - t0, cost_usd: 0, passed: 0,
+      variants: Array.from({ length: spec.variants }, (_, i) => ({ variant: i + 1, status: "skipped", reason: "checker broken" })),
+      ranking: [], winner: null, work_dir: root,
+    };
+  }
   const variants = await pool(Array.from({ length: spec.variants }, (_, i) => i), n, (i) => runVariant(spec, i, root, spent, sandbox));
   const touched = changedFiles(original, snapshot(spec.base));
   if (touched.length) throw new Error(`a worker changed the original project: ${touched.join(", ")}`);
   const ranking = rank(variants);
   const winner = variants.find((v) => v.variant === ranking[0] && v.status === "pass") || null;
   return {
-    question: spec.question, check: spec.check, owned: spec.owned, model: spec.worker_cmd ? "worker_cmd" : spec.model ?? "haiku",
+    status: "complete", question: spec.question, check: spec.check, owned: spec.owned, model: spec.worker_cmd ? "worker_cmd" : spec.model ?? "haiku",
     sandbox: sandbox?.name ?? null, contained: Boolean(sandbox), lanes: n, lanes_why: cap.why, wall_ms: Date.now() - t0, cost_usd: Math.round(spent.usd * 10000) / 10000,
     passed: variants.filter((v) => v.status === "pass").length, variants, ranking, winner: winner?.variant ?? null, work_dir: root,
   };
 }
 
 // Copy the winner's changed files into the target and remove the ones it deleted.
-const hashOf = (file) => {
-  try {
-    const st = fs.lstatSync(file);
-    if (st.isSymbolicLink()) return `link:${fs.readlinkSync(file)}`;
-    return st.isFile() ? crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex") : null;
-  } catch { return null; }
-};
+const sha = (buf) => crypto.createHash("sha256").update(buf).digest("hex");
 
-// Every destination is checked before anything is written: it must stay inside the
-// target and still hold the content the probe started from. A file changed since (by the
-// owner or another stream) makes the whole result stale; nothing is written.
-export function apply(result, to) {
+// What is at file right now, read once and never followed: null (absent), a directory, a
+// link, or a regular file with its bytes, mode and hash.
+function readEntry(file) {
+  let st; try { st = fs.lstatSync(file); } catch (e) { if (e.code === "ENOENT" || e.code === "ENOTDIR") return null; throw e; }
+  if (st.isSymbolicLink()) { const target = fs.readlinkSync(file); return { kind: "link", target, hash: `link:${target}` }; }
+  if (st.isDirectory()) return { kind: "dir", hash: null };
+  if (!st.isFile()) return { kind: "other", hash: null };
+  const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+  try { const buf = fs.readFileSync(fd); return { kind: "file", buf, mode: fs.fstatSync(fd).mode & 0o777, hash: sha(buf) }; } finally { fs.closeSync(fd); }
+}
+
+const relProblem = (f) => typeof f !== "string" || !f || path.isAbsolute(f) || f.includes("\0") || f.split("/").some((seg) => seg === "" || seg === "." || seg === ".." || SKIP.has(seg));
+
+// The target root and every directory above it are walked with lstat: a symlink anywhere
+// on the path could point the writes somewhere else, so none is accepted.
+function rootProblem(root) {
+  let cur = path.parse(root).root;
+  for (const seg of root.slice(cur.length).split(path.sep).filter(Boolean)) {
+    cur = path.join(cur, seg);
+    let st; try { st = fs.lstatSync(cur); } catch (e) { return `${cur} (${e.code})`; }
+    if (st.isSymbolicLink()) return `${cur} is a symlink`;
+    if (!st.isDirectory()) return `${cur} is not a directory`;
+  }
+  return null;
+}
+
+// Walk the directories above rel under root with lstat, never following a link. Returns a
+// reason when a component is a symlink or not a directory in the tree the apply will
+// leave: a component that is a file the result deletes counts as absent, one it writes
+// as a file is a conflict. A missing component ends the walk (created later, below real
+// directories only).
+function ancestorProblem(root, rel, planned = new Map(), linksOnly = false) {
+  const parts = rel.split("/");
+  let cur = root;
+  for (let i = 0; i < parts.length - 1; i++) {
+    cur = path.join(cur, parts[i]);
+    const here = parts.slice(0, i + 1).join("/");
+    if (planned.get(here) === "present") return `${here} is written as a file by the same result`;
+    let st; try { st = fs.lstatSync(cur); } catch (e) { if (e.code === "ENOENT") return null; return `${here} (${e.code})`; }
+    if (st.isSymbolicLink()) return `${here} is a symlink`;
+    if (!st.isDirectory()) { if (linksOnly || planned.get(here) === "deleted") return null; return `${here} is not a directory`; }
+  }
+  return null;
+}
+
+// Every file under dir; null when anything under it is a link or a special file.
+function filesUnder(dir, rel) {
+  const out = [];
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const r = `${rel}/${e.name}`;
+    if (e.isDirectory()) { const sub = filesUnder(path.join(dir, e.name), r); if (!sub) return null; out.push(...sub); }
+    else if (e.isFile()) out.push(r);
+    else return null;
+  }
+  return out;
+}
+
+// The whole result is validated before the first write, and a write that still fails
+// midway is rolled back from backups held until the apply completes, so a result lands
+// completely or not at all. If the rollback itself fails, the error says so, names the
+// paths, and has rollbackFailed set; it never claims a rollback that did not happen.
+// Validation:
+//   - the result carries its hashes and they match (result_hash); every produced file is
+//     read ONCE into memory, hashed, and those exact bytes are what gets written;
+//   - every path is relative, inside the target and the owned set, outside .git and
+//     node_modules;
+//   - the target root and its ancestry, and every directory above a destination, are
+//     walked with lstat: no symlink component (never realpath-then-trust), judged against
+//     the tree the result leaves (a file-to-directory change is valid);
+//   - produced symlinks are refused outright. A link's referent can pass through links
+//     that already exist in the target, so a lexical check cannot show it stays inside,
+//     and the experiments (rewrite, simplify, merge, remove) do not need to create links;
+//   - every destination still holds the content the probe started from (else stale).
+// options.beforeWrite / options.onWrite (tests only) run after preflight / after each step.
+export function apply(result, to, { beforeWrite, onWrite } = {}) {
   const w = result.variants.find((v) => v.variant === result.winner);
   if (!w) throw new Error("no passing variant to apply");
+  if (!w.files || !w.baseline || !w.result_hash) throw new Error("unbound result: it has no recorded file hashes; run the probe again");
   const root = path.resolve(to);
-  const stale = [];
+  const rp = rootProblem(root);
+  if (rp) throw new Error(`refusing to write outside the target: target root ${rp}`);
+  const tampered = [], escaping = [], stale = [];
+  if (resultHash(w, result.owned ?? []) !== w.result_hash) tampered.push("result record (changed/baseline/files/owned)");
+  const planned = new Map();
+  for (const f of w.changed) if (typeof f === "string" && Object.hasOwn(w.files, f)) planned.set(f, w.files[f] === null ? "deleted" : "present");
+  const plan = [];
   for (const f of w.changed) {
-    const dst = path.resolve(root, f);
-    if (dst !== root && !dst.startsWith(root + path.sep)) throw new Error(`refusing to write outside the target: ${f}`);
-    if (w.baseline && Object.hasOwn(w.baseline, f) && hashOf(dst) !== w.baseline[f]) stale.push(f);
+    if (relProblem(f)) { escaping.push(`${f} (not a plain relative path)`); continue; }
+    if (!insideOwned(f, result.owned ?? [])) { tampered.push(`${f} (not in the owned set)`); continue; }
+    if (!Object.hasOwn(w.files, f) || !Object.hasOwn(w.baseline, f)) { tampered.push(`${f} (no recorded hash)`); continue; }
+    const want = w.files[f];
+    if (want?.startsWith("link:")) { escaping.push(`${f} (produced symlinks are not applied)`); continue; }
+    const srcFile = path.join(w.dir, f);
+    let item = { f, dst: path.join(root, f), want };
+    if (ancestorProblem(w.dir, f, undefined, true)) { tampered.push(f); continue; }
+    let src; try { src = readEntry(srcFile); } catch { src = { kind: "other" }; }
+    if (want === null ? src?.kind === "file" || src?.kind === "link" || src?.kind === "other" : src?.kind !== "file" || src.hash !== want) { tampered.push(f); continue; }
+    if (want !== null) item = { ...item, buf: src.buf, mode: src.mode };
+    const why = ancestorProblem(root, f, want === null ? new Map() : planned);
+    if (why) { escaping.push(`${f} (${why})`); continue; }
+    let prev; try { prev = readEntry(item.dst); } catch (e) { escaping.push(`${f} (${e.code || e.message})`); continue; }
+    if (prev?.kind === "other") { escaping.push(`${f} (destination is not a regular file)`); continue; }
+    if (prev?.kind === "dir") {
+      // A directory may give way to a file only when the result deletes everything in it.
+      const inside = want === null ? null : filesUnder(item.dst, f);
+      if (want === null || !inside) { escaping.push(`${f} (destination is a directory)`); continue; }
+      const left = inside.filter((x) => planned.get(x) !== "deleted");
+      if (left.length) { stale.push(`${f} (directory still holds ${left[0]})`); continue; }
+    }
+    if ((prev?.hash ?? null) !== w.baseline[f]) stale.push(f);
+    plan.push({ ...item, prev });
   }
+  if (tampered.length) throw new Error(`result does not match its recorded hashes: ${tampered.join(", ")}`);
+  if (escaping.length) throw new Error(`refusing to write outside the target: ${escaping.join(", ")}`);
   if (stale.length) throw new Error(`stale result: changed in the target since the probe started: ${stale.join(", ")}`);
-  for (const f of w.changed) {
-    const src = path.join(w.dir, f);
-    const dst = path.join(to, f);
-    // lstat, not existsSync: a link (even one whose target is missing) is applied as a link,
-    // and only a path that is really gone in the winner is removed from the target.
-    let st = null; try { st = fs.lstatSync(src); } catch {}
-    if (!st) { fs.rmSync(dst, { force: true }); continue; }
-    fs.mkdirSync(path.dirname(dst), { recursive: true });
-    if (st.isSymbolicLink()) { fs.rmSync(dst, { force: true }); fs.symlinkSync(fs.readlinkSync(src), dst); }
-    else fs.copyFileSync(src, dst);
+  beforeWrite?.();
+  // Deletions first (deepest first), then writes, so a directory-for-file swap can land.
+  const ordered = [...plan.filter((x) => x.want === null).sort((a, b) => b.f.length - a.f.length), ...plan.filter((x) => x.want !== null)];
+  const undo = [];
+  const tmpName = (dst) => `${dst}.probe-apply-${process.pid}-${crypto.randomBytes(4).toString("hex")}`;
+  const recheck = (x) => { if ((readEntry(x.dst)?.hash ?? null) !== (x.prev?.hash ?? null) && x.prev?.kind !== "dir") throw new Error(`${x.f} changed during apply`); };
+  const restore = (x) => () => {
+    fs.rmSync(x.dst, { force: true });
+    if (x.prev?.kind === "link") fs.symlinkSync(x.prev.target, x.dst);
+    else if (x.prev?.kind === "file") { fs.mkdirSync(path.dirname(x.dst), { recursive: true }); fs.writeFileSync(x.dst, x.prev.buf, { mode: x.prev.mode }); }
+    else if (x.prev?.kind === "dir") fs.mkdirSync(x.dst, { recursive: true });
+  };
+  try {
+    for (const x of ordered) {
+      recheck(x);
+      if (x.want === null) {
+        undo.push({ f: x.f, run: restore(x) });
+        fs.rmSync(x.dst, { force: true });
+        onWrite?.(x.f);
+        continue;
+      }
+      let top = null; for (let d = path.dirname(x.dst); d !== root && !fs.existsSync(d); d = path.dirname(d)) top = d;
+      if (x.prev?.kind === "dir") { undo.push({ f: x.f, run: restore(x) }); fs.rmSync(x.dst, { recursive: true, force: true }); }
+      if (top) { fs.mkdirSync(path.dirname(x.dst), { recursive: true }); undo.push({ f: top, run: () => fs.rmSync(top, { recursive: true, force: true }) }); }
+      // write beside the destination and rename over it: the original stays until the new
+      // bytes are complete, and a destination link is replaced, never written through.
+      const tmp = tmpName(x.dst);
+      try { fs.writeFileSync(tmp, x.buf, { flag: "wx", mode: x.mode }); fs.renameSync(tmp, x.dst); } catch (e) { fs.rmSync(tmp, { force: true }); throw e; }
+      if (x.prev?.kind !== "dir") undo.push({ f: x.f, run: restore(x) });
+      onWrite?.(x.f);
+    }
+  } catch (e) {
+    const failed = [];
+    for (const u of undo.reverse()) { try { u.run(); } catch (err) { failed.push(`${u.f} (${err.code || err.message})`); } }
+    if (failed.length) {
+      const err = new Error(`apply failed (${e.message}) and the rollback FAILED for ${failed.join(", ")}: the target is in an inconsistent state, inspect it before continuing`);
+      err.rollbackFailed = failed;
+      throw err;
+    }
+    throw new Error(`apply failed and was rolled back: ${e.message}`);
   }
   return w.changed;
 }
@@ -279,6 +467,7 @@ async function main(argv) {
     const result = await run(spec);
     const text = JSON.stringify(result, null, 2) + "\n";
     if (arg(argv, "--out")) fs.writeFileSync(arg(argv, "--out"), text); else process.stdout.write(text);
+    if (result.status === "checker broken") { process.stderr.write(`probe-loop: checker broken: ${result.reason}; no variant was run or judged\n`); return 3; }
     process.stderr.write(`probe-loop: ${result.passed}/${result.variants.length} passed in ${Math.round(result.wall_ms / 1000)} s on ${result.lanes} lanes, $${result.cost_usd}; winner ${result.winner ?? "none"}\n`);
     return result.winner ? 0 : 1;
   }
