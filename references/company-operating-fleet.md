@@ -299,9 +299,11 @@ extra-field, non-Git, or missing-state links fail closed; the framework never se
 siblings or embeds a company path.
 
 Use `resolve --json` to inspect the resolved context and `briefing` for the bounded
-operator view. `dashboard --json` returns counts, materialized open items, minimal
+operator view. `dashboard --json` returns counts, compact open-item rows, minimal
 pending-decision metadata, registry health, and Immune Mesh health without printing
-decision or ledger bodies.
+decision or ledger bodies or any filesystem path (path-like text in titles is
+redacted). `briefing` is rendered from that same payload and is cut only by whole
+lines, with a `+N more` marker, below the session hook's byte cap.
 
 ### SLA item commands
 

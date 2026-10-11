@@ -17,6 +17,7 @@
 1. §4 is the only bar. §6 is the only order and the only budget.
 2. §5 says what to build and how to prove it, never when.
 3. Appendix A adds no requirement. Where a row and the body disagree, the body wins and the row is a defect.
+4. §11 (revision 4) overrides §0–§10 where they conflict. The body below is edited to match it; each edited sentence names its §11 item.
 
 **Evidence rule.** A sentence about what runs today names a command in Appendix B, run at `7b48cc4`.
 
@@ -100,7 +101,7 @@ Each row is a command in Appendix B. Nothing here is simulated.
 | # | Path | What the command showed | Consequence |
 |---|---|---|---|
 | T1 | Compiler source of truth | Identical graphs after deleting the prototype profile from `delivery-profiles.json`, removing lane skills from `skills-manifest.json`, and adding `skip_skills`. Lanes are a JS constant (`LANE_BASE_SKILLS`, `compile-delivery-graph.mjs:40`) that disagrees with the manifest (greenfield 18 versus 25). Profile names, `validModes`, `IRREVERSIBLE_PATH` and `IRREVERSIBLE_FLAGS` are code too | "Everything that changes is data" is false today. Pointing the compiler at the manifest as it stands would add 7 greenfield skills, so the lists are reconciled first (§5.2) |
-| T2 | Typo fix | Production: 15 tasks, from validate-feature through verify-promotion, including write-spec, audit-ac, write-journeys, design-ux, design-ui and design-tech; design-ui is also listed as skipped. Prototype: 9 tasks, starting with analyze-domain | The typo constraint (at most 4 stages) fails today |
+| T2 | Typo fix | Production: 15 tasks, from validate-feature through verify-promotion, including write-spec, audit-ac, write-journeys, design-ux, design-ui and design-tech; design-ui is also listed as skipped. Prototype: 9 tasks, starting with analyze-domain | The typo constraint fails today (§11 restates it as no lane-upstream stages beyond the invariant tail) |
 | T3 | Product from one sentence, production | 22 tasks; write-e2e and test-journeys come after verify-promotion | Prerequisites after promotion (also 6108295955) |
 | T4 | Auth and money | `auth-sensitive` attaches review-security as a required process step inside audit-implementation. The flag `auth`, which is in `IRREVERSIBLE_FLAGS`, attaches nothing. A payments webhook bugfix with no flag is marked an irreversible zone and gets no security review | Two vocabularies. The `security` condition must read the irreversible zones (§5.2) |
 | T5 | Two routing authorities | For exec, `route-model.mjs` picks a Claude model, while the owner's machine-local policy resolves EXEC to a non-Claude harness. `route-model stats` shows every arm at n=0. No outcomes file exists in the repo or the home. `route-model check` passes with no coverage of the non-Claude harnesses the policy uses | The router has never learned, and nothing joins it to the policy (§5.10) |
@@ -144,7 +145,7 @@ The weighted formula from revision 2 is deleted. There is one score.
 
 **Constraints, per task.**
 - **H:** never more than 0.05 below solo, and never a miss where solo passes every hidden test.
-- **Typo task:** at most 4 stages, and H not worse. Its cost is reported, not capped: one planning turn would break a ratio cap with no change in quality.
+- **Typo task:** no lane-upstream stages beyond the invariant tail (counted after the §5.2 compiler change), H not worse, and total USD at most 1.3× solo net of the measured catalog overhead (§11 item 1).
 - **Product tasks** (1–5, R1, R2): total USD at most 1.5× solo and wall time at most 1.3× solo, in the single-model advisory arm.
 
 **Cost is money.** Cost is actual total USD from usage: input, output, cache, subagents, failed attempts and repairs. These are reported beside it as diagnostics:
@@ -154,10 +155,10 @@ The weighted formula from revision 2 is deleted. There is one score.
 - browser-probe seconds;
 - hook seconds (edits × measured p50).
 
-The always-loaded catalog overhead is measured on an empty task and reported, so the token cut has a target. Nothing is subtracted from the cap.
+The always-loaded catalog overhead is measured on an empty task and reported, so the token cut has a target. Nothing is subtracted from the product-task caps; only the typo cap is net of it (§11 item 1).
 
 **Fair arms.**
-- **Same model everywhere.** Every slot is pinned to the arm's model (a sandbox dispatch policy plus `CLAUDE_CODE_SUBAGENT_MODEL`). A run whose usage shows another model is rejected.
+- **Same model everywhere.** Every slot is pinned to the arm's model (a sandbox dispatch policy plus `CLAUDE_CODE_SUBAGENT_MODEL`). Every model's tokens are recorded. A run is rejected only when a model other than the arm's did real work; the CLI's small background calls are tolerated (§11 item 7).
 - **Solo gets a private HOME with no skills and no ancestor `CLAUDE.md`.**
 - **The framework arm runs from `git archive` of its sha** into its own private HOME, so no branch checked out on the machine can leak in (T11).
 - **The framework home is built once per sha and cloned into each job.** `./setup` does not run once per framework job.
@@ -172,7 +173,7 @@ The always-loaded catalog overhead is measured on an empty task and reported, so
 
 **Run shape.**
 - `--parallel 4` is stated on every run. Host-state validators keep their sequential pre-pass.
-- The `ARM_LIMITS` values are part of the pre-registration. A run stopped by the cap scores 0.
+- The `ARM_LIMITS` values are part of the pre-registration. They are a safety timeout, the same for both arms: 2× the task's time and 3× its turns (§11 item 2). A run the timeout stops scores 0, and the bar judges the measured USD and wall time.
 - **Manifest first.** Before any paid run, `northstar plan` prints a balanced manifest:
   - every task × arm × rep is funded at or above the $0.50 per-run floor;
   - both arms have the same task contract and the same isolation;
@@ -264,7 +265,7 @@ It fails today at steps 2 and 3 (T6, T1). A design that needs a code edit to pas
     - `pricing` points at monetization-architecture.
 11. **Planning mode.** Contract planning stays the default for greenfield and underspecified product requests. It protects 14.71 versus 7.14. Brownfield, bugfix and refactor work with named files gets mvp. mvp-for-greenfield is measured first, on yoga-studio.
 12. **review-plan on trivial work** runs its mechanical pass (`verify-plan-mechanical.sh`) and still emits its record, so refuse mode holds and no skip is added.
-13. **base44-environment** is inserted only when the platform contract detects Base44 (`compile-delivery-graph.mjs:263`).
+13. **base44-environment** is inserted only when the platform contract detects Base44. Today `compile-delivery-graph.mjs:263` adds it on any `deploy-affecting` flag; that is the defect to fix (§11).
 
 **UI surfaces.**
 - **App screen:** the state list (LOADING / EMPTY / ERROR, AC trace) inside the brief; design-ui for components and tokens; implement; one track-visuals diff; harden.
@@ -276,7 +277,7 @@ It fails today at steps 2 and 3 (T6, T1). A design that needs a code edit to pas
   - `skills/explore-ux/references/templates.md`
 
 **Proof.** `validate-dynamic-chain-scenarios.mjs` asserts the stage set for every traversal in §3 and every path in review 5482813786:
-- the typo gets at most 4 stages and no UX or UI;
+- the typo gets no lane-upstream stage beyond the invariant tail, and no UX or UI (§11);
 - a payments bugfix with no flag gets review-security;
 - a production product puts personas, e2e and journeys before land;
 - an app screen gets no landing page and no logo;
@@ -293,6 +294,7 @@ Two full audits read every SKILL.md. Of the dozen or so skills measured, none sh
   - Skills move from `node scripts/<name>` to `svc-run <name>` lane by lane, never in one bulk edit. Setup installs `svc-run`. It resolves through `SVC_ROOT`, which SessionStart always exports, and falls back to the install root.
   - The form names a script, not a layout, so a later layout change is one launcher change.
   - The validator accepts both forms during the migration and only `svc-run` after it.
+  - All of this launcher work is conditional under rev 4 (§11 item 9): it is built only if the baseline shows path failures on hookless hosts.
   - A Claude PreToolUse rewrite may later be added as a speed-up. It is allowed only if it produces the same argv as the launcher, and it never ships on a failed parse.
   - **Acceptance:**
     - installed-consumer tests for advisory, enforce and repo-off;
@@ -300,6 +302,7 @@ Two full audits read every SKILL.md. Of the dozen or so skills measured, none sh
     - an unset root, spaces in paths, an explicit workdir, a local `scripts/` collision, nested invocation, and `cd` before invocation;
     - the latency added per call is measured on each host.
   - **When:** Program 2, unless the baseline shows path failures cost the framework arm.
+  - **Rev 4 contract (§11 item 9):** skills call `"$SVC_ROOT"/scripts/…`, which SessionStart exports. The `svc-run` launcher is built only if the baseline shows path failures on hookless hosts.
 - **X2 Boilerplate.**
   - Re-counted at `7b48cc4`: Task-Graph Mode in 85 skills, phase receipts in 79, compaction in 60.
   - Phase-receipt blocks are deleted with §5.6, not pointed at.
@@ -376,7 +379,7 @@ Same quality means the same checks, answers and artifacts. Cut repeated work in 
 1. **Turns first.** A skipped skill saves a model turn, tens of seconds. Skip these, each only where a run already showed no gain:
    - the compiled listing (§5.2 step 6) and the lean flags;
    - the second track-visuals pass without a baseline;
-   - explore-solutions off one-way doors;
+   - explore-solutions off one-way doors (unmeasured, so off by default and labelled unmeasured; §11);
    - logo and landing on an app screen;
    - review stages on at-ceiling, non-zone tasks, which keep their mechanical record.
 2. **Process starts.** The rule, learning and owner injectors run inside the existing dispatcher process and share its git memo. Targets from `references/hook-budgets.json` (H3), in Node starts:
@@ -411,11 +414,7 @@ One loop, owned by improve-framework.
    - The three A/B graders that accept empty substance are fixed.
    - `skill-ab-eval` stops returning earns-keep from one failed bare run against one passing skill run. Incomplete evidence never recommends keep.
    - Evidence labels are bound to the measured candidate and model.
-3. **Four arms** on priority skills:
-   - the native harness;
-   - native plus the minimal output contract;
-   - the thin skill;
-   - the current full skill.
+3. **Two arms** on priority skills (§11 item 5): bare versus the skill, with the skill's whole folder mounted. Adoption needs n ≥ 5 per arm and p < .05, else "inconclusive", confirmed on a held-out task (§11 item 8).
 4. **Vary, contained.** probe-loop variants (rewrite, simplify, merge, remove) run only after containment:
    - checks run inside the worker sandbox;
    - ownership is inspected after the checks;
@@ -658,8 +657,8 @@ One loop, owned by improve-framework.
 - `expertise.mjs` learns a product bank path inside the product repo.
 - A fact is refreshed when a task cites it. A stale fact carries its stale label into the prompt.
 - **Standing rules.** manage-learnings writes accepted owner rules, which it does not do today. Two variants are measured on K at equal cost, and the better one is adopted:
-  - a capped `## Standing rules` section in the product's `CLAUDE.md` (the 19/20 mechanism);
-  - a topic-injected file.
+  - a capped always-loaded block of at most 2 KB, never appended to `CLAUDE.md` (the 19/20 mechanism);
+  - topic-injected files, 4 KB per topic and 16 KB in total (§11).
 - The #129 decision ledger is the record of owner decisions that K tasks can test (§8).
 - **Proof.**
   - K on dev and on the reserve.
@@ -684,7 +683,7 @@ One loop, owned by improve-framework.
   The agent returns finished work and the decisions it could not make. COS writes the decision card after a person approves. A product with no record is not a company worker. CLI hosts stay process launchers.
 - **First slice.**
   - A scoped briefing, status, recall and pending-proposal surface over the existing company state.
-  - One real connection per always-on product, tested for identity, freshness, interruption and resume.
+  - One real connection per always-on product, tested for identity, freshness, interruption and resume. Deferred until the owner supplies documented APIs or an export sample (§11 item 4).
   - The vendor pages establish connection surfaces, not provisioning APIs.
 - **Briefing.**
   - Counts and pending asks come from `dashboard --json`, with no filesystem path and no ledger body.
@@ -751,6 +750,7 @@ One loop, owned by improve-framework.
 5. **P1.5 Loop:** at most 3 iterations, on dev only.
 6. **P1.6 Opus confirmation (owner yes).** The full bar, on Opus.
    - If it fails, Program 2 does not start.
+   - It gates deletions, merges and any 2× claim. Additive owner asks (cockpit, router, slots, founder formulas, governance records) may proceed after P1.4, each re-measured per batch (§11 item 3).
    - Decaying components whose effect vanished on Opus are retired by §2a instead.
 
 Program 1 passes only when P1.4 (or the last P1.5 iteration) and P1.6 both pass.
@@ -768,7 +768,7 @@ Neither touches a northstar task path.
 - **R4** dispatch argv from the store; the codex eval transport.
 - **R5** The router's default-arm control, its deviation rule, and the replay regret test.
 
-**Program 2: only after Program 1 passes on Haiku and on Opus.**
+**Program 2: only after Program 1 passes on Haiku and on Opus.** This gates deletions, merges and any 2× claim; the additive items of §11 item 3 may start after P1.4.
 - **Gate B:** skill merges and rewrites run only if Program 1 shows the gap is in skill text, not in missing probes.
 - **Gate C:** receipt deletion runs after Program 1 passes, one green PR through the new path, and the consumer compatibility tests.
 - **Waves, in this order:**
@@ -824,7 +824,7 @@ Haiku total before Opus: $152 at most. The authoring sessions that write Program
 | 8 | Budget overrun | Revision 2 had three budgets and no total | One table, loop ≤3, ≤10 batches | A step with no row does not run |
 | 9 | A stale section built a cancelled design | Revision 2's transport block kept the codemod | One order; stale-string check (§9) | Stale string found → the revision is not pushed |
 | 10 | Founder knowledge never reached delivery | T9 | §5.11 wiring; K scored | K not above solo after wiring → stop expanding the founder layer |
-| 11 | The chain got longer, not shorter | T2: 15 stages for a typo | Lean flags; one scheduler | Typo over 4 stages, or a dropped skill started by `next` → tier-1 red |
+| 11 | The chain got longer, not shorter | T2: 15 stages for a typo | Lean flags; one scheduler | Typo with a lane-upstream stage beyond the invariant tail, or a dropped skill started by `next` → tier-1 red |
 | 12 | Hooks failed open and nobody knew | No counter today | §5.4 counter | Non-zero counter → the run is not clean |
 | 13 | Money paths shipped without security review | T4 | §5.2 step 3 | The payments scenario test is red → land fails |
 | 14 | #129 merged by conflict resolution only | T12 | §8 contract | The two reproduced defects are open → no merge |
@@ -921,7 +921,7 @@ Every finding below is accepted unless the row says otherwise. Each row quotes t
 | ID | Finding | Implemented by |
 |---|---|---|
 | 4241088665 | Ratio undefined at solo 0; helper is a difference | "If solo scores 0 on every cell, R is reported as "not defined: solo 0 everywhere", never as infinity." |
-| 4241088668 | Typo cost cap vetoes a real win | "Its cost is reported, not capped" |
+| 4241088668 | Typo cost cap vetoes a real win | "total USD at most 1.3× solo net of the measured catalog overhead". Superseded by §11 item 1: the cap stays, net of overhead |
 | 4241088671 | The install cannot produce this baseline | "**Solo gets a private HOME with no skills and no ancestor `CLAUDE.md`.**" |
 | 4241088678 | §7 outranks the new order | "§4 is the only bar. §6 is the only order and the only budget." |
 | 4241088680 | Opus confirmation after deletions; Two-Box key | "If it fails, Program 2 does not start." and "A Two-Box executor key is bound to those bytes." |
@@ -1005,7 +1005,7 @@ Every finding below is accepted unless the row says otherwise. Each row quotes t
 | 6108295301 §3 | X1 hook rewrite is not portable | "Skills move from `node scripts/<name>` to `svc-run <name>` lane by lane" |
 | 6108295301 §4 | Receipt migration and provenance | "the plan digest, the scope and policy version, the attempt and predecessor identity, and the trusted issuer" and "Squash keeps the tree only when the base has not moved." |
 | 6108295301 §5–§8 | Activation obligations; harness adapters; trustworthy telemetry; cockpit and founder downstream | "the compiler adds the obligation", "argv templates per role", "Records are deduplicated by id.", "**Program 2: only after Program 1 passes on Haiku and on Opus.**" |
-| 6108295531 | A/B graders accept empty answers; point estimates; labels; four arms; missing context; model-specific calibration | "The three A/B graders that accept empty substance are fixed.", "**Four arms** on priority skills:", "K (§4) measures them.", "with the new model" |
+| 6108295531 | A/B graders accept empty answers; point estimates; labels; four arms; missing context; model-specific calibration | "The three A/B graders that accept empty substance are fixed.", "**Two arms** on priority skills", "K (§4) measures them.", "with the new model" |
 | 6108295729 | AC digest; semantic changes; product documents; implemented versus available; one owner per fact | "The AC digest must see later user stories.", "with one owner skill per fact" |
 | 6108295955 | Prerequisites after promotion; base44; author family; speed table | "Personas, e2e and journeys come before land in every mode (T3).", "Today it passes graphs with prerequisites after promotion.", "**X8 Author family from identity, not a default.**", "In-shell timing replaces the two clock-only Node launches per validator (878 a run)." |
 | 6108296140 | Memory recall; process reuse first; native acceptance | "A newer correction supersedes the advice it corrects.", "the same captured inputs go through old and new." |
@@ -1044,7 +1044,7 @@ Run from a checkout or `git archive` of `7b48cc4`. `C` is shorthand for `node sc
 | T8 | `grep -rEo` over skills, agents, rules, hooks and scripts for `claude-(opus\|sonnet\|haiku\|fable)-…`, `gpt-…`, `grok-…`, `gemini-…`, `mimo-v…`, test files excluded | 170 strings, 61 files |
 | T9 | `node scripts/expertise.mjs preload --agent svc-stage-exec`; `node scripts/expertise.mjs refresh-scan` (in a scratch copy: it writes `.svc/knowledge-refresh-triggers.jsonl`) | the exit message; 13 of 13 stale |
 | T10 | `grep -n TRANSPORTS scripts/lib/harness-transports.mjs` | `{ claude }` |
-| T11 | `git merge-tree --write-tree` of #127 and #129 without a run-scoped merge driver | the crash |
+| T11 | `readlink` on an installed skill link, then check out another branch in the main checkout and read the same skill file through the link | the installed content changes with the branch. The merge-driver crash: `git merge-tree --write-tree` of #127 and #129 without a run-scoped merge driver |
 | T12 | `rangeOf({dist:"discrete", values:[100,1,10], weights:[0.2,0.4,0.4]})` from #129's `decision-engine.mjs` | p10 100, p50 1, p90 10 |
 
 ---
