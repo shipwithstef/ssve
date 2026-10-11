@@ -39,26 +39,12 @@ const EVIDENCE_FAMILIES = [
 
 const SOLUTION_CONFIDENCE_MODES = new Set(["design_auto", "post_design_human_gate", "intake_only"]);
 
-const LANE_BASE_SKILLS = {
-  greenfield: [
-    "write-vision", "analyze-domain", "analyze-competitors", "build-personas",
-    "validate-feature", "write-spec", "audit-ac", "write-journeys",
-    "design-ux", "design-ui", "design-tech", "plan-changeset",
-    "review-plan", "execute-changeset", "review-gate", "audit-implementation",
-    "land-changeset", "verify-promotion",
-  ],
-  "brownfield-feature": [
-    "validate-feature", "write-spec", "audit-ac", "write-journeys",
-    "design-ux", "design-ui", "design-tech", "plan-changeset",
-    "review-plan", "execute-changeset", "review-gate", "audit-implementation",
-    "land-changeset", "verify-promotion",
-  ],
-  bugfix: ["diagnose-bug", "execute-changeset", "review-gate", "audit-implementation", "land-changeset", "verify-promotion"],
-  drift: ["sync-spec-code", "plan-changeset", "execute-changeset", "review-gate", "audit-implementation", "land-changeset", "verify-promotion"],
-  refactor: ["sync-spec-code", "design-tech", "plan-changeset", "review-plan", "execute-changeset", "review-gate", "audit-implementation", "land-changeset", "verify-promotion"],
-  framework: ["improve-framework", "plan-changeset", "execute-changeset", "review-gate", "audit-implementation", "land-changeset", "verify-promotion", "test-framework"],
-  "brownfield-conversion": ["onboard-repo", "plan-capabilities", "review-gate", "verify-promotion"],
-};
+// Lanes, conditions and the prototype keep-list live in data. The lane arrays
+// are the lists this compiler ran before the switch, so a non-docs graph is unchanged.
+const DELIVERY_CHAIN = JSON.parse(readFileSync(new URL("../references/delivery-lanes.json", import.meta.url), "utf8"));
+const LANE_BASE_SKILLS = DELIVERY_CHAIN.lanes;
+const INVARIANT_TAIL = new Set(DELIVERY_CHAIN.invariant_tail);
+const DOC_PATHS = (DELIVERY_CHAIN.doc_paths || []).map((pattern) => new RegExp(pattern, "i"));
 
 // Bounded planning (docs/decisions/2026-10-10-bounded-delivery.md). For a prototype or
 // MVP profile the upstream design skills fold into a one-page brief: analyze-domain names
@@ -66,10 +52,7 @@ const LANE_BASE_SKILLS = {
 // execute-changeset runs the probe loop. The mandatory delivery chain and its receipts
 // are unchanged; only the depth of each stage changes. Full review depth returns
 // whenever the change touches an irreversible zone.
-const BOUNDED_UPSTREAM = {
-  greenfield: ["analyze-domain", "plan-changeset"],
-  "brownfield-feature": ["analyze-domain", "plan-changeset"],
-};
+const BOUNDED_UPSTREAM = DELIVERY_CHAIN.bounded_upstream;
 const IRREVERSIBLE_PATH = /(^|\/)(auth|login|session|payments?|billing|checkout|stripe|wallet|ledger|migrations?|secrets?|deploy|infra|terraform)(\/|\.|-|_|$)|(^|\/)(\.env[^/]*|wrangler\.toml|Dockerfile)$/i;
 const IRREVERSIBLE_FLAGS = new Set(["auth", "payments", "money", "data-migration", "data-deletion", "deploy-affecting", "secrets", "security-sensitive"]);
 
@@ -78,6 +61,61 @@ export function irreversibleZones(plannedFiles = [], riskFlags = []) {
     ...plannedFiles.filter((f) => IRREVERSIBLE_PATH.test(String(f))),
     ...riskFlags.filter((f) => IRREVERSIBLE_FLAGS.has(f)).map((f) => `flag:${f}`),
   ]);
+}
+
+function isDocPath(file) {
+  return DOC_PATHS.some((pattern) => pattern.test(String(file)));
+}
+
+function isDocsOnly(changeType, riskFlags) {
+  return changeType === "docs" || riskFlags.includes("docs-only");
+}
+
+function matchesAny(file, patterns = []) {
+  return patterns.some((pattern) => new RegExp(pattern, "i").test(String(file)));
+}
+
+// Conditions are decided before any stage is kept. Code and config only:
+// a docs path never activates ui, security, or the other code conditions.
+export function evaluateDeliveryConditions({ changeType, riskFlags = [], plannedFiles = [] }) {
+  const docsOnly = isDocsOnly(changeType, riskFlags);
+  const codeFiles = plannedFiles.filter((file) => !isDocPath(file));
+  const fileHit = (patterns) => codeFiles.some((file) => matchesAny(file, patterns));
+  const out = {};
+  for (const [name, def] of Object.entries(DELIVERY_CHAIN.conditions || {})) {
+    if (def.match === "code-and-config-only" && docsOnly) {
+      out[name] = false;
+      continue;
+    }
+    if (name === "security") {
+      const flagHit = (def.flags || []).some((flag) => riskFlags.includes(flag));
+      const classHit = Object.values(def.zone_classes || {}).some((patterns) => fileHit(patterns));
+      const zoneHit = irreversibleZones(plannedFiles, riskFlags).some((zone) => {
+        if (String(zone).startsWith("flag:") || isDocPath(zone)) return false;
+        return Object.values(def.zone_classes || {}).some((patterns) => matchesAny(zone, patterns));
+      });
+      out[name] = flagHit || classHit || zoneHit;
+      continue;
+    }
+    out[name] = fileHit(def.patterns || []);
+  }
+  out.docs_only = docsOnly;
+  return out;
+}
+
+function profileKeeps(profile, stageKey) {
+  if (!profile || profile === "mvp" || profile === "production") return true;
+  const keeps = DELIVERY_CHAIN.profile_keeps?.[profile];
+  if (!Array.isArray(keeps)) return true;
+  return keeps.includes(stageKey);
+}
+
+function applyStageConditions(skills, conditions) {
+  return skills.filter((skill) => {
+    const condition = DELIVERY_CHAIN.stages?.[skill]?.activation_condition;
+    if (!condition) return true;
+    return conditions[condition] === true;
+  });
 }
 
 export function planningMode(input, lane) {
@@ -226,7 +264,7 @@ function normalizeSolutionConfidence(input, wi, riskFlags) {
   };
 }
 
-function conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence, researchInsertions = [] }) {
+function conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence, researchInsertions = [], conditions, deliveryProfile }) {
   const out = [];
   const add = (skill, signal, reason, metadata = {}) => out.push({ skill, signal, reason, ...metadata });
   const has = (flag) => riskFlags.includes(flag);
@@ -258,7 +296,9 @@ function conditionalInsertions({ changeType, riskFlags, platformContracts, solut
     add("design-tech", "technical-risk", "Backend, data, integration, or concurrency risk requires technical design.");
     add("audit-implementation", "technical-risk", "Technical-risk implementation requires implementation audit.");
   }
-  if (has("auth-sensitive")) add("review-security", "auth-sensitive", "Auth-sensitive changes require security review.");
+  if (conditions?.security && profileKeeps(deliveryProfile, "security")) {
+    add("review-security", "security", "Security condition matched an auth, payments, secrets, or migration path, or a security flag.");
+  }
   if (has("base44-platform") || platformContracts.includes("base44-environment")) {
     add("base44-environment", "base44-platform", "Base44/platform-affecting work requires environment verification.");
   }
@@ -450,6 +490,15 @@ function orderPrerequisites(steps) {
   }
   const execute = steps.find((step) => step.skill === "execute-changeset");
   if (!execute) return steps;
+  if (execute.required_process_steps) {
+    const seen = new Set();
+    execute.required_process_steps = execute.required_process_steps.filter((step) => {
+      if (step.skill === "track-visuals") return true;
+      if (seen.has(step.skill)) return false;
+      seen.add(step.skill);
+      return true;
+    });
+  }
   // Research asked for by a folded stage is now asked for by execute-changeset. The chain
   // must stay contiguous, so it runs upstream of plan-changeset.
   const folded = takeResearch(EXECUTION_PREREQUISITES);
@@ -792,9 +841,12 @@ export function compileDeliveryGraph(input) {
   const planning = planningMode(input, lane);
   const riskFlags = unique(list(input.risk_flags));
   const plannedFiles = unique(list(input.planned_files || input.files_planned || input.files));
-  const upstream = planning.mode === "bounded" && BOUNDED_UPSTREAM[lane] ? BOUNDED_UPSTREAM[lane] : LANE_BASE_SKILLS[lane];
-  const laneSkills = injectMandatoryDeliveryChain(upstream);
   planning.irreversible_zones = irreversibleZones(plannedFiles, riskFlags);
+  const conditions = evaluateDeliveryConditions({ changeType, riskFlags, plannedFiles });
+  let upstream = planning.mode === "bounded" && BOUNDED_UPSTREAM[lane] ? BOUNDED_UPSTREAM[lane] : LANE_BASE_SKILLS[lane];
+  upstream = applyStageConditions([...upstream], conditions);
+  if (conditions.docs_only) upstream = upstream.filter((skill) => INVARIANT_TAIL.has(skill));
+  const laneSkills = injectMandatoryDeliveryChain(upstream);
   const platformContracts = unique(list(input.platform_contracts));
   const solutionConfidence = normalizeSolutionConfidence(input, wi, riskFlags);
   const compression = normalizeCompression(input);
@@ -816,7 +868,7 @@ export function compileDeliveryGraph(input) {
       });
     }
   }
-  const conditionals = conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence, researchInsertions });
+  const conditionals = conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence, researchInsertions, conditions, deliveryProfile: planning.profile });
   const requiredSkills = unique([...laneSkills, ...conditionals.map((item) => item.skill)]);
   const requiredSteps = buildTaskSteps(laneSkills, conditionals);
   orderPrerequisites(requiredSteps);
@@ -840,6 +892,7 @@ export function compileDeliveryGraph(input) {
     delivery_mode: input.delivery_mode || "interactive",
     delivery_tier: deliveryTier,
     planning,
+    activation: conditions,
     risk_flags: riskFlags,
     planned_files: plannedFiles,
     platform_contracts: platformContracts,
