@@ -63,13 +63,19 @@ function specTouchesAcceptanceCriteria(lines, content) {
   if (AC_LINE.test(changed.join("\n"))) return true;
   if (typeof content !== "string") return false;
   const fileLines = content.split(/\r?\n/);
-  const headingAt = [];
-  let heading = "";
+  // inAc[n]: line n sits inside an AC section, including nested sub-headings, which
+  // end only at a heading of the same or higher level.
+  const inAc = [];
+  const stack = [];
   let fence = false;
   fileLines.forEach((l, i) => {
     if (/^\s*(```|~~~)/.test(l)) fence = !fence;
-    if (!fence && /^#{1,6}\s/.test(l)) heading = l;
-    headingAt[i + 1] = heading;
+    const h = !fence && l.match(/^(#{1,6})\s/);
+    if (h) {
+      while (stack.length && stack[stack.length - 1].level >= h[1].length) stack.pop();
+      stack.push({ level: h[1].length, ac: AC_HEADING.test(l) });
+    }
+    inAc[i + 1] = stack.some((e) => e.ac);
   });
   for (const l of lines) {
     const h = l.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/);
@@ -77,7 +83,7 @@ function specTouchesAcceptanceCriteria(lines, content) {
     const start = Number(h[1]);
     const count = h[2] === undefined ? 1 : Number(h[2]);
     const end = count === 0 ? start : start + count - 1;
-    for (let n = Math.max(1, start); n <= end; n += 1) if (AC_HEADING.test(headingAt[n] || "")) return true;
+    for (let n = Math.max(1, start); n <= end; n += 1) if (inAc[n]) return true;
   }
   return false;
 }

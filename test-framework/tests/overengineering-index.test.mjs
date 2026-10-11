@@ -1,3 +1,4 @@
+// @organism-suite
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { score, stripNegated } from '../../scripts/overengineering-index.mjs';
@@ -51,4 +52,31 @@ test('stripNegated leaves unrelated text intact', () => {
 test('score is advisory: a flagged plan still returns a result without throwing', () => {
   const r = score(plan('pluggable framework registry factory generic configurable'));
   assert.ok(r.index >= 0 && typeof r.band === 'string');
+});
+
+test('negation does not cross blueprint item or field boundaries', () => {
+  const p = {
+    ac_digests: { entries: [{ ac_id: 'AC-1' }] },
+    changeset_blueprints: [
+      { file: 'a.mjs', action: 'MODIFY', blueprint: 'AC-1 never add' },
+      { file: 'b.mjs', action: 'MODIFY', blueprint: 'AC-1 a pluggable thing' },
+    ],
+    decision_trace: 'Do not',
+    scope: 'a registry',
+  };
+  assert.deepEqual(score(p).components.speculative.items.sort(), ['pluggable', 'registry']);
+  const q = { task_graph: [{ id: 't1', title: 'avoid', scope: 'framework AC-1' }] };
+  assert.deepEqual(score(q).components.speculative.items, ['framework']);
+});
+
+test('trailing "is not needed" only removes its own clause', () => {
+  assert.deepEqual(hits('Add a pluggable loader, but a registry is not needed.'), ['pluggable']);
+  assert.deepEqual(hits('A registry is not needed; build a pluggable loader.'), ['pluggable']);
+  assert.deepEqual(hits('Add a pluggable loader however a factory is not required.'), ['pluggable']);
+});
+
+test('quotes inside prose do not end a negation', () => {
+  assert.deepEqual(hits('Do not add a "registry".'), []);
+  assert.deepEqual(hits("Never build a 'pluggable' framework."), []);
+  assert.deepEqual(hits('Without a "factory", but build a pluggable loader.'), ['pluggable']);
 });

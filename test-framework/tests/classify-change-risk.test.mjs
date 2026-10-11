@@ -1,3 +1,4 @@
+// @organism-suite
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { classifyChangeRisk } from '../../scripts/classify-change-risk.mjs';
@@ -55,4 +56,23 @@ test('mixed change takes the highest tier', () => {
     rows: [{ status: 'M', paths: ['README.md'] }, { status: 'M', paths: ['rules/a.md'] }],
   });
   assert.equal(r.tier, 'logic');
+});
+
+test('nested headings under an AC heading stay inside the AC section until it closes', () => {
+  const content = ['# Spec', '', '## Acceptance Criteria', '', '### Export', '', '- user can export csv', '', '#### Edge cases', '', '- empty file', '', '## Notes', '', '### Misc', '', 'misc text'].join('\n');
+  const diffAt = (line) => `diff --git a/docs/specs/s.md b/docs/specs/s.md\n--- a/docs/specs/s.md\n+++ b/docs/specs/s.md\n@@ -${line} +${line} @@\n-old\n+new\n`;
+  const rows = [{ status: 'M', paths: ['docs/specs/s.md'] }];
+  const readNew = () => content;
+  const tier = (line) => classifyChangeRisk({ diff: diffAt(line), rows, readNew }).tier;
+  assert.equal(tier(7), 'logic');   // under ### Export
+  assert.equal(tier(11), 'logic');  // under #### Edge cases
+  assert.equal(tier(15), 'cosmetic'); // ### Misc under ## Notes (AC section closed by same-level heading)
+});
+
+test('an AC section ends at a heading of the same or higher level', () => {
+  const content = ['# Spec', '### Acceptance Criteria', 'ac text', '## Design', 'design text'].join('\n');
+  const d = (n) => `diff --git a/docs/specs/s.md b/docs/specs/s.md\n@@ -${n} +${n} @@\n-o\n+n\n`;
+  const rows = [{ status: 'M', paths: ['docs/specs/s.md'] }];
+  assert.equal(classifyChangeRisk({ diff: d(3), rows, readNew: () => content }).tier, 'logic');
+  assert.equal(classifyChangeRisk({ diff: d(5), rows, readNew: () => content }).tier, 'cosmetic');
 });
