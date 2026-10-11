@@ -1302,7 +1302,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "ae2cf0d7a5fa688c5da212b5e49224c6c9cce6ab3b899d2102ac0456ab3fc8b5",
+      "content_hash": "7c4be9cc0e046de1d521db5eeb1f9265ece3dde7cdc088da4b06dd0be19cab9d",
       "description": "Turn a baselined feature spec with technical design into an implementation plan for branch-first execution: task graph, file set, validation plan, checkpoints, AC-to-test mapping. Use before execute-changeset.",
       "aliases": [],
       "positive_triggers": [],

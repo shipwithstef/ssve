@@ -709,6 +709,8 @@ export async function launchRole({
     }
     if (isOfflineMode(modeName)) {
       if (pre.proof?.effective?.usable_live) throw new IsolationUnsupported("OFFLINE proof cannot be usable_live");
+      // Fixture-only: lets tests model a slow stage. Bounded; never reachable in live.
+      if (Number.isInteger(offline.delay_ms) && offline.delay_ms > 0) await new Promise((r) => setTimeout(r, Math.min(offline.delay_ms, 120000)));
       const result = runOffline(offline, role, tuple.host);
       if (Buffer.byteLength(result.rawStdout) + Buffer.byteLength(result.rawStderr) > boundLimits.cap) launchFail("overflow", result, 1);
       if (result.exit_code !== 0) launchFail("exit", result, 1);

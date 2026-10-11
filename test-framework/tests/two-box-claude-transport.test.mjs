@@ -248,7 +248,7 @@ async function withSource(run) {
 
 const contract = { plan: 'Preserve the declared value and check its consumers.', decisions: [{ id: 'D1', original_requirement_ids: ['AC1'], source_citations: [{ path: 'source.mjs', start_line: 5, end_line: 5, sha256: null }], text: 'Keep the public behavior.' }] };
 
-async function claudeCycle(run, { assessor = codexTuple('offline-assessor'), plan = claudeTuple('offline-plan'), exec = claudeTuple('offline-exec'), orchestrator = 'claude' } = {}) {
+async function claudeCycle(run, { delays = {}, assessor = codexTuple('offline-assessor'), plan = claudeTuple('offline-plan'), exec = claudeTuple('offline-exec'), orchestrator = 'claude' } = {}) {
   await withSource(async (root, baseSha) => {
     const configPath = policyFile(root, { labels: { PLAN: plan, EXEC: exec }, roles: { assessor } });
     const sourceSnapshot = protocol.buildSourceSnapshot({ consumerRoot: root, baseSha, scope: ['source.mjs'], ranges: [] });
@@ -261,7 +261,7 @@ async function claudeCycle(run, { assessor = codexTuple('offline-assessor'), pla
     };
     for (const role of ['scout_forward', 'scout_reverse']) outputs[role] = { findings: [], citations: [], unread_gaps: [], supplied_denominator: assignments[role].supplied_denominator, incomplete: false };
     const hostOf = { open_box: plan.host, contract_box: plan.host, contract_revise: plan.host, scout_forward: exec.host, scout_reverse: exec.host, assessor: assessor.host };
-    const staged = Object.fromEntries(Object.entries(outputs).map(([role, output]) => [role, { output, stdout: hostOf[role] === 'claude' ? transport.claudeResultFixture(output) : codexStdout(output) }]));
+    const staged = Object.fromEntries(Object.entries(outputs).map(([role, output]) => [role, { output, stdout: hostOf[role] === 'claude' ? transport.claudeResultFixture(output) : codexStdout(output), ...(delays[role] ? { delay_ms: delays[role] } : {}) }]));
     const opts = {
       consumerRoot: root, wi: 'WI-CLAUDE-CYCLE', originalRequirements: [{ id: 'AC1', text: 'Keep public behavior.' }],
       scope: ['source.mjs'], baseSha, facts: {}, mode: 'OFFLINE',
@@ -440,4 +440,125 @@ test('R2-1: temporary cloud credentials survive; only agent/session identity var
     CLAUDE_CODE_EXTRA_BODY: '{}', CLAUDE_CODE_PLUGIN_DIRS: '/p',
   });
   assert.deepEqual(Object.keys(env).sort(), ['AWS_ACCESS_KEY_ID', 'AWS_PROFILE', 'AWS_REGION', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN', 'CLAUDE_CODE_USE_BEDROCK', 'GOOGLE_APPLICATION_CREDENTIALS', 'PATH']);
+});
+
+// ---- Detached runs and recorded retry of an interrupted stage ----
+const PLAN_CLI = new URL('../../scripts/two-box-plan.mjs', import.meta.url).pathname;
+function cli(args, cwd) {
+  const t0 = Date.now();
+  const r = spawnSync(process.execPath, [PLAN_CLI, ...args], { cwd, encoding: 'utf8' });
+  return { ...r, ms: Date.now() - t0, json: (() => { try { return JSON.parse(r.stdout); } catch { return null; } })() };
+}
+function writeInput(root, opts, name = 'two-box-input.json') {
+  const file = path.join(root, name);
+  const { mode, ...rest } = opts;
+  fs.writeFileSync(file, JSON.stringify(rest));
+  return file;
+}
+async function until(fn, ms = 60000) {
+  const end = Date.now() + ms;
+  for (;;) { const v = fn(); if (v) return v; if (Date.now() > end) throw new Error('condition not reached'); await new Promise((r) => setTimeout(r, 100)); }
+}
+function killRun(root, wi) {
+  try { const d = JSON.parse(fs.readFileSync(path.join(root, '.svc', 'two-box', wi, 'detach.json'), 'utf8')); process.kill(-d.pid, 'SIGKILL'); } catch { /* already gone */ }
+}
+
+test('detach: start returns at once, wait times out with a distinct code, killing the waiter never kills the run', async () => {
+  await claudeCycle(async (opts, root) => {
+    const input = writeInput(root, opts);
+    try {
+      const started = cli(['start', '--input', input, '--mode', 'OFFLINE'], root);
+      assert.equal(started.status, 0, started.stderr);
+      assert.equal(started.json.state, 'started');
+      assert.ok(started.ms < 8000, `start must not wait for the run (${started.ms}ms)`);
+      assert.match(started.json.wait_command, /wait --input .* --timeout-seconds/);
+      // Still running: a short wait exits with the distinct "still running" code, state intact.
+      const early = cli(['wait', '--input', input, '--timeout-seconds', '1', '--poll-ms', '100'], root);
+      assert.equal(early.status, 20);
+      assert.equal(early.json.state, 'running');
+      // Kill a long waiter; the run must not notice.
+      const { spawn } = await import('node:child_process');
+      const waiter = spawn(process.execPath, [PLAN_CLI, 'wait', '--input', input, '--timeout-seconds', '120'], { cwd: root, stdio: 'ignore' });
+      await new Promise((r) => setTimeout(r, 300));
+      waiter.kill('SIGKILL');
+      await new Promise((r) => waiter.on('close', r));
+      const mid = cli(['status', '--input', input], root);
+      assert.equal(mid.status, 0);
+      assert.equal(mid.json.alive, true, 'run survives its waiter');
+      assert.equal(mid.json.state, 'running');
+      assert.deepEqual(Object.keys(mid.json.stages).sort(), protocol.PLANNING_ROLES.slice().sort());
+      // A second start while it is alive does not spawn a second run.
+      const again = cli(['start', '--input', input, '--mode', 'OFFLINE'], root);
+      assert.equal(again.json.already_running, true);
+      const done = cli(['wait', '--input', input, '--timeout-seconds', '200', '--poll-ms', '200'], root);
+      assert.equal(done.status, 0, done.stdout + done.stderr);
+      assert.equal(done.json.state, 'completed');
+      assert.ok(Object.values(done.json.stages).every((s) => s.state === 'completed'));
+      const result = JSON.parse(fs.readFileSync(started.json.result_path, 'utf8'));
+      assert.equal(result.status, 'completed');
+      assert.equal(result.planning_transports.assessor.transport, 'codex_exec');
+      // Status is a pure read of persisted state: it keeps answering after the run is gone.
+      assert.equal(cli(['status', '--input', input], root).json.state, 'completed');
+    } finally { killRun(root, opts.wi); }
+  }, { delays: { assessor: 4000 } });
+});
+
+test('detach: a failed run is reported as failed with its error, and wait/start flags are validated', async () => {
+  await claudeCycle(async (opts, root) => {
+    const input = writeInput(root, { ...opts, wi: opts.wi, originalRequirements: [] });
+    try {
+      cli(['start', '--input', input, '--mode', 'OFFLINE'], root);
+      const done = cli(['wait', '--input', input, '--timeout-seconds', '60', '--poll-ms', '100'], root);
+      assert.equal(done.status, 1);
+      assert.equal(done.json.state, 'failed');
+      assert.match(done.json.outcome.error, /original requirements required/);
+      assert.equal(cli(['wait', '--input', input, '--timeout-seconds', '600'], root).status, 1);
+      assert.match(cli(['wait', '--input', input, '--timeout-seconds', '600'], root).stderr, /between 1 and 530/);
+      assert.match(cli(['start', '--input', input, '--mode', 'OFFLINE', '--retry-interrupted'], root).stderr, /requires --decision-reason/);
+      assert.match(cli(['start', '--input', input, '--mode', 'OFFLINE', '--retry-interrupted', '--decision-reason', 'short'], root).stderr, /at least 8 characters/);
+      assert.match(cli(['start', '--input', input, '--mode', 'OFFLINE', '--decision-reason', 'because reasons'], root).stderr, /only valid with --retry-interrupted/);
+    } finally { killRun(root, opts.wi); }
+  });
+});
+
+test('interrupted provider attempt: refused without the flag; a recorded decision retries only that stage', async () => {
+  await claudeCycle(async (opts, root) => {
+    const wi = opts.wi;
+    const input = writeInput(root, opts);
+    const decisions = path.join(root, '.svc', 'pipeline-decisions.jsonl');
+    try {
+      assert.equal(cli(['start', '--input', input, '--mode', 'OFFLINE'], root).status, 0);
+      // The host cuts the run off while the assessor is in flight.
+      await until(() => cli(['status', '--input', input], root).json?.stages?.assessor?.state === 'running');
+      killRun(root, wi);
+      const cut = await until(() => { const s = cli(['status', '--input', input], root).json; return s.state === 'interrupted' ? s : null; });
+      assert.equal(cut.stages.assessor.state, 'interrupted');
+      for (const role of ['open_box', 'contract_box', 'scout_forward', 'scout_reverse', 'contract_revise']) assert.equal(cut.stages[role].state, 'completed', role);
+      assert.match(cut.hint, /--retry-interrupted --decision-reason/);
+      // Rerun without the flag: the refusal stays, and nothing is recorded.
+      cli(['start', '--input', input, '--mode', 'OFFLINE'], root);
+      const refused = cli(['wait', '--input', input, '--timeout-seconds', '120', '--poll-ms', '100'], root);
+      assert.equal(refused.status, 1);
+      assert.match(refused.json.outcome.error, /interrupted provider attempt cannot be assumed zero-cost/);
+      assert.match(refused.json.outcome.error, /--retry-interrupted --decision-reason/);
+      assert.equal(fs.existsSync(decisions), false);
+      // With the explicit decision: one record, only the assessor re-runs (now without the artificial delay).
+      const fast = JSON.parse(fs.readFileSync(input, 'utf8')); delete fast.offline.outputs.assessor.delay_ms; fs.writeFileSync(input, JSON.stringify(fast));
+      cli(['start', '--input', input, '--mode', 'OFFLINE', '--retry-interrupted', '--decision-reason', 'host timeout killed the run; accepting unknown cost'], root);
+      const retried = cli(['wait', '--input', input, '--timeout-seconds', '200', '--poll-ms', '100'], root);
+      assert.equal(retried.status, 0, retried.stdout + retried.stderr);
+      const result = JSON.parse(fs.readFileSync(retried.json.result_path, 'utf8'));
+      assert.equal(result.status, 'completed');
+      assert.equal(result.new_provider_calls, 1, 'only the interrupted stage is re-run');
+      const lines = fs.readFileSync(decisions, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+      assert.equal(lines.length, 1);
+      assert.deepEqual([lines[0].skill, lines[0].wi, lines[0].role, lines[0].attempt_cost, lines[0].kind], ['two-box-plan', wi, 'assessor', 'unknown', 'user']);
+      assert.match(lines[0].reason, /host timeout killed the run/);
+      assert.ok(lines[0].decided_by);
+      const journal = JSON.parse(fs.readFileSync(path.join(root, '.svc', 'two-box', wi, 'journal.json'), 'utf8'));
+      assert.ok(journal.history.some((h) => h.role === 'assessor' && h.reason === 'interrupted_retry_decided'));
+      // The cross-family rule still binds the retried run.
+      assert.equal(result.planning_transports.assessor.family, 'openai');
+    } finally { killRun(root, wi); }
+  }, { delays: { assessor: 60000 } });
 });
