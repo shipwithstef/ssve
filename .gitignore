@@ -171,3 +171,4 @@ docs/specs/candidates/*.tmp.*
 # WI-FW-CLEAN-MAIN-FOLLOWUP-01 task-local logs and raw review artifacts.
 # Digest snapshots are preserved in the shared immutable review-evidence store.
 /.svc/clean-main-review/
+.claude/worktrees/
