@@ -449,6 +449,43 @@ if (cmd === "close-item") {
   process.exit(0);
 }
 
+// Briefing / dashboard safety (organism plan, Program 0 Track F): the payload carries counts, compact
+// open-item rows and pending asks only. It never carries a filesystem path, a ledger/log/state body or a
+// free-form field (ref, checklist, direction, note), and path-like text typed into a title is redacted.
+const BRIEFING_BUDGET_BYTES = 12 * 1024; // below the 16 KiB cap in hooks/cos-briefing.mjs, so the hook never cuts it
+const BRIEFING_MAX_LINE_BYTES = 400;
+const PATH_TOKEN_RE = /\\\\[^\s\\]\S*|(?<![\w])file:\S*|(?<![\w])[A-Za-z]:[\\/]\S*|(?<![\w:/])(?:~\/\S*|\.{1,2}\/\S*|\/[^\s/]\S*)/gi;
+function redactText(value) {
+  return String(value ?? "").replace(/[\u0000-\u001f\u007f]+/g, " ").replace(PATH_TOKEN_RE, "[path]").trim();
+}
+function compactItem(item) {
+  return { id: redactText(item.id), title: redactText(item.title), priority: redactText(item.priority || "med"), due: item.due ? redactText(item.due) : null, owner: redactText(item.owner), status: redactText(item.status || "open") };
+}
+// Whole-line truncation: sections emit a heading only once one of their rows fits, and a row that does not fit
+// (or is itself oversized) is dropped whole and counted in a single "+N more" marker. Never a byte or mid-line cut.
+function renderBriefing(payload, groups, nextActions) {
+  const bytes = (text) => Buffer.byteLength(text, "utf8");
+  const out = [];
+  const tail = [`NEXT ACTIONS`, `  ${nextActions}`];
+  const c = payload.counts;
+  const head = ["=== company briefing ===", `${c.open_items} open (${c.overdue} overdue, ${c.due_soon} due soon, ${c.on_track} on track); ${c.pending_decisions} pending decision(s)`];
+  const marker = (n) => `  +${n} more (run: company-state dashboard --json)`;
+  let used = [...head, ...tail].reduce((n, line) => n + bytes(line) + 1, 0) + bytes(marker(999999)) + 1 + 4;
+  let dropped = 0;
+  for (const group of groups) {
+    let headingDone = false;
+    for (const row of group.rows) {
+      const cost = bytes(row) + 1 + (headingDone ? 0 : bytes(group.heading) + 3);
+      if (bytes(row) > BRIEFING_MAX_LINE_BYTES || used + cost > BRIEFING_BUDGET_BYTES) { dropped += 1; continue; }
+      if (!headingDone) { out.push("", group.heading); headingDone = true; }
+      out.push(row); used += cost;
+    }
+    if (!group.rows.length) { const cost = bytes(group.heading) + bytes("  none") + 4; if (used + cost <= BRIEFING_BUDGET_BYTES) { out.push("", group.heading, "  none"); used += cost; } }
+  }
+  if (dropped) out.push("", marker(dropped));
+  return [...head, ...out, "", ...tail].join("\n") + "\n";
+}
+
 if (cmd === "briefing" || cmd === "dashboard") {
   const context = resolveCompanyContext();
   const dir = context.stateDir;
@@ -468,21 +505,24 @@ if (cmd === "briefing" || cmd === "dashboard") {
   }
   const meshBlocked = pending.filter((card) => validateMesh(card).length > 0).length;
   const payload = {
-    schema_version: 1, state_dir: realpathSync(dir), source: context.source,
+    schema_version: 1, source: context.source,
     counts: { open_items: items.length, overdue: overdue.length, due_soon: dueSoon.length, on_track: onTrack.length, pending_decisions: pending.length },
-    open_items: items, pending_decisions: pending.map(({ id, title, proposed_by, ask, risk_domains }) => ({ id, title, proposed_by, ask, risk_domains: risk_domains || [] })),
+    open_items: items.map(compactItem),
+    pending_decisions: pending.map((card) => ({ id: redactText(card.id), title: redactText(card.title), proposed_by: redactText(card.proposed_by), ask: redactText(card.ask), risk_domains: (card.risk_domains || []).map(redactText) })),
     registry_health: registryHealth, mesh_health: meshBlocked ? { status: "blocked", blocked_cards: meshBlocked } : { status: "healthy", blocked_cards: 0 },
   };
   if (cmd === "dashboard" && argv.includes("--json")) console.log(JSON.stringify(payload, null, 2));
   else {
-    const printGroup = (name, rows) => {
-      console.log(`\n${name} (${rows.length})`);
-      if (!rows.length) console.log("  none");
-      rows.slice(0, 20).forEach((item) => console.log(`  ${item.id} [${item.priority || "med"}] due:${item.due || "?"} owner:${item.owner || "?"} — ${item.title || ""}`));
-    };
-    console.log(`=== company briefing @ ${payload.state_dir} ===`);
-    printGroup("OVERDUE", overdue); printGroup("DUE SOON", dueSoon); printGroup("ON TRACK", onTrack);
-    console.log(`\nNEXT ACTIONS\n  check ${items.filter((item) => item.next_check && item.next_check <= today).length} item(s); review ${pending.length} pending decision(s); registry ${registryHealth}; mesh ${payload.mesh_health.status}`);
+    const itemRow = (item) => `  ${item.id} [${item.priority}] due:${item.due || "?"} owner:${item.owner || "?"} — ${item.title}`;
+    const bucket = (rows) => rows.map((item) => itemRow(compactItem(item)));
+    const groups = [
+      { heading: `OVERDUE (${overdue.length})`, rows: bucket(overdue) },
+      { heading: `DUE SOON (${dueSoon.length})`, rows: bucket(dueSoon) },
+      { heading: `ON TRACK (${onTrack.length})`, rows: bucket(onTrack) },
+      { heading: `PENDING ASKS (${pending.length})`, rows: payload.pending_decisions.map((card) => `  ${card.id} ${card.ask} from ${card.proposed_by} — ${card.title}`) },
+    ];
+    const nextActions = `check ${items.filter((item) => item.next_check && item.next_check <= today).length} item(s); review ${pending.length} pending decision(s); registry ${registryHealth}; mesh ${payload.mesh_health.status}`;
+    process.stdout.write(renderBriefing(payload, groups, nextActions));
   }
   process.exit(0);
 }

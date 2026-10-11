@@ -1,0 +1,40 @@
+{
+  "_comment": "Answers each committed A/B grader must accept (pass) or reject (fail). The fail set holds the empty, whitespace-only and keyword-only answers the graders once accepted.",
+  "write-spec-csv-export": {
+    "pass": [
+      "# Invoice CSV export\n\nStatus: DRAFT\n\n## Summary\nUsers can export their invoices as a CSV file from the invoices page so they can reconcile them in a spreadsheet.\n\n## Acceptance Criteria\n- AC-1: Given I am on the invoices page with at least one invoice, When I press Export CSV, Then a file with one row per invoice downloads.\n- AC-2: Given a filtered invoice list, When I export, Then only the filtered invoices appear in the CSV.\n- AC-3: Given no invoices exist, When I press Export CSV, Then I see a message that there is nothing to export."
+    ],
+    "fail": [
+      { "name": "empty", "text": "" },
+      { "name": "whitespace", "text": "  \n\t \n " },
+      { "name": "keywords only", "text": "Status: DRAFT / Acceptance Criteria / Given" },
+      { "name": "headings with no body", "text": "# CSV export\nStatus: DRAFT\n## Acceptance Criteria\nGiven\nWhen\nThen\n" },
+      { "name": "template placeholders", "text": "# Spec\nStatus: DRAFT\n## Acceptance Criteria\n- Given [insert precondition] When [insert action] Then [insert result] for CSV invoices\n- TBD\n" },
+      { "name": "well formatted but wrong topic", "text": "# Dark mode\n\nStatus: DRAFT\n\n## Summary\nUsers can switch the application to a dark colour theme from the settings screen to reduce eye strain at night.\n\n## Acceptance Criteria\n- AC-1: Given I am in settings, When I toggle dark mode, Then the whole interface switches to the dark palette immediately.\n- AC-2: Given dark mode is on, When I reload the page, Then the dark palette is still applied." }
+    ]
+  },
+  "diagnose-off-by-one": {
+    "pass": [
+      "## Symptom\nThe last page of results is missing.\n\n## Reproduction\nCall pages(11, 5): it returns [0, 1] where three pages are expected.\n\n## Root Cause\nThe loop bound uses Math.floor(total / size), which drops the final partial page whenever total is not a multiple of size.\n\n## Fix Plan\nUse Math.ceil(total / size) as the bound.\n\n## Pattern Scan\nSearched the repo for other Math.floor(total / size) page counts and found none.\n\n## Pillar Revisit Audit\nPagination UI and the API contract are unaffected, confirmed by reading both."
+    ],
+    "fail": [
+      { "name": "empty", "text": "" },
+      { "name": "whitespace", "text": "\n\n   \t\n" },
+      { "name": "headings only", "text": "## Reproduction\n## Root Cause\n## Pattern Scan\n## Pillar\nMath.ceil" },
+      { "name": "headings with filler", "text": "## Reproduction\nTBD\n## Root Cause\nTBD\n## Pattern Scan\nTBD\n## Pillar\nTBD\nMath.ceil" },
+      { "name": "wrong root cause", "text": "## Reproduction\nCall pages(11, 5) and observe that the returned list has only two entries.\n\n## Root Cause\nThe array is never initialised before the loop runs, so pushes silently get lost somewhere in memory.\n\n## Pattern Scan\nNo other array initialisation problems were found in the module.\n\n## Pillar Revisit Audit\nOther pillars unaffected after reading the pagination component." }
+    ]
+  },
+  "decide-db-choice": {
+    "pass": [
+      "Recommendation: SQLite. For a single-user desktop app it needs no server, ships as a single file and backs up trivially. Postgres only pays off when you need concurrent multi-user writes, which cloud sync next year does not force: you can add a sync layer or migrate later with a documented schema. Reversibility is high. Confidence: 8/10."
+    ],
+    "fail": [
+      { "name": "empty", "text": "" },
+      { "name": "whitespace", "text": " \n \n" },
+      { "name": "keywords only", "text": "recommend confidence SQLite" },
+      { "name": "no reasoning", "text": "Recommend SQLite. Confidence 8." },
+      { "name": "wrong choice", "text": "Recommendation: Postgres. A client-server database scales to many concurrent writers and gives you replication, row-level security and rich extensions out of the box, which is worth the operational cost early. Confidence: 8/10, SQLite is only for prototypes." }
+    ]
+  }
+}
