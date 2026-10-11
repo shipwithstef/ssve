@@ -258,3 +258,99 @@ test("harden runs before execute-changeset finishes, without changing execute-ch
   const skill = fs.readFileSync(new URL("../../skills/execute-changeset/SKILL.md", import.meta.url), "utf8");
   assert.doesNotMatch(skill, /harden\.mjs/, "execute-changeset stays byte-identical (plan X7)");
 });
+
+test("JSON.parse inside a template is flagged and a regex literal is not", () => {
+  const dir = project({
+    "util.js": [
+      "const sample = \"JSON.parse(raw)\";",
+      "const re = /JSON.parse/;",
+      "export function read(raw) {",
+      "  return `${JSON.parse(raw)}`;",
+      "}",
+      "export function other(raw) {",
+      "  return `n=${",
+      "    JSON.parse(raw)",
+      "  }`;",
+      "}",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "json-parse-without-try").map((f) => f.line), [4, 8]);
+  assert.equal(report.findings.some((f) => f.line === 2), false);
+});
+
+test("prototype runs static smoke only", () => {
+  const dir = project({
+    "util.js": "export const n = 1;\n",
+    "util.test.js": "import test from 'node:test'; import assert from 'node:assert/strict'; test('no', () => { assert.equal(1, 2); });\n",
+  });
+  const report = hardenProject({ root: dir, profile: "prototype" });
+  assert.equal(report.mode, "static");
+  assert.deepEqual(report.checks, ["static-smoke"]);
+  assert.equal(report.tests, null);
+  assert.equal(report.probes, null);
+  assert.equal(report.ok, true);
+  assert.equal(rulesOf(report, "own-tests").length, 0);
+  assert.equal(rulesOf(report, "mutation-threshold").length, 0);
+});
+
+test("mvp runs node --test when tests are present and skips when they are not", () => {
+  const failing = project({
+    "util.js": "export const n = 1;\n",
+    "util.test.js": "import test from 'node:test'; import assert from 'node:assert/strict'; test('no', () => { assert.equal(1, 2); });\n",
+  });
+  const bad = hardenProject({ root: failing, profile: "mvp" });
+  assert.deepEqual(bad.checks, ["static-smoke", "own-tests"]);
+  assert.equal(bad.mode, "static+own-tests");
+  assert.equal(bad.tests.ran, true);
+  assert.equal(bad.tests.ok, false);
+  assert.equal(bad.probes, null);
+  assert.deepEqual(rulesOf(bad, "own-tests").map((f) => f.file), ["util.test.js"]);
+
+  const passing = project({
+    "util.js": "export const n = 1;\n",
+    "util.test.js": "import test from 'node:test'; test('yes', () => {}); \n",
+  });
+  const good = hardenProject({ root: passing, profile: "mvp" });
+  assert.equal(good.tests.ran, true);
+  assert.equal(good.tests.ok, true);
+  assert.equal(good.ok, true);
+
+  const bare = project({ "util.js": "export const n = 1;\n" });
+  const none = hardenProject({ root: bare, profile: "mvp" });
+  assert.equal(none.tests.ran, false);
+  assert.equal(none.tests.reason, "not-present");
+  assert.equal(rulesOf(none, "own-tests").length, 0);
+  assert.equal(none.ok, true);
+});
+
+test("production runs quality-probes when the probe script is present", () => {
+  const weak = project({
+    "src.mjs": "export const n = 1;\n",
+    "src.test.mjs": "import test from 'node:test'; import assert from 'node:assert/strict'; test('trivial', () => { assert.ok(true); });\n",
+  });
+  const low = hardenProject({ root: weak, profile: "production" });
+  assert.ok(low.checks.includes("quality-probes"));
+  assert.ok(low.checks.includes("own-tests"));
+  assert.equal(low.mode, "static+own-tests+probes");
+  assert.equal(low.probes.ran, true);
+  assert.equal(low.probes.ok, false);
+  assert.equal(low.tests.ok, true);
+  assert.equal(rulesOf(low, "mutation-threshold").length, 1);
+  assert.equal(low.ok, false);
+
+  const strong = project({
+    "add.mjs": "export function add(a, b) {\n  return a + b;\n}\n",
+    "add.test.mjs": "import assert from 'node:assert/strict'; import test from 'node:test'; import { add } from './add.mjs'; test('add', () => { assert.equal(add(2, 3), 5); });\n",
+  });
+  const high = hardenProject({ root: strong, profile: "production" });
+  assert.equal(high.probes.ran, true);
+  assert.equal(high.tests.ok, true);
+  assert.ok(high.probes.mutation >= 0.6, `mutation ${high.probes.mutation} reason ${high.probes.reason}`);
+  assert.equal(rulesOf(high, "mutation-threshold").length, 0);
+  assert.equal(high.ok, true);
+
+  const prototype = hardenProject({ root: weak, profile: "prototype" });
+  assert.equal(prototype.probes, null);
+  assert.equal(rulesOf(prototype, "mutation-threshold").length, 0);
+});
