@@ -1,3 +1,4 @@
+// @organism-suite
 // Fair-arms runner: private home for every arm, git-archive framework install, no unsandboxed
 // scored rows, grader cleanup, same-model accounting, one safety timeout, fail-open rerun,
 // explicit --parallel. No paid calls: the spawn tests put a fake `claude` on PATH.
@@ -122,6 +123,7 @@ test("ARM_LIMITS is one safety timeout for every arm: 2x time, 3x turns", () => 
   assert.deepEqual(oe.armLimits("not-an-arm"), { turns: 3, time: 2 });
   assert.equal(oe.stoppedBy({ timedOut: true }), "timeout");
   assert.equal(oe.stoppedBy({ stop: "error_max_turns" }), "max_turns");
+  assert.equal(oe.stoppedBy({ stop: "error_max_budget_usd" }), "budget");
   assert.equal(oe.stoppedBy({ stop: "success" }), null);
 });
 
@@ -134,7 +136,9 @@ test("fail-open: a count above zero re-runs once; the second result is kept, spe
   r = await oe.withFailOpenRerun(seq({ fail_open: "counter absent", cost_usd: 1 }));
   assert.equal(calls.length, 1, "an absent counter never triggers a re-run");
   calls.length = 0;
-  r = await oe.withFailOpenRerun(seq({ fail_open: 2, cost_usd: 1, judge_cost_usd: 0.1, artifact: "/a1" }, { fail_open: 0, cost_usd: 2, judge_cost_usd: 0.2, artifact: "/a2" }));
+  r = await oe.withFailOpenRerun(seq({ fail_open: 2, cost_usd: 1, judge_cost_usd: 0.1, artifact: "/a1", wall_ms: 1000, turns: 4, duration_ms: 900, model_usage: { m: { outputTokens: 10, costUSD: 1 } } }, { fail_open: 0, cost_usd: 2, judge_cost_usd: 0.2, artifact: "/a2", wall_ms: 2000, turns: 6, duration_ms: 1500, model_usage: { m: { outputTokens: 5, costUSD: 2 }, n: { outputTokens: 1 } } }));
+  assert.deepEqual([r.wall_ms, r.turns, r.duration_ms], [3000, 10, 2400], "time and turns are summed across attempts");
+  assert.deepEqual([r.model_usage.m.outputTokens, r.model_usage.m.costUSD, r.model_usage.n.outputTokens], [15, 3, 1], "model usage is merged");
   assert.deepEqual(calls, [1, 2]);
   assert.equal(r.fail_open_rerun, true);
   assert.equal(r.rules_not_loaded, undefined);
@@ -260,13 +264,13 @@ printf '{"type":"result","subtype":"%s","is_error":false,"result":"done","total_
   return bin;
 }
 
-function runEval(args, { mode = "ok", counter = "", extraEnv = {} } = {}) {
+function runEval(args, { mode = "ok", counter = "", extraEnv = {}, workBase = null } = {}) {
   const base = tmp("oe-e2e-");
   const bin = path.join(base, "bin"); fs.mkdirSync(bin);
   fakeClaude(bin);
   const out = path.join(base, "out.json");
   const env = { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, OE_CREDENTIALS: creds(), FAKE_MODE: mode, FAKE_REAL_HOME: os.homedir(), SVC_ROOT: "/should/not/leak", ...(counter !== "" ? { FAKE_COUNTER: counter } : {}), ...extraEnv };
-  const r = spawnSync(process.execPath, [script, "run", "--judge", "none", "--reps", "1", "--model", "haiku", "--keep", path.join(base, "kept"), "--work-root", path.join(base, "work"), "--out", out, ...args], { env, encoding: "utf8", timeout: 240000 });
+  const r = spawnSync(process.execPath, [script, "run", "--judge", "none", "--reps", "1", "--model", "haiku", "--keep", path.join(base, "kept"), "--work-root", workBase || path.join(base, "work"), "--out", out, ...args], { env, encoding: "utf8", timeout: 240000 });
   const result = fs.existsSync(out) ? JSON.parse(fs.readFileSync(out, "utf8")) : null;
   return { r, result, base };
 }
@@ -382,4 +386,78 @@ test("framework arm requires --framework-sha", () => {
   const r = spawnSync(process.execPath, [script, "run", "--arms", "framework", "--tasks", "x", "--parallel", "1"], { encoding: "utf8" });
   assert.equal(r.status, 2);
   assert.match(r.stderr, /--framework-sha/);
+});
+
+// ---- review fixes --------------------------------------------------------------------
+
+function archiveWithAnswers() {
+  const src = tmp("oe-ans-src-"), home = tmp("oe-ans-home-");
+  for (const d of ["tasks/secret", "results", "northstar/graders"]) fs.mkdirSync(path.join(src, "test-framework", "outcome-evals", d), { recursive: true });
+  const base = path.join(src, "test-framework", "outcome-evals");
+  fs.writeFileSync(path.join(base, "tasks", "secret", "hidden.test.mjs"), "HIDDEN");
+  fs.writeFileSync(path.join(base, "results", "r.json"), "RESULTS");
+  fs.writeFileSync(path.join(base, "northstar", "graders", "index.mjs"), "GRADERS");
+  fs.mkdirSync(path.join(src, "skills", "a"), { recursive: true });
+  fs.mkdirSync(path.join(home, ".claude", "skills"), { recursive: true });
+  fs.symlinkSync(path.join(src, "skills", "a"), path.join(home, ".claude", "skills", "a"));
+  return { src: fs.realpathSync(src), home };
+}
+
+test("the argv masks the archive's tasks, results and northstar dirs, and an extra root's counterparts", () => {
+  const { src, home } = archiveWithAnswers();
+  const dir = tmp("oe-ans-b-");
+  const extra = tmp("oe-ans-extra-");
+  const reserveTasks = path.join(extra, "tasks"); fs.mkdirSync(reserveTasks);
+  fs.mkdirSync(path.join(extra, "northstar"));
+  try {
+    oe.addTaskRoot(reserveTasks);
+    for (const arm of ["solo", "framework"]) {
+      const w = oe.builderWrap(dir, { credentials: creds(), framework: arm === "framework" ? { home, src, checkpoint_mode: "prompt-sentence" } : null, model: "haiku", workRoot: tmp("oe-ans-w-") });
+      const masked = (m) => w.argv.some((a, i) => a === "--tmpfs" && w.argv[i + 1] === m);
+      if (arm === "framework") for (const d of ["tasks", "results", "northstar"]) assert.ok(masked(path.join(src, "test-framework", "outcome-evals", d)), `${d} in the archive is masked`);
+      assert.ok(masked(reserveTasks) && masked(path.join(extra, "northstar")), "an extra root and its counterpart are masked");
+    }
+  } finally { oe.resetTaskRoots(); }
+});
+
+test("a framework builder cannot read the archive's hidden grader", { skip: !bwrapOk }, () => {
+  const { src, home } = archiveWithAnswers();
+  const dir = tmp("oe-ans-b-");
+  const w = oe.builderWrap(dir, { credentials: creds(), framework: { home, src, checkpoint_mode: "prompt-sentence" }, model: "haiku", workRoot: tmp("oe-ans-w-") });
+  const base = path.join(src, "test-framework", "outcome-evals");
+  const r = spawnSync(w.argv[0], [...w.argv.slice(1), "sh", "-c", 'cat "$B/tasks/secret/hidden.test.mjs" 2>/dev/null; cat "$B/results/r.json" 2>/dev/null; cat "$B/northstar/graders/index.mjs" 2>/dev/null; ls "$S/skills"; echo end'], { env: { ...process.env, ...w.env, B: base, S: src }, encoding: "utf8" });
+  assert.ok(!/HIDDEN|RESULTS|GRADERS/.test(r.stdout), r.stdout);
+  assert.match(r.stdout, /^a\nend/m, "the rest of the archive stays readable");
+  assert.equal(fs.readFileSync(path.join(base, "tasks", "secret", "hidden.test.mjs"), "utf8"), "HIDDEN", "outside the sandbox nothing changed");
+});
+
+test("the run deletes only its own directory beneath --work-root", { skip: !bwrapOk }, () => {
+  const tr = taskRootWith("tiny");
+  const base = tmp("oe-wbase-");
+  fs.writeFileSync(path.join(base, "keep-me.txt"), "mine");
+  fs.mkdirSync(path.join(base, "other-run"));
+  const { r, result } = runEval(["--arms", "solo", "--tasks", "tiny", "--tasks-root", tr, "--parallel", "1"], { workBase: base });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(fs.readFileSync(path.join(base, "keep-me.txt"), "utf8"), "mine");
+  assert.ok(fs.existsSync(path.join(base, "other-run")));
+  assert.deepEqual(fs.readdirSync(base).sort(), ["keep-me.txt", "other-run"], "the invocation directory is gone");
+  assert.deepEqual(result.task_roots, [tr], "the task roots are persisted in the results file");
+});
+
+test("--tasks-root works before every subcommand: regrade finds external tasks, also from the stored roots", { skip: !bwrapOk }, () => {
+  const tr = taskRootWith("tiny");
+  const { result, base } = runEval(["--arms", "solo", "--tasks", "tiny", "--tasks-root", tr, "--parallel", "1"]);
+  const file = path.join(base, "out.json");
+  const row = result.rows[0];
+  fs.writeFileSync(path.join(row.artifact, "solution.mjs"), "export const add = () => 0;\n");
+  const withFlag = spawnSync(process.execPath, [script, "regrade", file, "--tasks-root", tr], { encoding: "utf8" });
+  assert.equal(withFlag.status, 0, withFlag.stderr);
+  assert.equal(JSON.parse(fs.readFileSync(file, "utf8")).rows[0].solved, false, "the external grader ran");
+  fs.writeFileSync(path.join(row.artifact, "solution.mjs"), "export const add = (a, b) => a + b;\n");
+  const stored = spawnSync(process.execPath, [script, "regrade", file], { encoding: "utf8" });
+  assert.equal(stored.status, 0, stored.stderr);
+  assert.equal(JSON.parse(fs.readFileSync(file, "utf8")).rows[0].solved, true, "the stored roots were used");
+  assert.equal(fs.existsSync(path.join(row.artifact, "__hidden.test.mjs")), false);
+  const missing = spawnSync(process.execPath, [script, "check", "--tasks-root", path.join(base, "nope")], { encoding: "utf8" });
+  assert.equal(missing.status, 2);
 });

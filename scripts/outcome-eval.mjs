@@ -341,7 +341,7 @@ export function builderWrap(dir, { jobHome = null, framework = null, model = nul
   const kept = path.join(os.homedir(), ".svc", "outcome-eval-artifacts");
   // A mask under the hidden real home would only recreate directory names there: skip those
   // unless the path was brought back read-only.
-  const maskRoots = [...taskRoots, ...extraMaskRoots, path.join(ROOT, "test-framework", "outcome-evals", "results"), kept, ...(exposeRoot ? [] : [ROOT])]
+  const maskRoots = [...taskRoots, ...extraMaskRoots, ...answerDirs([path.join(ROOT, "test-framework", "outcome-evals"), ...(framework ? [path.join(framework.src, "test-framework", "outcome-evals")] : []), ...[...taskRoots, ...extraMaskRoots].map((r) => path.dirname(r))]), kept, ...(exposeRoot ? [] : [ROOT])]
     .filter((m) => fs.existsSync(m) && (!isUnder(m, realHome) || keepRo.some((k) => isUnder(m, k))));
   const argv = bwrapArgv({ dir, jobHome: home, credentials, maskRoots, keepRo, realHome });
   const env = { PROBE_DIR: dir, PROBE_HOME: SANDBOX_HOME, HOME: SANDBOX_HOME, npm_config_cache: path.posix.join(SANDBOX_HOME, ".npm") };
@@ -349,6 +349,11 @@ export function builderWrap(dir, { jobHome = null, framework = null, model = nul
   if (framework) { env.SVC_HOOK_MODE = hookMode || "advisory"; if (framework.checkpoint_mode === "eval-profile") env.SVC_DELIVERY_PROFILE = "eval"; }
   return { name: "bwrap", argv, env, job_home: home, ...(framework ? { framework_home: home, slot_pin: framework.slot_pin } : {}) };
 }
+
+// Where an eval tree keeps its answers: the tasks (graders, references), recorded results and
+// the northstar graders and bar. Masked in every sandbox, also inside a framework archive and
+// beside any extra task root.
+export const answerDirs = (evalRoots) => uniq(evalRoots.flatMap((r) => ["tasks", "results", "northstar"].map((d) => path.join(r, d))));
 
 export function cloneHome(from, to) {
   fs.mkdirSync(to, { recursive: true });
@@ -472,6 +477,8 @@ export async function withFailOpenRerun(attempt) {
   const second = await attempt(2);
   const sum = (k) => +((first[k] || 0) + (second[k] || 0)).toFixed(6);
   const merged = { ...second, fail_open_rerun: true, first_attempt_fail_open: first.fail_open, attempts: 2, cost_usd: sum("cost_usd") };
+  for (const k of ["wall_ms", "turns", "duration_ms"]) if (first[k] != null || second[k] != null) merged[k] = (first[k] || 0) + (second[k] || 0);
+  if (first.model_usage || second.model_usage) merged.model_usage = mergeModelUsage(first.model_usage, second.model_usage);
   if (first.judge_cost_usd != null || second.judge_cost_usd != null) merged.judge_cost_usd = sum("judge_cost_usd");
   if (first.artifact) merged.first_attempt_artifact = first.artifact;
   if (typeof second.fail_open === "number" && second.fail_open > 0) merged.rules_not_loaded = true;
@@ -530,10 +537,12 @@ export function offModelWork(usage, armModel, { minTokens = 1000, minShare = 0.0
   return null;
 }
 
-// "timeout" when the safety timeout killed the run, "max_turns" when it ended at its turn limit.
+// "timeout" when the safety timeout killed the run, "max_turns" when it ended at its turn
+// limit, "budget" when the CLI stopped it on its spending cap (all three score 0 downstream).
 export function stoppedBy({ timedOut = false, stop = null } = {}) {
   if (timedOut) return "timeout";
-  return /max[_-]?turns/i.test(String(stop || "")) ? "max_turns" : null;
+  if (/max[_-]?turns/i.test(String(stop || ""))) return "max_turns";
+  return /max[_-]?budget/i.test(String(stop || "")) ? "budget" : null;
 }
 
 export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40, effort = null, extraArgs = [], wrap = null) {
@@ -766,6 +775,9 @@ export function check() {
 
 async function main(argv) {
   const opt = (n, d) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : d; };
+  // Extra task roots apply to every subcommand (check and regrade find external tasks too).
+  try { argv.forEach((a, i) => { if (a === "--tasks-root") addTaskRoot(argv[i + 1]); }); }
+  catch (e) { process.stderr.write(`${e.message}\n`); return 2; }
   if (argv[0] === "check") {
     const problems = check();
     for (const p of problems) process.stderr.write(p + "\n");
@@ -776,6 +788,7 @@ async function main(argv) {
     // Re-score kept artifacts with the current graders; agent and judge results are unchanged.
     const file = argv[1];
     const data = JSON.parse(fs.readFileSync(file, "utf8"));
+    for (const r of data.task_roots || []) if (fs.existsSync(r)) addTaskRoot(r);
     for (const row of data.rows) {
       if (!row.artifact || !fs.existsSync(row.artifact)) continue;
       const before = `${row.hidden_pass}/${row.hidden_total}`;
@@ -852,14 +865,22 @@ async function main(argv) {
   const arms = opt("--arms", "plain,blueprint").split(",");
   const probeMutants = Number(opt("--probes", 0));
   const effort = opt("--effort", null);
-  argv.forEach((a, i) => { if (a === "--tasks-root") addTaskRoot(argv[i + 1]); });
   const tasks = opt("--tasks") ? opt("--tasks").split(",") : listTasks();
   const keepRoot = opt("--keep", path.join(os.homedir(), ".svc", "outcome-eval-artifacts", new Date().toISOString().replace(/[:.]/g, "-")));
   fs.mkdirSync(keepRoot, { recursive: true });
   // Builds live under a root this runner owns; nothing above them may carry agent context.
-  const workRoot = path.resolve(opt("--work-root", path.join(os.tmpdir(), `oe-work-${crypto.randomBytes(4).toString("hex")}`)));
-  fs.mkdirSync(workRoot, { recursive: true });
-  try { assertCleanAncestors(workRoot); } catch (e) { process.stderr.write(`${e.message}\n`); return 2; }
+  // --work-root names a parent; this invocation owns a unique directory beneath it and
+  // deletes only that.
+  const workBase = path.resolve(opt("--work-root", os.tmpdir()));
+  fs.mkdirSync(workBase, { recursive: true });
+  const workRoot = fs.mkdtempSync(path.join(workBase, "oe-run-"));
+  try {
+    try { assertCleanAncestors(workRoot); } catch (e) { process.stderr.write(`${e.message}\n`); return 2; }
+    return await runAll({ argv, opt, parallel, workRoot, keepRoot, tasks, model, reps, judgeModel, arms, probeMutants, effort });
+  } finally { fs.rmSync(workRoot, { recursive: true, force: true }); }
+}
+
+async function runAll({ argv, opt, parallel, workRoot, keepRoot, tasks, model, reps, judgeModel, arms, probeMutants, effort }) {
   let framework = null;
   if (arms.includes("framework")) {
     const sha = opt("--framework-sha", null);
@@ -886,7 +907,6 @@ async function main(argv) {
     }
     return row;
   });
-  fs.rmSync(workRoot, { recursive: true, force: true });
   // Engineering-quality probes (test strength by mutation, size, slop, secrets) run on the
   // kept builds after every agent has finished: they run tests synchronously and would
   // otherwise stall the agents still working.
@@ -895,7 +915,7 @@ async function main(argv) {
     const chaosSpec = path.join(taskDir(row.task), "chaos.json");
     if (fs.existsSync(chaosSpec)) row.probes.chaos = await chaosProbe(row.artifact, JSON.parse(fs.readFileSync(chaosSpec, "utf8")));
   }
-  const result = { ran_at: new Date().toISOString(), model, reps, tasks, arms, parallel, ...(framework ? { framework_sha: framework.sha } : {}), summary: summarize(rows), rows };
+  const result = { ran_at: new Date().toISOString(), model, reps, tasks, arms, parallel, task_roots: getTaskRoots().slice(1), ...(framework ? { framework_sha: framework.sha } : {}), summary: summarize(rows), rows };
   const out = opt("--out");
   if (out) fs.writeFileSync(out, JSON.stringify(result, null, 2) + "\n");
   process.stdout.write(JSON.stringify(result.summary, null, 2) + "\n");
