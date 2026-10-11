@@ -1,3 +1,4 @@
+// @organism-suite
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -71,6 +72,19 @@ test("path-like text typed into a title is redacted in both views", () => {
       assert.doesNotMatch(out, PATHISH);
       assert.ok(!out.includes("someone"));
       assert.ok(out.includes("[path]"));
+    }
+  } finally { fs.rmSync(repo, { recursive: true, force: true }); }
+});
+
+test("redaction covers file URIs, drive letters with either slash, and UNC paths", () => {
+  const { repo, state } = fixture();
+  try {
+    openItem(state, "See file:/srv/example/a.txt and file:///srv/example/b.txt and C:/Users/bob/c.txt and c:\\Users\\bob\\d.txt and \\\\fileserver\\share\\e.txt done");
+    addCard(state, "D-2026-07-22-001", "Open FILE:///srv/x and D:\\data\\y then https://example.com/a/b ok");
+    for (const out of [run(["dashboard", "--json", "--state-dir", state, "--today", TODAY]), run(["briefing", "--state-dir", state, "--today", TODAY])]) {
+      for (const leak of ["srv", "Users", "bob", "fileserver", "share", "data", "file:", "FILE:"]) assert.ok(!out.includes(leak), leak);
+      assert.ok(out.includes("[path]"));
+      assert.ok(out.includes("https://example.com/a/b"), "web URLs are kept");
     }
   } finally { fs.rmSync(repo, { recursive: true, force: true }); }
 });

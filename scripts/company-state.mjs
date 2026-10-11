@@ -454,7 +454,7 @@ if (cmd === "close-item") {
 // free-form field (ref, checklist, direction, note), and path-like text typed into a title is redacted.
 const BRIEFING_BUDGET_BYTES = 12 * 1024; // below the 16 KiB cap in hooks/cos-briefing.mjs, so the hook never cuts it
 const BRIEFING_MAX_LINE_BYTES = 400;
-const PATH_TOKEN_RE = /(?<![\w:/])(?:[A-Za-z]:\\\S*|~\/\S*|\.{1,2}\/\S*|\/[^\s/]\S*)/g;
+const PATH_TOKEN_RE = /\\\\[^\s\\]\S*|(?<![\w])file:\S*|(?<![\w])[A-Za-z]:[\\/]\S*|(?<![\w:/])(?:~\/\S*|\.{1,2}\/\S*|\/[^\s/]\S*)/gi;
 function redactText(value) {
   return String(value ?? "").replace(/[\u0000-\u001f\u007f]+/g, " ").replace(PATH_TOKEN_RE, "[path]").trim();
 }

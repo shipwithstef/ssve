@@ -72,4 +72,4 @@ It is a navigation index; the live spec stays the authority. Required for plan-m
 
 - Any change to `normalize-ac-table.mjs` output changes every stored hash; historical commits then read as STALE at the next range check. Version the normalization rather than editing it in place.
 - Two names exist for the same value (`spec_ac_table_sha256` in receipts, `ac_digest_sha` in the stage-plan summary). Nothing reads the second; pick one before Gate C.
-- Only `check-chain-receipts.mjs` and `plan-manifest-contract.mjs` recompute the hash from the spec; every skill and agent consumer trusts the field as written.
+- Three scripts recompute the hash from the spec: `check-chain-receipts.mjs`, `plan-manifest-contract.mjs` and `receipt-issuance-epoch.mjs` (line 316, bootstrap snapshot check). Every skill and agent consumer trusts the field as written.
