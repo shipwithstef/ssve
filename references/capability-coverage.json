@@ -3751,7 +3751,8 @@
       "source": "scripts/lib/runtime-engine-v2.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-runtime-v2.mjs"
+        "test-framework/evals/tier-1/validate-runtime-v2.mjs",
+        "test-framework/tests/runtime-effect-lease-expiry.test.mjs"
       ]
     },
     {
