@@ -50,8 +50,30 @@ Per stack-profile, runs the equivalent of:
 |---|---|
 | Terraform | `terraform state list` + `terraform state show` for each |
 | Pulumi | `pulumi stack export` |
-| Kubernetes | `kubectl get all -A -o json` + `kubectl get pv,pvc,configmap,secret -A -o json` |
+| Kubernetes | `kubectl get all -A -o json` + `kubectl get pv,pvc,configmap,secret -A -o json`, each piped through `redact-topology.mjs` (see Secret Redaction) |
 | Helm | `helm list -A -o json` + `helm get all <release> -o json` |
+
+## Secret Redaction (mandatory)
+
+Snapshots are committed documentation, so credentials must never reach them. Every JSON
+snapshot is piped through `skills/track-topology-diff/scripts/redact-topology.mjs` BEFORE
+it is written anywhere under `docs/specs/topology-snapshots/` (state.json, summary.md,
+diff-*.md, logs):
+
+```bash
+kubectl get pv,pvc,configmap,secret -A -o json | node skills/track-topology-diff/scripts/redact-topology.mjs > "$SNAPSHOT_DIR/k8s-config.json"
+terraform show -json | node skills/track-topology-diff/scripts/redact-topology.mjs > "$SNAPSHOT_DIR/terraform.json"
+```
+
+- Kubernetes Secret `data` / `stringData` values and the `last-applied-configuration`
+  annotation become `[REDACTED]`; keys are kept so key additions and removals still diff.
+- Credential-named fields (password, token, api key, private key, ...), env entries with such
+  names, and Terraform `sensitive_values` are redacted too. References such as
+  `secretKeyRef` and `secretName` are kept.
+- The redactor refuses non-JSON input (exit 1). Use `-o json` / `-json` output; never pipe
+  `terraform state show` or other text output into a snapshot file.
+- Diffs are produced from already-redacted snapshots (`diffSnapshots` in the same module).
+  A secret rotation therefore shows no value change; do not try to recover one.
 
 ## Output Layout
 

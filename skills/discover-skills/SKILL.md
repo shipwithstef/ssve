@@ -2,8 +2,8 @@
 name: discover-skills
 version: "1.0"
 description: >
-  Find and install external agent skills from the open skill ecosystem when there is a
-  capability gap. Use for "find a skill for X", "is there a skill that can", "what skills
+  Find external agent skills from the open skill ecosystem when there is a capability
+  gap, and install one only after explicit user approval. Use for "find a skill for X", "is there a skill that can", "what skills
   exist for".
 phases:
   - id: P1-CapabilityGapScope
@@ -53,7 +53,7 @@ chain:
   lanes: {}
   progressive: false
   self_verify: true
-  human_checkpoint: false
+  human_checkpoint: true
 ---
 
 # Skill Finder
@@ -176,10 +176,15 @@ Found N skills for [query] across skills.sh + SkillHub:
 Install the recommended one? (yes / pick another / skip)
 ```
 
-**Auto mode:**
-Install the highest-relevance, highest-trust skill automatically. Log the installation.
+**Auto mode (caller-invoked):** rank and recommend only. Return the recommendation and the
+exact install command to the caller and the user; do not run it. Auto mode never installs.
 
-### Step 5: Install (if approved)
+### Step 5: Install (only after explicit approval)
+
+Installing runs third-party code into the user's environment. Never install without an
+explicit user approval ("yes" or a chosen number) given in this conversation for that
+specific package; a caller's request to "find a skill" is not approval to install. Without
+approval, stop after Step 4 and report the recommendation.
 
 ```bash
 npx skills add [package]
@@ -206,7 +211,8 @@ If a skill was installed:
 | 2 | Results merged and deduplicated | combined list with no duplicate skills | |
 | 3 | Results ranked with quality signals | install count + AI rating (if available) + publisher reputation | |
 | 4 | Finding logged | entry in research-log.md | |
-| 5 | Knowledge protocol conformance | Library checked first, project artifact written, knowledge persisted, .version updated | |
+| 5 | No install without approval | The install ran only after an explicit user approval for that package in this conversation | |
+| 6 | Knowledge protocol conformance | Library checked first, project artifact written, knowledge persisted, .version updated | |
 
 ## Phase Receipt Contract
 
