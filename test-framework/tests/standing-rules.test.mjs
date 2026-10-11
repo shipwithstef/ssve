@@ -1,11 +1,17 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { MAX_BLOCK_BYTES, printForSession } from "../../scripts/standing-rules.mjs";
+import {
+  LOCK_NAME,
+  MAX_BLOCK_BYTES,
+  addRule,
+  createFreshTemp,
+  printForSession,
+} from "../../scripts/standing-rules.mjs";
 
 const testsDir = path.dirname(fileURLToPath(import.meta.url));
 const cli = path.resolve(testsDir, "../../scripts/standing-rules.mjs");
@@ -86,6 +92,149 @@ test("duplicate add does not repeat the rule", () => {
     assert.equal(run(["add", "--root", root, "--text", RULE]).status, 0);
     const listed = run(["list", "--root", root]);
     assert.equal(listed.stdout.trim().split("\n").length, 1);
+  });
+});
+
+test("a pre-existing temp symlink is not followed or installed as the store", () => {
+  fixture((root) => {
+    const outside = path.join(root, "outside.txt");
+    fs.writeFileSync(outside, "OUTSIDE-SENTINEL\n");
+    const svc = path.join(root, ".svc");
+    fs.mkdirSync(svc);
+    const planted = path.join(svc, `.standing-rules.md.${process.pid}.tmp`);
+    const fresh = path.join(svc, "fresh.tmp");
+    fs.symlinkSync(outside, planted);
+
+    const written = createFreshTemp(svc, "body\n", [planted, fresh]);
+    assert.equal(written, fresh);
+    assert.equal(fs.lstatSync(fresh).isSymbolicLink(), false);
+    assert.equal(fs.readFileSync(fresh, "utf8"), "body\n");
+    assert.equal(fs.readFileSync(outside, "utf8"), "OUTSIDE-SENTINEL\n");
+    assert.equal(fs.readlinkSync(planted), outside);
+    fs.unlinkSync(fresh);
+
+    addRule(root, RULE);
+    const store = path.join(svc, "standing-rules.md");
+    const storeStat = fs.lstatSync(store);
+    assert.equal(storeStat.isSymbolicLink(), false);
+    assert.equal(storeStat.isFile(), true);
+    assert.match(fs.readFileSync(store, "utf8"), new RegExp(RULE));
+    assert.doesNotMatch(fs.readFileSync(store, "utf8"), /OUTSIDE-SENTINEL/);
+    assert.equal(fs.readFileSync(outside, "utf8"), "OUTSIDE-SENTINEL\n");
+    assert.equal(fs.readlinkSync(planted), outside);
+  });
+});
+
+function flockChildRunning(pid) {
+  let text = "";
+  try { text = fs.readFileSync(`/proc/${pid}/task/${pid}/children`, "utf8"); }
+  catch { return false; }
+  for (const childPid of text.trim().split(/\s+/)) {
+    if (!childPid) continue;
+    try {
+      if (fs.readFileSync(`/proc/${childPid}/comm`, "utf8").trim() === "flock") return true;
+    } catch { /* the child exited while we looked */ }
+  }
+  return false;
+}
+
+function addAsync(root, text) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [cli, "add", "--root", root, "--text", text]);
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.on("close", (status) => resolve({ status, stdout, stderr }));
+  });
+}
+
+test("an add blocked on the store lock re-reads rules committed while it waited", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "standing-rules-"));
+  let fd;
+  let child;
+  try {
+    addRule(root, "rule-alpha");
+    const store = path.join(root, ".svc", "standing-rules.md");
+    fd = fs.openSync(path.join(root, ".svc", LOCK_NAME), fs.constants.O_RDWR);
+    const held = spawnSync("flock", ["-n", "-E", "75", "3"], { stdio: ["ignore", "ignore", "pipe", fd] });
+    assert.equal(held.status, 0, held.stderr?.toString());
+
+    child = spawn(process.execPath, [cli, "add", "--root", root, "--text", "rule-beta"]);
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    const finished = new Promise((resolve) => {
+      const timer = setTimeout(() => resolve({ status: null, stdout, stderr: `${stderr}\nTIMEOUT` }), 8000);
+      child.on("close", (status) => {
+        clearTimeout(timer);
+        resolve({ status, stdout, stderr });
+      });
+    });
+
+    const started = Date.now();
+    let sawFlock = false;
+    while (Date.now() - started < 5000) {
+      if (child.exitCode !== null) break;
+      if (flockChildRunning(child.pid)) { sawFlock = true; break; }
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    assert.equal(sawFlock, true, `add did not wait on the store lock: ${stderr}`);
+    const mid = fs.readFileSync(store, "utf8");
+    assert.match(mid, /rule-alpha/);
+    assert.doesNotMatch(mid, /rule-beta/);
+    fs.appendFileSync(store, "- rule-gamma\n");
+
+    fs.closeSync(fd);
+    fd = undefined;
+    const result = await finished;
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout, "recorded: rule-beta\n");
+    const listed = run(["list", "--root", root]);
+    assert.equal(listed.stdout, "rule-alpha\nrule-gamma\nrule-beta\n");
+  } finally {
+    if (fd !== undefined) {
+      try { fs.closeSync(fd); } catch { /* already closed */ }
+    }
+    if (child && child.exitCode === null) child.kill("SIGKILL");
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("parallel adds keep every recorded rule", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "standing-rules-"));
+  try {
+    const rules = ["rule-one", "rule-two", "rule-three", "rule-four", "rule-five", "rule-six"];
+    const results = await Promise.all(rules.map((text) => addAsync(root, text)));
+    for (const result of results) assert.equal(result.status, 0, result.stderr);
+    const listed = run(["list", "--root", root]);
+    assert.deepEqual(listed.stdout.trim().split("\n").sort(), [...rules].sort());
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("re-adding an earlier rule reports that normalized rule as a duplicate", () => {
+  fixture((root) => {
+    const first = "alpha invoices exclude VAT";
+    const second = "beta shipping is free over ten";
+    const recorded = run(["add", "--root", root, "--text", `  ${first}  `]);
+    assert.equal(recorded.status, 0, recorded.stderr);
+    assert.equal(recorded.stdout, `recorded: ${first}\n`);
+    const later = run(["add", "--root", root, "--text", second]);
+    assert.equal(later.status, 0, later.stderr);
+    assert.equal(later.stdout, `recorded: ${second}\n`);
+    const again = run(["add", "--root", root, "--text", `\t${first}\n`]);
+    assert.equal(again.status, 0, again.stderr);
+    assert.equal(again.stdout, `duplicate: ${first}\n`);
+    assert.doesNotMatch(again.stdout, /beta shipping/);
+    const listed = run(["list", "--root", root]);
+    assert.equal(listed.stdout, `${first}\n${second}\n`);
   });
 });
 

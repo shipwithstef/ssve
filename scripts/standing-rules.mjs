@@ -6,13 +6,19 @@
  * Session start loads print-for-session, a single block capped at 2 KB.
  * Nothing is appended to CLAUDE.md or AGENTS.md.
  */
+import crypto from "node:crypto";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 export const STORE_NAME = "standing-rules.md";
+export const LOCK_NAME = `.${STORE_NAME}.lock`;
 export const MAX_BLOCK_BYTES = 2048;
+const NOFOLLOW = fs.constants.O_NOFOLLOW ?? 0;
+const FRESH_FLAGS = fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY | NOFOLLOW;
+const LOCK_FLAGS = fs.constants.O_CREAT | fs.constants.O_RDWR | NOFOLLOW;
 const HEADER = "[STANDING RULES — owner rules for everything we build, now and later]";
 
 function resolveRoot(root) {
@@ -93,33 +99,155 @@ function renderFile(rules) {
   return lines.join("\n");
 }
 
-function writeRules(projectRoot, rules) {
+function ensureSvcDir(projectRoot) {
   const svcDir = path.join(projectRoot, ".svc");
-  let svcStat = null;
-  try { svcStat = fs.lstatSync(svcDir); } catch (error) {
-    if (error.code !== "ENOENT") throw error;
+  const inspect = () => {
+    let svcStat;
+    try { svcStat = fs.lstatSync(svcDir); }
+    catch (error) {
+      if (error.code === "ENOENT") return null;
+      throw Object.assign(new Error("cannot inspect .svc"), { code: "REFUSE" });
+    }
+    if (!svcStat.isDirectory() || svcStat.isSymbolicLink()) {
+      throw Object.assign(new Error(".svc must be a regular directory"), { code: "REFUSE" });
+    }
+    return svcStat;
+  };
+  if (!inspect()) {
+    try { fs.mkdirSync(svcDir); }
+    catch (error) {
+      if (error.code !== "EEXIST") throw error;
+    }
+    if (!inspect()) {
+      throw Object.assign(new Error(".svc must be a regular directory"), { code: "REFUSE" });
+    }
   }
-  if (svcStat && (!svcStat.isDirectory() || svcStat.isSymbolicLink())) {
-    throw Object.assign(new Error(".svc must be a regular directory"), { code: "REFUSE" });
-  }
-  if (!svcStat) fs.mkdirSync(svcDir, { recursive: false });
+  return svcDir;
+}
 
-  const file = storePath(projectRoot);
+function refuseNonRegularStore(file) {
   let existing = null;
-  try { existing = fs.lstatSync(file); } catch (error) {
+  try { existing = fs.lstatSync(file); }
+  catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
   if (existing && (!existing.isFile() || existing.isSymbolicLink())) {
     throw Object.assign(new Error("standing rules must be a regular file"), { code: "REFUSE" });
   }
+}
 
-  const tmp = path.join(svcDir, `.${STORE_NAME}.${process.pid}.tmp`);
-  fs.writeFileSync(tmp, renderFile(rules), { encoding: "utf8", mode: 0o644, flag: "w" });
+function tempCandidates(dir) {
+  return Array.from({ length: 16 }, () => path.join(
+    dir,
+    `.${STORE_NAME}.${process.pid}.${crypto.randomBytes(8).toString("hex")}.tmp`,
+  ));
+}
+
+// Exclusive create: O_EXCL|O_NOFOLLOW never follows a pre-existing symlink.
+// `candidates` is the production name list unless a test supplies its own.
+export function createFreshTemp(dir, body, candidates = tempCandidates(dir)) {
+  const directory = path.resolve(dir);
+  for (const tmp of candidates) {
+    if (path.dirname(path.resolve(tmp)) !== directory) {
+      throw Object.assign(new Error("temporary standing rules path escapes its directory"), { code: "REFUSE" });
+    }
+    let fd;
+    try {
+      fd = fs.openSync(tmp, FRESH_FLAGS, 0o644);
+    } catch (error) {
+      if (error.code === "EEXIST" || error.code === "ELOOP") continue;
+      throw error;
+    }
+    let created;
+    try {
+      created = fs.fstatSync(fd);
+      if (!created.isFile()) {
+        throw Object.assign(new Error("temporary standing rules file is not a regular file"), { code: "REFUSE" });
+      }
+      fs.writeFileSync(fd, body, "utf8");
+      fs.fsyncSync(fd);
+      const linked = fs.lstatSync(tmp);
+      if (
+        linked.isSymbolicLink()
+        || !linked.isFile()
+        || linked.dev !== created.dev
+        || linked.ino !== created.ino
+      ) {
+        throw Object.assign(new Error("temporary standing rules file changed before install"), { code: "REFUSE" });
+      }
+      return tmp;
+    } catch (error) {
+      try {
+        const linked = fs.lstatSync(tmp);
+        if (
+          created
+          && !linked.isSymbolicLink()
+          && linked.isFile()
+          && linked.dev === created.dev
+          && linked.ino === created.ino
+        ) {
+          fs.unlinkSync(tmp);
+        }
+      } catch { /* temp cleanup is best-effort */ }
+      throw error;
+    } finally {
+      try { fs.closeSync(fd); } catch { /* already closed */ }
+    }
+  }
+  throw Object.assign(new Error("could not create a fresh standing rules file"), { code: "REFUSE" });
+}
+
+function writeRules(projectRoot, rules) {
+  const svcDir = ensureSvcDir(projectRoot);
+  const file = storePath(projectRoot);
+  refuseNonRegularStore(file);
+  const tmp = createFreshTemp(svcDir, renderFile(rules));
   try {
+    refuseNonRegularStore(file);
+    const linked = fs.lstatSync(tmp);
+    if (linked.isSymbolicLink() || !linked.isFile()) {
+      throw Object.assign(new Error("temporary standing rules file is not a regular file"), { code: "REFUSE" });
+    }
     fs.renameSync(tmp, file);
   } catch (error) {
-    try { fs.unlinkSync(tmp); } catch { /* temp cleanup is best-effort */ }
+    try {
+      const linked = fs.lstatSync(tmp);
+      if (!linked.isSymbolicLink() && linked.isFile()) fs.unlinkSync(tmp);
+    } catch { /* temp cleanup is best-effort */ }
     throw error;
+  }
+}
+
+function withStoreLock(projectRoot, fn) {
+  const svcDir = ensureSvcDir(projectRoot);
+  const lockPath = path.join(svcDir, LOCK_NAME);
+  let fd;
+  try {
+    fd = fs.openSync(lockPath, LOCK_FLAGS, 0o600);
+  } catch (error) {
+    if (error.code === "ELOOP" || error.code === "EEXIST") {
+      throw Object.assign(new Error("standing rules lock must be a regular file"), { code: "REFUSE" });
+    }
+    throw error;
+  }
+  try {
+    const stat = fs.fstatSync(fd);
+    if (!stat.isFile()) {
+      throw Object.assign(new Error("standing rules lock must be a regular file"), { code: "REFUSE" });
+    }
+    // Same open-file description stays locked in this process after flock exits.
+    const waited = spawnSync("flock", ["-x", "-w", "10", "3"], {
+      stdio: ["ignore", "ignore", "pipe", fd],
+      encoding: "utf8",
+      timeout: 15000,
+    });
+    if (waited.error || waited.status !== 0) {
+      const detail = (waited.stderr || waited.error?.message || `status ${waited.status}`).trim();
+      throw Object.assign(new Error(`could not lock standing rules (${detail})`), { code: "REFUSE" });
+    }
+    return fn();
+  } finally {
+    try { fs.closeSync(fd); } catch { /* releasing the lock */ }
   }
 }
 
@@ -127,14 +255,17 @@ export function addRule(root, text) {
   const projectRoot = resolveRoot(root);
   const rule = normalizeRule(text);
   if (!rule) throw Object.assign(new Error("standing rule text is empty"), { code: "EMPTY" });
-  const existing = readRules(projectRoot);
-  if (existing.includes(rule)) return { added: false, rules: existing };
-  const next = [...existing, rule];
-  if (!blockCovers(next)) {
-    throw Object.assign(new Error("standing rules block would exceed 2 KB"), { code: "CAP" });
-  }
-  writeRules(projectRoot, next);
-  return { added: true, rules: next };
+  // Read, cap-check, and write share one lock so a second add cannot drop the first.
+  return withStoreLock(projectRoot, () => {
+    const existing = readRules(projectRoot);
+    if (existing.includes(rule)) return { added: false, rule, rules: existing };
+    const next = [...existing, rule];
+    if (!blockCovers(next)) {
+      throw Object.assign(new Error("standing rules block would exceed 2 KB"), { code: "CAP" });
+    }
+    writeRules(projectRoot, next);
+    return { added: true, rule, rules: next };
+  });
 }
 
 export function listRules(root) {
@@ -195,7 +326,8 @@ function main(argv) {
         return 2;
       }
       const result = addRule(root, args.text);
-      process.stdout.write(`recorded: ${result.rules.at(-1) ?? ""}\n`);
+      const kind = result.added ? "recorded" : "duplicate";
+      process.stdout.write(`${kind}: ${result.rule}\n`);
       return 0;
     }
     if (args.command === "list") {
