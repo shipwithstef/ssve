@@ -87,6 +87,10 @@ export const ARMS = {
     `6. Harden: write chaos.json (start, ready, steady check, endpoints) and run \`node ${ROOT}/scripts/chaos-probe.mjs --dir . --spec chaos.json\`; fix what fails. Then run \`node ${ROOT}/scripts/quality-probes.mjs . --mutants 20\` and strengthen the tests of the game rules until mutation.score is at least 0.6 (tests that catch real defects, not more tests). Play the main journey through the real interface as a user would (a browser script that clicks and types, not calls into the code), and for anything with state, walk it: random walks and one wrong move at each step must never leave the user stuck. Your own tests must pass (\`node --test\` exits 0): a failing test of yours is a failing check, fixed before you stop. For a web app, run \`node ${ROOT}/scripts/web-probes.mjs --dir .\` and fix what it reports: zero accessibility violations and console errors, body text at least 16 px, tap targets at least 44 px on a phone, a visible response to every click within 100 ms, security headers (CSP, nosniff, framing), a flood of requests throttled, and the server never trusting an id the client sends. Then look at screenshots of every screen and give it a deliberate art direction: a palette and shapes that belong to this world, not defaults. Delete scratch files nothing uses.`,
     "7. Stop when every done-when check passes, including one per named deliverable and your own tests. Do not add systems the build does not use.",
   ].join("\n"),
+  // The whole framework as a user runs it: its skills, hooks and rules installed by ./setup
+  // into the builder's own home, route-workflow choosing the lane, profile and chain. Nobody
+  // answers in a headless run, so human checkpoints take the stated assumption and log it.
+  framework: "Build what spec.md asks for. Start with the route-workflow skill and follow the framework from there. Nobody will answer questions in this session: at every human checkpoint, take the most reasonable answer, write it down as an assumption, and continue.",
   blueprint: [
     "Implement the specification in spec.md in this directory, following this plan exactly. Do every step; each one has a check.",
     "1. Read spec.md. Write RULES.md: a numbered list with one line per rule in the spec, including every input that must be rejected and every edge case it names. Check: every sentence of the spec maps to at least one rule.",
@@ -98,7 +102,10 @@ export const ARMS = {
 };
 
 // Extra tools an arm needs beyond the task's list.
-export const ARM_TOOLS = { swarm: ["Agent", "Task"], bounded: ["Bash(git:*)"], solo: ["Bash(git:*)"] };
+export const ARM_TOOLS = { swarm: ["Agent", "Task"], bounded: ["Bash(git:*)"], solo: ["Bash(git:*)"], framework: ["Skill", "Agent", "Task", "Bash"] };
+// The full chain plans, reviews and audits as well as builds: more turns and time, the same
+// budget cap.
+export const ARM_LIMITS = { framework: { turns: 3, time: 2 } };
 export function armTools(taskTools, arm) {
   const base = taskTools || "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)";
   const extra = (ARM_TOOLS[arm] || []).filter((t) => !base.split(",").includes(t));
@@ -212,13 +219,27 @@ export function prepare(task) {
 // masked with empty directories, and only the build directory and a private home are
 // writable (bubblewrap, nested probe-loop sandboxes still work inside it). Without
 // bubblewrap the build runs unmasked and the row records builder_sandbox: null.
-export function builderWrap(dir) {
-  if (process.env.OE_NO_BUILDER_SANDBOX === "1" || spawnSync("sh", ["-c", "command -v bwrap"]).status !== 0) return null;
+export function builderWrap(dir, { framework = false } = {}) {
+  if (process.env.OE_NO_BUILDER_SANDBOX === "1" || spawnSync("sh", ["-c", "command -v bwrap"]).status !== 0) {
+    if (framework) throw new Error("the framework arm installs hooks into the builder's home and runs only inside a sandbox (bubblewrap)");
+    return null;
+  }
   const home = fs.mkdtempSync(path.join(path.dirname(dir), "home-"));
   const kept = path.join(os.homedir(), ".svc", "outcome-eval-artifacts");
   // An argument list, never a shell string: the paths reach bwrap verbatim.
   const masks = [TASKS, path.join(ROOT, "test-framework", "outcome-evals", "results"), kept].filter((m) => fs.existsSync(m)).flatMap((m) => ["--tmpfs", m]);
-  return { name: "bwrap", argv: ["bwrap", "--ro-bind", "/", "/", "--tmpfs", "/tmp", "--bind", dir, dir, "--bind", home, home, "--tmpfs", "/sys/fs/cgroup", ...masks, "--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent", "--"], env: { PROBE_DIR: dir, PROBE_HOME: home, npm_config_cache: path.join(home, ".npm") } };
+  const argv = ["bwrap", "--ro-bind", "/", "/", "--tmpfs", "/tmp", "--bind", dir, dir, "--bind", home, home, "--tmpfs", "/sys/fs/cgroup", ...masks, "--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent", "--"];
+  const env = { PROBE_DIR: dir, PROBE_HOME: home, npm_config_cache: path.join(home, ".npm") };
+  if (framework) {
+    // Installed exactly as a user would, inside the same sandbox: only the private home is
+    // writable, so setup cannot touch the real one.
+    env.HOME = home;
+    const r = spawnSync(argv[0], [...argv.slice(1), path.join(ROOT, "setup"), "--host", "claude"], { env: { ...process.env, ...env }, encoding: "utf8", timeout: 600000 });
+    if (r.status !== 0) throw new Error(`framework setup failed: ${(r.stderr || r.stdout || "").slice(-300)}`);
+    const skills = fs.existsSync(path.join(home, ".claude", "skills")) ? fs.readdirSync(path.join(home, ".claude", "skills")).length : 0;
+    if (skills < 100) throw new Error(`framework setup installed ${skills} entries, expected the full catalog`);
+  }
+  return { name: "bwrap", argv, env, ...(framework ? { framework_home: home } : {}) };
 }
 
 export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40, effort = null, extraArgs = [], wrap = null) {
@@ -496,10 +517,13 @@ async function main(argv) {
     // Hash the prompts actually sent, not the files as they are when the row is written.
     const prompts = armPrompts(job.task, job.arm);
     const sha = crypto.createHash("sha256").update(isPillarArm(job.arm) ? prompts.join("\n\0\n") : prompts[0]).digest("hex").slice(0, 12);
-    const wrap = builderWrap(dir);
+    let wrap;
+    try { wrap = builderWrap(dir, { framework: job.arm === "framework" }); }
+    catch (e) { budget.settle(claim, 0); fs.rmSync(dir, { recursive: true, force: true }); process.stderr.write(`${job.task}/${job.arm}#${job.rep}: ERROR ${e.message}\n`); return { ...job, error: e.message }; }
+    const lim = ARM_LIMITS[job.arm] || { turns: 1, time: 1 };
     for (const prompt of prompts) {
       const stepCap = claim.builder != null ? Math.max(0.01, +(claim.builder - (agent.cost_usd || 0)).toFixed(2)) : null;
-      const step = await runAgent(dir, prompt, model, cfg.timeout_ms, isPillarArm(job.arm) ? cfg.tools : armTools(cfg.tools, job.arm), cfg.max_turns, effort, stepCap != null ? ["--max-budget-usd", String(stepCap)] : [], wrap);
+      const step = await runAgent(dir, prompt, model, cfg.timeout_ms * lim.time, isPillarArm(job.arm) ? cfg.tools : armTools(cfg.tools, job.arm), cfg.max_turns * lim.turns, effort, stepCap != null ? ["--max-budget-usd", String(stepCap)] : [], wrap);
       replies.push(String(step.text || "").slice(-400));
       if (step.error) { agent = { ...agent, error: `step ${agent.steps + 1}: ${step.error}` }; break; }
       agent = { ...step, cost_usd: (agent.cost_usd || 0) + (step.cost_usd || 0), turns: (agent.turns || 0) + (step.turns || 0), duration_ms: (agent.duration_ms || 0) + (step.duration_ms || 0), steps: agent.steps + 1 };

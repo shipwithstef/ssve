@@ -31,3 +31,21 @@ test("builders see no answers, can read the framework, and write only their buil
   assert.ok(!r.stdout.includes("escaped") && !fs.existsSync(path.join(ROOT, ".builder-escape")), "the repository is read-only");
   assert.ok(fs.readdirSync(tasks).length > 10, "outside the sandbox nothing changed");
 });
+
+test("the framework arm installs the whole framework into the builder's own home, never the real one", () => {
+  if (spawnSync("sh", ["-c", "command -v bwrap"]).status !== 0 || process.env.OE_NO_BUILDER_SANDBOX === "1") {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "oe-wrap-fw-"));
+    assert.throws(() => builderWrap(dir, { framework: true }), /only inside a sandbox/, "no sandbox: the framework arm refuses");
+    return;
+  }
+  const realSkills = path.join(os.homedir(), ".claude", "skills");
+  const before = fs.existsSync(realSkills) ? fs.readdirSync(realSkills).sort().join(",") : "";
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "oe-wrap-fw-"));
+  const w = builderWrap(dir, { framework: true });
+  assert.equal(w.env.HOME, w.framework_home, "the builder runs with the private home");
+  const installed = fs.readdirSync(path.join(w.framework_home, ".claude", "skills"));
+  assert.ok(installed.includes("route-workflow") && installed.length >= 100, `full catalog installed (${installed.length})`);
+  assert.ok(fs.existsSync(path.join(w.framework_home, ".claude", "settings.json")), "hooks are configured");
+  const after = fs.existsSync(realSkills) ? fs.readdirSync(realSkills).sort().join(",") : "";
+  assert.equal(after, before, "the real home's skills are untouched");
+});
