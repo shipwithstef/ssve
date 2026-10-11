@@ -395,3 +395,7 @@ If Kimi CLI compacted context and you lost track of framework state:
 6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
 
 If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+
+## Handback
+
+Run `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done improve-framework --receipt load-skill` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

@@ -420,6 +420,8 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
+**Under a compiled lane graph (`.svc/lane-tasks-*.json`) `svc-next` chooses the next stage: do not invoke or suggest the next skill from this section; follow `## Handback` at the end of this file. The standalone guidance below applies only when no lane graph exists.**
+
 Apply the task-graph protocol above, then:
 
 **If `--progressive` flag is present AND self-verify passed:**
@@ -433,3 +435,7 @@ Apply the task-graph protocol above, then:
 ## Post-Compaction Recovery
 
 If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.json` is the sole source of truth: resume the first `in_progress` task (else the first `pending` task with blockers satisfied), re-load its skill with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` names a different `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+
+## Handback
+
+Run `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done design-ux --receipt load-skill` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

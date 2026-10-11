@@ -383,7 +383,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
-`--progressive` + self-verify passed → next per lane task graph (typically `review-exec`, then `audit-implementation`). Otherwise report execution summary + suggest the next skill.
+After self-verify passes, report the execution summary and follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage.
 
 ## Post-Compaction Recovery
 
@@ -418,3 +418,7 @@ On new delivery-graph signals, emit `skill_outcome` per `references/skill-outcom
 ## Chain Receipt Emission (Mandatory Chain)
 
 This skill emits receipt type `exec-record` per `references/chain-receipt-contract.md`: staging at `.svc/receipts/staging/<tree-hash>/exec-record.json` pre-commit; post-commit hook promotes to the SHA mirror + consolidated note on `refs/notes/svc-receipts`. Emit via `scripts/emit-receipt.mjs --type exec-record --wi <WI> --sha <SHA> --body <file>`. Self-verify: receipt exists, passes `schemas/receipts/exec-record.schema.json`, reflected in the consolidated note.
+
+## Handback
+
+Run the `EMIT` command `svc-next` printed for this stage (it writes the `exec-record` receipt and prints `exec-record:<sha256>`), then `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done execute-changeset --receipt exec-record:<sha256>` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

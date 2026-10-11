@@ -332,8 +332,7 @@ Mark this skill's task `completed` in `lane-tasks.json` before leaving, then upd
 In task-graph mode, follow §Task-graph mode above, then:
 
 **If verdict is READY TO LAND or CONDITIONAL (no Critical):**
-- If `--progressive`: invoke `land-changeset --progressive --lane <lane>`
-- If not progressive: suggest "Ready to land. Run `land-changeset`"
+- Follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage.
 
 **If verdict is BLOCKED:**
 - Stop the chain. Report Critical findings.
@@ -397,3 +396,7 @@ This writes to `.svc/receipts/<sha>/audit-implementation.json` (or staging if pr
 AND attaches it to the consolidated git note on `refs/notes/svc-receipts`.
 
 Self-verify: the receipt at `.svc/receipts/<sha>/<type>.json` passes its schema (`schemas/receipts/<type>.schema.json`), is reflected in the consolidated git note, and `node scripts/check-chain-receipts.mjs --sha HEAD` shows it present + schema-valid.
+
+## Handback
+
+Run the `EMIT` command `svc-next` printed for this stage (it writes the `audit-implementation` receipt and prints `audit-implementation:<sha256>`), then `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done audit-implementation --receipt audit-implementation:<sha256>` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

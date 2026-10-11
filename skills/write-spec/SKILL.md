@@ -194,6 +194,8 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
+**Under a compiled lane graph (`.svc/lane-tasks-*.json`) `svc-next` chooses the next stage: do not invoke or suggest the next skill from this section; follow `## Handback` at the end of this file. The standalone guidance below applies only when no lane graph exists.**
+
 Task-graph mode: per Pipeline Continuation above. `--progressive` + self-verify passed: greenfield → `audit-ac --progressive --lane greenfield`; brownfield-feature → `write-journeys --progressive --lane brownfield-feature` (honor `--skip`). Without `--progressive`: report and suggest the same next skill.
 
 ## Post-Compaction Recovery
@@ -203,3 +205,7 @@ Lane-tasks file is the sole source of truth: find first `in_progress`/unblocked 
 ## Skill Outcome Contract
 
 When this skill discovers new delivery-graph signals, emit `skill_outcome` per `references/skill-outcome-contract.md` before completing the task.
+
+## Handback
+
+Run `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done write-spec --receipt load-skill` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

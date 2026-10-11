@@ -373,6 +373,8 @@ the task until all required phase ids appear in `skill_receipt.phases_executed`.
 
 ### Chaining
 
+**Under a compiled lane graph (`.svc/lane-tasks-*.json`) `svc-next` chooses the next stage: do not invoke or suggest the next skill from this section; follow `## Handback` at the end of this file. The standalone guidance below applies only when no lane graph exists.**
+
 This skill does not chain progressively. After producing the capability plan,
 route-workflow decides next steps: install skills, research sources, or
 continue to product pipeline.
@@ -392,3 +394,7 @@ Follow `references/task-graph-chaining-protocol.md` § Post-compaction recovery 
 ## Modes (added by WI-SPINE-003)
 
 This skill supports three modes via a `--mode` flag. Default is `regular` — unchanged behavior, all existing invocations preserved.
+
+## Handback
+
+Run `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done plan-capabilities --receipt load-skill` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

@@ -384,3 +384,7 @@ A zero-invocation verified cache replay retains its signed issuance history but 
 Run launcher `--preflight --plan-file <validated-v4-json>` with the actual review arguments before paid dispatch; retain `--plan-file` for the real invocation. Stage the frozen source before preflight: declared tracked input bytes must match the candidate index. Explicit extra dependencies use `--context-files <json-array-file>`. The launcher packages those actual files, including available planned source and bound producers. Missing executed files require an explicit recorded base version for a deletion.
 
 Unscored Loading/Reviewing responses containing no findings, certifications, rubric failures or unread dependencies receive at most the existing one completion attempt, within the original budget. Preserve both raw attempts; substantive negative evidence is never erased. Scope certifications to observed current-phase obligations. Installation remains downstream.
+
+## Handback
+
+Run the `EMIT` command `svc-next` printed for this stage (it writes the `review-exec` receipt and prints `review-exec:<sha256>`), then `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done review-exec --receipt review-exec:<sha256>` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

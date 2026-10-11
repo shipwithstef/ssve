@@ -234,6 +234,8 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
+**Under a compiled lane graph (`.svc/lane-tasks-*.json`) `svc-next` chooses the next stage: do not invoke or suggest the next skill from this section; follow `## Handback` at the end of this file. The standalone guidance below applies only when no lane graph exists.**
+
 **If `--progressive` flag is present AND self-verify passed:**
 - Check `--skip` list. If this skill is in the skip list, pass through to next.
 - Invoke next skill: `validate-feature --progressive --lane greenfield`
@@ -245,3 +247,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 ## Post-Compaction Recovery
 
 Follow `references/task-graph-chaining-protocol.md` § Post-compaction recovery (lane-tasks file is the sole source of truth; never ghost-complete).
+
+## Handback
+
+Run `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done build-personas --receipt load-skill` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

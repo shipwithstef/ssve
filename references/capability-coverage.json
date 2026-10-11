@@ -2987,6 +2987,15 @@
       ]
     },
     {
+      "id": "engine:scripts/svc-next.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-next.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/svc-next.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/svc-owner-recovery.mjs",
       "kind": "engine",
       "source": "scripts/svc-owner-recovery.mjs",

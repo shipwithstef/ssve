@@ -252,7 +252,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
-`--progressive` + self-verify passed → greenfield: `audit-implementation --progressive`; brownfield-feature/bugfix/refactor: `land-changeset --progressive --lane <lane>` (honor `--skip`). Otherwise report and suggest `land-changeset`.
+After self-verify passes, report the gate verdict and follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage.
 
 ## Post-Compaction Recovery
 
@@ -261,3 +261,7 @@ Lane-tasks file is the sole source of truth: first `in_progress`/unblocked `pend
 ## Skill Outcome Contract
 
 On new delivery-graph signals, emit `skill_outcome` per `references/skill-outcome-contract.md` before completing the task.
+
+## Handback
+
+Run `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done review-gate --receipt load-skill` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

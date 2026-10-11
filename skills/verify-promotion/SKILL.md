@@ -334,14 +334,7 @@ with `block_on_discovery`, and leave the parent blocked instead of VERIFIED.
 
 ### Chaining
 
-In task-graph mode, follow §Task-graph mode above, then:
-
-**If `--progressive` flag is present AND self-verify passed:**
-- This is the end of all lanes. Report one sentence before the detail: `VERIFIED (<tier>): checked <the checks that passed>. Still open: <observation, leftovers, or manual issue close — or none>.` Do not treat outcome observation or a manual issue close as done.
-
-**If `--progressive` flag is absent:**
-- Report results to user
-- Pipeline complete. No further skills to chain.
+In task-graph mode, follow §Task-graph mode above, then report one sentence before the detail: `VERIFIED (<tier>): checked <the checks that passed>. Still open: <observation, leftovers, or manual issue close — or none>.` Do not treat outcome observation or a manual issue close as done. Then follow `## Handback` at the end of this file; this is the last stage of every lane, and the lane graph, not this skill, names the next stage.
 
 ## Post-Compaction Recovery
 
@@ -452,3 +445,7 @@ An exact duplicate is an idempotent no-op; corrections append with an explicit
 supersession id rather than deleting promotion history.
 
 Reference: `references/chain-receipt-contract.md`.
+
+## Handback
+
+Run the `EMIT` command `svc-next` printed for this stage (it writes the `verify-promotion` receipt and prints `verify-promotion:<sha256>`), then `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done verify-promotion --receipt verify-promotion:<sha256>` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

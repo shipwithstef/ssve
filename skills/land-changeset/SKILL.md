@@ -424,8 +424,7 @@ deferred until the PR is merged. Report the PR URL and stop — do not chain to
 In task-graph mode, follow §Task-graph mode above, then:
 
 **If PR was merged (auto-approve or post-approval):**
-- If `--progressive`: invoke `verify-promotion --progressive --lane <lane>`
-- If not progressive: suggest "Next: run `verify-promotion`"
+- Follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage.
 
 **If PR is open and waiting for approval:**
 - Stop the progressive chain. Report:
@@ -450,3 +449,7 @@ This makes the per-commit chain-receipt envelope and the per-WI story-receipts f
 ### Derived PR review view
 
 Invoke the canonical merge wrapper with exact expected repository, head branch and candidate SHA. If the compatibility PR receipt is absent, the wrapper verifies the live PR identity and canonical source chain, then derives that receipt from actual G5 evidence. Do not hand-author an approval or add a second review to obtain this view. Missing proof still refuses before merge. The GitHub merge is constrained to the expected head commit; installation follows verified finalization.
+
+## Handback
+
+Run `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done land-changeset --receipt load-skill` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

@@ -451,6 +451,8 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
+**Under a compiled lane graph (`.svc/lane-tasks-*.json`) `svc-next` chooses the next stage: do not invoke or suggest the next skill from this section; follow `## Handback` at the end of this file. The standalone guidance below applies only when no lane graph exists.**
+
 Apply the canonical task-graph protocol above. If the owner requested diagnosis only or no edits, return the requested diagnosis and stop before implementation; the platform-routing branch below does not override that scope.
 
 **`--diagnose-only` mode (after self-verify passes):**
@@ -476,3 +478,7 @@ If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.jso
 
 When this skill discovers new delivery-graph signals, emit `skill_outcome` per
 `references/skill-outcome-contract.md` before completing the task.
+
+## Handback
+
+Run `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done diagnose-bug --receipt load-skill` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.

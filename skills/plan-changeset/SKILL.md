@@ -335,10 +335,6 @@ Before declaring done, verify:
 
 If any check FAILs, fix before continuing.
 
-### Chaining
-
-`--progressive` + self-verify passed → `execute-changeset --progressive --lane <lane>` (honor `--skip`). Otherwise report the manifest summary and suggest `execute-changeset`.
-
 ## Post-Compaction Recovery
 
 Lane-tasks file is the sole source of truth: first `in_progress`/unblocked `pending`, `task-graph.mjs load-skill`, re-read this SKILL.md, resume; never ghost-complete; checkpoint file disagreement → trust lane-tasks + re-run `task-graph.mjs checkpoint`.
@@ -361,3 +357,7 @@ For v5, author the full receipt body once inside SVC_PLAN_BODY (including `plann
 ### Stable implementation handoff
 
 Freeze the validated complete v5 JSON before paid plan review. Express future release identities through the existing producer/verifier references; derive the eventual candidate from execution evidence rather than hardcoding an implementation SHA into the plan. Persist the seal envelope outside the body; issuance and execution re-read those exact prepared bytes and call `verifyReviewerEvidence` on the actual review-plan receipt. Never rewrite the reviewed plan with `sealed:true` and never autogenerate success. A local repair that preserves ACs, write scope, dependencies, behavior, API, state, proof and authority records reason+evidence and revalidates; a consequential amendment reopens the affected source decision/contract and review proof using already-given owner intent (do not repeatedly ask routine permission). Reuse only the existing exact plan review evidence; never rebind implementation approval to a changed candidate.
+
+## Handback
+
+Run the `EMIT` command `svc-next` printed for this stage (it writes the `plan-manifest` receipt and prints `plan-manifest:<sha256>`), then `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done plan-changeset --receipt plan-manifest:<sha256>` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.
