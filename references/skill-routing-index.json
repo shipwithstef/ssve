@@ -1739,7 +1739,7 @@
     {
       "skill": "strategic-decision",
       "path": "skills/strategic-decision/SKILL.md",
-      "content_hash": "52141c0840458192b419da6bc739a26a23eb7157bbc0e86537eff97add78b04e",
+      "content_hash": "774edb17103562aaecbe2d9a1491842ac108f2c667ebe938e12fe31917175dc9",
       "description": "N-way strategic trade study: build vs buy, vendor, framework, database, hosting, AI model, payment provider, pricing or pivot. Use for 'which X should I use', 'compare providers', 'pick a vendor'. Not within-feature architecture (use design-tech).",
       "aliases": [
         "trade study",

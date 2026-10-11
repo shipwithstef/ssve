@@ -1,6 +1,6 @@
 {
-  "$comment": "Known-good headless invocations per coding harness, taken from svc scripts that run them today (see each 'source'). Placeholders: {model} {effort} {prompt_file} {cwd} {schema_file} {schema_json} {out_file}. 'probe' lists flags scripts/harness-playbook.mjs verify checks against the installed CLI's --help, so a CLI upgrade that renames a flag is caught before a run. Host install paths and hook quirks live in provision/hosts/<host>.json. Refresh this file when a probe fails or a release note renames a flag; never add a flag that no script or official doc has shown working. A host with 'launcher' runs through that wrapper; its role flags belong to the wrapper. probe.documented_hidden lists flags the official docs show but --help omits; verify does not probe them.",
-  "updated": "2026-10-10",
+  "$comment": "Known-good headless invocations per coding harness, taken from svc scripts that run them today (see each 'source'). Placeholders: {model} {effort} {prompt_file} {cwd} {schema_file} {schema_json} {out_file}. 'probe' lists flags scripts/harness-playbook.mjs verify checks against the installed CLI's --help, so a CLI upgrade that renames a flag is caught before a run. Host install paths and hook quirks live in provision/hosts/<host>.json. Refresh this file when a probe fails or a release note renames a flag; never add a flag that no script or official doc has shown working. A host with 'launcher' runs through that wrapper; its role flags belong to the wrapper. probe.documented_hidden lists flags the official docs show but --help omits; verify does not probe them. Every host under provision/hosts/ has exactly one entry, matched by 'provision_host' (agy is the reviewer-transport id of the antigravity host). An entry with empty 'roles' has no headless invocation svc runs today; it carries 'no_headless_reason' instead of a probe, and verify skips it.",
+  "updated": "2026-10-11",
   "reference_prompt": {
     "why": "The shape the external-review launcher sends to every host (scripts/run-external-review.mjs). It works across families because it states role, mode, inputs, the exact output contract and the stop condition, and nothing else.",
     "template": "You are the {role} for {task}. Work {mode}.\nInputs: {inputs}.\nDone means: {done_condition}.\nReturn exactly one raw JSON object matching this schema, with no markdown or commentary:\n{schema_json}",
@@ -17,6 +17,7 @@
       "name": "Claude Code",
       "binary": "claude",
       "family": "anthropic",
+      "provision_host": "claude",
       "prompt_delivery": "stdin",
       "roles": {
         "review": [
@@ -77,6 +78,7 @@
       "name": "OpenAI Codex CLI",
       "binary": "codex",
       "family": "openai",
+      "provision_host": "codex",
       "prompt_delivery": "stdin ('-' as last argument)",
       "roles": {
         "review": [
@@ -144,6 +146,7 @@
       "name": "Antigravity / Gemini via the agy dispatcher",
       "binary": "agy",
       "family": "google",
+      "provision_host": "antigravity",
       "prompt_delivery": "stdin through skills/research/scripts/dispatch-agy.mjs",
       "roles": {
         "review": [
@@ -183,6 +186,7 @@
       "name": "Grok Build CLI",
       "binary": "grok",
       "family": "xai",
+      "provision_host": "grok",
       "prompt_delivery": "prompt file",
       "roles": {
         "review": [
@@ -248,6 +252,7 @@
       "name": "Cursor CLI",
       "binary": "cursor-agent",
       "family": "multi",
+      "provision_host": "cursor",
       "prompt_delivery": "stdin",
       "roles": {
         "review": [
@@ -286,6 +291,7 @@
       "name": "Kimi Code CLI",
       "binary": "kimi",
       "family": "moonshot",
+      "provision_host": "kimi",
       "prompt_delivery": "argument (-p)",
       "roles": {
         "exec": [
@@ -313,6 +319,7 @@
       "name": "OpenCode CLI",
       "binary": "opencode",
       "family": "multi",
+      "provision_host": "opencode",
       "prompt_delivery": "argument",
       "roles": {
         "exec": [
@@ -336,6 +343,30 @@
       },
       "source": "scripts/dispatch-worker.sh:245",
       "notes": "Token usage lines vary by version (scripts/dispatch-log.sh:13)."
+    },
+    "gemini": {
+      "name": "Gemini CLI",
+      "binary": "gemini",
+      "family": "google",
+      "provision_host": "gemini",
+      "prompt_delivery": "none: svc runs no headless Gemini CLI call",
+      "roles": {},
+      "no_headless_reason": "svc removed Gemini CLI inference (scripts/spine-research.mjs:46 refuses --agent gemini). Google-family reviews go through the agy entry, and the host is provisioned for skills, hooks, MCP, commands and agents only (provision/hosts/gemini.json, no plugins).",
+      "review_via": "agy",
+      "source": "provision/hosts/gemini.json",
+      "notes": "Hooks are wired by scripts/wire-gemini-hooks.mjs with millisecond timeouts (outer 30000). Add a role only once a script runs `gemini` headless and a probe covers its flags."
+    },
+    "mimo-code": {
+      "name": "MiMo Code",
+      "binary": "mimocode",
+      "family": "mimo",
+      "provision_host": "mimo-code",
+      "prompt_delivery": "none: svc runs no headless MiMo Code call",
+      "roles": {},
+      "no_headless_reason": "MiMo Code is an OpenCode fork that shares the OpenCode plugin (scripts/wire-opencode-hooks.mjs --host mimo-code, config ~/.config/mimocode/mimocode.json). No svc script runs `mimocode` headless and the CLI's run flags are unverified (docs/specs/research/large-review-input-harness-assessment-20260915.md), so the opencode exec role is not assumed to carry over. MiMo execution runs through the opencode entry with a mimo/<model> provider.",
+      "exec_via": "opencode",
+      "source": "provision/hosts/mimo-code.json",
+      "notes": "Not an allowed reviewer (CLAUDE.md reviewer allowlist). The plugin is observational; mutating child execution is off (provision/hosts/mimo-code.json authority_capabilities)."
     }
   }
 }

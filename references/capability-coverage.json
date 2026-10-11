@@ -2200,6 +2200,16 @@
       ]
     },
     {
+      "id": "engine:scripts/harness-playbook.mjs",
+      "kind": "engine",
+      "source": "scripts/harness-playbook.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
+        "test-framework/evals/tier-1/validate-harness-intel.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/honest-diagnosis.mjs",
       "kind": "engine",
       "source": "scripts/honest-diagnosis.mjs",

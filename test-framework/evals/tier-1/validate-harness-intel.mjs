@@ -6,7 +6,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadPlaybook, fill, renderPrompt, missingFlags, probe } from "../../../scripts/harness-playbook.mjs";
+import { spawnSync } from "node:child_process";
+import { loadPlaybook, fill, renderPrompt, missingFlags, probe, resolveHost, hasHeadless } from "../../../scripts/harness-playbook.mjs";
 import { cmpVersion, parseUpdates, proposals } from "../../../scripts/harness-drift.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -14,11 +15,48 @@ const pb = loadPlaybook();
 const baseline = JSON.parse(fs.readFileSync(path.join(root, "references/harness-baseline.json"), "utf8"));
 const changelog = fs.readFileSync(path.join(root, "test-framework/fixtures/harness-drift/changelog.md"), "utf8");
 
+test("every provisioned host has exactly one playbook entry, mapped by provision_host", () => {
+  const provisioned = fs.readdirSync(path.join(root, "provision/hosts")).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5)).sort();
+  const mapped = Object.values(pb.hosts).map((h) => h.provision_host).sort();
+  assert.deepEqual(mapped, provisioned, "playbook provision_host set equals provision/hosts/*.json");
+  for (const host of provisioned) {
+    const m = JSON.parse(fs.readFileSync(path.join(root, "provision/hosts", `${host}.json`), "utf8"));
+    assert.equal(m.host, host, `${host}.json declares its own id`);
+    const found = resolveHost(pb, host);
+    assert.ok(found, `${host} resolves to a playbook entry`);
+    assert.equal(found[1].provision_host, host);
+  }
+  assert.equal(resolveHost(pb, "antigravity")[0], "agy", "antigravity resolves to the agy reviewer transport");
+  assert.equal(resolveHost(pb, "nope"), null);
+  for (const via of ["review_via", "exec_via"]) for (const [host, h] of Object.entries(pb.hosts)) {
+    if (h[via]) assert.ok(hasHeadless(pb.hosts[h[via]]), `${host}.${via} points at an entry with a headless role`);
+  }
+});
+
+test("a roleless entry states why and is skipped by verify and refused by show", () => {
+  for (const [host, h] of Object.entries(pb.hosts)) {
+    if (hasHeadless(h)) continue;
+    assert.ok(h.no_headless_reason && h.no_headless_reason.length > 40, `${host} explains why it has no headless invocation`);
+    assert.equal(h.probe, undefined, `${host} has no probe without a role`);
+  }
+  const script = path.join(root, "scripts/harness-playbook.mjs");
+  const v = spawnSync(process.execPath, [script, "verify", "gemini", "mimo-code"], { encoding: "utf8" });
+  assert.equal(v.status, 0, v.stderr);
+  assert.match(v.stdout, /gemini: no headless invocation recorded \(skipped\)/);
+  assert.match(v.stdout, /mimo-code: no headless invocation recorded \(skipped\)/);
+  const s = spawnSync(process.execPath, [script, "show", "gemini"], { encoding: "utf8" });
+  assert.equal(s.status, 2); assert.match(s.stderr, /no headless invocation recorded/);
+  const a = spawnSync(process.execPath, [script, "show", "antigravity"], { encoding: "utf8" });
+  assert.equal(a.status, 0, a.stderr); assert.match(a.stdout, /dispatch-agy\.mjs/);
+});
+
 test("every playbook host names its source, a probe, and roles whose flags it probes", () => {
   for (const [host, h] of Object.entries(pb.hosts)) {
-    assert.ok(h.binary && h.source && h.probe?.flags?.length, host);
+    assert.ok(h.binary && h.source, host);
     const src = h.source.split(";")[0].trim().split(":")[0];
     assert.ok(fs.existsSync(path.join(root, src)), `${host} source ${src} exists`);
+    if (!hasHeadless(h)) continue; // no headless role: nothing to probe (checked above)
+    assert.ok(h.probe?.flags?.length, `${host} has a probe`);
     if (h.launcher) continue; // role flags belong to the wrapper, not the CLI
     const used = [...new Set(Object.values(h.roles).flat().filter((a) => /^--/.test(a)))];
     const unprobed = used.filter((f) => !h.probe.flags.includes(f) && !(h.probe.documented_hidden && f in h.probe.documented_hidden));

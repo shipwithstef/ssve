@@ -63,8 +63,10 @@ Invoke `agents/strategic-reviewer` with input manifest:
 
 | Host | Mechanism |
 |---|---|
-| Claude Code | `scripts/dispatch-worker.sh --agent strategic-reviewer --input-paths <manifest>` → runtime enforces tool allowlist + fresh context |
-| Kimi CLI | same script; Kimi's runtime enforces agent YAML |
+| Claude Code | `Agent` tool with the `strategic-reviewer` subagent type (fresh context; runtime enforces the `[Read, Grep]` allowlist). If that type is not registered, a general subagent whose prompt is the full text of `agents/strategic-reviewer.md` plus the manifest |
+| Kimi CLI | `Agent` tool with the built-in read-only `plan` subagent (fresh context, no shell or write tools); prompt = full text of `agents/strategic-reviewer.md` + the manifest paths. If no subagent is available, start a fresh `kimi` session and load that file inline |
+
+Do not use `scripts/dispatch-worker.sh` here: it takes no `--agent`/`--input-paths` flags (it is configured by `SVC_*` env vars, runs a *skill*, default `execute-changeset`, and pastes `$1` as the task payload), so those flags would become prompt text.
 | Codex CLI | inline load of `agents/strategic-reviewer.md` append content; no runtime enforcement — prompt-level discipline + eval regression catches violations |
 | Gemini CLI | same as Codex |
 

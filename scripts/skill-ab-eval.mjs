@@ -30,9 +30,19 @@
  * graded instead of or alongside the chat answer. A run that only CLAIMS to
  * have written a file fails an artifacts grader.
  *
- * The default runner is `claude -p --output-format json`, which spends paid
- * tokens: it requires EVALS=1 (same contract as tier 1.5/2/3). An explicit
- * --runner (for example the hermetic fixture runner) needs no flag.
+ * The default runner is `claude -p --output-format json` plus isolation flags
+ * (`--setting-sources "" --strict-mcp-config --no-session-persistence`) for
+ * BOTH arms, so neither arm loads the workstation's user/project settings,
+ * rules, skills or MCP servers: the with-skill arm gets its skill only through
+ * the prompt. HOME is left alone so the CLI keeps its credentials. A custom
+ * --runner is used exactly as given. The default runner spends paid tokens:
+ * it requires EVALS=1 (same contract as tier 1.5/2/3). An explicit --runner
+ * (for example the hermetic fixture runner) needs no flag.
+ *
+ * A run whose runner crashed (non-zero exit, spawn error, or no result in its
+ * output) is not evidence about the skill: it is left out of the arm's pass
+ * rate and counted as `errors`. An arm with no successful run gets verdict
+ * "error".
  */
 import fs from "node:fs";
 import os from "node:os";
@@ -41,7 +51,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DEFAULT_RUNNER = "claude -p --output-format json";
+export const DEFAULT_RUNNER = 'claude -p --output-format json --setting-sources "" --strict-mcp-config --no-session-persistence';
 
 export function parseArgs(argv, env = process.env) {
   const o = { repeat: 3, margin: 0.15, runner: null, only: null, json: false, out: null, tasks: null, cwd: null };
@@ -91,18 +101,26 @@ export function buildPrompt(task, arm) {
   return `Follow this skill for the task below.\n\n<skill name="${task.skill}">\n${skillBody(task.skill)}\n</skill>\n\nTask:\n${task.prompt}`;
 }
 
-/** Extract answer text + usage from a runner's stdout (JSON envelope or plain text). */
+/**
+ * Extract answer text + usage from a runner's stdout (JSON envelope or plain text).
+ * has_result is false when there is no answer at all: empty output, a JSON
+ * envelope without result/text, or an envelope that reports is_error.
+ */
 export function parseRunnerOutput(stdout) {
   const text = String(stdout || "").trim();
-  try {
-    const j = JSON.parse(text);
-    const answer = typeof j.result === "string" ? j.result : typeof j.text === "string" ? j.text : text;
-    const u = j.usage || {};
-    const input = Number(u.input_tokens || 0) + Number(u.cache_read_input_tokens || 0) + Number(u.cache_creation_input_tokens || 0);
-    const output = Number(u.output_tokens || 0);
-    return { answer, tokens: input || output ? { input, output, total: input + output } : null, cost_usd: j.total_cost_usd ?? null };
-  } catch { return { answer: text, tokens: null, cost_usd: null }; }
+  let j;
+  try { j = JSON.parse(text); } catch { j = null; }
+  if (!j || typeof j !== "object") return { answer: text, tokens: null, cost_usd: null, has_result: text.length > 0 };
+  const field = typeof j.result === "string" ? j.result : typeof j.text === "string" ? j.text : null;
+  const u = j.usage || {};
+  const input = Number(u.input_tokens || 0) + Number(u.cache_read_input_tokens || 0) + Number(u.cache_creation_input_tokens || 0);
+  const output = Number(u.output_tokens || 0);
+  return { answer: field ?? text, tokens: input || output ? { input, output, total: input + output } : null, cost_usd: j.total_cost_usd ?? null,
+    has_result: field !== null && j.is_error !== true };
 }
+
+/** A crashed run (runner failed or produced no result) is not evidence. Older reports lack `crashed`. */
+export function isCrashed(r) { return r.crashed ?? r.exit !== 0; }
 
 /** Markdown emphasis and code ticks are presentation, not content: `**Status:** Draft` must match `Status: DRAFT`. */
 export function normalizeAnswer(text) { return String(text).replace(/[*_`]+/g, ""); }
@@ -155,9 +173,11 @@ export function summarize(runs, margin) {
   for (const r of runs) ((by[r.task] ||= { skill: r.skill, bare: [], "with-skill": [] })[r.arm]).push(r);
   const tasks = [];
   for (const [id, t] of Object.entries(by)) {
-    const arm = (xs) => {
+    const arm = (all) => {
+      // Crashed runs are excluded from every rate and mean, and reported as errors.
+      const xs = all.filter((x) => !isCrashed(x));
       const tok = xs.map((x) => x.tokens?.total).filter((n) => Number.isFinite(n));
-      return { runs: xs.length, pass_rate: xs.filter((x) => x.pass).length / (xs.length || 1),
+      return { runs: xs.length, errors: all.length - xs.length, pass_rate: xs.filter((x) => x.pass).length / (xs.length || 1),
         mean_tokens: tok.length ? Math.round(tok.reduce((a, b) => a + b, 0) / tok.length) : null,
         mean_answer_chars: Math.round(xs.reduce((a, x) => a + x.answer_chars, 0) / (xs.length || 1)) };
     };
@@ -165,7 +185,7 @@ export function summarize(runs, margin) {
     const delta = withSkill.pass_rate - bare.pass_rate;
     // An arm whose runner never completed is a broken run, not evidence: it
     // must not read as "no-gain" (which would argue for retiring the skill).
-    const ran = (xs) => xs.some((x) => x.exit === 0);
+    const ran = (xs) => xs.some((x) => !isCrashed(x));
     const verdict = !ran(t.bare) || !ran(t["with-skill"]) ? "error" : delta > margin ? "earns-keep" : delta < -margin ? "regresses" : "no-gain";
     tasks.push({ task: id, skill: t.skill, bare, with_skill: withSkill, pass_delta: Number(delta.toFixed(3)),
       token_delta: bare.mean_tokens !== null && withSkill.mean_tokens !== null ? withSkill.mean_tokens - bare.mean_tokens : null, verdict });
@@ -185,7 +205,7 @@ export function regrade(o) {
     // verdict, so such a run keeps its original grade and says why.
     const cut = (r.artifacts || []).filter((a) => Number.isFinite(a.chars) && a.text.length < a.chars).map((a) => a.path);
     if (cut.length) return { ...r, regrade_skipped: `artifact stored truncated: ${cut.join(", ")}` };
-    return { ...r, pass: r.exit === 0 && grade(t.grader, r.answer, ROOT, (r.artifacts || []).map((a) => ({ path: a.path, text: a.text }))) };
+    return { ...r, pass: !isCrashed(r) && grade(t.grader, r.answer, ROOT, (r.artifacts || []).map((a) => ({ path: a.path, text: a.text }))) };
   });
   return { ...report, regraded_from: o.regrade, margin: o.margin, tasks: summarize(runs, o.margin), runs };
 }
@@ -203,10 +223,11 @@ export function run(o) {
         const r = spawnSync(bin, args, { input: buildPrompt(task, arm), cwd, encoding: "utf8",
           timeout: (spec.timeout_seconds || 600) * 1000, maxBuffer: 64 * 1024 * 1024,
           env: { ...process.env, SVC_AB_ARM: arm, SVC_AB_TASK: task.id } });
-        const parsed = r.status === 0 ? parseRunnerOutput(r.stdout) : { answer: "", tokens: null, cost_usd: null };
+        const parsed = r.status === 0 ? parseRunnerOutput(r.stdout) : { answer: "", tokens: null, cost_usd: null, has_result: false };
+        const crashed = r.status !== 0 || !parsed.has_result;
         const artifacts = collectArtifacts(cwd);
         if (!o.cwd) fs.rmSync(cwd, { recursive: true, force: true });
-        runs.push({ task: task.id, skill: task.skill, arm, i, exit: r.status, error: r.error?.code ?? null, signal: r.signal ?? null, pass: r.status === 0 && grade(task.grader, parsed.answer, ROOT, artifacts),
+        runs.push({ task: task.id, skill: task.skill, arm, i, exit: r.status, error: r.error?.code ?? null, signal: r.signal ?? null, crashed, pass: !crashed && grade(task.grader, parsed.answer, ROOT, artifacts),
           tokens: parsed.tokens, cost_usd: parsed.cost_usd, answer_chars: parsed.answer.length, answer: parsed.answer,
           artifacts: artifacts.map((a) => ({ path: a.path, chars: a.text.length, text: a.text })) });
       }
@@ -223,11 +244,12 @@ if (path.resolve(process.argv[1] || "") === fileURLToPath(import.meta.url)) {
     const report = o.regrade ? regrade(o) : run(o);
     if (o.out) fs.writeFileSync(o.out, JSON.stringify(report, null, 2) + "\n");
     const broken = report.tasks.filter((t) => t.verdict === "error");
-    if (broken.length) { process.exitCode = 1; const r0 = report.runs.find((x) => x.exit !== 0); console.error(`skill-ab-eval: runner failed for ${broken.map((t) => t.task).join(", ")} (first failure: exit ${r0?.exit} ${r0?.error || r0?.signal || ""}); no verdict for those tasks`); }
+    if (broken.length) { process.exitCode = 1; const r0 = report.runs.find(isCrashed); console.error(`skill-ab-eval: runner failed for ${broken.map((t) => t.task).join(", ")} (first failure: exit ${r0?.exit} ${r0?.error || r0?.signal || (r0?.exit === 0 ? "no result" : "")}); no verdict for those tasks`); }
     if (o.json) console.log(JSON.stringify(report, null, 2));
     else for (const t of report.tasks) {
       console.log(`${t.verdict.padEnd(10)} ${t.skill.padEnd(22)} ${t.task}: pass ${t.bare.pass_rate.toFixed(2)} -> ${t.with_skill.pass_rate.toFixed(2)}` +
-        (t.token_delta === null ? "" : `, tokens ${t.token_delta >= 0 ? "+" : ""}${t.token_delta}`));
+        (t.token_delta === null ? "" : `, tokens ${t.token_delta >= 0 ? "+" : ""}${t.token_delta}`) +
+        (t.bare.errors || t.with_skill.errors ? `, errors ${t.bare.errors}/${t.with_skill.errors}` : ""));
     }
   } catch (e) { console.error(`skill-ab-eval: ${e.message}`); process.exit(1); }
 }

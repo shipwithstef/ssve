@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { splitArgv, parseRunnerOutput, grade, summarize, parseArgs } from "../../../scripts/skill-ab-eval.mjs";
+import { splitArgv, parseRunnerOutput, grade, summarize, parseArgs, DEFAULT_RUNNER } from "../../../scripts/skill-ab-eval.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const script = path.join(root, "scripts/skill-ab-eval.mjs");
@@ -49,7 +49,64 @@ test("a runner that never completes yields an error verdict and a non-zero exit,
 test("the paid default runner is refused without EVALS=1", () => {
   const r = cli(["--tasks", tasks]);
   assert.equal(r.status, 2); assert.match(r.stderr, /EVALS=1/);
-  assert.equal(parseArgs(["--tasks", tasks], { EVALS: "1" }).runner, "claude -p --output-format json");
+  assert.equal(parseArgs(["--tasks", tasks], { EVALS: "1" }).runner, DEFAULT_RUNNER);
+  assert.deepEqual(splitArgv(DEFAULT_RUNNER), ["claude", "-p", "--output-format", "json", "--setting-sources", "", "--strict-mcp-config", "--no-session-persistence"]);
+  assert.equal(parseArgs(["--tasks", tasks, "--runner", "claude -p"], { EVALS: "1" }).runner, "claude -p", "a custom runner is used as given");
+});
+
+test("the default runner isolates BOTH arms from user/project settings and keeps HOME for credentials", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "svc-ab-iso-"));
+  try {
+    const log = path.join(tmp, "argv.jsonl");
+    const bin = path.join(tmp, "claude");
+    fs.writeFileSync(bin, `#!/usr/bin/env node
+const fs = require('fs'); const p = fs.readFileSync(0, 'utf8');
+fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ arm: process.env.SVC_AB_ARM, argv: process.argv.slice(2), home: process.env.HOME, skill: p.startsWith('Follow this skill') }) + '\\n');
+process.stdout.write(JSON.stringify({ result: 'ok' }));`);
+    fs.chmodSync(bin, 0o755);
+    const t = path.join(tmp, "t.json");
+    fs.writeFileSync(t, JSON.stringify({ tasks: [{ id: "iso", skill: "decide", prompt: "x", grader: { type: "regex", pattern: "ok" } }] }));
+    const r = cli(["--tasks", t, "--repeat", "1", "--json"], { EVALS: "1", PATH: `${tmp}${path.delimiter}${process.env.PATH}` });
+    assert.equal(r.status, 0, r.stderr);
+    const calls = fs.readFileSync(log, "utf8").trim().split("\n").map((l) => JSON.parse(l));
+    assert.deepEqual(calls.map((c) => c.arm).sort(), ["bare", "with-skill"]);
+    for (const c of calls) {
+      assert.deepEqual(c.argv, ["-p", "--output-format", "json", "--setting-sources", "", "--strict-mcp-config", "--no-session-persistence"], c.arm);
+      assert.equal(c.home, process.env.HOME, "HOME is not replaced: the CLI needs its credentials");
+      assert.equal(c.skill, c.arm === "with-skill", "the skill reaches the with-skill arm only through the prompt");
+    }
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test("crashed runs (non-zero exit or no result) leave the pass-rate denominator and are reported as errors", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "svc-ab-crash-"));
+  try {
+    // per arm: run 0 crashes (exit 3), run 1 exits 0 with no result, run 2 passes
+    const runner = path.join(tmp, "flaky.mjs");
+    fs.writeFileSync(runner, `import fs from 'node:fs'; fs.readFileSync(0);
+const f = ${JSON.stringify(tmp)} + '/n-' + process.env.SVC_AB_ARM;
+const n = fs.existsSync(f) ? Number(fs.readFileSync(f, 'utf8')) : 0; fs.writeFileSync(f, String(n + 1));
+if (n === 0) process.exit(3);
+if (n === 1) { process.stdout.write(JSON.stringify({ is_error: true, usage: { output_tokens: 1 } })); process.exit(0); }
+process.stdout.write(JSON.stringify({ result: 'ok' }));`);
+    const t = path.join(tmp, "t.json");
+    fs.writeFileSync(t, JSON.stringify({ tasks: [{ id: "flaky", skill: "decide", prompt: "x", grader: { type: "regex", pattern: "ok" } }] }));
+    const r = cli(["--tasks", t, "--runner", `node ${runner}`, "--repeat", "3", "--json"]);
+    assert.equal(r.status, 0, r.stderr);
+    const out = JSON.parse(r.stdout); const row = out.tasks[0];
+    for (const a of [row.bare, row.with_skill]) { assert.equal(a.pass_rate, 1); assert.equal(a.errors, 2); assert.equal(a.runs, 1); }
+    assert.equal(row.verdict, "no-gain");
+    assert.deepEqual(out.runs.map((x) => x.crashed), [true, true, false, true, true, false]);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  // summarize: crashed runs are excluded, an arm with zero successful runs is still "error"
+  const mk = (arm, pass, exit = 0) => ({ task: "t", skill: "s", arm, pass, exit, tokens: null, answer_chars: 1 });
+  const s = summarize([mk("bare", false, 1), mk("bare", true), mk("with-skill", true)], 0.15)[0];
+  assert.equal(s.bare.pass_rate, 1); assert.equal(s.bare.errors, 1); assert.equal(s.verdict, "no-gain");
+  const e = summarize([mk("bare", false, 1), mk("with-skill", true), { ...mk("with-skill", false), crashed: true }], 0.15)[0];
+  assert.equal(e.verdict, "error"); assert.equal(e.bare.errors, 1); assert.equal(e.bare.runs, 0);
+  assert.equal(parseRunnerOutput("").has_result, false);
+  assert.equal(parseRunnerOutput(JSON.stringify({ usage: {} })).has_result, false);
+  assert.equal(parseRunnerOutput(JSON.stringify({ result: "hi" })).has_result, true);
 });
 
 test("helpers: argv split, output parsing, graders, verdict margins", () => {

@@ -10,6 +10,10 @@
  * Data: references/harness-playbook.json. show fills {placeholders} from --name value
  * pairs and leaves unknown ones visible. verify exits 1 when an installed CLI lacks a
  * flag the playbook relies on, and reports hosts that are not installed without failing.
+ * Every provision/hosts/<host>.json host has one entry, found by its key or its
+ * provision_host (show/verify accept either, e.g. "antigravity" resolves to "agy").
+ * An entry with empty roles has no headless invocation svc runs; it states
+ * no_headless_reason, show prints that reason, and verify skips it.
  */
 
 import fs from "node:fs";
@@ -24,7 +28,15 @@ export function loadPlaybook(file = path.join(ROOT, "references", "harness-playb
   return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
-const subst = (str, values) => str.replace(/\{([a-z_]+)\}/g, (m, k) => (values[k] !== undefined ? values[k] : m));
+/** Resolve a playbook key or a provision/hosts host id to [key, entry], or null. */
+export function resolveHost(playbook, host) {
+  if (playbook.hosts[host]) return [host, playbook.hosts[host]];
+  return Object.entries(playbook.hosts).find(([, h]) => h.provision_host === host) || null;
+}
+
+export const hasHeadless = (spec) => Object.keys(spec.roles || {}).length > 0;
+
+const subst =(str, values) => str.replace(/\{([a-z_]+)\}/g, (m, k) => (values[k] !== undefined ? values[k] : m));
 
 export function fill(argv, values) {
   return argv.map((a) => subst(a, values));
@@ -58,13 +70,14 @@ function main(argv) {
   const [cmd, ...rest] = argv;
   const pb = loadPlaybook();
   if (cmd === "list") {
-    for (const [k, h] of Object.entries(pb.hosts)) process.stdout.write(`${k.padEnd(9)} ${h.name} — roles: ${Object.keys(h.roles).join(", ")}${h.conflict ? " (has an unverified conflict)" : ""}\n`);
+    for (const [k, h] of Object.entries(pb.hosts)) process.stdout.write(`${k.padEnd(9)} ${h.name} — ${hasHeadless(h) ? `roles: ${Object.keys(h.roles).join(", ")}` : "no headless invocation"}${h.provision_host && h.provision_host !== k ? ` (provision host: ${h.provision_host})` : ""}${h.conflict ? " (has an unverified conflict)" : ""}\n`);
     return 0;
   }
   if (cmd === "show") {
-    const host = rest[0];
-    const spec = pb.hosts[host];
-    if (!spec) { process.stderr.write(`unknown host "${host}" (known: ${Object.keys(pb.hosts).join(", ")})\n`); return 2; }
+    const found = resolveHost(pb, rest[0]);
+    if (!found) { process.stderr.write(`unknown host "${rest[0]}" (known: ${Object.keys(pb.hosts).join(", ")})\n`); return 2; }
+    const [host, spec] = found;
+    if (!hasHeadless(spec)) { process.stderr.write(`${host}: no headless invocation recorded. ${spec.no_headless_reason}\n`); return 2; }
     const v = parsePairs(rest.slice(1));
     const role = v.role || Object.keys(spec.roles)[0];
     if (!spec.roles[role]) { process.stderr.write(`${host} has no "${role}" role (has: ${Object.keys(spec.roles).join(", ")})\n`); return 2; }
@@ -80,9 +93,11 @@ function main(argv) {
   if (cmd === "verify") {
     const hosts = rest.length ? rest : Object.keys(pb.hosts);
     let bad = 0;
-    for (const h of hosts) {
-      const spec = pb.hosts[h];
-      if (!spec) { process.stderr.write(`unknown host "${h}"\n`); bad++; continue; }
+    for (const name of hosts) {
+      const found = resolveHost(pb, name);
+      if (!found) { process.stderr.write(`unknown host "${name}"\n`); bad++; continue; }
+      const [h, spec] = found;
+      if (!hasHeadless(spec)) { process.stdout.write(`${h}: no headless invocation recorded (skipped)\n`); continue; }
       const r = probe(h, spec);
       if (!r.installed) process.stdout.write(`${h}: not installed (skipped)\n`);
       else if (r.missing.length) { bad++; process.stdout.write(`${h}: MISSING ${r.missing.join(" ")} — the installed CLI changed; update references/harness-playbook.json\n`); }
