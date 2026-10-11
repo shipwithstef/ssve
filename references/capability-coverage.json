@@ -2302,6 +2302,15 @@
       "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
     },
     {
+      "id": "engine:scripts/land-local.mjs",
+      "kind": "engine",
+      "source": "scripts/land-local.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/land-local.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/lane-stop-guard.mjs",
       "kind": "engine",
       "source": "scripts/lane-stop-guard.mjs",
