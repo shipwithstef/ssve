@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 120" width="140" height="120">
+  <title>A tired parrot in a bandana</title>
+  <path d="M10 90 q6 -20 14 -10 t10 12 l-6 18 z" fill="#e76f51" stroke="#1b1b1e" stroke-width="2"/>
+  <path d="M18 86 q7 -21 14 -11 t11 12 l-6 18 z" fill="#f4a261" stroke="#1b1b1e" stroke-width="2"/>
+  <path d="M26 82 q8 -22 14 -12 t12 12 l-6 18 z" fill="#e9c46a" stroke="#1b1b1e" stroke-width="2"/>
+  <path d="M34 78 q9 -23 14 -13 t13 12 l-6 18 z" fill="#2a9d8f" stroke="#1b1b1e" stroke-width="2"/>
+  <path d="M42 74 q10 -24 14 -14 t14 12 l-6 18 z" fill="#264653" stroke="#1b1b1e" stroke-width="2"/>
+  <path d="M50 70 q11 -25 14 -15 t15 12 l-6 18 z" fill="#e76f51" stroke="#1b1b1e" stroke-width="2"/>
+  <path d="M58 66 q12 -26 14 -16 t16 12 l-6 18 z" fill="#f4a261" stroke="#1b1b1e" stroke-width="2"/>
+  <path d="M66 62 q13 -27 14 -17 t17 12 l-6 18 z" fill="#e9c46a" stroke="#1b1b1e" stroke-width="2"/>
+  <path d="M74 58 q14 -28 14 -18 t18 12 l-6 18 z" fill="#2a9d8f" stroke="#1b1b1e" stroke-width="2"/>
+  <path d="M82 54 q15 -29 14 -19 t19 12 l-6 18 z" fill="#264653" stroke="#1b1b1e" stroke-width="2"/>
+  <path d="M60 30 q15 -18 30 0 q8 18 -4 30 q-14 8 -26 -4 z" fill="#2a9d8f" stroke="#1b1b1e" stroke-width="2"/>
+  <path d="M88 38 l18 6 l-16 8 z" fill="#f4a261" stroke="#1b1b1e" stroke-width="2"/>
+</svg>

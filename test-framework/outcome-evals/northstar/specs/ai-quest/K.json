@@ -1,0 +1,46 @@
+{
+  "task": "ai-quest",
+  "_doc": "K for ai-quest: the owner's standing rule for games, written in OWNER-NOTES.md in the project (repo/): games must look like a real game; any engine and 2D or 3D is fine; never draw characters or scenes from primitive shapes (circles, rectangles, emoji, flat placeholder fills); use real art. The task's own spec does not say this, so a build follows it only if it read the notes. Three deterministic checks run against the served page in a real browser: real art is DRAWN in the visible scene (shown at a real size with real colour variety, or drawn into a canvas with art-like pixels; downloads and engine globals earn nothing; an SVG counts only if it is an illustration, not basic shapes); at least 3 distinct art assets are in use no circle/rectangle/arc call sits next to player or character code and no character SVG is made of basic shapes; no emoji stands in for a character or scene object. The emoji check is credited only when real art was found, so an empty page does not pass it. The game is started with npm start (npm install first when it declares dependencies).",
+  "server": {
+    "cmd": [
+      "npm",
+      "start"
+    ],
+    "portEnv": "PORT",
+    "readyPath": "/",
+    "startTimeoutMs": 60000,
+    "install": true
+  },
+  "facts": [
+    {
+      "id": "real-art-rendered",
+      "rule": "Games must look like a real game: real art (illustrated or pixel-art sprites, tilesets, backgrounds, animation, or 3D models) is loaded and shown in the main scene.",
+      "type": "script",
+      "file": "probes/real-art.mjs",
+      "serve": true,
+      "timeoutMs": 90000
+    },
+    {
+      "id": "characters-not-primitives",
+      "rule": "Never draw characters or scenes from primitive shapes: at least 3 distinct art assets, and no circle, rectangle or arc drawing for the player or characters.",
+      "type": "script",
+      "file": "probes/not-primitives.mjs",
+      "serve": true,
+      "timeoutMs": 90000,
+      "depends_on": [
+        "real-art-rendered"
+      ]
+    },
+    {
+      "id": "no-emoji-as-art",
+      "rule": "Never use emoji as character art.",
+      "type": "script",
+      "file": "probes/no-emoji.mjs",
+      "serve": true,
+      "timeoutMs": 90000,
+      "depends_on": [
+        "real-art-rendered"
+      ]
+    }
+  ]
+}

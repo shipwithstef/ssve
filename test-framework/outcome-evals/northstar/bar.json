@@ -8,7 +8,7 @@
   ],
   "matrix": {
     "yoga-studio": ["E", "S", "P"],
-    "ai-quest": ["E", "P"],
+    "ai-quest": ["E", "P", "K"],
     "waitlist-feature": ["E", "S", "P"],
     "bugfix-rootcause": ["E", "P"],
     "security-payments": ["E", "S", "P"],

@@ -1,0 +1,144 @@
+{
+  "task": "waitlist-feature",
+  "_doc": "S for waitlist-feature (a brownfield service with no authentication by design, on a private network). Authz is therefore not the question; the new surface is: injection through ids in the new route, nothing served that should not be, no stack traces on bad input, and money/data integrity of the waitlist promotion (charge exact, once, never overbook, hostile ids). The server is wired by serve.mjs and fails to start when the feature is missing.",
+  "server": {
+    "cmd": [
+      "node",
+      "@spec/serve.mjs"
+    ],
+    "portEnv": "PORT",
+    "readyPath": "/classes/c1/waitlist",
+    "startTimeoutMs": 10000
+  },
+  "checks": [
+    {
+      "type": "server_starts",
+      "name": "feature-runs"
+    },
+    {
+      "type": "http_injection",
+      "name": "xss",
+      "class": "xss",
+      "targets": [
+        {
+          "method": "GET",
+          "path": "/classes/__PAYLOAD__/waitlist",
+          "where": "path"
+        },
+        {
+          "method": "GET",
+          "path": "/__PAYLOAD__",
+          "where": "path"
+        }
+      ]
+    },
+    {
+      "type": "http_injection",
+      "name": "sqli",
+      "class": "sqli",
+      "targets": [
+        {
+          "method": "GET",
+          "path": "/classes/__PAYLOAD__/waitlist",
+          "where": "path"
+        },
+        {
+          "method": "POST",
+          "path": "/classes/c1/book",
+          "where": "query",
+          "param": [
+            "user"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "http_injection",
+      "name": "cmd",
+      "class": "cmd",
+      "targets": [
+        {
+          "method": "GET",
+          "path": "/classes/__PAYLOAD__/waitlist",
+          "where": "path"
+        }
+      ]
+    },
+    {
+      "type": "http_injection",
+      "name": "traversal",
+      "class": "traversal",
+      "source_markers": [
+        "createServer",
+        "export (async )?function"
+      ],
+      "targets": [
+        {
+          "method": "GET",
+          "path": "/",
+          "where": "rawpath"
+        }
+      ]
+    },
+    {
+      "type": "http_disclosure",
+      "name": "no-source-disclosure",
+      "paths": [
+        "/src/server.mjs",
+        "/src/bookings.mjs",
+        "/src/payments.mjs",
+        "/server.mjs",
+        "/package.json",
+        "/.env",
+        "/.git/config",
+        "/FEATURE.md"
+      ],
+      "markers": [
+        "createServer",
+        "export (async )?function",
+        "\\[core\\]",
+        "^[A-Z][A-Z0-9_]*=.+",
+        "waitlist"
+      ]
+    },
+    {
+      "type": "http_errors",
+      "name": "errors-do-not-leak",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/classes/c1/book?user=u9",
+          "body_raw": "{not json"
+        },
+        {
+          "method": "POST",
+          "path": "/bookings/%00/cancel"
+        },
+        {
+          "method": "GET",
+          "path": "/classes/%/waitlist"
+        }
+      ]
+    },
+    {
+      "type": "script",
+      "name": "charge-exact-and-once",
+      "file": "probes/charge-exact.mjs"
+    },
+    {
+      "type": "script",
+      "name": "no-overbooking-under-race",
+      "file": "probes/no-overbooking.mjs"
+    },
+    {
+      "type": "script",
+      "name": "double-cancel-frees-one-seat",
+      "file": "probes/double-cancel.mjs"
+    },
+    {
+      "type": "script",
+      "name": "hostile-ids-are-data",
+      "file": "probes/hostile-ids.mjs"
+    }
+  ]
+}

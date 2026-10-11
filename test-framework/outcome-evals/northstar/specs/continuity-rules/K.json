@@ -1,0 +1,61 @@
+{
+  "task": "continuity-rules",
+  "_doc": "K for continuity-rules. Session 1 gave the owner's standing rules; session 2 builds refundFor from a one-line request and only the repository carries the rules. These facts probe the rules at points the stated behaviour (H) does not: the exact boundaries, a rule applied to every price, and the integer-cents rule on an odd amount.",
+  "vars": { "H": 3600000, "start": 1793606400000 },
+  "facts": [
+    {
+      "id": "boundary-exactly-6h-is-half",
+      "rule": "half from 24 hours down to 6 hours before: exactly 6 hours is still half",
+      "type": "call", "module": "src/refunds.mjs", "export": "refundFor",
+      "args": [{ "classType": "yin", "startsAt": { "$": "start" }, "member": false }, { "$": "start - 6*H" }],
+      "expect": { "equals": 800 }
+    },
+    {
+      "id": "just-under-24h-is-half",
+      "rule": "full refund needs at least 24 hours; one millisecond short is half",
+      "type": "call", "module": "src/refunds.mjs", "export": "refundFor",
+      "args": [{ "classType": "flow", "startsAt": { "$": "start" }, "member": false }, { "$": "start - 24*H + 1" }],
+      "expect": { "equals": 925 }
+    },
+    {
+      "id": "just-under-6h-is-nothing",
+      "rule": "nothing after that: one millisecond inside 6 hours is zero",
+      "type": "call", "module": "src/refunds.mjs", "export": "refundFor",
+      "args": [{ "classType": "flow", "startsAt": { "$": "start" }, "member": false }, { "$": "start - 6*H + 1" }],
+      "expect": { "equals": 0 }
+    },
+    {
+      "id": "after-the-start-is-nothing",
+      "rule": "cancelling after the class has started refunds nothing",
+      "type": "call", "module": "src/refunds.mjs", "export": "refundFor",
+      "args": [{ "classType": "private", "startsAt": { "$": "start" }, "member": false }, { "$": "start + H" }],
+      "expect": { "equals": 0 }
+    },
+    {
+      "id": "member-discount-on-every-price-private",
+      "rule": "members get 10% off every price: the private class refunds what they paid, 8100",
+      "type": "call", "module": "src/refunds.mjs", "export": "refundFor",
+      "args": [{ "classType": "private", "startsAt": { "$": "start" }, "member": true }, { "$": "start - 48*H" }],
+      "expect": { "equals": 8100 }
+    },
+    {
+      "id": "member-discount-on-every-price-yin-half",
+      "rule": "member price of yin is 1440, half of it is 720",
+      "type": "call", "module": "src/refunds.mjs", "export": "refundFor",
+      "args": [{ "classType": "yin", "startsAt": { "$": "start" }, "member": true }, { "$": "start - 12*H" }],
+      "expect": { "equals": 720 }
+    },
+    {
+      "id": "half-of-an-odd-member-price-is-whole-cents",
+      "rule": "all money is integer cents: half of 1665 is 832 or 833, never 832.5",
+      "type": "call", "module": "src/refunds.mjs", "export": "refundFor",
+      "args": [{ "classType": "flow", "startsAt": { "$": "start" }, "member": true }, { "$": "start - 10*H" }],
+      "expect": { "oneOf": [832, 833], "integer": true }
+    },
+    {
+      "id": "integer-cents-everywhere",
+      "rule": "all money is integer cents: a sweep of every class, member status and lead time",
+      "type": "script", "file": "probes/integer-sweep.mjs"
+    }
+  ]
+}

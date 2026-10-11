@@ -26,7 +26,7 @@ test("bar.json carries the pre-registration from the plan", () => {
   assert.deepEqual(bar.dev, ["yoga-studio", "ai-quest", "waitlist-feature", "bugfix-rootcause", "security-payments", "typo-readme", "continuity-rules"]);
   assert.deepEqual(bar.reserve, [{ task: "R1", grader_sha256: null }, { task: "R2", grader_sha256: null }]);
   assert.deepEqual(bar.matrix, {
-    "yoga-studio": ["E", "S", "P"], "ai-quest": ["E", "P"], "waitlist-feature": ["E", "S", "P"], "bugfix-rootcause": ["E", "P"],
+    "yoga-studio": ["E", "S", "P"], "ai-quest": ["E", "P", "K"], "waitlist-feature": ["E", "S", "P"], "bugfix-rootcause": ["E", "P"],
     "security-payments": ["E", "S", "P"], "typo-readme": [], "continuity-rules": ["K"], R1: ["E", "S", "P", "K"], R2: ["E", "S", "P", "K"],
   });
   assert.deepEqual(bar.arms, ["solo", "framework"]);
@@ -52,7 +52,7 @@ test("bar.json carries the pre-registration from the plan", () => {
 test("clear win: a finished run without an applicable component score makes that cell incomplete evidence", () => {
   const d = dev("dev-pass");
   assert.equal(d.headline.cells_numbered, 3); // yoga E and P, continuity K
-  assert.equal(d.headline.cells_excluded, 11); // yoga S plus the 10 cells of tasks with no rows
+  assert.equal(d.headline.cells_excluded, 12); // yoga S plus the 11 cells of tasks with no rows
   assert.deepEqual(d.headline.tasks_without_rows, ["ai-quest", "waitlist-feature", "bugfix-rootcause", "security-payments"]);
   // yoga framework S: [0.6, 0.5, missing]: not a measured zero, the cell is excluded
   const s = cell(d, "yoga-studio", "S");
@@ -104,7 +104,7 @@ test("a cell with only 2 finished runs gets no number and is reported", () => {
     assert.equal(x.delta, undefined);
   }
   assert.equal(d.headline.cells_numbered, 1);
-  assert.equal(d.headline.cells_excluded, 13); // 3 thin yoga cells + 10 cells of tasks with no rows
+  assert.equal(d.headline.cells_excluded, 14); // 3 thin yoga cells + 11 cells of tasks with no rows
   assert.equal(d.headline.R.value, 5); // only continuity K: 1 / 0.2
   near(d.headline.delta, 0.8);
   // the timed-out run still has its spend
@@ -213,7 +213,7 @@ test("overall is never PASS while a registered task has no rows or a cell is exc
   assert.equal(d.pass, true); // the headline is still computed and passes
   assert.equal(d.overall, "incomplete");
   assert.ok(d.incomplete_reasons.some((r) => /no rows for registered task\(s\): ai-quest, waitlist-feature, bugfix-rootcause, security-payments/.test(r)));
-  assert.ok(d.incomplete_reasons.some((r) => /11 cell\(s\) excluded/.test(r)));
+  assert.ok(d.incomplete_reasons.some((r) => /12 cell\(s\) excluded/.test(r)));
   const thin = dev("two-finished");
   assert.equal(thin.overall, "incomplete");
   assert.ok(thin.incomplete_reasons.some((r) => /excluded without a number/.test(r)));
@@ -384,7 +384,7 @@ test("dry run: fake runner rows go through decide end to end at $0", () => {
   assert.equal(d.rows, 54);
   assert.deepEqual(Object.keys(d.decisions).sort(), ["dev", "reserve"]);
   assert.equal(d.decisions.dev.rows_used, 42);
-  assert.equal(d.decisions.dev.headline.cells_numbered, 14); // 3+2+3+2+3+0+1
+  assert.equal(d.decisions.dev.headline.cells_numbered, 15); // 3+3+3+2+3+0+1
   assert.equal(d.decisions.reserve.headline.cells_numbered, 8);
   assert.equal(d.decisions.dev.headline.pass, true);
   assert.deepEqual(dryRun(m, bar), d); // deterministic
