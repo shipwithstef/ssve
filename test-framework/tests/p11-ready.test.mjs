@@ -212,3 +212,12 @@ test("promptSha hashes the prompts a multi-session task actually sends, and is u
     assert.equal(oe.promptSha(arm, "yoga-studio"), h(oe.ARMS[arm]));
   }
 });
+
+test("preflight refuses an arm that cannot prompt a multi-session task, before any job runs", () => {
+  const bad = oe.preflightRun({ tasks: ["continuity-rules"], arms: ["solo", "plain"], reps: 1, maxUsd: 5, bar: { floor_usd: 0.5, reserve: [] }, dirOf: () => null });
+  assert.match(bad.error, /refusing to start: arm plain cannot run multi-session task continuity-rules/);
+  const ok = oe.preflightRun({ tasks: ["continuity-rules"], arms: ["solo", "framework"], reps: 1, maxUsd: 5, bar: { floor_usd: 0.5, reserve: [] }, dirOf: () => null });
+  assert.equal(ok.error, undefined);
+  const r = run(["--arms", "plain", "--tasks", "continuity-rules", "--reps", "1", "--max-usd", "5", "--judge", "none"]);
+  assert.equal(r.status, 2, r.stderr); assert.match(r.stderr, /cannot run multi-session task continuity-rules/);
+});

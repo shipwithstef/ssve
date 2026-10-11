@@ -1027,6 +1027,11 @@ export function preflightRun({ tasks, arms, reps, maxUsd, bar = readBar(), dirOf
   }
   const problems = reserveProblems(tasks, bar, dirOf);
   if (problems.length) return { error: `refusing to start: ${problems.join("; ")}` };
+  // An arm that cannot prompt a task (e.g. a spec.md arm on a multi-session task) fails here,
+  // before any job is paid for, not midway through the batch.
+  const promptErrors = [];
+  for (const task of new Set(tasks)) for (const arm of new Set(arms)) { try { armPrompts(task, arm); } catch (e) { promptErrors.push(e.message); } }
+  if (promptErrors.length) return { error: `refusing to start: ${promptErrors.join("; ")}` };
   const line = `plan: tasks ${tasks.join(",")}; ${jobs} jobs; ${share != null ? `$${share.toFixed(3)} per job` : "no cap"}; arms ${arms.join(",")}`;
   return { line, jobs, share };
 }
