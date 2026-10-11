@@ -171,6 +171,29 @@ test('the printed plan-manifest sequence produces a receipt svc-next accepts (re
     const done = JSON.parse(fs.readFileSync(graphPath, 'utf8')).tasks.find((x) => x.metadata.skill === 'plan-changeset');
     assert.equal(done.status, 'completed');
     assert.equal(`plan-manifest:${done.chain_receipt.sha256}`, closeout);
+
+    // Completed does not mean unexamined: the immutable v5 structure and the sealed review evidence are
+    // revalidated on every card. Removing the sealed review object withdraws the stage (exit 5).
+    const card = () => {
+      const o = [];
+      const w = process.stdout.write;
+      const ew = process.stderr.write;
+      process.stdout.write = (c) => { o.push(String(c)); return true; };
+      process.stderr.write = () => true;
+      try { return { code: run(['--root', tmp, '--wi', WI]), out: o.join('') }; } finally { process.stdout.write = w; process.stderr.write = ew; }
+    };
+    const healthy = card();
+    assert.equal(healthy.code, 0, healthy.out);
+    assert.match(healthy.out, /^SKILL review-plan$/m);
+    const objectFile = path.join(tmp, '.svc/review-evidence-store/objects', reviewRef.slice(0, 2), reviewRef.slice(2));
+    assert.ok(fs.existsSync(objectFile), 'the sealed review object is in the store');
+    fs.renameSync(objectFile, `${objectFile}.gone`);
+    const withdrawn = card();
+    assert.equal(withdrawn.code, 5);
+    assert.match(withdrawn.out, /^SKILL plan-changeset$/m);
+    assert.match(withdrawn.out, /^MISSING plan-manifest/m);
+    fs.renameSync(`${objectFile}.gone`, objectFile);
+    assert.equal(card().code, 0, 'restoring the evidence restores the stage');
   } finally {
     for (const k of Object.keys(process.env)) if (!(k in savedEnv)) delete process.env[k];
     Object.assign(process.env, savedEnv);

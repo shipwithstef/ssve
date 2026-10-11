@@ -334,7 +334,7 @@ Mark this skill's task `completed` in `lane-tasks.json` before leaving, then upd
 In task-graph mode, follow §Task-graph mode above, then:
 
 **If verdict is READY TO LAND or CONDITIONAL (no Critical):**
-- Follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage.
+- With a lane graph, follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage. Standalone: suggest "Ready to land. Run `land-changeset`".
 
 **If verdict is BLOCKED:**
 - Stop the chain. Report Critical findings.
@@ -401,4 +401,4 @@ Self-verify: the receipt at `.svc/receipts/<sha>/<type>.json` passes its schema 
 
 ## Handback
 
-Run the `EMIT` command `svc-next` printed for this stage; it prints `audit-implementation:<sha256>`. Then run the `CLOSEOUT` command `svc-next` printed, verbatim, with that value in place of `audit-implementation:<sha256>`. Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `EMIT` command `svc-next` printed for this stage; it prints `audit-implementation:<sha256>`. Then run the `CLOSEOUT` command `svc-next` printed, verbatim, with that value in place of `audit-implementation:<sha256>`. Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above.

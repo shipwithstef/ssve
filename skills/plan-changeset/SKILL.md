@@ -362,4 +362,4 @@ Freeze the validated complete v5 JSON before paid plan review. Express future re
 
 ## Handback
 
-Run the `EMIT` command `svc-next` printed for this stage; it prints `plan-manifest:<sha256>`. Then run the `CLOSEOUT` command `svc-next` printed, verbatim, with that value in place of `plan-manifest:<sha256>`. Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `EMIT` command `svc-next` printed for this stage; it prints `plan-manifest:<sha256>`. Then run the `CLOSEOUT` command `svc-next` printed, verbatim, with that value in place of `plan-manifest:<sha256>`. Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above.

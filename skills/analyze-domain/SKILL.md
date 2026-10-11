@@ -241,7 +241,9 @@ section-by-section CURRENT/STALE/OUTDATED.
 
 **Discovery wave (WI-387 — opt-in, faster):** analyze-domain, analyze-competitors, and build-personas each need only `vision.md` and write disjoint paths, so they can run as ONE concurrent wave via `dispatch-waves` (catalog-domain-capabilities as wave 2) instead of the serial chain — ~55% faster discovery. **Before dispatching, run the disjoint-write fence:** `node scripts/discovery-wave-fence.mjs` (fails closed on any write-scope overlap), because concurrent writers to one path corrupt each other. `validate-feature` still gates the merged discovery. Serial-domain-context is a soft, stated cost. See `references/discovery-wave.md`. Permitted mutating transport per the S5 policy (recorded 2026-06-09).
 
-**After self-verify passes:** report the domain profile summary and follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage.
+**With a lane graph:** after self-verify passes, report the domain profile summary and follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage.
+
+**If standalone (no lane graph):** report the domain profile summary and suggest: "Next: run `analyze-competitors` if not already done, or `build-personas`"
 
 ## Post-Compaction Recovery
 
@@ -258,4 +260,4 @@ If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare i
 
 ## Handback
 
-Run the `CLOSEOUT` command `svc-next` printed for this stage, verbatim (it ends in `--receipt load-skill`). Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `CLOSEOUT` command `svc-next` printed for this stage, verbatim (it ends in `--receipt load-skill`). Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above.

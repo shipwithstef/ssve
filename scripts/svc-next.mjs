@@ -40,6 +40,10 @@ import { familyOf } from "./lib/cognitive-family.mjs";
 import { verifyReviewerEvidence } from "./lib/reviewer-evidence.mjs";
 import { candidateTreeIdentity } from "./lib/external-review-provenance.mjs";
 import { putObject } from "./lib/review-evidence-store.mjs";
+import { validatePlanSchema } from "./lib/plan-manifest-contract.mjs";
+import { loadPlanAuthority } from "./lib/receipt-issuance-epoch.mjs";
+import { semanticContractDigest } from "./lib/transmutation-seal.mjs";
+import { getByRef } from "./lib/two-box-protocol.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const FRAMEWORK_ROOT = resolve(SCRIPT_DIR, "..");
@@ -70,7 +74,7 @@ export class CliError extends Error {
 }
 
 function parseArgs(argv) {
-  const out = { root: ".", wi: null, done: null, receipt: null, template: null, sha: null, recipe: null, buildReview: null, summary: null, out: null, planBody: null, orchestrator: null, store: false, candidateDigest: null };
+  const out = { root: ".", wi: null, done: null, receipt: null, template: null, sha: null, recipe: null, buildReview: null, summary: null, out: null, planBody: null, orchestrator: null, store: false, candidateDigest: null, orchestratorId: false };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     const next = () => {
@@ -93,6 +97,7 @@ function parseArgs(argv) {
     else if (a === "--orchestrator") out.orchestrator = next();
     else if (a === "--store") out.store = true;
     else if (a === "--candidate-digest") out.candidateDigest = next();
+    else if (a === "--orchestrator-id") out.orchestratorId = true;
     else throw new CliError(4, `unknown argument: ${a}`);
   }
   return out;
@@ -418,7 +423,7 @@ export function recipeFor(type, ctx) {
       `# review-exec for ${wi} (run from the project root; package rules: skills/review-cross-model/SKILL.md)`,
       `1. MODEL  write the review package to ${pkg} (the frozen diff and entry points).`,
       `2. DIGEST="$(${NEXT} --candidate-digest exec)" && printf '\\ncandidate_digest=%s\\n' "$DIGEST" >> ${pkg}      # the launcher needs the frozen candidate digest inside the request`,
-      `3. SVC_WI=${wi} node ${SR}/run-external-review.mjs --orchestrator "\${SVC_HOST:-claude}" --review-kind exec --candidate-digest "$DIGEST" --input-file ${pkg} --artifacts-dir .svc/external-review-artifacts/cross-model > .svc/review-exec.summary.json      # ${NO_SUBSTITUTE}`,
+      `3. SVC_WI=${wi} node ${SR}/run-external-review.mjs --orchestrator "$(${NEXT} --orchestrator-id)" --review-kind exec --candidate-digest "$DIGEST" --input-file ${pkg} --artifacts-dir .svc/external-review-artifacts/cross-model > .svc/review-exec.summary.json      # ${NO_SUBSTITUTE}`,
       `4. ${NEXT} --build-review exec --summary .svc/review-exec.summary.json --out .svc/review-exec.body.json      # canonical review-exec body from the launcher run`,
       `5. node ${SR}/emit-receipt.mjs --type review-exec --wi ${wi} --sha "$(git rev-parse HEAD)" --body .svc/review-exec.body.json`,
       `6. ${sha}      # prints review-exec:<sha256> for the CLOSEOUT line`,
@@ -537,6 +542,40 @@ function reviewerHostOf(body) {
 }
 
 /**
+ * Immutable structure and sealed evidence of a v5 plan, independent of the live tree: the current v5
+ * schema (null or missing evidence fields fail), the recorded seal envelope, the stored prepared bytes,
+ * and the sealed plan review with its authenticated cross-family reviewer evidence. Live-tree issuance
+ * (staged-tree eligibility) is deliberately left to completion time.
+ */
+export function planSealReasons(root, body) {
+  const reasons = [];
+  const schema = validatePlanSchema(body);
+  if (!schema.ok) return schema.errors.slice(0, 6).map((e) => `plan schema: ${e}`);
+  try {
+    const authority = loadPlanAuthority({ consumerRoot: root, body });
+    const envelope = JSON.parse(getByRef(authority.sealRef, { start: root }).bytes.toString("utf8"));
+    if (envelope.wi !== body.wi) reasons.push("seal WI does not match the plan");
+    if (envelope.semantic?.sha256 !== semanticContractDigest(body)) reasons.push("seal semantic digest does not match the plan body");
+    const artifact = getByRef(envelope.artifact.ref, { start: root }).bytes;
+    if (sha256(artifact) !== envelope.artifact.digest?.sha256) reasons.push("stored plan artifact does not match the seal");
+    if (JSON.stringify(JSON.parse(artifact.toString("utf8"))) !== JSON.stringify(body)) reasons.push("stored plan artifact differs from the receipt body");
+    const reviewBytes = getByRef(envelope.review_ref, { start: root }).bytes;
+    const review = JSON.parse(reviewBytes.toString("utf8"));
+    if (review.receipt_type !== "review-plan" || review.wi !== body.wi) reasons.push("sealed review is not this work item's review-plan");
+    if (!["pass", "pass-with-acks", "pass-with-findings"].includes(review.verdict)) reasons.push("sealed plan review is not passing");
+    if (review.reviewed_plan_digest !== sha256(artifact)) reasons.push("sealed plan review covers different plan bytes");
+    if (!Number.isInteger(review.schema_version) || review.schema_version < 3) reasons.push("sealed plan review is a legacy schema");
+    const af = familyOf(review.self_review?.orchestrator);
+    const rf = familyOf(reviewerHostOf(review));
+    if (af === "unknown" || rf === "unknown" || af === rf) reasons.push("sealed plan review is not a genuine cross-family review");
+    reasons.push(...verifyReviewerEvidence({ root, reviewKind: "plan", body: review }));
+  } catch (error) {
+    reasons.push(`sealed plan evidence cannot be verified: ${error.message}`);
+  }
+  return reasons;
+}
+
+/**
  * Would this receipt body be accepted? Same rules the canonical emitter and chain checker apply:
  *  - an explicit allowed passing verdict wherever the type carries one (null, non-strings and
  *    anything else never pass);
@@ -561,7 +600,10 @@ export function acceptanceReasons(root, type, body, { issuance = true } = {}) {
     const verdictOnly = __testing.emitterValidator(root, type, body); // null = no opinion: validate for real
     if (Array.isArray(verdictOnly)) return [...reasons, ...verdictOnly];
   }
-  if (type === "plan-manifest" && body.schema_version !== 5) reasons.push(`plan-manifest schema_version ${JSON.stringify(body.schema_version)} is not the current 5`);
+  if (type === "plan-manifest") {
+    if (body.schema_version !== 5) reasons.push(`plan-manifest schema_version ${JSON.stringify(body.schema_version)} is not the current 5`);
+    else reasons.push(...planSealReasons(root, body));
+  }
   if (REVIEW_KIND[type]) {
     if (!Number.isInteger(body.schema_version) || body.schema_version < 3) {
       reasons.push(`${type} schema_version ${JSON.stringify(body.schema_version)} is below the current 3; legacy v1/v2 review receipts never complete a stage`);
@@ -573,6 +615,13 @@ export function acceptanceReasons(root, type, body, { issuance = true } = {}) {
     }
     try { reasons.push(...verifyReviewerEvidence({ root, reviewKind: REVIEW_KIND[type], body })); }
     catch (error) { reasons.push(`reviewer evidence verification threw: ${error.message}`); }
+    if (issuance) {
+      // The review must cover the candidate that is about to advance, not an earlier one.
+      try {
+        const current = candidateTreeIdentity(root);
+        if (body.candidate_digest !== current.candidate_digest) reasons.push(`${type} binds candidate ${String(body.candidate_digest).slice(0, 12)} but the current candidate tree is ${current.candidate_digest.slice(0, 12)}; changed code needs a fresh review`);
+      } catch (error) { reasons.push(`cannot compute the current candidate: ${error.message}`); }
+    }
   }
   const required = schemaRequired(type);
   if (required === null) reasons.push(`schema for ${type} is unavailable`);
@@ -676,6 +725,42 @@ export function candidateDigestFor(root, kind, planBody = PLAN_BODY) {
 }
 
 /**
+ * The real orchestrator host of this session: an explicit value, SVC_HOST, the Codex session
+ * markers, then scripts/detect-host.sh. There is no default: an unknown host is refused, because
+ * guessing one could label a same-family reviewer as cross-family.
+ */
+export function resolveOrchestrator(explicit = null) {
+  let host = explicit || process.env.SVC_HOST || "";
+  if (!host && (process.env.CODEX_THREAD_ID || process.env.CODEX_HOME || process.env.CODEX_CLI)) host = "codex";
+  if (!host) {
+    try { host = execFileSync("bash", [join(FRAMEWORK_ROOT, "scripts", "detect-host.sh")], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); } catch { host = ""; }
+  }
+  if (!host || host === "unknown" || familyOf(host) === "unknown") {
+    throw new CliError(4, `cannot identify the orchestrator host${host ? ` (${JSON.stringify(host)} is not a known family)` : ""}; set SVC_HOST (claude, codex, gemini, grok, ...) or pass --orchestrator`);
+  }
+  return host;
+}
+
+/** Hash-bound launcher evidence for the review body, including the authenticated source of a cache replay. */
+export function launcherEvidence(root, receiptFile, launcher) {
+  const rel = (f) => relative(resolve(root), f);
+  const entry = { path: rel(receiptFile), sha256: sha256File(receiptFile) };
+  const evidence = { independent: true, submitter_only: false, launcher_receipts: [entry], deletion_bearing: false, parse_collect_evidence: [] };
+  let run = launcher;
+  if (launcher.classification === "cache_hit") {
+    const sourceFile = resolve(launcher.cache?.entry || "", "receipt.json");
+    if (!launcher.cache?.entry || !existsSync(sourceFile)) throw new CliError(4, "cache-hit launcher receipt has no readable source receipt; re-run the review without the cache");
+    const source = JSON.parse(readFileSync(sourceFile, "utf8"));
+    evidence.cache_sources = [{ replay_sha256: entry.sha256, source: { path: rel(sourceFile), sha256: sha256File(sourceFile) } }];
+    run = source;
+  }
+  const outputs = run.reviewer_run?.output_artifacts || [];
+  evidence.commands = run.reviewer_run?.commands || [];
+  evidence.output_artifacts = outputs.map((f) => ({ path: rel(resolve(root, f)), sha256: sha256File(resolve(root, f)) }));
+  return evidence;
+}
+
+/**
  * Build the canonical review-plan / review-exec receipt body from a REAL launcher run (the summary
  * run-external-review.mjs printed: ok, findings path, receipt path), prove it with the same verifier the
  * chain uses, and optionally persist it in the review evidence store (the object --seal-after-review needs).
@@ -691,7 +776,9 @@ export function buildReviewBody(root, { kind, wi, summaryPath, planBody = PLAN_B
   const receiptFile = resolve(root, summary.receipt);
   const findings = JSON.parse(readFileSync(findingsFile, "utf8"));
   const launcher = JSON.parse(readFileSync(receiptFile, "utf8"));
-  const host = orchestrator || process.env.SVC_HOST || "claude";
+  const host = resolveOrchestrator(orchestrator);
+  const launcherHost = launcher.effective_tuple?.orchestrator;
+  if (launcherHost && launcherHost !== host) throw new CliError(4, `the launcher ran for orchestrator ${JSON.stringify(launcherHost)} but this session is ${JSON.stringify(host)}; rebuild with the matching host`);
   const identity = candidateTreeIdentity(root);
   const requested = launcher.requested_tuple?.host;
   const effective = launcher.effective_tuple?.host || requested;
@@ -711,13 +798,7 @@ export function buildReviewBody(root, { kind, wi, summaryPath, planBody = PLAN_B
     },
     verdict,
     timestamp: new Date().toISOString(),
-    reviewer_evidence: {
-      independent: true, submitter_only: false,
-      launcher_receipts: [{ path: rel(receiptFile), sha256: sha256File(receiptFile) }],
-      commands: launcher.reviewer_run?.commands || [],
-      output_artifacts: (launcher.reviewer_run?.output_artifacts || [findingsFile]).map((f) => ({ path: rel(resolve(root, f)), sha256: sha256File(resolve(root, f)) })),
-      deletion_bearing: false, parse_collect_evidence: [],
-    },
+    reviewer_evidence: launcherEvidence(root, receiptFile, launcher),
   };
   const head = gitOut(["rev-parse", "--verify", "HEAD"], root).trim();
   if (head) body.candidate_sha = head;
@@ -742,6 +823,7 @@ const EMPTY_CARD = (closeout = "-") => [
 ];
 
 export function run(argv) {
+  acceptedCache.clear();
   let args;
   try { args = parseArgs(argv); } catch (e) {
     print(EMPTY_CARD()); process.stderr.write(`svc-next: ${e.message}\n`); return e.code || 4;
@@ -754,6 +836,10 @@ export function run(argv) {
     } catch (e) { process.stderr.write(`svc-next: ${e.message}\n`); return e.code || 4; }
   }
   const root = resolve(args.root);
+  if (args.orchestratorId) {
+    try { process.stdout.write(`${resolveOrchestrator(args.orchestrator)}\n`); return 0; }
+    catch (e) { process.stderr.write(`svc-next: ${e.message}\n`); return e.code || 4; }
+  }
   if (args.candidateDigest) {
     try { process.stdout.write(`${candidateDigestFor(root, args.candidateDigest, args.planBody || PLAN_BODY)}\n`); return 0; }
     catch (e) { process.stderr.write(`svc-next: ${e.message}\n`); return e.code || 4; }

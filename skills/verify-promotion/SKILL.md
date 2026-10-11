@@ -336,7 +336,7 @@ with `block_on_discovery`, and leave the parent blocked instead of VERIFIED.
 
 ### Chaining
 
-In task-graph mode, follow §Task-graph mode above, then report one sentence before the detail: `VERIFIED (<tier>): checked <the checks that passed>. Still open: <observation, leftovers, or manual issue close — or none>.` Do not treat outcome observation or a manual issue close as done. Then follow `## Handback` at the end of this file; this is the last stage of every lane, and the lane graph, not this skill, names the next stage.
+In task-graph mode, follow §Task-graph mode above, then report one sentence before the detail: `VERIFIED (<tier>): checked <the checks that passed>. Still open: <observation, leftovers, or manual issue close — or none>.` Do not treat outcome observation or a manual issue close as done. With a lane graph, then follow `## Handback` at the end of this file; this is the last stage of every lane (standalone: report the results; the pipeline is complete), and the lane graph, not this skill, names the next stage.
 
 ## Post-Compaction Recovery
 
@@ -450,4 +450,4 @@ Reference: `references/chain-receipt-contract.md`.
 
 ## Handback
 
-Run the `EMIT` command `svc-next` printed for this stage; it prints `verify-promotion:<sha256>`. Then run the `CLOSEOUT` command `svc-next` printed, verbatim, with that value in place of `verify-promotion:<sha256>`. Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `EMIT` command `svc-next` printed for this stage; it prints `verify-promotion:<sha256>`. Then run the `CLOSEOUT` command `svc-next` printed, verbatim, with that value in place of `verify-promotion:<sha256>`. Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above.

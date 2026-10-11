@@ -254,7 +254,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
-After self-verify passes, report the gate verdict and follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage.
+With a lane graph, after self-verify passes, report the gate verdict and follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage. Standalone (no lane graph): report and suggest `audit-implementation` (greenfield) or `land-changeset`.
 
 ## Post-Compaction Recovery
 
@@ -266,4 +266,4 @@ On new delivery-graph signals, emit `skill_outcome` per `references/skill-outcom
 
 ## Handback
 
-Run the `CLOSEOUT` command `svc-next` printed for this stage, verbatim (it ends in `--receipt load-skill`). Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `CLOSEOUT` command `svc-next` printed for this stage, verbatim (it ends in `--receipt load-skill`). Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above.

@@ -366,6 +366,8 @@ scripts/worktree.sh remove <branch-name>
 
 This removes `.worktrees/<branch-name>` and deletes the local branch.
 
+**Lane graph driven by `svc-next`:** the worktree holds `.svc/lane-tasks-<WI>.json` and the receipts that `verify-promotion` and the final `STATUS done` read. Do not remove it here: record this stage's `CLOSEOUT` first, finish the remaining stages from the same worktree, and run this removal as the last act after `svc-next` reports `STATUS done`.
+
 ### Step 6: Update spec status
 
 Update the feature spec status to `PROMOTED`:
@@ -410,7 +412,7 @@ Before declaring done, verify:
 |---|-------|-----|-----------|
 | 1 | PR was created | `gh pr view <number>` shows the PR | |
 | 2 | PR was merged OR waiting for approval | `gh pr view <number> --json state` shows MERGED or OPEN | |
-| 3 | If merged: worktree removed | `.worktrees/<branch>` no longer exists | |
+| 3 | If merged: worktree removed | `.worktrees/<branch>` no longer exists (with a lane graph: after `svc-next` reports `STATUS done`) | |
 | 4 | If merged: spec updated | spec shows `PROMOTED` status | |
 | 5 | If merged: post-commit tier-1 passed | `bash test-framework/evals/run-all-evals.sh` exits 0 (or the relevant tier-1 check for the changed skills) | |
 | 6 | Leftover disposition validated | `git status --short --untracked-files=all` is clean, or every remaining path is covered by a passing ledger per `references/leftover-disposition.md` | |
@@ -426,7 +428,7 @@ deferred until the PR is merged. Report the PR URL and stop — do not chain to
 In task-graph mode, follow §Task-graph mode above, then:
 
 **If PR was merged (auto-approve or post-approval):**
-- Follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage.
+- With a lane graph, follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage. Standalone: suggest "Next: run `verify-promotion`".
 
 **If PR is open and waiting for approval:**
 - Stop the progressive chain. Report:
@@ -454,4 +456,4 @@ Invoke the canonical merge wrapper with exact expected repository, head branch a
 
 ## Handback
 
-Run the `CLOSEOUT` command `svc-next` printed for this stage, verbatim (it ends in `--receipt load-skill`). Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `CLOSEOUT` command `svc-next` printed for this stage, verbatim (it ends in `--receipt load-skill`). Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above. Run the `CLOSEOUT` from the lane's worktree before any worktree removal, and keep that worktree (Step 5) until `svc-next` reports `STATUS done`.

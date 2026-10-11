@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { compileDeliveryGraph } from '../../scripts/compile-delivery-graph.mjs';
-import { run, __testing, recipeFor, candidateDigestFor } from '../../scripts/svc-next.mjs';
+import { run, __testing, recipeFor, candidateDigestFor, planSealReasons, acceptanceReasons, launcherEvidence, resolveOrchestrator } from '../../scripts/svc-next.mjs';
 import { candidateTreeIdentity } from '../../scripts/lib/external-review-provenance.mjs';
 import { createExternalReviewFixture } from '../evals/tier-1/fixtures/external-review-fixture.mjs';
 
@@ -512,7 +512,7 @@ test('cross-family only: a same-host or self review receipt never completes a re
   }
   assert.match(recipeFor('plan-manifest', { rootArg: '.', wi: p.wi }).join('\n'), /two-box-plan\.mjs --input/);
   assert.match(recipeFor('review-plan', { rootArg: '.', wi: p.wi }).join('\n'), /review-plan-codex\.sh/);
-  assert.match(recipeFor('review-exec', { rootArg: '.', wi: p.wi }).join('\n'), /run-external-review\.mjs --orchestrator "\$\{SVC_HOST:-claude\}" --review-kind exec/);
+  assert.match(recipeFor('review-exec', { rootArg: '.', wi: p.wi }).join('\n'), /run-external-review\.mjs --orchestrator "\$\(node "\$SVC_ROOT"\/scripts\/svc-next\.mjs --root \. --wi WI-NEXT --orchestrator-id\)" --review-kind exec/);
 });
 
 // ------------------------------------------------------------ round 2 findings
@@ -616,10 +616,10 @@ test('W4 [review body construction]: build-review proves a real launcher run, st
     assert.equal(body.verdict, 'pass');
     assert.equal(body.candidate_digest, candidateTreeIdentity(p.dir).candidate_digest);
     assert.equal(body.reviewer_evidence.independent, true);
-    // same family (author agy == reviewer agy) is refused
-    const same = next(p.dir, '--wi', p.wi, '--build-review', 'exec', '--summary', summaryFor(good), '--orchestrator', 'agy', '--out', path.join(p.dir, 'x.json'));
-    assert.equal(same.code, 4);
-    assert.match(same.stderr, /cross-family/);
+    // a launcher run for another orchestrator than this session is refused
+    const other = next(p.dir, '--wi', p.wi, '--build-review', 'exec', '--summary', summaryFor(good), '--orchestrator', 'claude', '--out', path.join(p.dir, 'x.json'));
+    assert.equal(other.code, 4);
+    assert.match(other.stderr, /launcher ran for orchestrator "codex" but this session is "claude"/);
     assert.equal(fs.existsSync(path.join(p.dir, 'x.json')), false);
     // a failing reviewer verdict is refused
     const failing = createExternalReviewFixture({ frameworkRoot: ROOT, repo: p.dir, reviewKind: 'exec', wi: p.wi, roundLabel: 'failing', verdict: 'fail', findings: [{ id: 'F1', severity: 'high', claim: 'c', analysis: 'a', evidence: 'e', proposed_fix: 'p' }] });
@@ -690,4 +690,158 @@ test('W6 [handback follows the printed CLOSEOUT]: no changed skill rebuilds the 
   const card = next(p.dir).card;
   assert.equal(card.SKILL, 'execute-changeset');
   assert.match(card.CLOSEOUT, /--wi WI-NEXT --done execute-changeset --receipt exec-record:<sha256>$/);
+});
+
+// ------------------------------------------------------------ round 3 findings
+
+test('V1 [immutable plan structure]: a plan with null evidence fields is rejected on completion and when it is already recorded', () => {
+  const nulls = { receipt_type: 'plan-manifest', schema_version: 5, wi: 'WI-NEXT', mode: 'inline', timestamp: null, scope: null, dependencies: null, decision_trace: null, task_graph: null, validation_plan: null, risk_rollback: null, execution_command_sequence: null, ac_digests: null, planning_contract: null, implementation_approach: null, executor_discretion: null };
+  const p = project('bugfix');
+  assert.ok(planSealReasons(p.dir, nulls).length > 0);
+  assert.match(acceptanceReasons(p.dir, 'plan-manifest', nulls, { issuance: false }).join(';'), /plan schema/);
+  assert.ok(acceptanceReasons(p.dir, 'plan-manifest', { ...nulls, schema_version: 4 }, { issuance: false }).length > 0);
+  withLooseEmitter(() => driveUntil(p, 'plan-changeset'));
+  const rec = stagedBody(p.dir, 'plan-manifest', nulls);
+  const before = fs.readFileSync(p.file);
+  const r = next(p.dir, '--done', 'plan-changeset', '--receipt', `plan-manifest:${rec.sha}`);
+  assert.equal(r.code, 4);
+  assert.match(r.stderr, /plan schema|sealed plan evidence/);
+  assert.deepEqual(fs.readFileSync(p.file), before);
+  // recorded in the graph as a finished stage, it does not hold: the lane reopens at plan-changeset
+  const g = readGraph(p.file);
+  const plan = g.tasks.find((t) => skillOf(t) === 'plan-changeset');
+  plan.status = 'completed';
+  plan.skill_receipt = { skill: 'plan-changeset', loaded_at: new Date().toISOString(), loaded_via: 'fixture' };
+  plan.chain_receipt = { type: 'plan-manifest', sha256: rec.sha, path: path.relative(p.dir, rec.file) };
+  fs.writeFileSync(p.file, JSON.stringify(g));
+  const c = next(p.dir);
+  assert.equal(c.code, 5);
+  assert.equal(c.card.SKILL, 'plan-changeset');
+  assert.match(c.card.MISSING, /plan-manifest/);
+});
+
+function execReviewProject() {
+  const p = project('bugfix');
+  const git = gitProject(p);
+  fs.mkdirSync(path.join(p.dir, 'src'), { recursive: true });
+  fs.writeFileSync(path.join(p.dir, 'src', 'a.txt'), 'change');
+  git('add', '-A');
+  const fx = (extra = {}) => createExternalReviewFixture({ frameworkRoot: ROOT, repo: p.dir, reviewKind: 'exec', wi: p.wi, candidateSha: null, ...extra });
+  const summaryFor = (f) => {
+    const file = path.join(p.dir, `summary-${crypto.randomBytes(4).toString('hex')}.json`);
+    fs.writeFileSync(file, JSON.stringify({ ok: true, findings: f.output, receipt: f.receiptPath }));
+    return file;
+  };
+  return { p, git, fx, summaryFor };
+}
+
+function withEnv(values, fn) {
+  const saved = { ...process.env };
+  Object.assign(process.env, values);
+  try { return fn(); } finally {
+    for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k];
+    Object.assign(process.env, saved);
+  }
+}
+
+test('V2 [candidate binding]: a review of an earlier tree never completes the stage once the code changed', () => {
+  withEnv({ SVC_HOST: 'codex' }, () => {
+    const { p, git, fx, summaryFor } = execReviewProject();
+    const built = next(p.dir, '--wi', p.wi, '--build-review', 'exec', '--summary', summaryFor(fx()), '--out', path.join(p.dir, '.svc', 'review-exec.body.json'));
+    assert.equal(built.code, 0, built.stderr);
+    const body = JSON.parse(fs.readFileSync(path.join(p.dir, '.svc', 'review-exec.body.json'), 'utf8'));
+    withLooseEmitter(() => driveUntil(p, 'review-exec'));
+    const rec = realEmit(p, 'review-exec', body);
+    // the code changes after the review
+    fs.writeFileSync(path.join(p.dir, 'src', 'b.txt'), 'late change');
+    git('add', 'src/b.txt');
+    const before = fs.readFileSync(p.file);
+    const stale = next(p.dir, '--done', 'review-exec', '--receipt', `review-exec:${rec.sha}`);
+    assert.equal(stale.code, 4);
+    assert.match(stale.stderr, /changed code needs a fresh review/);
+    assert.deepEqual(fs.readFileSync(p.file), before);
+    // the unchanged candidate is accepted
+    git('rm', '-q', '--cached', 'src/b.txt');
+    const ok = next(p.dir, '--done', 'review-exec', '--receipt', `review-exec:${rec.sha}`);
+    assert.equal(ok.code, 0, ok.stderr);
+  });
+});
+
+test('V3 [orchestrator identity]: no guessed host; unknown, mismatched and same-family orchestrators are refused', () => {
+  withEnv({ SVC_HOST: 'codex' }, () => {
+    const { p, fx, summaryFor } = execReviewProject();
+    const good = fx();
+    const out = path.join(p.dir, 'o.json');
+    const unknown = next(p.dir, '--wi', p.wi, '--build-review', 'exec', '--summary', summaryFor(good), '--orchestrator', 'mystery', '--out', out);
+    assert.equal(unknown.code, 4);
+    assert.match(unknown.stderr, /cannot identify the orchestrator host/);
+    const mismatch = next(p.dir, '--wi', p.wi, '--build-review', 'exec', '--summary', summaryFor(good), '--orchestrator', 'claude', '--out', out);
+    assert.match(mismatch.stderr, /launcher ran for orchestrator "codex" but this session is "claude"/);
+    assert.equal(fs.existsSync(out), false);
+    // author and reviewer in the same family
+    const agy = { orchestrator: 'agy', host: 'agy', family: 'google', model: 'Gemini 3.6 Flash (High)', effort: 'high' };
+    const same = next(p.dir, '--wi', p.wi, '--build-review', 'exec', '--summary', summaryFor(fx({ tupleOverride: agy, roundLabel: 'same' })), '--orchestrator', 'agy', '--out', out);
+    assert.equal(same.code, 4);
+    assert.match(same.stderr, /not a genuine cross-family review/);
+    assert.equal(fs.existsSync(out), false);
+    assert.equal(next(p.dir, '--orchestrator-id', '--orchestrator', 'codex').stdout.trim(), 'codex');
+    assert.equal(resolveOrchestrator('gemini'), 'gemini');
+  });
+  assert.throws(() => resolveOrchestrator('mystery'), /cannot identify the orchestrator host/);
+  const text = ['plan-manifest', 'review-plan', 'review-exec'].map((t) => recipeFor(t, { rootArg: '.', wi: 'WI-NEXT' }).join('\n')).join('\n');
+  assert.doesNotMatch(text, /:-claude/, 'no recipe defaults the host to claude');
+});
+
+test('V4 [cache replay evidence]: a cache-hit launcher receipt carries its authenticated source receipt, commands and outputs', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'svc-next-cache-'));
+  const entry = path.join(dir, 'cache', 'entry');
+  fs.mkdirSync(entry, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'findings.json'), '{"verdict":"pass"}');
+  const command = { binary: 'agy', argv: ['review'] };
+  fs.writeFileSync(path.join(entry, 'receipt.json'), JSON.stringify({ classification: 'success', reviewer_run: { commands: [command], output_artifacts: [path.join(dir, 'findings.json')] } }));
+  const replayFile = path.join(dir, 'receipt.json');
+  const replay = { classification: 'cache_hit', cache: { disposition: 'hit', entry }, reviewer_run: { commands: [], output_artifacts: [] } };
+  fs.writeFileSync(replayFile, JSON.stringify(replay));
+  const evidence = launcherEvidence(dir, replayFile, replay);
+  assert.deepEqual(evidence.commands, [command]);
+  assert.equal(evidence.output_artifacts.length, 1);
+  assert.equal(evidence.output_artifacts[0].path, 'findings.json');
+  assert.equal(evidence.cache_sources.length, 1);
+  const replaySha = crypto.createHash('sha256').update(fs.readFileSync(replayFile)).digest('hex');
+  assert.equal(evidence.cache_sources[0].replay_sha256, replaySha);
+  assert.equal(evidence.launcher_receipts[0].sha256, replaySha);
+  assert.equal(evidence.cache_sources[0].source.sha256, crypto.createHash('sha256').update(fs.readFileSync(path.join(entry, 'receipt.json'))).digest('hex'));
+  assert.equal(evidence.independent, true);
+  // a replay whose source is gone cannot be turned into evidence
+  fs.rmSync(path.join(entry, 'receipt.json'));
+  assert.throws(() => launcherEvidence(dir, replayFile, replay), /no readable source receipt/);
+  // a plain run needs no cache source
+  const plain = launcherEvidence(dir, replayFile, { classification: 'success', reviewer_run: { commands: [command], output_artifacts: [path.join(dir, 'findings.json')] } });
+  assert.equal(plain.cache_sources, undefined);
+});
+
+test('V5 [land keeps its worktree]: the land skill defers worktree removal until the lane is done, and the Handback runs first', () => {
+  const land = fs.readFileSync(path.join(ROOT, 'skills/land-changeset/SKILL.md'), 'utf8');
+  const step5 = /### Step 5[\s\S]*?(?=### Step 6)/.exec(land)[0];
+  assert.match(step5, /Do not remove it here/);
+  assert.match(step5, /after `svc-next` reports `STATUS done`/);
+  const handback = /\n## Handback\n([\s\S]*)$/.exec(land)[1];
+  assert.match(handback, /before any worktree removal/);
+  assert.match(handback, /until `svc-next` reports `STATUS done`/);
+  assert.match(land, /with a lane graph: after `svc-next` reports `STATUS done`/);
+});
+
+test('V6 [standalone stays usable]: every Handback is conditional on a lane graph and standalone chaining is kept', () => {
+  for (const name of fs.readdirSync(path.join(ROOT, 'skills'))) {
+    const text = fs.readFileSync(path.join(ROOT, 'skills', name, 'SKILL.md'), 'utf8');
+    const m = /\n## Handback\n([\s\S]*)$/.exec(text);
+    if (!m) continue;
+    assert.match(m[1], /^\nWhen a compiled lane graph/, name);
+    assert.match(m[1], /Without a lane graph there is no card: skip this section/, name);
+  }
+  const domain = fs.readFileSync(path.join(ROOT, 'skills/analyze-domain/SKILL.md'), 'utf8');
+  assert.match(domain, /If standalone \(no lane graph\):\*\* report the domain profile summary and suggest: "Next: run `analyze-competitors`/);
+  for (const name of ['review-gate', 'audit-implementation', 'land-changeset', 'verify-promotion']) {
+    assert.match(fs.readFileSync(path.join(ROOT, 'skills', name, 'SKILL.md'), 'utf8'), /[Ss]tandalone/, name);
+  }
 });
