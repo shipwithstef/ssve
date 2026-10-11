@@ -120,7 +120,8 @@ export function sanitizeArgv(argv) {
 
 // Codex prints usage as JSONL when --json is set: a `turn.completed` event carries
 // usage {input_tokens, cached_input_tokens, output_tokens, reasoning_output_tokens}, the shape
-// run-external-review.mjs reads as `event.usage`. A call can run more than one turn, so turn
+// run-external-review.mjs reads as `event.usage` (checked against codex-cli 0.162: the event also
+// carries cache_write_input_tokens). A call can run more than one turn, so turn
 // totals are summed; an event outside turn.completed with a usage object is used only when no
 // turn reported one. Input tokens include the cached ones (provider convention), output tokens
 // include reasoning. Returns null when the output has no usage (no --json, or none printed).
@@ -135,13 +136,13 @@ export function parseCodexUsage(lines) {
   const use = turns.length ? turns : other ? [other] : [];
   if (!use.length) return null;
   const sum = (k) => use.reduce((n, u) => n + (Number(u[k]) || 0), 0);
-  return { input_tokens: sum("input_tokens"), cached_input_tokens: sum("cached_input_tokens"), output_tokens: sum("output_tokens"), reasoning_output_tokens: sum("reasoning_output_tokens"), observed_models: [...models] };
+  return { input_tokens: sum("input_tokens"), cached_input_tokens: sum("cached_input_tokens"), output_tokens: sum("output_tokens"), reasoning_output_tokens: sum("reasoning_output_tokens"), cache_write_input_tokens: sum("cache_write_input_tokens"), observed_models: [...models] };
 }
 
 // Usage in the shape priceUsage() takes.
 export function usageForPricing(u) {
   const cached = Math.min(u.cached_input_tokens || 0, u.input_tokens || 0);
-  return { inputTokens: Math.max(0, (u.input_tokens || 0) - cached), cacheReadInputTokens: cached, outputTokens: u.output_tokens || 0 };
+  return { inputTokens: Math.max(0, (u.input_tokens || 0) - cached), cacheReadInputTokens: cached, outputTokens: u.output_tokens || 0, ...(u.cache_write_input_tokens ? { cacheCreationInputTokens: u.cache_write_input_tokens } : {}) };
 }
 
 // --- path mapping ---------------------------------------------------------------------
@@ -162,6 +163,16 @@ export function mapSandboxDir(p, { jobHome, buildDir }) {
     const roots = [jobHome, buildDir].map((r) => { try { return fs.realpathSync(r); } catch { return r; } });
     return roots.some((r) => isUnder(real, r)) ? real : null;
   } catch { return null; }
+}
+
+// A working directory that lives only in the sandbox's private /tmp (two-box planning runs
+// its reviewers from a fresh neutral temp dir there). It has no host counterpart, so it is
+// never mapped to a host path: the call gets a new empty directory instead. The build dir and
+// the sandbox HOME are excluded (they are mapped, or refused, by mapSandboxDir).
+export function isNeutralSandboxDir(p, { buildDir }) {
+  if (typeof p !== "string" || !path.isAbsolute(p)) return false;
+  const norm = path.resolve(p);
+  return norm !== "/tmp" && isUnder(norm, "/tmp") && !isUnder(norm, SANDBOX_HOME) && !isUnder(norm, buildDir);
 }
 
 // First executable named `name` on pathEnv (a link is resolved so the call is stable).
@@ -189,7 +200,7 @@ function frame(type, payload) {
 //   callTimeoutMs  per-call deadline (default 30 minutes)
 //   deadlineAt     epoch ms after which no call may start and a running one is cut short
 //   price(model, usage) -> {usd, known}   prices one call's usage; absent: calls carry no cost
-//   confine(ctx) -> argv prefix (e.g. a bwrap command) to run codex under; ctx = {cwd, scratch}
+//   confine(ctx) -> argv prefix (e.g. a bwrap command) to run codex under; ctx = {cwd, scratch, neutral}
 //   env            environment for codex (default: the runner's, minus SVC_* variables)
 export async function startRelay({ jobHome, buildDir, codexBin = null, pathEnv = process.env.PATH, maxCalls = DEFAULT_MAX_CALLS, callTimeoutMs = DEFAULT_CALL_TIMEOUT_MS, deadlineAt = null, price = null, confine = null, env = null } = {}) {
   if (!jobHome || !buildDir) throw new Error("startRelay needs jobHome and buildDir");
@@ -230,22 +241,35 @@ export async function startRelay({ jobHome, buildDir, codexBin = null, pathEnv =
         if (deadlineAt != null && Date.now() >= deadlineAt) return reject(argv, "the job's time is spent");
       }
       // Working directory: the info probes run in the job home; exec calls must be in the job.
-      let cwd, mappedCd = null;
+      let cwd, mappedCd = null, neutralCwd = false, neutralCd = false;
       if (vet.info) cwd = fs.realpathSync(jobHome);
       else {
         const reqCwd = typeof req.cwd === "string" ? req.cwd : "";
         cwd = mapSandboxDir(reqCwd, { jobHome, buildDir });
-        if (!cwd) return reject(argv, `working directory ${reqCwd || "<none>"} is outside the job (allowed: the build dir and the job home)`);
+        if (!cwd) {
+          if (isNeutralSandboxDir(reqCwd, { buildDir })) neutralCwd = true;
+          else return reject(argv, `working directory ${reqCwd || "<none>"} is outside the job (allowed: the build dir, the job home, or a neutral temp dir)`);
+        }
         if (vet.cwdArg != null) {
-          mappedCd = mapSandboxDir(path.resolve(reqCwd, vet.cwdArg), { jobHome, buildDir });
-          if (!mappedCd) return reject(argv, `-C ${vet.cwdArg} is outside the job (allowed: the build dir and the job home)`);
+          const abs = path.resolve(reqCwd, vet.cwdArg);
+          mappedCd = mapSandboxDir(abs, { jobHome, buildDir });
+          if (!mappedCd) {
+            if (isNeutralSandboxDir(abs, { buildDir })) neutralCd = true;
+            else return reject(argv, `-C ${vet.cwdArg} is outside the job (allowed: the build dir, the job home, or a neutral temp dir)`);
+          }
         }
         used++;
       }
       const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "oe-relay-"));
       const args = [...vet.args];
-      let lastFile = null;
+      let lastFile = null, neutral = null;
       try {
+        if (neutralCwd || neutralCd) {
+          // A fresh, empty directory per call; never an existing host path.
+          neutral = path.join(scratch, "neutral"); fs.mkdirSync(neutral);
+          if (neutralCwd) cwd = neutral;
+          if (neutralCd) mappedCd = neutral;
+        }
         if (vet.schema != null) {
           if (typeof req.schema !== "string") throw new Error("--output-schema file was not provided");
           const f = path.join(scratch, "schema.json"); fs.writeFileSync(f, req.schema);
@@ -257,7 +281,7 @@ export async function startRelay({ jobHome, buildDir, codexBin = null, pathEnv =
         }
         if (mappedCd) args.splice(1, 0, "-C", mappedCd);
       } catch (e) { fs.rmSync(scratch, { recursive: true, force: true }); return reject(argv, e.message); }
-      const prefix = confine && !vet.info ? confine({ cwd: mappedCd || cwd, scratch }) : [];
+      const prefix = confine && !vet.info ? confine({ cwd: mappedCd || cwd, scratch, neutral }) : [];
       const cmd = prefix.length ? prefix[0] : bin;
       const cmdArgs = prefix.length ? [...prefix.slice(1), bin, ...args] : args;
       const t0 = Date.now();

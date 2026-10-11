@@ -502,13 +502,16 @@ export function reviewerConfinement({ dir, jobHome, workRoot = path.dirname(dir)
   const dirs = uniq([...masks, ...homeDeny.filter((x) => { try { return fs.statSync(x).isDirectory(); } catch { return false; } }), ...hideRoots.filter((h) => fs.existsSync(h)), ...(fs.existsSync(workRoot) ? [workRoot] : [])])
     .filter((m) => m !== "/" && !isUnder(codexHome, m));
   const files = homeDeny.filter((x) => { try { return fs.statSync(x).isFile(); } catch { return false; } });
-  return ({ cwd, scratch }) => {
+  return ({ cwd, scratch, neutral = null }) => {
     const a = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent"];
     for (const m of dirs) a.push("--tmpfs", m);
     for (const f of files) a.push("--ro-bind", "/dev/null", f);
     for (const k of [dir, jobHome]) a.push("--ro-bind", k, k);
     if (fs.existsSync(codexHome)) a.push("--bind", codexHome, codexHome);
-    a.push("--bind", scratch, scratch, "--");
+    a.push("--bind", scratch, scratch);
+    // A neutral working directory is empty and stays read-only to codex.
+    if (neutral) a.push("--ro-bind", neutral, neutral);
+    a.push("--");
     return a;
   };
 }

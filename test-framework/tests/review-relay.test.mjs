@@ -35,6 +35,7 @@ in=$(cat)
 case "$in" in *SLEEP*) sleep 30;; esac
 [ -n "$schema" ] && echo "schema-bytes=$(wc -c < "$schema")"
 case "$in" in *CWD*) echo "cwd=$(pwd -P)";; esac
+case "$in" in *LS*) echo "ls=[$(ls -A | tr '\\n' ' ')]";; esac
 echo "stdin=$in" | head -c 200
 [ -n "$last" ] && printf '{"findings":[]}' > "$last"
 echo '{"type":"turn.completed","usage":{"input_tokens":1000,"cached_input_tokens":400,"output_tokens":200,"reasoning_output_tokens":50}}'
@@ -136,10 +137,10 @@ test("usage: turn.completed events are summed, pricing treats cached input separ
     '{"type":"thread.started","thread_id":"t"}',
     '{"type":"turn.completed","usage":{"input_tokens":1000,"cached_input_tokens":400,"output_tokens":200,"reasoning_output_tokens":50}}',
     "not json",
-    '{"type":"turn.completed","usage":{"input_tokens":10,"cached_input_tokens":0,"output_tokens":5}}',
+    '{"type":"turn.completed","usage":{"input_tokens":10,"cached_input_tokens":0,"cache_write_input_tokens":3,"output_tokens":5}}',
   ]);
   assert.equal(u.input_tokens, 1010); assert.equal(u.cached_input_tokens, 400); assert.equal(u.output_tokens, 205);
-  assert.deepEqual(relay.usageForPricing(u), { inputTokens: 610, cacheReadInputTokens: 400, outputTokens: 205 });
+  assert.deepEqual(relay.usageForPricing(u), { inputTokens: 610, cacheReadInputTokens: 400, outputTokens: 205, cacheCreationInputTokens: 3 });
   assert.equal(relay.parseCodexUsage(["no usage here"]), null);
   assert.equal(relay.parseCodexUsage([]), null);
 });
@@ -190,10 +191,10 @@ test("relay: write flags are rejected before the real codex runs; a missing -s i
   } finally { await s.r.close(); }
 });
 
-test("relay: a working directory outside the build dir and job home is refused; -C is held to the same fence; probes still run anywhere", async () => {
+test("relay: a working directory outside the build dir, job home and neutral /tmp is refused; -C is held to the same fence; probes still run anywhere", async () => {
   const s = await setup();
   try {
-    const outside = tmp("rr-outside-");
+    const outside = fs.realpathSync("/etc");
     const bad = await client(s.r.socketPath, ["exec", "--json", "-"], { cwd: outside, input: "CWD" });
     assert.equal(bad.code, 126);
     assert.match(bad.err, /outside the job/);
@@ -211,6 +212,35 @@ test("relay: a working directory outside the build dir and job home is refused; 
     const probe = await client(s.r.socketPath, ["--version"], { cwd: outside });
     assert.equal(probe.code, 0);
     assert.match(probe.out, /codex-cli 0.0.0-fake/);
+  } finally { await s.r.close(); }
+});
+
+test("relay: a neutral cwd in the sandbox /tmp gets a fresh EMPTY host directory per call, never the host path", async () => {
+  const s = await setup();
+  try {
+    const hostDir = tmp("rr-neutral-");   // exists on the host with content, like a same-named path would
+    fs.writeFileSync(path.join(hostDir, "host-secret.txt"), "HOST");
+    const one = await client(s.r.socketPath, ["exec", "--json", "-"], { cwd: hostDir, input: "CWD LS" });
+    assert.equal(one.code, 0, one.err);
+    assert.match(one.out, /ls=\[\]/, "the neutral directory is empty");
+    const cwd1 = /cwd=(\S+)/.exec(one.out)[1];
+    assert.notEqual(cwd1, fs.realpathSync(hostDir));
+    assert.equal(fs.existsSync(cwd1), false, "the per-call directory is removed afterwards");
+    const two = await client(s.r.socketPath, ["exec", "-C", hostDir, "--json", "-"], { cwd: s.buildDir, input: "CWD LS" });
+    assert.equal(two.code, 0, two.err);
+    assert.match(two.out, /ls=\[\]/);
+    assert.notEqual(/cwd=(\S+)/.exec(two.out)[1], cwd1, "a fresh directory per call");
+    // the build dir still maps to itself, and a path outside /tmp stays refused
+    const build = await client(s.r.socketPath, ["exec", "-C", s.buildDir, "--json", "-"], { cwd: s.buildDir, input: "CWD" });
+    assert.match(build.out, new RegExp(`cwd=${fs.realpathSync(s.buildDir)}`));
+    for (const bad of ["/etc", os.homedir()]) {
+      const res = await client(s.r.socketPath, ["exec", "--json", "-"], { cwd: bad, input: "CWD" });
+      assert.equal(res.code, 126, bad);
+    }
+    assert.equal(relay.isNeutralSandboxDir("/tmp", { buildDir: "/b" }), false);
+    assert.equal(relay.isNeutralSandboxDir("/tmp/oe-home/x", { buildDir: "/b" }), false);
+    assert.equal(relay.isNeutralSandboxDir("/tmp/ssve-openbox-preflight-1", { buildDir: "/b" }), true);
+    assert.equal(relay.isNeutralSandboxDir("relative", { buildDir: "/b" }), false);
   } finally { await s.r.close(); }
 });
 
@@ -380,6 +410,10 @@ test("sandbox: the framework arm's codex reaches the fake via the socket (stdin,
     // the framework worktree under the sandbox HOME maps to the job home on the host
     const wt = await inSandbox(w, 'cd "$HOME/wt" && echo CWD | codex exec --json -');
     assert.match(wt.stdout, new RegExp(`cwd=${fs.realpathSync(path.join(w.job_home, "wt"))}`), wt.stderr);
+    // two-box style: a neutral temp dir private to the sandbox maps to an empty host dir
+    const neu = await inSandbox(w, 'mkdir -p /tmp/ssve-openbox-preflight-x && cd /tmp/ssve-openbox-preflight-x && echo "CWD LS" | codex exec --json -');
+    assert.match(neu.stdout, /ls=\[\]/, neu.stderr);
+    assert.doesNotMatch(neu.stdout, /preflight-x/);
     // outside the job: refused
     const out = await inSandbox(w, "cd / && echo CWD | codex exec --json -; echo code=$?");
     assert.match(out.stdout, /code=126/);
