@@ -12,6 +12,8 @@ export const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const NORTHSTAR = path.resolve(HERE, "..");
 export const SPECS = path.join(NORTHSTAR, "specs");
 export const TASKS = path.resolve(NORTHSTAR, "..", "tasks");
+export { taskDirFor, specDirFor, refEpDirFor, extraTaskRoots, taskMaskDirs, isExternalTask, TASK_ROOTS_ENV } from "./task-roots.mjs";
+import { taskMaskDirs } from "./task-roots.mjs";
 export const REPO_ROOT = path.resolve(NORTHSTAR, "..", "..", "..");
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -95,6 +97,12 @@ export function releaseJail(workDir) {
   if (home) { fs.rmSync(home, { recursive: true, force: true }); jails.delete(key); }
 }
 
+// The in-repo tasks directory and every external task root, except one that holds the work dir.
+export function innerMasks(work, dirs = taskMaskDirs()) {
+  const w = path.resolve(work);
+  return dirs.filter((d) => w !== d && !w.startsWith(d + path.sep));
+}
+
 // The command line and environment for running argv inside the jail of workDir.
 export function containedCommand(workDir, argv, { env = {}, rw = [] } = {}) {
   requireSandbox();
@@ -102,7 +110,7 @@ export function containedCommand(workDir, argv, { env = {}, rw = [] } = {}) {
   const work = path.resolve(workDir);
   const base = Object.fromEntries(TOOLING_ENV.filter((k) => process.env[k] !== undefined).map((k) => [k, process.env[k]]));
   const full = { ...base, HOME: home, npm_config_cache: path.join(home, ".npm"), XDG_CACHE_HOME: path.join(home, ".cache"), TMPDIR: "/tmp", CI: "1", ...env };
-  const mask = fs.existsSync(TASKS) && !work.startsWith(TASKS) ? ["--tmpfs", TASKS] : [];
+  const mask = innerMasks(work).flatMap((d) => ["--tmpfs", d]);
   const binds = [work, home, ...rw].flatMap((d) => ["--bind", d, d]);
   return { bin: "bwrap", args: ["--ro-bind", "/", "/", "--tmpfs", "/tmp", ...binds, ...mask, "--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent", "--chdir", work, "--", ...argv], env: full, sandbox: "bwrap" };
 }

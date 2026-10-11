@@ -5,6 +5,8 @@
  *
  *   node scripts/northstar.mjs plan --model <id> --max-usd <n> [--slice dev|reserve|all]
  *                                   [--reps n] [--framework-sha <sha>] [--parallel n] [--dry-run]
+ *                                   [--tasks-root <dir>]...
+ *   node scripts/northstar.mjs reserve-hash <root>     prints {R1: sha, R2: sha} for the reserve tasks under <root>
  *   node scripts/northstar.mjs decide <results.json...> --slice dev|reserve [--overhead <results.json>]
  *   node scripts/northstar.mjs adopt <results.json...> --candidate <arm> --baseline <arm>
  *                                   --component <H|E|S|P|K> [--task <id>]
@@ -18,6 +20,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
+import { dirSha } from "./lib/dir-sha.mjs";
 import { stratifiedDeltaRaw, adoptionDecision, avg, rng } from "./lib/stats.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -199,7 +202,24 @@ export function requireCommonPins(rows, bar = loadBar()) {
   if (shas.length > 1) throw new NorthstarError(`framework rows mix framework_sha values ${JSON.stringify(shas)}: one build per decision`);
 }
 
-export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, iterations = 10000, allowDuplicateReps = false } = {}) {
+// The reserve is frozen by hash: bar.json holds sha256 of each whole task directory, and every
+// reserve row the decision counts must record the same task_sha256. The dry run uses
+// synthetic rows with no real task behind them and skips this.
+export function verifyReserveRows(rows, bar) {
+  const unfrozen = bar.reserve.filter((r) => r.grader_sha256 == null).map((r) => r.task);
+  if (unfrozen.length) throw new NorthstarError(`reserve task(s) ${unfrozen.join(", ")} have no frozen grader_sha256 in bar.json: freeze them first (node scripts/northstar.mjs reserve-hash <root>)`);
+  const frozen = new Map(bar.reserve.map((r) => [r.task, r.grader_sha256]));
+  const bad = new Set();
+  for (const r of rows) {
+    if (!frozen.has(r.task)) continue;
+    const want = frozen.get(r.task);
+    if (want == null) throw new NorthstarError(`reserve task ${r.task} has no frozen grader_sha256 in bar.json: freeze it first (node scripts/northstar.mjs reserve-hash <root>)`);
+    if (r.task_sha256 !== want) bad.add(`${r.task} (${r.task_sha256 == null ? "no task_sha256 recorded" : "recorded hash differs from bar.json"})`);
+  }
+  if (bad.size) throw new NorthstarError(`reserve rows do not match the frozen task hashes: ${[...bad].join(", ")}`);
+}
+
+export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, iterations = 10000, allowDuplicateReps = false, verifyReserve = true } = {}) {
   if (slice !== "dev" && slice !== "reserve") throw new NorthstarError("decide needs --slice dev|reserve (each slice is judged separately)");
   const tasks = sliceTasks(bar, slice);
   const minFin = bar.min_finished_runs_per_cell_arm;
@@ -207,6 +227,7 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   const inSlice = rawRows.filter((r) => tasks.includes(r.task) && bar.arms.includes(r.arm));
   const { rows, voided } = usableRows(inSlice, { allowDuplicateReps });
   requireCommonPins(rows, bar);
+  if (slice === "reserve" && verifyReserve) verifyReserveRows(rows, bar);
   const of = (task, arm) => rows.filter((r) => r.task === task && r.arm === arm);
 
   // cells
@@ -412,16 +433,22 @@ export function adopt(rawRows, { candidate, baseline, component, task = null, it
 
 // ---------- plan ----------
 
-function taskConfig(tasksDir, task) {
-  const f = path.join(tasksDir, task, "task.json");
+// Same precedence as outcome-eval's taskDir: the in-repo tasks directory first, then the extra roots.
+export function resolveTaskDir(task, tasksDir = TASKS_DIR, roots = []) {
+  for (const r of [tasksDir, ...roots]) if (fs.existsSync(path.join(r, task))) return path.join(r, task);
+  return path.join(tasksDir, task);
+}
+
+function taskConfig(tasksDir, task, roots = []) {
+  const f = path.join(resolveTaskDir(task, tasksDir, roots), "task.json");
   const c = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : {};
   return { max_turns: c.max_turns ?? 40, timeout_min: c.timeout_min ?? 15, tools: c.tools ?? DEFAULT_TOOLS };
 }
 
 // Hash of what the agent sees: every file under the task dir except the hidden grader,
 // the reference solution and the judge rubric.
-export function taskFilesSha(tasksDir, task) {
-  const dir = path.join(tasksDir, task);
+export function taskFilesSha(tasksDir, task, roots = []) {
+  const dir = resolveTaskDir(task, tasksDir, roots);
   if (!fs.existsSync(dir)) return null;
   const hidden = new Set(["hidden.test.mjs", "ref.mjs", "ref", "judge.md"]);
   const h = crypto.createHash("sha256");
@@ -437,7 +464,33 @@ export function taskFilesSha(tasksDir, task) {
   return h.digest("hex");
 }
 
-export function buildManifest({ model, maxUsd, slice = "all", reps, frameworkSha = null, parallel, bar = loadBar(), tasksDir = TASKS_DIR, dryRun = false } = {}) {
+// sha256 of a whole task directory (task, hidden test, specs, probes): what grader_sha256 freezes.
+export function taskDirSha(dir) {
+  try { return dirSha(dir); } catch (e) { throw new NorthstarError(e.message); }
+}
+
+// {R1: sha, R2: sha} for the bar's reserve tasks that exist under `root`.
+export function reserveHashes(root, bar = loadBar()) {
+  const out = {};
+  for (const { task } of bar.reserve) {
+    const dir = path.join(root, task);
+    if (fs.existsSync(dir)) out[task] = taskDirSha(dir);
+  }
+  return out;
+}
+
+// A reserve task in the plan must exist, be frozen in bar.json, and hash to the frozen value.
+function assertReserveFrozen(task, dir, bar) {
+  const entry = bar.reserve.find((r) => r.task === task);
+  if (!entry) return null;
+  if (!fs.existsSync(dir)) throw new NorthstarError(`reserve task ${task} not found: pass --tasks-root <dir> holding ${task}/`);
+  if (entry.grader_sha256 == null) throw new NorthstarError(`reserve task ${task} has no frozen grader_sha256 in bar.json: freeze it first (node scripts/northstar.mjs reserve-hash <root>)`);
+  const got = taskDirSha(dir);
+  if (got !== entry.grader_sha256) throw new NorthstarError(`reserve task ${task} differs from its frozen grader_sha256 (bar.json ${entry.grader_sha256.slice(0, 12)}, directory ${got.slice(0, 12)}): the reserve changed after it was frozen`);
+  return got;
+}
+
+export function buildManifest({ model, maxUsd, slice = "all", reps, frameworkSha = null, parallel, bar = loadBar(), tasksDir = TASKS_DIR, tasksRoots = [], dryRun = false } = {}) {
   if (!model) throw new NorthstarError("plan needs --model <id>");
   if (!(maxUsd > 0)) throw new NorthstarError("plan needs --max-usd <n> (every paid run uses --max-usd)");
   const tasks = sliceTasks(bar, slice);
@@ -447,8 +500,13 @@ export function buildManifest({ model, maxUsd, slice = "all", reps, frameworkSha
   const warnings = [];
   const shas = {};
   const entries = [];
+  const reserveShas = {};
   for (const task of tasks) {
-    shas[task] = taskFilesSha(tasksDir, task);
+    if (!dryRun) {
+      const frozen = assertReserveFrozen(task, resolveTaskDir(task, tasksDir, tasksRoots), bar);
+      if (frozen) reserveShas[task] = frozen;
+    }
+    shas[task] = taskFilesSha(tasksDir, task, tasksRoots);
     if (shas[task] == null) warnings.push(`task directory missing for ${task}: contract hash recorded as null`);
   }
   const runs = tasks.length * bar.arms.length * nReps;
@@ -457,13 +515,14 @@ export function buildManifest({ model, maxUsd, slice = "all", reps, frameworkSha
     throw new NorthstarError(`a manifest that cannot fund every pair does not start: ${runs} runs at $${maxUsd} is $${share.toFixed(3)} per run, below the $${bar.floor_usd} floor (needs at least $${(runs * bar.floor_usd).toFixed(2)})`);
   }
   for (const task of tasks) {
-    const cfg = taskConfig(tasksDir, task);
+    const cfg = taskConfig(tasksDir, task, tasksRoots);
     for (let rep = 1; rep <= nReps; rep++) for (const arm of bar.arms) {
       entries.push({
         id: `${task}/${arm}#${rep}`, task, arm, rep, model,
         budget_usd: +share.toFixed(4),
         contract: {
           task_files_sha256: shas[task],
+          ...(reserveShas[task] ? { task_sha256: reserveShas[task] } : {}),
           tools: cfg.tools,
           timeout_ms: cfg.timeout_min * 60000 * bar.arm_limits.time,
           max_turns: cfg.max_turns * bar.arm_limits.turns,
@@ -486,6 +545,7 @@ export function buildManifest({ model, maxUsd, slice = "all", reps, frameworkSha
       max_spend_usd: maxUsd, per_run_usd: +share.toFixed(4),
       wall: `forecast after the first wave of ${par} runs; not estimated before it`,
     },
+    ...(Object.keys(reserveShas).length ? { reserve_task_sha256: reserveShas } : {}),
     warnings, runs: entries,
   };
   assertBalanced(manifest);
@@ -553,13 +613,14 @@ export function dryRun(manifest, bar = loadBar()) {
   const decisions = {};
   for (const slice of ["dev", "reserve"]) {
     const inSlice = rows.filter((r) => sliceTasks(bar, slice).includes(r.task));
-    if (inSlice.length) decisions[slice] = decide(inSlice, { slice, bar, overheadRows: syntheticOverhead(manifest.model, bar, manifest.framework_sha) });
+    if (inSlice.length) decisions[slice] = decide(inSlice, { slice, bar, verifyReserve: false, overheadRows: syntheticOverhead(manifest.model, bar, manifest.framework_sha) });
   }
   return { rows: rows.length, decisions };
 }
 
 // ---------- CLI ----------
 
+const REPEATABLE = new Set(["tasks-root"]);
 export function parseArgs(argv) {
   const out = { _: [] };
   const bool = new Set(["dry-run", "json", "allow-duplicate-reps"]);
@@ -568,6 +629,7 @@ export function parseArgs(argv) {
     if (a.startsWith("--")) {
       const k = a.slice(2);
       if (bool.has(k)) out[k] = true;
+      else if (REPEATABLE.has(k)) { if (i + 1 >= argv.length) throw new NorthstarError(`--${k} needs a value`); (out[k] ||= []).push(argv[++i]); }
       else { if (i + 1 >= argv.length) throw new NorthstarError(`--${k} needs a value`); out[k] = argv[++i]; }
     } else out._.push(a);
   }
@@ -586,6 +648,7 @@ export function main(argv, io = { out: (s) => process.stdout.write(s + "\n"), er
         slice: args.slice ?? "all", reps: args.reps != null ? Number(args.reps) : undefined,
         frameworkSha: args["framework-sha"] ?? null, parallel: args.parallel != null ? Number(args.parallel) : undefined,
         dryRun: Boolean(args["dry-run"]), bar,
+        tasksRoots: (args["tasks-root"] || []).map((r) => path.resolve(r)),
       });
       if (args["dry-run"]) {
         const d = dryRun(manifest, bar);
@@ -596,6 +659,15 @@ export function main(argv, io = { out: (s) => process.stdout.write(s + "\n"), er
         io.err(`northstar plan: ${manifest.forecast.runs} runs, $${manifest.per_run_usd}/run, forecast spend up to $${manifest.cap_usd}; wall time is forecast after the first wave`);
         for (const w of manifest.warnings) io.err(`warning: ${w}`);
       }
+      return 0;
+    }
+    if (cmd === "reserve-hash") {
+      if (args._.length !== 1) throw new NorthstarError("reserve-hash needs exactly one <root> directory");
+      const root = path.resolve(args._[0]);
+      if (!fs.existsSync(root)) throw new NorthstarError(`${args._[0]} does not exist`);
+      const out = reserveHashes(root, bar);
+      if (!Object.keys(out).length) throw new NorthstarError(`no reserve task (${bar.reserve.map((r) => r.task).join(", ")}) found under ${args._[0]}`);
+      io.out(JSON.stringify(out, null, 2));
       return 0;
     }
     if (cmd === "decide") {
@@ -613,7 +685,7 @@ export function main(argv, io = { out: (s) => process.stdout.write(s + "\n"), er
       io.err(`adoption: ${a.decision} (${a.reason})`);
       return 0;
     }
-    throw new NorthstarError("usage: northstar.mjs plan|decide|adopt ... (see the header of scripts/northstar.mjs)");
+    throw new NorthstarError("usage: northstar.mjs plan|decide|adopt|reserve-hash ... (see the header of scripts/northstar.mjs)");
   } catch (e) {
     if (e instanceof NorthstarError) { io.err(`northstar: ${e.message}`); return 1; }
     throw e;

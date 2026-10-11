@@ -15,21 +15,25 @@ import http from "node:http";
 import net from "node:net";
 import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { specDirFor, taskDirFor } from "./task-roots.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const OE = path.resolve(HERE, "..", "..");
 export const TASKS = path.join(OE, "tasks");
+export { taskDirFor };
 export const SPECS = path.resolve(HERE, "..", "specs");
 export const CALL_RUNNER = path.join(HERE, "sk-call.mjs");
+const RESOLVE_HOOK = pathToFileURL(path.join(HERE, "sk-resolve.mjs")).href;
 
 export function loadSpec(task, C) {
-  const f = path.join(SPECS, task, `${C}.json`);
-  if (!fs.existsSync(f)) throw new Error(`no ${C} spec for task ${task}: expected ${path.relative(OE, f)}`);
+  const f = path.join(specDirFor(task), `${C}.json`);
+  if (!fs.existsSync(f)) throw new Error(`no ${C} spec for task ${task}: expected ${f.startsWith(OE + path.sep) ? path.relative(OE, f) : `<task dir>/specs/${C}.json`}`);
   return JSON.parse(fs.readFileSync(f, "utf8"));
 }
 
-export const specDirOf = (task, spec) => spec.specDir || path.join(SPECS, task);
+// Where a task's probe scripts and reference files live: next to its specs, in-repo or not.
+export const specDirOf = (task, spec) => spec.specDir || specDirFor(task);
 export const check = (name, pass, detail = "") => ({ name, pass: !!pass, detail: String(detail).slice(0, 600) });
 export function finish(checks) {
   const passed = checks.filter((c) => c.pass).length;
@@ -111,7 +115,8 @@ export function runCall(dir, { module: mod, export: name, args = [] }, timeoutMs
 export function runScript(file, dir, { specDir, args, timeoutMs = 30000, env = {} } = {}) {
   const f = path.isAbsolute(file) ? file : path.join(specDir, file);
   if (!fs.existsSync(f)) return { pass: false, detail: `probe script missing: ${file}` };
-  const { r, done } = spawnRunner([f], dir, "", { ...env, GRADE_BUILD_DIR: dir, GRADE_ARGS: JSON.stringify(args ?? {}) }, timeoutMs);
+  // --import sk-resolve.mjs: a probe may import the grader helpers as "@graders/<file>".
+  const { r, done } = spawnRunner(["--import", RESOLVE_HOOK, f], dir, "", { ...env, GRADE_BUILD_DIR: dir, GRADE_ARGS: JSON.stringify(args ?? {}) }, timeoutMs);
   if (r.status === 0 && done != null) return { pass: true, detail: done };
   const out = lastLine(r.stdout) || lastLine(r.stderr) || (r.error ? String(r.error.code || r.error.message) : "");
   return { pass: false, detail: r.status === 0 ? `the probe exited before finishing its assertions${out ? `: ${out}` : ""}` : out };
