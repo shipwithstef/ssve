@@ -89,4 +89,7 @@ test("bounded: every named deliverable gets a done-when check and the build's ow
   const { ARMS } = await import("../../../scripts/outcome-eval.mjs");
   assert.match(ARMS.bounded, /one row for every deliverable spec\.md names/);
   assert.match(ARMS.bounded, /Your own tests must pass/);
+  assert.match(ARMS.bounded, /web-probes\.mjs --dir \./, "the harden step runs the web probes");
+  assert.match(exec, /web-probes\.mjs --dir \./);
+  assert.match(read("skills/plan-changeset/references/brief-template.md"), /founder pack is: name and voice/);
 });
