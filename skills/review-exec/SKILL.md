@@ -86,7 +86,7 @@ It enforces the **G5** checkpoint (BASELINED → CHANGE-SET-APPROVED) via advers
 
 ## Before Starting
 
-Read the upstream artifacts that review-exec must inspect:
+Read the upstream artifacts review-exec inspects:
 - `.svc/receipts/<sha>/exec-record.json` — what was executed
 - `.svc/receipts/<sha>/plan-manifest.json` — the plan being executed
 - `docs/specs/features/<name>.md` — the spec + ACs
@@ -113,7 +113,6 @@ Source of truth: `.svc/lane-tasks-<WI>.json` may include a
 when this skill is invoked. Codex's `update_plan` mirror must reflect
 the same task graph state.
 
-
 ## What This Skill Is (and Isn't)
 
 - **Is:** an enforcement wrapper that guarantees self-review + adversarial review of `execute-changeset`'s output, with the deterministic owner-configured panel from `review-topology-v2.mjs`. Emits SHA-keyed receipts so the chain can verify the review actually ran.
@@ -121,7 +120,7 @@ the same task graph state.
 
 ## Why This Skill Exists
 
-The chain prior to this plan made `review-cross-model` *optional* — invoked when the orchestrator decided to. Three failure modes followed:
+When `review-cross-model` was optional (invoked at the orchestrator's discretion), three failure modes followed:
 
 1. The author of an exec is the one deciding whether their own output needs second-model review. Author-time judgment is unreliable for catching the author's own pattern reproductions (per the framework learning on author-pattern reproduction).
 2. With no required receipt, downstream gates couldn't verify a review happened.
@@ -194,7 +193,7 @@ Pass through:
 
 review-cross-model returns its markdown output at `docs/specs/reviews/<name>-exec-cross-model.md` (existing path) PLUS — per the modification to review-cross-model in this plan — a structured JSON receipt that review-exec wraps with the self-review note and the pair record.
 
-**Wave mode (WI-382 — Claude host).** On a host with in-session Agent subagents, P3 does NOT run serially ahead of audit-implementation: review-exec, the G5 auditor, the audit specialists and the visual lens run as ONE read-only fan-out over a single frozen diff per `references/parallel-review-station.md`. The lenses return the `schemas/review-lens-finding.schema.json` shape; `scripts/review-station-merge.mjs` merges them mechanically (dedup-by-file:line, keep-highest-severity, no orchestrator re-adjudication); each lens keeps its own 2-round cap; a fix re-review re-freezes the diff and re-runs ONLY the originating lens (NEVER_GATE security/data-migration locations always keyed); receipts emit sequentially **post-barrier**. The cross-family pair, the P4 kickback ladder, and the P5 receipt below are unchanged — only the dispatch topology. **All hosts use one discovery batch; when the required reviewers can run concurrently, launch them together before edits. Do not serialize repeated full discovery passes.** This is an in-class read-only fan-out (no S5 policy gate).
+**Wave mode (WI-382 — Claude host).** On a host with in-session Agent subagents, P3 does not run serially ahead of audit-implementation: review-exec, the G5 auditor, the audit specialists and the visual lens run as one read-only fan-out over a single frozen diff per `references/parallel-review-station.md`. The lenses return the `schemas/review-lens-finding.schema.json` shape; `scripts/review-station-merge.mjs` merges them mechanically (dedup-by-file:line, keep-highest-severity, no orchestrator re-adjudication); each lens keeps its own 2-round cap; a fix re-review re-freezes the diff and re-runs ONLY the originating lens (NEVER_GATE security/data-migration locations always keyed); receipts emit sequentially **post-barrier**. The cross-family pair, the P4 kickback ladder, and the P5 receipt below are unchanged — only the dispatch topology. **All hosts use one discovery batch; when the required reviewers can run concurrently, launch them together before edits. Do not serialize repeated full discovery passes.** This is an in-class read-only fan-out (no S5 policy gate).
 
 ### P4 — Iteration Loop (rejection protocol)
 
@@ -225,8 +224,7 @@ and run the round-cap guard with `--branch-once`. Count a parallel panel as one
 batch; record each reviewer's calls and cost separately. A declined or unnecessary
 recheck spends zero additional model calls. Owner spending limits take precedence.
 
-
-When CRITICAL or HIGH findings remain after an adversarial pass, choose the
+When Critical or High findings remain after an adversarial pass, choose the
 resolution path by finding cause / size:
 
 | Finding cause / size | Resolution path |
@@ -266,8 +264,7 @@ For a terminal raw `fail`, attach `reviewer_evidence.bounded_exit` matching
 `schemas/receipts/bounded-exit.schema.json`. It must bind the exact ordered
 launcher/findings digests, candidate SHA/tree/digest, derived cycle ID, review
 log and deterministic cap result, plus exactly one census entry per terminal
-finding. Every High requires hash-verified `.svc/` or `docs/` evidence. Never
-rewrite reviewer bytes. Every terminal rubric failure requires an exact census entry mapped to
+finding. Every High requires hash-verified `.svc/` or `docs/` evidence. Every terminal rubric failure requires an exact census entry mapped to
 dispositioned terminal finding IDs, with justification and hash-verified
 repository evidence. Unread dependencies and failed certifications still block.
 Never rewrite reviewer bytes. A Critical, stale/mutated candidate, missing/duplicate
@@ -359,14 +356,14 @@ Before declaring the skill complete:
 | 2 | Schema valid | Validate against `schemas/receipts/review-exec.schema.json` | PASS if schema check returns 0 |
 | 3 | Cross-family pair | `adversarial_review.primary_reviewer_host` differs from `self_review.orchestrator` cognitive family | PASS if pair is cross-family |
 | 4 | Note attached | `git notes --ref=svc-receipts show <sha>` returns envelope with `review-exec` key | PASS if note resolves and contains key |
-| 5 | Verdict consistent | If verdict=pass, no CRITICAL remains unresolved (Criticals escalate, never disposition) AND every HIGH is either fixed OR carries a documented disposition (accept-with-justification as a logged risk / reject-with-justification). HIGHs do NOT have to vanish to pass — the loop is HARD-capped at 2 rounds (`scripts/check-review-round-cap.mjs`); an adversarial reviewer never runs dry, so terminate by disposition, not by draining findings. | PASS if assertion holds |
+| 5 | Verdict consistent | If verdict=pass, no Critical remains unresolved (Criticals escalate, never disposition) AND every HIGH is either fixed OR carries a documented disposition (accept-with-justification as a logged risk / reject-with-justification). HIGHs do NOT have to vanish to pass — the loop is HARD-capped at 2 rounds (`scripts/check-review-round-cap.mjs`); an adversarial reviewer never runs dry, so terminate by disposition, not by draining findings. | PASS if assertion holds |
 
 ## Failure Modes
 
 | Failure | Behavior |
 |---|---|
 | Launcher reports missing CLI/capability | Refuse to certify with its single actionable receipt; chain halts |
-| Unresolved CRITICAL at any round (including the 3rd) | A Critical is NEVER dispositioned and NEVER re-looped into a 4th round. Record `terminal_state: ESCALATED_TO_USER`; `check-review-round-cap.mjs` returns exit 3; verdict is `escalated`; the change BLOCKS and goes to the owner. Never `re-execute`/`re-plan` a Critical past the cap to keep looping. |
+| Unresolved Critical at any round (including the 3rd) | A Critical is never dispositioned and never re-looped into a 4th round. Record `terminal_state: ESCALATED_TO_USER`; `check-review-round-cap.mjs` returns exit 3; verdict is `escalated`; the change BLOCKS and goes to the owner. Never `re-execute`/`re-plan` a Critical past the cap to keep looping. |
 | HIGH findings persist at the 3rd round | Not a failure — disposition each remaining High (accept-with-justification as a logged risk, or reject-with-justification), record `bounded_exit`, and PROCEED. Never a 4th round. |
 | Reviewer returns findings before the cap (rounds 1–2), ≤20-line fix | Patch in place and re-run ONE more adversarial round (still ≤3 total). >20-line/structural → re-execute; plan flaw → re-plan. |
 | Receipt write fails | Skill exits non-zero; chain halts |
@@ -376,9 +373,8 @@ Before declaring the skill complete:
 
 - **review-cross-model** — review-exec delegates to it for the actual second-model invocation. review-cross-model is modified in this plan to also emit JSON receipts alongside its markdown output.
 - **review-plan** — same matrix-resolved pair, same self-review + adversarial pattern, but at G5 (pre-exec) instead of post-exec (G5-enforcing gate).
-- **audit-implementation** — runs in parallel with review-exec post-exec; HIGH/CRITICAL findings from audit-implementation pass through the same adversarial pair for a second pair of eyes.
-- **dispatch-waves** — parallel WI workers DO NOT run review-exec; that's parent-session-only. Workers stop at execute-changeset and emit exec-record receipts; parent serializes review-exec → audit-implementation → land.
-
+- **audit-implementation** — runs in parallel with review-exec post-exec; High/Critical findings from audit-implementation pass through the same adversarial pair for a second pair of eyes.
+- **dispatch-waves** — parallel WI workers do not run review-exec; it is parent-session-only. Workers stop at execute-changeset and emit exec-record receipts; parent serializes review-exec → audit-implementation → land.
 
 ## Lane-Tasks & Codex Coordination
 
@@ -386,9 +382,7 @@ source of truth: `.svc/lane-tasks-<WI>.json`
 
 Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume.
 
-For Codex coordination, mirror only the active step in `update_plan` after each
-lane-tasks update — never mirror the full task graph (Codex's plan slot is
-small; the full graph belongs in lane-tasks).
+For Codex coordination, mirror only the active step in `update_plan` after each lane-tasks update, not the full task graph: Codex's plan slot is small and the full graph belongs in lane-tasks.
 
 ## Automatic report recovery
 The canonical launcher permits at most one same-model report-repair attempt inside the original timeout. Claude repair requires trustworthy observed spend and uses the remaining enforced dollar ceiling. Other transports report no enforced dollar ceiling; if an explicit dollar cap was requested, they cannot retry automatically. Without such a cap, the bound is one correction and the remaining timeout, not a claimed dollar limit. It preserves both raw attempts and signs only the final validated report. Incomplete/malformed reports require normal validation after repair; parsed negative findings, failed certifications, rubric failures or unread dependencies prevent automatic completion. Certification-scope repair may only remove unbound false entries; verdict, findings, dependencies, summary and every bound certification remain identical. An actual negative source observation must remain and block; no local rewriting of reviewer output is allowed. Authorization, provider safety, model mismatch, missing proof and substantive defects are not recovery bypasses.

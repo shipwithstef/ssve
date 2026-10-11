@@ -68,7 +68,7 @@ chain:
 **Runtime v2 continuation:** Register the implementation manifest and its declared consumers via
 `references/skill-runtime-contracts-v2.json`; follow `references/runtime-continuation-v2.md`.
 The canonical DAG has exactly one plan review and one final review. Preserve all plan-specific
-scope, dependency, proof, rollback, worktree, task-graph, receipt, owner-authorization and G5 obligations. Deterministic Transmutation prepares a complete strict v5 contract (inline or dispatch) before that existing holistic `review-plan`; a verified separate seal follows review. Do not rewrite reviewed JSON/Markdown with `sealed:true`.
+scope, dependency, proof, rollback, worktree, task-graph, receipt, owner-authorization and G5 obligations. Transmutation and seal rules: §Two-Box Planning below.
 
 > **Cognitive routing:** 📐 [PLAN] — use the existing owner-configured resolver (`scripts/resolve-model.sh PLAN`). Advise a high-effort frontier PLAN tuple and a similar-capability reviewer; dated recipes are nonauthoritative. See `references/model-routing.md`.
 
@@ -78,36 +78,35 @@ scope, dependency, proof, rollback, worktree, task-graph, receipt, owner-authori
 
 Read **as needed** (`_shared/before-starting.md`): `docs/specs/project-state.md`, `~/.svc/builder-profile.md`, `docs/specs/domain-profile.md`, the feature spec (behavior contract + AC slice the manifest must cover).
 
-The changeset contains precise, context-rich code blueprints for every planned file to prevent downstream execution drift. The branch is the territory; this skill writes the implementation plan execution follows in the worktree.
+The plan is precise enough that execution in the worktree does not drift: the branch is the territory, this manifest is the map.
 
-## Product Questions — MANDATORY format
+## Product Questions — required format
 
 During simulation, expose consequential scope, sequencing or rollback decisions using current spec and code evidence. Follow `_shared/product-question-format.md` with `phase: plan-changeset`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work. SIMULATED requires the shared promotion predicate.
 
 ## Step 0 — Problem Archetype Reasoning (BEFORE reading inputs)
 
-Read only the WI title + 1-paragraph summary and ask: **"What is the shape of this work?"** The wrong mode costs sessions, not minutes.
+Read only the WI title + 1-paragraph summary and decide the shape of the work first, because the wrong planning mode costs sessions, not minutes.
 
 ### The archetypes
 
 | Archetype | Signal | Source of truth for scope | Planning mode |
 |---|---|---|---|
 | **Bounded feature** | Build new functionality with defined edges (new page, new component, new flow) | Spec defines what to build | Spec-first — standard workflow below |
-| **Migration / sweep** | Fix all instances of a pattern across the codebase (token swap, rename, class replacement, config migration) | Codebase defines what exists | Grep-first — measure universe BEFORE reading spec |
-| **Architectural change** | Restructure how the system works; many subsystems affected; hard to reverse | Invariants + blast radius | Map invariants and dependencies BEFORE planning tasks |
-| **Cross-cutting concern** | Add a behavior that must exist everywhere (auth, logging, error handling, accessibility) | Codebase entry points + spec behavior | Enumerate entry points BEFORE designing behavior |
-| **Incremental extension** | Add to an existing feature's known files | Prior implementation defines starting point | Read the existing implementation BEFORE reading the spec |
+| **Migration / sweep** | Fix all instances of a pattern across the codebase (token swap, rename, class replacement, config migration) | Codebase defines what exists | Grep-first — measure the universe before reading the spec |
+| **Architectural change** | Restructure how the system works; many subsystems affected; hard to reverse | Invariants + blast radius | Map invariants and dependencies before planning tasks |
+| **Cross-cutting concern** | Add a behavior that must exist everywhere (auth, logging, error handling, accessibility) | Codebase entry points + spec behavior | Enumerate entry points before designing behavior |
+| **Incremental extension** | Add to an existing feature's known files | Prior implementation defines starting point | Read the existing implementation before reading the spec |
 
 ### How to classify
 
 Reason about the shape, never keywords: doesn't exist yet w/ spec-defined edges → Bounded; finding+changing existing things → Migration; breaks/reshapes subsystems → Architectural; needed in N unknown places → Cross-cutting; extending something built → Incremental.
 
-
-Log the classification (archetype, reasoning, planning mode) before proceeding. Per-archetype protocols (migration grep-universe, architectural invariants, cross-cutting entry-point enumeration, incremental deprecated-foundation scan, Base44 schema grounding, browser-visible MODIFY mock-parity ledger, capability-blocker pre-tasks): `references/archetype-protocols.md` — MANDATORY for the matching archetype.
+Log the classification (archetype, reasoning, planning mode) before proceeding. Per-archetype protocols (migration grep-universe, architectural invariants, cross-cutting entry-point enumeration, incremental deprecated-foundation scan, Base44 schema grounding, browser-visible MODIFY mock-parity ledger, capability-blocker pre-tasks): `references/archetype-protocols.md` — required for the matching archetype.
 
 ## Inputs
 
-Before writing anything, read and hold in context:
+Read and hold in context:
 
 | Artifact | Path | What You Extract |
 |----------|------|-----------------|
@@ -116,10 +115,10 @@ Before writing anything, read and hold in context:
 | UI Design | `docs/specs/ui/<name>.md` | Component specs, design tokens, responsive behavior |
 | Design System | `docs/specs/design-system.md` | Tokens, typography, spacing, component patterns |
 | Journey Docs | `docs/specs/journeys/J*-<name>.feature.md` | Gherkin scenarios, AC cross-references, Layer 3 findings |
-| Style contract | `docs/specs/style-contract.md` | Current patterns, naming, imports, tests — do NOT scan the source tree for this |
+| Style contract | `docs/specs/style-contract.md` | Current patterns, naming, imports, tests — use this instead of scanning the source tree |
 | Spec annotations | RESOLVED entries in feature spec | file:line pointers to existing code — load only these specific files when you need to understand existing implementation |
 
-**Compression boundary:** product context is already compressed into the artifacts above — do NOT reload raw vision/personas/domain-profile/competitors by default; load one only when a specific ambiguity can't be resolved from the spec. Stale/missing upstream artifacts → stop and route back.
+**Compression boundary:** product context is already compressed into the artifacts above, so load raw vision/personas/domain-profile/competitors only when a specific ambiguity can't be resolved from the spec. Stale/missing upstream artifacts → stop and route back.
 
 ## Output
 
@@ -150,8 +149,8 @@ Two things stay at full depth:
 
 Before authoring the manifest, resolve and record the execution mode, because it decides whether §3a (Changeset Blueprint) is authored at all:
 
-- **`dispatch`** — a zero-context subagent (`DISPATCH=mimo-pro|sonnet`) will execute from the contract alone. Blueprints are the executor's ONLY source of truth → **§3a is MANDATORY** (full payloads, no placeholders). This preserves WI-347's Lean-Executor isolation.
-- **`inline`** — the orchestrator executes with the full spec/UX/UI context already loaded (the only mode used in practice per `.svc/dispatch-log.jsonl`). Re-authoring blueprints here is Opus-priced double-spend (code drafted at PLAN prices, then re-applied verbatim at EXEC) → **§3a is SKIPPED.**
+- **`dispatch`** — a zero-context subagent (`DISPATCH=mimo-pro|sonnet`) will execute from the contract alone. Blueprints are the executor's only source of truth, so **§3a is required** (full payloads, no placeholders). This preserves WI-347's Lean-Executor isolation.
+- **`inline`** — the orchestrator executes with the full spec/UX/UI context already loaded (the only mode used in practice per `.svc/dispatch-log.jsonl`). Re-authoring blueprints here is double-spend (code drafted at PLAN prices, then re-applied verbatim at EXEC) → **§3a is SKIPPED.**
 
 Record the resolved mode in two places, both read by the chain:
 1. The plan-manifest receipt's `mode` field (`dispatch` | `inline`) — `schemas/receipts/plan-manifest.schema.json` enforces "blueprints required UNLESS mode==inline" via an `if/then`, and `scripts/check-chain-receipts.mjs` mirrors that gate (the custom validator the push hook actually runs). **Absent/unmarked `mode` fails closed to dispatch semantics** — blueprints stay required, so nothing silently relaxes WI-347.
@@ -177,15 +176,15 @@ Flow: original requirements → (optional Tier 0: fast orchestrator intent & dia
 
 1. **Header** — spec path, branch (lane convention), Status DRAFTED→…→VERIFIED lifecycle, base SHA, timestamp
 2. **Implementation Summary** — what changes, invariants, constraints
-3. **Files Planned** table + **3a. Changeset Blueprint** (dispatch mode only — full payloads/diff blueprints, NO placeholders; SKIPPED on the inline path per Execution Mode above)
+3. **Files Planned** table + **3a. Changeset Blueprint** (dispatch mode only — full payloads/diff blueprints, no placeholders; SKIPPED on the inline path per Execution Mode above)
 4. **Task Graph** — id, title, files, deps, AC coverage, validation command, checkpoint, parallel group
 5. **AC-to-Task** + 6. **AC-to-Test** mapping (Unit/E2E/Manual/N-A-with-reason) + 6a. **Prerequisite Alignment Matrix** (UX/UI/tech/style/persona traces — concrete persona IDs, never "all users")
 7. **Validation Plan** + 7a. **Execution Command Sequence** (legacy/dispatch: copy-pasteable bash; explicit inline v5: ready-now commands and established-release producer/verifier descriptions, never invented future IDs)
 8. **Checkpoint Plan** + 9. **Promotion Readiness Checklist** (incl. schema-drift check: ORM file modified ⇒ migration task exists, else pre-flight blocker)
 
-## External State Lifecycle (MANDATORY)
+## External State Lifecycle (required)
 
-Before producing the manifest, every plan-changeset MUST answer the wrapper question from `references/external-state-lifecycle-protocol.md`:
+Before producing the manifest, answer the wrapper question from `references/external-state-lifecycle-protocol.md`:
 
 > **What state outside this artifact does this change create, mutate, or rely on — and is the lifecycle of that external state explicitly coupled to the lifecycle of this artifact (create together, change together, revert together, remove together)?**
 
@@ -208,7 +207,6 @@ Rules:
 - The taxonomy is a **floor, not a ceiling** — list ad-hoc environments not in the taxonomy. New environment classes that surface during a real failure get appended to the taxonomy via the same protocol doc's "Lessons" table.
 
 This section is hard-checked by `review-plan` (see its `external-state-uncoupled` finding-type). A missing or hand-wavy section is HIGH severity and blocks `approve`.
-
 
 ## Review Surface
 
@@ -234,13 +232,13 @@ No placeholders/stubs/ellipses in blueprints; no vague task boundaries; no missi
 
 ## Pre-Implementation Simulation (Dry Run)
 
-After the manifest, BEFORE handoff: walk the task graph in dependency order against two layers — **disk** (files now) and **planned** (earlier CREATEs). CREATE targets must not exist; MODIFY targets must exist (grep the specific export/signature); imports resolve against the right layer; new deps checked in package.json; route conflicts grepped ONLY in the style-contract's route dir. **Scoping rule: every check targets a SPECIFIC file/dir — never grep `src/` or `.` broadly.** Append a Simulation Report (+ journey Scenario Walkthrough: every Given/When/Then maps to an implementing task or WARN). Fix FAILs, re-check, proceed only on all-PASS/acknowledged-WARN. Full protocol + report templates: `references/simulation-protocol.md`.
+After the manifest and before handoff, walk the task graph in dependency order against two layers — **disk** (files now) and **planned** (earlier CREATEs). CREATE targets must not exist; MODIFY targets must exist (grep the specific export/signature); imports resolve against the right layer; new deps checked in package.json; route conflicts grepped only in the style-contract's route dir. **Scoping rule:** every check targets a specific file/dir, not `src/` or `.` broadly, so the simulation stays cheap and precise. Append a Simulation Report (+ journey Scenario Walkthrough: every Given/When/Then maps to an implementing task or WARN). Fix FAILs, re-check, proceed only on all-PASS/acknowledged-WARN. Full protocol + report templates: `references/simulation-protocol.md`.
 
 ## Adversarial Plan Review
 
 After the complete v5 contract is prepared (and living specs/designs reconciled), plans face the existing holistic `review-plan` once: mechanical checks (free), then primary adversarial review (structured YAML findings), convergence until residual ≤ MEDIUM. Transmutation is not a second review and not a new lane. Product-sensitive, parallel, deletion-bearing, or claim-heavy plans place `plan-contract.json` beside the manifest; `verify-plan-mechanical.sh` consumes it through `scripts/validate-plan-contract.mjs` and rejects overlapping ownership, unsafe reversible writers, unbounded absence/completeness claims, and executables without named consumers. Self-review prompts + check catalog: `references/adversarial-review-detail.md`.
 
-**Risk-triggered contract sections (WI-553):** if `diagnose-bug`, `write-spec`, or this skill's own classification declared any AC-553-1 flag (`runtime_concurrency`, `external_state_writer`, `config_schema_migration`, `lossless_rmw`, `idempotent_rewriter`, `cross_runtime_integration` — see `scripts/lib/risk-flags.mjs`), the manifest MUST carry a `**Risk Flags:**` line naming them AND `plan-contract.json` MUST declare the same flags in its `risk_flags` array with the matching section(s) filled in. Unmatched plans (no flags) add nothing — `plan-contract.json` grows only matched sections (AC-553-3). Section contract, required fields, and the exact WI-542 shapes each section mechanically rejects: `references/plan-contract-risk-sections.md`.
+**Risk-triggered contract sections (WI-553):** if `diagnose-bug`, `write-spec`, or this skill's own classification declared any AC-553-1 flag (`runtime_concurrency`, `external_state_writer`, `config_schema_migration`, `lossless_rmw`, `idempotent_rewriter`, `cross_runtime_integration` — see `scripts/lib/risk-flags.mjs`), the manifest must carry a `**Risk Flags:**` line naming them and `plan-contract.json` must declare the same flags in its `risk_flags` array with the matching section(s) filled in. Unmatched plans (no flags) add nothing — `plan-contract.json` grows only matched sections (AC-553-3). Section contract, required fields, and the exact WI-542 shapes each section mechanically rejects: `references/plan-contract-risk-sections.md`.
 
 ### Decision Logging
 
@@ -258,11 +256,11 @@ If this scope has a genesis branch index, run `node scripts/check-branch-index.m
 node scripts/validate-task-graph-lane.mjs .svc/lane-tasks-<WI>.json
 ```
 
-Fail → add the missing mandatory skills as tasks and re-run until PASS (prevents silent omission of review-gate / audit-implementation / land-changeset / verify-promotion). Log the result.
+Fail → add the missing mandatory skills as tasks and re-run until PASS; this prevents silent omission of review-gate / audit-implementation / land-changeset / verify-promotion. Log the result.
 
 ### Step 5: Review the Plan (Mandatory)
 
-`review-plan` remains the one built-in holistic gate, not optional: mechanical verification → primary adversarial review → convergence (residual ≤ MEDIUM). Insert as a lane task between complete v5 preparation and `execute-changeset`; set `blocked_by`. After PASS, persist a separate seal envelope over the exact reviewed prepared JSON and full manifest (`createTransmutationSeal` / `verifyTransmutationSeal`); never rewrite the reviewed body or Markdown to `sealed:true`. Log outcome.
+`review-plan` remains the one built-in holistic gate, not optional: mechanical verification → primary adversarial review → convergence (residual ≤ MEDIUM). Insert as a lane task between complete v5 preparation and `execute-changeset`; set `blocked_by`. After PASS, persist a separate seal envelope over the exact reviewed prepared JSON and full manifest (`createTransmutationSeal` / `verifyTransmutationSeal`); never rewrite the reviewed body or Markdown to `sealed:true`. Log the outcome.
 
 ### Route to execution
 
@@ -270,8 +268,7 @@ Fail → add the missing mandatory skills as tasks and re-run until PASS (preven
 
 ## Scope Reduction Prohibition
 
-The planner MUST NOT silently simplify requirements. These phrases are banned
-in task descriptions, action steps, and done conditions:
+The planner does not silently simplify requirements, because a quietly narrowed plan ships an incomplete feature that every later gate then treats as complete. These phrases are banned in task descriptions, action steps, and done conditions:
 
 | Banned phrase | Why | What to do instead |
 |---|---|---|
@@ -284,9 +281,7 @@ in task descriptions, action steps, and done conditions:
 | "priority pages / priority files" without a total count | Migration scope reduction disguised as phasing — "priority pages first" with no stated universe is identical to "simplified version" | State: "Phase 1: 7/71 files (10%). Phase 2 deferred: 64 files — WI-032." |
 | "Under N-file threshold" on a migration archetype | Low file count means incomplete scope on a migration, not small scope | State actual coverage ratio from grep baseline |
 
-**If the plan cannot cover all ACs from the feature spec:**
-
-Do NOT silently drop ACs. Instead:
+**If the plan cannot cover all ACs from the feature spec,** keep every AC visible instead of dropping it:
 
 1. Produce a **coverage matrix** mapping every AC to a task
 2. Flag any AC with `PARTIAL` or `MISSING` coverage as a **BLOCKER**
@@ -294,13 +289,11 @@ Do NOT silently drop ACs. Instead:
    AC-01 through AC-05 (core flow). Phase B covers AC-06 through AC-09
    (edge cases + integrations). Ship Phase A first."
 
-The review gate checks for scope reduction. If the plan contains banned
-phrases, the gate will FAIL.
-
+The review gate checks for scope reduction; a plan with banned phrases FAILs.
 
 ## Deprecated-Foundation & Mock-Parity Gates
 
-Run `node scripts/scan-deprecated-foundations.mjs --root . --path <file-or-dir> --first-hit-codebase-scan --promote-findings .svc/deprecated-foundation-findings.jsonl --fail-on-findings` (blocks on findings; promotes them to the ledger for future sessions). **Browser-visible MODIFY mock parity gate:** when a task modifies an existing component, route, shared component, visual state, or browser-visible screen, the manifest MUST reference a Production-Derived Mock Parity Ledger from `design-ui` before those tasks are runnable; generic standalone mocks cannot pass — route back to `design-ui`. Detail: `references/archetype-protocols.md`.
+Run `node scripts/scan-deprecated-foundations.mjs --root . --path <file-or-dir> --first-hit-codebase-scan --promote-findings .svc/deprecated-foundation-findings.jsonl --fail-on-findings` (blocks on findings; promotes them to the ledger for future sessions). **Browser-visible MODIFY mock parity gate:** when a task modifies an existing component, route, shared component, visual state, or browser-visible screen, the manifest must reference a Production-Derived Mock Parity Ledger from `design-ui` before those tasks are runnable; generic standalone mocks cannot pass — route back to `design-ui`. Detail: `references/archetype-protocols.md`.
 
 ## Pipeline Continuation
 
@@ -361,7 +354,7 @@ This skill emits receipt type `plan-manifest` per `references/chain-receipt-cont
 **Pipeline baton — new issuance is `schema_version: 5` for both `inline` and `dispatch`.** Historical v1–4 remain readable and non-executable except the pinned genuine bootstrap v4 snapshot. Before `review-plan`, distill the spec's acceptance criteria into the receipt's `ac_digests` so the 5 downstream chain skills read a one-page nav index instead of re-reading the whole spec:
 - `ac_digests.spec_path` — the authoritative spec (e.g. `docs/specs/features/<name>.md`, or the WI doc for framework work).
 - `ac_digests.spec_ac_table_sha256` — `SPEC=docs/specs/features/<name>.md node -e 'import("./scripts/lib/normalize-ac-table.mjs").then(m=>console.log(m.acTableSha256(require("fs").readFileSync(process.env.SPEC,"utf8"))))'`. This hash-binds the baton to the spec AC table; `check-chain-receipts` recomputes it and FAILS if the ACs are revised after distillation (forcing a re-distill).
-- `ac_digests.entries[]` — one `{ac_id, digest, anchor}` per AC; `digest` is a one-line attention router, NEVER the authoritative text. The live spec at `spec_path` remains the sole AC source.
+- `ac_digests.entries[]` — one `{ac_id, digest, anchor}` per AC; `digest` is a one-line attention router, not the authoritative text. The live spec at `spec_path` remains the sole AC source.
 - `mocked_deps[]` — `{dep, reason, mock_location}` for anything the plan stubs (optional).
 For v5, author the full receipt body once inside SVC_PLAN_BODY (including `planning_contract`, `implementation_approach`, and `executor_discretion`), compute the AC binding before review, and run `node scripts/prepare-plan-handoff.mjs --manifest <path> --write --out .svc/external-review-artifacts/plan-handoff/body.json` to generate views and the pre-review emitter input. `--write --out` is pre-review only. `--task` is execution handoff and requires a verified seal; do not use `--task` to rewrite reviewed bytes. Do not independently author duplicate AC/task/test mappings or regenerate reviewed fields silently. Regenerate the baton on any manifest/AC revision — it can only carry reviewed content. Legacy v1/v2 plan-manifests without the baton stay readable (grandfathered, non-executable).
 

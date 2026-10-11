@@ -61,10 +61,9 @@ chain:
   human_checkpoint: true
 ---
 
-> **Cognitive routing:** ⚙️ [EXEC] — branch push, PR open, merge, cleanup are mechanical git ops; routes via `resolve-model.sh EXEC` (Sonnet 4.6 under svc-default per WI-357). See `references/model-routing.md`.
+> **Cognitive routing:** ⚙️ [EXEC] — branch push, PR open, merge, cleanup are mechanical git ops; routes via `resolve-model.sh EXEC` (the svc-default EXEC tuple per WI-357). See `references/model-routing.md`.
 
 # Landing Change Set
-
 
 ## Existing release path and inline v4 identities
 
@@ -78,11 +77,7 @@ Bind the exact final SHA and build provenance, then execute only an authorized t
 effect. Require proven rollback readiness before production release. A merge is not live proof and
 does not close delivery. Follow `schemas/release-lifecycle-v2.schema.json`.
 
-Land validated work from a feature worktree onto main via PR.
-
-By the time this skill runs, the feature has been built, tested (unit + E2E),
-and reviewed — all inside the worktree. This skill validates that the branch
-matches the plan, then lands it through a proper PR flow.
+Land validated work from a feature worktree onto main via PR. The feature arrives built, tested (unit + E2E) and reviewed inside the worktree; this skill validates that the branch matches the plan, then lands it through a proper PR flow.
 
 **Announce at start:** "I'm using the land-changeset skill to land the validated branch onto main."
 
@@ -171,13 +166,13 @@ node scripts/check-branch-index.mjs --all
 - No `docs/specs/relations/*.branches.md` tracked yet → prints its own WARN and exits 0; treat as WARN, not as a pass on indexes that don't exist.
 - One or more indexes tracked → every one of them must exit fresh (script exits 0 overall only if ALL are fresh). A non-zero exit is a BLOCK: re-stamp the stale index (shape: `skills/write-spec/references/branch-index-template.md`) before landing.
 
-**Step 2: Ship Preparation** — Prepare the release before pushing. If `schemas/mobile-build-contract.json` exists, you MUST run the canonical mobile release checkpoint first (read store and ledger floors, call `node scripts/mobile-build-identity.mjs allocate-release` exactly once per source and platform, build and inspect via the contract's argv arrays, require exact identity and SHA-256 equality, mark the reservation `built`, then `committed` on land or `failed` on error); otherwise record it as `N/A`. Commit in order: infrastructure, models and tests, controllers and tests, then VERSION + CHANGELOG as one final commit. Bump the 4-digit version (MICRO under 50 changed lines, PATCH 50+, MINOR with feature signals: ASK the user, MAJOR: always ASK; skip if already bumped versus base), write the CHANGELOG from user-visible outcomes so every commit maps to a bullet, and require a full passing test suite at the release boundary (reuse a prior result only if input hashes and environment still match; any failure means STOP and fix in the worktree). Produce the code-path coverage diagram: under 30% covered is a HARD STOP back to `write-e2e`, 30-59% asks the user, 60% or more proceeds. Details: `references/process.md`. Mobile, in short: call `allocate-release` exactly once per source and platform; a failed reservation remains consumed and is never reused.
+**Step 2: Ship Preparation** — Prepare the release before pushing. If `schemas/mobile-build-contract.json` exists, run the canonical mobile release checkpoint first (read store and ledger floors, call `node scripts/mobile-build-identity.mjs allocate-release` exactly once per source and platform, build and inspect via the contract's argv arrays, require exact identity and SHA-256 equality, mark the reservation `built`, then `committed` on land or `failed` on error); otherwise record it as `N/A`. Commit in order: infrastructure, models and tests, controllers and tests, then VERSION + CHANGELOG as one final commit. Bump the 4-digit version (MICRO under 50 changed lines, PATCH 50+, MINOR with feature signals: ASK the user, MAJOR: always ASK; skip if already bumped versus base), write the CHANGELOG from user-visible outcomes so every commit maps to a bullet, and require a full passing test suite at the release boundary (reuse a prior result only if input hashes and environment still match; any failure means STOP and fix in the worktree). Produce the code-path coverage diagram: under 30% covered is a HARD STOP back to `write-e2e`, 30-59% asks the user, 60% or more proceeds. Details: `references/process.md`. Mobile, in short: call `allocate-release` exactly once per source and platform; a failed reservation remains consumed and is never reused.
 
 ### Step 3a: Push the branch
 
 Before any detached local commit or remote promotion, mint and consume the
 single-use capability at the mutation boundary. The command after `--` is part
-of the capability tuple: mint and exec MUST receive byte-identical argv. Local
+of the capability tuple: mint and exec must receive byte-identical argv. Local
 land accepts only `git commit -m <message>`; remote promotion accepts only
 `git push origin <exact-head-sha>:refs/heads/<exact-branch>` or `node scripts/merge-pr-with-review-receipt.mjs --pr <pr-number> --squash --delete-branch --expected-repo <owner/repo> --expected-head <branch> --expected-head-sha <sha>`. Flags that widen the staged tree, bypass hooks, rewrite
 history, or change the destination are rejected before capability consumption.
@@ -217,7 +212,6 @@ node scripts/svc-owner-recovery.mjs promote-exec \
   --environment remote --operation remote-promotion --capability "$CAPABILITY" --token "$TOKEN" \
   -- "${COMMAND[@]}"
 ```
-
 
 ### Step 3b: Switch to main and open PR
 
@@ -382,11 +376,7 @@ Update the feature spec status to `PROMOTED`:
 
 ## Anti-Patterns
 
-- Do not land a branch with failing tests
-- Do not land without a PR (no local squash-merges)
-- Do not land with missing task checkpoints
-- Do not land files not in the manifest
-- Do not skip the final validation run
+Land only with passing tests, through a PR (no local squash-merges), with every task checkpoint present, with only manifest files changed, and after the final validation run.
 
 ## Phase Receipt Contract
 
@@ -404,21 +394,11 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 ## Pipeline Continuation
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume (also across sessions and subagents). Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose.
+
+Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; in Codex, mirror only the active step in `update_plan`) happens only in the parent/top-level session: the host exposes TaskList and there is no `SVC_SUBAGENT=1` marker in env. Otherwise skip mirroring — file state is the durable record and the parent re-mirrors after the subagent returns. Subagents do not attempt TaskUpdate calls, because a failed attempt is silent drift between the subagent's intent and the host UI.
+
+Mark this skill's task `completed` in `lane-tasks.json` before leaving, then update the host mirror and evaluate the next task: runnable → mark `in_progress`, persist, and load that skill before doing work; skippable → mark `completed` with a skip reason and evaluate the one after. Per `route-workflow` Task-Graph Execution Protocol.
 
 ### Self-Verify
 
@@ -441,15 +421,7 @@ deferred until the PR is merged. Report the PR URL and stop — do not chain to
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+In task-graph mode, follow §Task-graph mode above, then:
 
 **If PR was merged (auto-approve or post-approval):**
 - If `--progressive`: invoke `verify-promotion --progressive --lane <lane>`
@@ -463,32 +435,13 @@ deferred until the PR is merged. Report the PR URL and stop — do not chain to
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+`.svc/lane-tasks-<WI>.json` is the sole source of truth: take the first `in_progress` (else first unblocked `pending`) task, run `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and resume. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` disagrees on `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>`.
 
 ## Chain Receipt Emission (Mandatory Chain)
 
-This skill emits receipt type `(consumer — verifies upstream receipts present; invokes svc-auto-drive post-merge)` per the contract in
-`references/chain-receipt-contract.md`. The receipt is stored as a git
-note on `refs/notes/svc-receipts` (authoritative) and mirrored under
-`.svc/receipts/<sha>/<type>.json` (gitignored cache).
+This skill emits receipt type `(consumer — verifies upstream receipts present; invokes svc-auto-drive post-merge)` per `references/chain-receipt-contract.md`. Receipts are stored as a git note on `refs/notes/svc-receipts` (authoritative) and mirrored under `.svc/receipts/<sha>/<type>.json` (gitignored cache). Before a commit exists they go to `.svc/receipts/staging/<tree-hash>/<type>.json`; the post-commit hook (`hooks/git/post-commit.d/10-receipt-promote`) promotes to the SHA mirror and writes the consolidated git note.
 
-If the skill runs before a commit exists, it writes to
-`.svc/receipts/staging/<tree-hash>/<type>.json` — the post-commit hook
-(`hooks/git/post-commit.d/10-receipt-promote`) promotes to SHA mirror
-and writes the consolidated git note.
-
-Self-verify: receipt at `.svc/receipts/<sha>/<type>.json` exists, passes
-its schema (`schemas/receipts/<type>.schema.json`), and is reflected in
-the consolidated git note.
+Self-verify: receipt at `.svc/receipts/<sha>/<type>.json` exists, passes its schema (`schemas/receipts/<type>.schema.json`), and is reflected in the consolidated git note.
 
 **Cross-link to story receipts (WI-521 Batch C, C4 — one field, no merge of the two systems).** `land-changeset` itself emits no receipt type of its own (it is a consumer/verifier per the paragraph above) — the one land-adjacent receipt body that actually gets constructed is `verify-promotion`, built by `scripts/svc-auto-drive.mjs` when it runs post-merge (this same skill invokes it, per the paragraph above). That function's `findStoryReceiptSha256(mergeSha)` asks the merge commit itself which `docs/specs/receipts/*.receipts.json` path it touched — deterministic, not a commit-message guess — and, when exactly one such path changed, folds `story_receipt_sha256` (a sha256 of that file's content in the merge commit's tree) into the `verify-promotion` receipt before it is written to `.svc/receipts/<sha>/verify-promotion.json` and the consolidated git note. Ambiguous (0 or >1 receipts files touched) or any git failure yields no field at all — it is never invented.
 

@@ -65,11 +65,11 @@ For a sealed v5 plan, run `node scripts/prepare-plan-handoff.mjs --manifest <man
 
 Use normal bounded repository reads to inspect current local code after prerequisites complete; such reads are analysis/runtime context, not reviewed context_refs and not the `research` skill. Keep exact write authority and existing delegation/containment. Local repairs (missing import of an already-approved dependency; in-scope task-caused syntax/type/test/naming fixes; justified reversible alternative preserving scope/behavior/API/state/AC/proof/authority) record reason+evidence then revalidate. Amendments (new/upgraded dependency; config/env; external side effect; API/behavior; architecture/state ownership; larger paths/authority; changed proof/AC) reopen the affected source decision/contract and review proof using already-given owner intent; do not repeatedly ask routine permission. Never silent rewrite or relax tests. Never autogenerate success. A release producer description is handled only by its named existing land/verify skill and pre-use checks; it is not an implementation-task status or a second scheduler.
 
-## Step 0 — MANDATORY dispatch preflight (hard rule, 2026-04-20)
+## Step 0 — Dispatch preflight (hard rule, 2026-04-20)
 
-Resolve the execution harness BEFORE touching files: `bash scripts/resolve-model.sh EXEC --json`. Honor the active profile (svc-default → Claude Sonnet direct; keyed MiMo profiles delegate; missing keys fall back per preflight). Full profile branches, MiMo delegation mechanics, and fallback table: `references/dispatch-preflight.md`.
+Resolve the execution harness before touching files: `bash scripts/resolve-model.sh EXEC --json`. Honor the active profile (svc-default → Claude Sonnet direct; keyed MiMo profiles delegate; missing keys fall back per preflight). Full profile branches, MiMo delegation mechanics, and fallback table: `references/dispatch-preflight.md`.
 
-## Product Questions — MANDATORY format
+## Product Questions — required format
 
 Surface implementation discoveries that change consequential product choices; do not hide them as code decisions. Follow `_shared/product-question-format.md` with `phase: execute-changeset`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
@@ -90,27 +90,21 @@ Read and hold in context:
 | Anti-patterns | `references/anti-patterns.md` | Universal execution anti-patterns |
 | Context budget | `references/context-budget.md` | Context degradation tiers and read depth rules |
 
-**Context loading rule:** Do NOT scan the full source tree. Load code files
-ONLY from these sources, in this priority:
+**Context loading rule:** load code files only from these sources, in this priority, rather than scanning the full source tree:
 1. **Manifest file list** — the manifest names every file to create/modify
 2. **Spec RESOLVED annotations** — file:line pointers to existing implementations
 3. **Import resolution** — when a manifest file imports from another file, load that file
 4. **On-demand** — if a test fails referencing an unknown file, load it then
 
-This scoped loading eliminates 30-100K tokens of irrelevant code. The style
-contract already encodes the project's patterns — you don't need to re-derive
-them from source.
+Scoped loading avoids 30-100K tokens of irrelevant code; the style contract already encodes the project's patterns, so there is no need to re-derive them from source.
 
 ## Core Rules
 
-- **Current execution gate.** Before any task mutation, `assertCurrentExecution` (or the stage-segment current plan gate) must accept current v5 (or the pinned genuine bootstrap v4 snapshot), control-plan v2 or recomputed real lightweight eligibility, and the verified transmutation seal. Fail if missing.
-- **Write once.** Code is written directly on the branch — not described in
-  a plan and re-implemented. The manifest provides intent and constraints.
-  The execution produces code. The diff IS the changeset. No double-spend.
+- **Current execution gate.** No task mutation until `assertCurrentExecution` (or the stage-segment current plan gate) accepts the current plan evidence and verified transmutation seal described in §Original requirement handoff. Fail if missing.
+- **Write once.** Code is written directly on the branch, not described in a plan and re-implemented: the manifest provides intent and constraints, and the diff is the changeset.
 - Stage only the current task's changes.
 - Create a lightweight checkpoint commit after each accepted task.
-- **No per-task quality review.** Style contract + spec constraints are
-  sufficient per task. One holistic review of the full diff after ALL tasks.
+- **No per-task quality review.** Style contract + spec constraints are sufficient per task; one holistic review of the full diff follows all tasks.
 - If a task reveals a spec, UX, UI, or tech-design defect, loop back before continuing.
 
 ## Bounded mode (graph `planning.mode: bounded`)
@@ -215,11 +209,11 @@ For `logic`, run the mapped test named by the receipt. For `high`, collect behav
 **For sequential tasks** (or when running as single agent):
 
 1. **If the task produces implementation code:**
-   - Write the test FIRST (unit test for the behavior)
-   - Run the test — it MUST FAIL (proves the test is real)
+   - Write the unit test for the behavior first
+   - Run it and confirm it fails, which proves the test is real
    - Write the minimal implementation to pass the test
-   - Run the test — it MUST PASS
-   - TDD red-green per task. Not optional for implementation tasks.
+   - Run it and confirm it passes
+   - Red-green TDD is required for every implementation task.
 
 2. **Skip TDD for:** type definitions, config files, migrations, scaffolding,
    spec/journey updates.
@@ -244,7 +238,7 @@ Children never edit the parent lane graph, controller lease, sibling results, or
 `dispatch-worker.sh` transport, partition the manifest task graph and run each
 independent node as a native `agent(prompt, {isolation:'worktree', schema:
 task-node-result})` call — in-session, on subscription. The partition fence is
-MANDATORY: `node scripts/partition-task-graph.mjs --graph <task-graph.json>`
+required: `node scripts/partition-task-graph.mjs --graph <task-graph.json>`
 computes the file-set per node and **escalates any wave whose task file-sets
 overlap to SEQUENTIAL** (the closed-loop `scripts/lib/disjoint-scopes.mjs` primitive,
 shared with WI-387); dependencies map onto `pipeline()` stage order, never
@@ -255,11 +249,7 @@ intra-changeset scope only — the multi-WI-wave economics half is WI-374 F-01
 (deferred). See `references/task-graph-parallel-exec.md`. Permitted mutating
 transport per the S5 policy (recorded 2026-06-09).
 
-**Why no per-task quality review:** The style contract constrains how code
-looks. The spec ACs constrain what code does. TDD constrains correctness.
-Per-task review catches nothing that these constraints don't already prevent,
-and costs 5-10K tokens × N tasks. One holistic review at the end catches
-cross-task issues that per-task reviews MISS.
+**Why no per-task quality review:** the style contract constrains how code looks, the spec ACs what it does, and TDD its correctness, so per-task review adds 5-10K tokens × N tasks without catching more; one holistic review at the end catches the cross-task issues per-task reviews miss.
 
 ### Verification Cost Class (§4b) — canonical table
 
@@ -350,11 +340,7 @@ Directive: FTS5 index rebuilds on every write — monitor if write volume increa
 - `Scope-risk:` — narrow | moderate | broad
 - `Not-tested:` — edge case or scenario not covered by tests
 
-**Why trailers matter:**
-Git history becomes the decision log. `git log` shows not just WHAT changed but WHY.
-`Rejected:` trailers prevent future developers from re-proposing already-rejected approaches.
-`Directive:` trailers are instructions that travel with the code.
-`Not-tested:` trailers are honest about coverage gaps.
+**Why trailers matter:** git history becomes the decision log — `Rejected:` stops re-proposals of rejected approaches, `Directive:` travels with the code, and `Not-tested:` is honest about coverage gaps.
 
 Skip trailers for trivial commits (typo fixes, formatting). Include for every implementation commit.
 
@@ -368,15 +354,7 @@ On all tasks checkpointed + final validation green: the feature stays `BASELINED
 
 ## Retrieval-Augmented Reasoning (cutting-edge technique #9)
 
-When you hit uncertainty mid-implementation, do NOT guess:
-1. **Pause** the current task's reasoning.
-2. **Retrieve** the specific fact — grep the codebase, read the file slice, check the API doc or `references/knowledge/` node.
-3. **Incorporate** it, then **continue** the task.
-
-Rules:
-- Never guess when you can retrieve — retrieval cost < rework cost (and < a failed review-exec round).
-- Retrieve the minimum: grep before read; read the slice, not the whole file.
-- Log non-trivial retrievals (what + why) in `.svc/pipeline-decisions.jsonl`.
+When you hit uncertainty mid-implementation, retrieve the specific fact instead of guessing (grep the codebase, read the file slice, check the API doc or `references/knowledge/` node), incorporate it, and continue — retrieval costs less than rework or a failed review-exec round. Retrieve the minimum: grep before read; read the slice, not the whole file. Log non-trivial retrievals (what + why) in `.svc/pipeline-decisions.jsonl`.
 
 Formalizes `rules/common/research-before-build.md` as a mid-reasoning loop. Repository reading is analysis. Invoke the `research` skill only when `researchDecision` from `scripts/lib/research-decision.mjs` returns `external_research_required`.
 
@@ -411,8 +389,7 @@ Lane-tasks file is the sole source of truth: first `in_progress`/unblocked `pend
 
 ## External State Lifecycle Cross-Check (WI-121)
 
-Before the final commit at the end of execution, re-verify that the implementation's
-writes match the plan's `## External State Lifecycle` declared set.
+Before the final commit, re-verify that the implementation's writes match the plan's `## External State Lifecycle` declared set.
 
 ### Steps
 

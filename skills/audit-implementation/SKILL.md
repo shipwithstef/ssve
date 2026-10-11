@@ -68,7 +68,7 @@ chain:
   human_checkpoint: false
 ---
 
-> **Cognitive routing:** 🛡️ [REVIEW-SONNET] + Codex cross-model when available — correctness audit against a spec is verification work; Sonnet 4.6 against an Opus blueprint is the designed split. Codex as adversarial second opinion. See `references/model-routing.md`.
+> **Cognitive routing:** 🛡️ [REVIEW] + Codex cross-model when available — correctness audit against a spec is verification work, so a REVIEW-tier model auditing a PLAN-tier blueprint is the designed split, with Codex as adversarial second opinion. See `references/model-routing.md`.
 
 # Systems Analysis
 
@@ -104,25 +104,7 @@ with AC-traced verification.
 
 ### Invocation Modes
 
-This skill has two invocation modes. The orchestrator selects which one to use
-when dispatching the skill — there is no CLI flag parsed at runtime; the mode
-is conversational and recorded in the task's `mode` argument.
-
-**How the orchestrator selects mode:**
-
-1. The orchestrator reads the change set (manifest + diff scope from
-   `plan-changeset` output).
-2. It evaluates the change against the criteria below.
-3. It dispatches `audit-implementation` with one of:
-   - `mode: full` (default if unspecified) — the full Process below
-   - `mode: light` — the 5-minute checklist
-4. The selected mode is written into the task entry of
-   `.svc/lane-tasks-<WI>.json` under `args.mode`, and surfaced in the
-   `skill_receipt.validation_output` field of the completed task so a
-   reviewer can audit the choice.
-
-This mirrors how other multi-mode skills declare modes
-(`build-personas`, `write-journeys`, `vision-grounding-lab`).
+The orchestrator picks the mode when dispatching, from the change set (manifest + diff scope) and the criteria below; there is no runtime CLI flag. Modes: `mode: full` (default if unspecified) — the full Process below; `mode: light` — the 5-minute checklist. Record the choice in the task entry of `.svc/lane-tasks-<WI>.json` under `args.mode` and surface it in the completed task's `skill_receipt.validation_output`, so a reviewer can audit it.
 
 #### Mode: `light`
 
@@ -165,15 +147,14 @@ Read everything the pipeline has produced:
 
 | Source | What to extract |
 |--------|----------------|
-| Feature spec | ACs — these are the MUST-verify criteria |
+| Feature spec | ACs — the criteria every audit must verify |
 | Feature spec revision log | Any ACs that changed mid-pipeline — verify code matches the REVISED version, not the original |
 | Manifest | Task list, file-touch plan, validation commands |
 | Journeys | User flows that exercise this feature — trace through code |
 | Solution decision | What paradigm was chosen and why — check if implementation matches |
 | Domain profile | Domain conventions — check if respected |
 
-**Build the verification contract:** for each AC, write what the code MUST do
-to satisfy it. This becomes the audit checklist.
+**Build the verification contract:** for each AC, write what the code must do to satisfy it. This becomes the audit checklist.
 
 ### Phase 0.5: Scope Drift Check
 
@@ -242,7 +223,7 @@ BEFORE reading the code deeply:
 - "The code might have bugs"
 - "Error handling could be better"
 
-**Phase 3: Audit One Subsystem At A Time** — For each subsystem: trace the happy path from entrypoint to response, trace error paths (invalid input, timeout, DB failure), trace cleanup and shutdown for leaks, compare against each AC it claims, walk the journey Gherkin steps against working code, and re-run the manifest's validation commands. For features with a Vibe Contract the auditor MUST re-score against the Aesthetic Scoring Rubric (target 90+) and check the motion schema in `vibe-contract.json`. With subagents, give each one subsystem with a scoped prompt (only its disjoint files, its AC slice, its Phase 2 hypotheses, its validation commands); auditors must not scan the codebase, and cross-subsystem questions go back to the orchestrator for Phase 5 convergence. Details: `references/process.md`.
+**Phase 3: Audit One Subsystem At A Time** — For each subsystem: trace the happy path from entrypoint to response, trace error paths (invalid input, timeout, DB failure), trace cleanup and shutdown for leaks, compare against each AC it claims, walk the journey Gherkin steps against working code, and re-run the manifest's validation commands. For features with a Vibe Contract the auditor re-scores against the Aesthetic Scoring Rubric (target 90+) and check the motion schema in `vibe-contract.json`. With subagents, give each one subsystem with a scoped prompt (only its disjoint files, its AC slice, its Phase 2 hypotheses, its validation commands); auditors must not scan the codebase, and cross-subsystem questions go back to the orchestrator for Phase 5 convergence. Details: `references/process.md`.
 
 ### Phase 4: Classify Findings
 
@@ -330,21 +311,11 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 ## Pipeline Continuation
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume (also across sessions and subagents). Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose.
+
+Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; in Codex, mirror only the active step in `update_plan`) happens only in the parent/top-level session: the host exposes TaskList and there is no `SVC_SUBAGENT=1` marker in env. Otherwise skip mirroring — file state is the durable record and the parent re-mirrors after the subagent returns. Subagents do not attempt TaskUpdate calls, because a failed attempt is silent drift between the subagent's intent and the host UI.
+
+Mark this skill's task `completed` in `lane-tasks.json` before leaving, then update the host mirror and evaluate the next task: runnable → mark `in_progress`, persist, and load that skill before doing work; skippable → mark `completed` with a skip reason and evaluate the one after. Per `route-workflow` Task-Graph Execution Protocol.
 
 ### Self-Verify
 
@@ -358,15 +329,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+In task-graph mode, follow §Task-graph mode above, then:
 
 **If verdict is READY TO LAND or CONDITIONAL (no Critical):**
 - If `--progressive`: invoke `land-changeset --progressive --lane <lane>`
@@ -379,16 +342,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+`.svc/lane-tasks-<WI>.json` is the sole source of truth: take the first `in_progress` (else first unblocked `pending`) task, run `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and resume. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` disagrees on `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>`.
 
 ## External State Diff Scan (WI-121)
 
@@ -423,22 +377,9 @@ findings stay in the audit report.
 
 ## Chain Receipt Emission (Mandatory Chain)
 
-This skill emits receipt type `audit-implementation` per the contract in
-`references/chain-receipt-contract.md`. The receipt is stored as a git
-note on `refs/notes/svc-receipts` (authoritative) and mirrored under
-`.svc/receipts/<sha>/<type>.json` (gitignored cache).
+This skill emits receipt type `audit-implementation` per `references/chain-receipt-contract.md`. The receipt is stored as a git note on `refs/notes/svc-receipts` (authoritative) and mirrored under `.svc/receipts/<sha>/<type>.json` (gitignored cache). Before a commit exists it writes to `.svc/receipts/staging/<tree-hash>/<type>.json`; the post-commit hook (`hooks/git/post-commit.d/10-receipt-promote`) promotes it to the SHA mirror and writes the consolidated git note.
 
-If the skill runs before a commit exists, it writes to
-`.svc/receipts/staging/<tree-hash>/<type>.json` — the post-commit hook
-(`hooks/git/post-commit.d/10-receipt-promote`) promotes to SHA mirror
-and writes the consolidated git note.
-
-Self-verify: receipt at `.svc/receipts/<sha>/<type>.json` exists, passes
-its schema (`schemas/receipts/<type>.schema.json`), and is reflected in
-the consolidated git note.
-
-
-## Chain Receipt Emission (Mandatory Chain — Actionable)
+### Chain Receipt Emission (Mandatory Chain — Actionable)
 
 After producing the canonical output, emit a SHA-keyed receipt:
 
@@ -455,7 +396,4 @@ JSON
 This writes to `.svc/receipts/<sha>/audit-implementation.json` (or staging if pre-commit)
 AND attaches it to the consolidated git note on `refs/notes/svc-receipts`.
 
-Self-verify: `node scripts/check-chain-receipts.mjs --sha HEAD` shows this
-receipt type as present + schema-valid.
-
-Reference: `references/chain-receipt-contract.md`.
+Self-verify: the receipt at `.svc/receipts/<sha>/<type>.json` passes its schema (`schemas/receipts/<type>.schema.json`), is reflected in the consolidated git note, and `node scripts/check-chain-receipts.mjs --sha HEAD` shows it present + schema-valid.

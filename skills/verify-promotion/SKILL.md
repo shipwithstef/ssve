@@ -91,9 +91,7 @@ Read:
 
 ## Verification Passes
 
-Each sub-skill receives scoped context — do NOT invoke them bare. Pass the
-feature spec path and manifest path explicitly so they don't re-scan to find
-artifacts.
+Give each sub-skill scoped context — pass the feature spec path and manifest path explicitly — so it does not re-scan to find artifacts.
 
 1. `sync-spec-code` — pass: `--feature docs/specs/features/<name>.md`
    - convert PLANNED -> RESOLVED (with tier tags)
@@ -107,7 +105,7 @@ artifacts.
 3. `test-journeys` — pass: `--journeys docs/specs/journeys/J*-<name>.feature.md`
    - verify runtime behavior across journeys relevant to THIS feature only
    - for browser-visible features, require explicit desktop + mobile evidence (and tablet when the UX/UI contract defines a distinct tablet layout)
-   - do NOT load journeys for other features
+   - leave other features' journeys unloaded
 
 4. **Run E2E regression spec first, then broader suite** — execute tests that already exist, don't author new ones.
 
@@ -126,19 +124,18 @@ artifacts.
    npx playwright test 2>/dev/null || npm test 2>/dev/null || echo "no test runner found"
    ```
    If E2E coverage is insufficient (tests don't exist for shipped ACs), this is
-   a finding — route back to `write-e2e` BEFORE promotion in a future iteration.
+   a finding — route back to `write-e2e` before promotion in a future iteration.
    Verification proves shipped reality, it does not mutate it.
 
 **Context reuse rule:** The feature spec and manifest are already loaded by
 verify-promotion. If running sub-skills in the same session, they share this
-context. If spawning as subagents, pass the file paths explicitly — do NOT let
-each sub-skill independently discover artifacts by scanning `docs/specs/`.
+context. If spawning as subagents, pass the file paths explicitly rather than letting each sub-skill discover artifacts by scanning `docs/specs/`.
 
 **Restart-Boundary Continuation (WI-552) and Verification Escalation Ladder** — First run `node scripts/resolve-continuation.mjs status --wi "$WI"`. With no baton, verify normally and launch no new session. With a `deploy_stamped` or retryable `blocked` baton, this run is the lifecycle controller: run `reconcile` and launch EXACTLY ONCE, never remap the host silently, and on `launched` STOP. A `capability_limited` block is reported as the single blocker. In the launched child session (`SVC_SESSION_ID` matches the baton), run ONLY the declared verification tasks and close with `resolve-continuation.mjs consume --wi "$WI" --result <structured JSON>`; free-text results and stale session ids are freshness violations. Verification is AI-first: try V0 static, V1 live DOM, V2 live interaction in order, and V3 user delegation is the LAST resort (HARD-GATE AP-31), allowed only with a V2 Exhaustion Log listing every V2 mechanism tried and why it failed. Functional claims are never V3 by default; aesthetic claims and structural platform constraints may be V3. `review-gate` G7 FAILs a functional claim that ends at "user confirmed" without that log. Confidence tiers: `VERIFIED` (V0+V1+V2), `VERIFIED-L2` (partial V2 with log), `VERIFIED-USER` (V3 with justification and log), `UNVERIFIED`. Details: `references/restart-boundary-and-escalation.md`.
 
 ## Multi-PR Campaign Sampling
 
-When one lane/session closes a campaign of three or more PRs, branches, pages, or equivalent shipped surfaces in the same skill chain, verify-promotion MUST sample live evidence instead of accepting V0 proof for every item.
+When one lane/session closes a campaign of three or more PRs, branches, pages, or equivalent shipped surfaces in the same skill chain, verify-promotion must sample live evidence instead of accepting V0 proof for every item.
 
 1. Build the campaign list from merged PR numbers, branch names, or shipped page/surface identifiers.
 2. Run the deterministic sampler:
@@ -148,7 +145,7 @@ When one lane/session closes a campaign of three or more PRs, branches, pages, o
    Or pipe newline-separated identifiers into the script.
 3. The sample size is `ceil(N/3)`, with first/middle/last included at minimum when `N >= 3`; remaining slots are filled by a stable SHA-256 hash of the sorted campaign list.
 4. For every sampled item, produce V1 or V2 evidence. Browser-visible sampled items require a live DOM, screenshot, or interaction receipt; V0 bundle-grep is insufficient.
-5. The cumulative verification summary MUST list every item in the campaign, sampled or not, with `verification_tier`, `sampled: true|false`, and evidence paths. Unsampled items may remain at V0 only when sampled V1/V2 coverage passes and the summary explicitly identifies them as unsampled.
+5. The cumulative verification summary must list every item in the campaign, sampled or not, with `verification_tier`, `sampled: true|false`, and evidence paths. Unsampled items may remain at V0 only when sampled V1/V2 coverage passes and the summary explicitly identifies them as unsampled.
 6. Any bundle-grep/static proof section must self-label with `Verification tier: V0`.
 7. Before closeout, run `node scripts/validate-verification-closeout-summary.mjs --summary <SUMMARY.md>`. The validator blocks unqualified `VERIFIED` or `complete` wording while any browser-visible row remains V0-only.
 
@@ -211,7 +208,7 @@ Validate the milestone refresh trigger with `node scripts/check-journey-refresh-
 
 ## Post-Verification: Landing-tagged WI handler (WI-139)
 
-For any WI whose `**Tags:**` field contains `landing` OR `marketing-page`, an additional post-deploy visual receipt is REQUIRED before verify-promotion can mark the WI VERIFIED.
+For any WI whose `**Tags:**` field contains `landing` OR `marketing-page`, an additional post-deploy visual receipt is required before verify-promotion can mark the WI VERIFIED.
 
 ### Why this exists
 
@@ -222,7 +219,7 @@ Two prior sessions (Example Marketplace WI-088 iter1, WI-161) shipped landing it
 1. Detect `landing` or `marketing-page` in the WI's Tags field. If absent, skip this section.
 2. Locate the pre-implementation side-by-side artifact at `docs/specs/landing/<wi-lower>-side-by-side.jpg` (produced by `benchmark-landing` Step 0b at WI start). If missing, HALT — the WI never went through the gate and cannot be promoted via this skill.
 3. Capture a post-deploy live-URL screenshot of the deployed page at 1440×900 via `track-visuals --mode external-anchor` against the production URL (NOT local build). Pass to `scripts/stitch-side-by-side.mjs` together with the same 3 anchors that were used at WI start to produce a post-deploy stitched JPEG. Save to `docs/specs/landing/<wi-lower>-side-by-side-postdeploy.jpg`.
-4. Diff against the pre-implementation artifact: the shipped change MUST be visible at comparison scale (i.e., the post-deploy target tile must look meaningfully different from the pre-implementation target tile in the same way the brief promised). A change that is "present in bundle string" but invisible at 1440×900 fails this check.
+4. Diff against the pre-implementation artifact: the shipped change must be visible at comparison scale (i.e., the post-deploy target tile must look meaningfully different from the pre-implementation target tile in the same way the brief promised). A change that is "present in bundle string" but invisible at 1440×900 fails this check.
 5. Include both the pre-implementation and post-deploy artifact paths in the WI's verify-promotion receipt under `landing_visual_receipt`.
 6. If the diff fails (post-deploy target tile is visually identical to pre-implementation, or the change is too subtle to see at the comparison scale), escalate per the Verification Escalation Ladder. Do NOT mark VERIFIED.
 
@@ -238,7 +235,7 @@ landing_visual_receipt:
 
 The tier-1 validator `validate-landing-side-by-side-exists.sh` enforces that any landing/marketing-page-tagged WI in VERIFIED state has at minimum the pre-implementation artifact on disk.
 
-**Canary Monitoring and Document Sync** — If the feature has a live URL, capture a pre-deploy baseline BEFORE deploying (desktop and mobile screenshots, console errors, load time per journey page), then check every 60 seconds for 5 minutes minimum and compare to baseline. Alert levels: CRITICAL page fails to load (stop and report), HIGH new console errors, MEDIUM load time at least 2x, LOW new 404s; alert only on patterns persisting 2+ checks. Finish with a per-page health report and verdict HEALTHY, DEGRADED or BROKEN. For corrective, regression, deploy-affecting or acceptance-critical work, also rerun the same proof post-promotion per `references/pre-post-validation-loop.md` and classify the delta. Then sync docs: read only docs the diff could affect, auto-update factual items (versions, paths, commands), queue narrative changes for user approval, check README/CLAUDE.md/CHANGELOG/VERSION consistency, and clean up TODOS.md (mark completed items, add new TODO/FIXME/HACK from the promotion commit). Details: `references/post-verification-canary-and-doc-sync.md`.
+**Canary Monitoring and Document Sync** — If the feature has a live URL, capture a pre-deploy baseline before deploying (desktop and mobile screenshots, console errors, load time per journey page), then check every 60 seconds for 5 minutes minimum and compare to baseline. Alert levels: CRITICAL page fails to load (stop and report), HIGH new console errors, MEDIUM load time at least 2x, LOW new 404s; alert only on patterns persisting 2+ checks. Finish with a per-page health report and verdict HEALTHY, DEGRADED or BROKEN. For corrective, regression, deploy-affecting or acceptance-critical work, also rerun the same proof post-promotion per `references/pre-post-validation-loop.md` and classify the delta. Then sync docs: read only docs the diff could affect, auto-update factual items (versions, paths, commands), queue narrative changes for user approval, check README/CLAUDE.md/CHANGELOG/VERSION consistency, and clean up TODOS.md (mark completed items, add new TODO/FIXME/HACK from the promotion commit). Details: `references/post-verification-canary-and-doc-sync.md`.
 
 ### VERSION Guard
 
@@ -300,21 +297,11 @@ Test quality blockers override an otherwise passing verification; green CI with 
 ## Pipeline Continuation
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume (also across sessions and subagents). Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose.
+
+Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; in Codex, mirror only the active step in `update_plan`) happens only in the parent/top-level session: the host exposes TaskList and there is no `SVC_SUBAGENT=1` marker in env. Otherwise skip mirroring — file state is the durable record and the parent re-mirrors after the subagent returns. Subagents do not attempt TaskUpdate calls, because a failed attempt is silent drift between the subagent's intent and the host UI.
+
+Mark this skill's task `completed` in `lane-tasks.json` before leaving, then update the host mirror and evaluate the next task: runnable → mark `in_progress`, persist, and load that skill before doing work; skippable → mark `completed` with a skip reason and evaluate the one after. Per `route-workflow` Task-Graph Execution Protocol.
 
 ### Self-Verify
 
@@ -333,7 +320,7 @@ Before declaring done, verify:
 | 9 | Visual evidence captured (browser-visible) | For features with browser-visible surfaces: at least 1 desktop + 1 mobile screenshot per affected page captured post-deploy. Skip with explicit justification if no browser surface. | |
 | 10 | Pre-existing test failures compared | For each test failure: ran the same test against main (pre-change state). Classified as BRANCH-INTRODUCED (must fix) or PRE-EXISTING (log + link to existing WI). No unclassified failures. |
 | 11 | Visual baseline promoted (browser-visible) | For features with intentional visual changes: golden baseline at `docs/specs/visuals/baseline/` updated, manifest rows have `last_verified_by` set to this WI, ephemeral screenshot files in `.svc/visuals/<WI>/` cleaned. Skip if no visual changes. | |
-| 12 | Structured evidence receipt present | For completed browser-visible work: the task `skill_receipt` includes `target_class`, `evidence_level`, and `evidence_artifacts` per `references/phase-receipts.md`; `target_class: browser-visible` MUST NOT close at `evidence_level: V0`. | |
+| 12 | Structured evidence receipt present | For completed browser-visible work: the task `skill_receipt` includes `target_class`, `evidence_level`, and `evidence_artifacts` per `references/phase-receipts.md`; `target_class: browser-visible` must not close at `evidence_level: V0`. | |
 | 13 | Delivery tier reported | Closeout classification output includes `delivery_tier`; compressed/rush closeouts cite a decision-log rationale and cannot be summarized as full validation. | |
 | 14 | Pre/post validation delta classified | For corrective, regression, deploy-affecting, or acceptance-critical work, closeout cites the exact pre and post evidence, comparison classification, iteration count, and pre/post evidence validator result per `references/pre-post-validation-loop.md`; otherwise records why N/A. | |
 | 15 | Leftover disposition validated | `git status --short --untracked-files=all` is clean, or every remaining path is covered by a passing ledger per `references/leftover-disposition.md`. Closeout states whether leftovers remain. | |
@@ -347,15 +334,7 @@ with `block_on_discovery`, and leave the parent blocked instead of VERIFIED.
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+In task-graph mode, follow §Task-graph mode above, then:
 
 **If `--progressive` flag is present AND self-verify passed:**
 - This is the end of all lanes. Report one sentence before the detail: `VERIFIED (<tier>): checked <the checks that passed>. Still open: <observation, leftovers, or manual issue close — or none>.` Do not treat outcome observation or a manual issue close as done.
@@ -366,17 +345,7 @@ with `block_on_discovery`, and leave the parent blocked instead of VERIFIED.
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
-
+`.svc/lane-tasks-<WI>.json` is the sole source of truth: take the first `in_progress` (else first unblocked `pending`) task, run `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and resume. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` disagrees on `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>`.
 
 ## Modes (added by WI-SPINE-003)
 
@@ -432,22 +401,9 @@ flags, or a different SHA are denied before launch. Use
 repo/worktree/WI/generation/task/environment tuple and identical command argv,
 as shown by the local-land boundary in `land-changeset`.
 
-This skill emits receipt type `verify-promotion (P3 extended with three target types)` per the contract in
-`references/chain-receipt-contract.md`. The receipt is stored as a git
-note on `refs/notes/svc-receipts` (authoritative) and mirrored under
-`.svc/receipts/<sha>/<type>.json` (gitignored cache).
+This skill emits receipt type `verify-promotion (P3 extended with three target types)` per `references/chain-receipt-contract.md`. The receipt is stored as a git note on `refs/notes/svc-receipts` (authoritative) and mirrored under `.svc/receipts/<sha>/<type>.json` (gitignored cache). Before a commit exists it writes to `.svc/receipts/staging/<tree-hash>/<type>.json`; the post-commit hook (`hooks/git/post-commit.d/10-receipt-promote`) promotes it to the SHA mirror and writes the consolidated git note. Self-verify: the receipt exists, passes its schema (`schemas/receipts/<type>.schema.json`), and is reflected in the consolidated git note.
 
-If the skill runs before a commit exists, it writes to
-`.svc/receipts/staging/<tree-hash>/<type>.json` — the post-commit hook
-(`hooks/git/post-commit.d/10-receipt-promote`) promotes to SHA mirror
-and writes the consolidated git note.
-
-Self-verify: receipt at `.svc/receipts/<sha>/<type>.json` exists, passes
-its schema (`schemas/receipts/<type>.schema.json`), and is reflected in
-the consolidated git note.
-
-
-## Chain Receipt Emission (Mandatory Chain — Actionable)
+### Chain Receipt Emission (Mandatory Chain — Actionable)
 
 After producing the canonical output, emit a SHA-keyed receipt:
 

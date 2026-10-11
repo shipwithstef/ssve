@@ -67,29 +67,27 @@ chain:
   human_checkpoint: false
 ---
 
-> **Task graph contract:** Any task whose purpose is to run a review gate MUST declare `metadata.skill: "review-gate"`. Tasks with `metadata.skill == null` are exempt from AP-27 ghost-skill detection, which means a review task without this binding can be silently completed without the review protocol ever loading. This is a framework contract violation, not a style choice.
+> **Task graph contract:** Any task whose purpose is to run a review gate must declare `metadata.skill: "review-gate"`. Tasks with `metadata.skill == null` are exempt from AP-27 ghost-skill detection, which means a review task without this binding can be silently completed without the review protocol ever loading. This is a framework contract violation, not a style choice.
 
-> **Cognitive routing:** 🛡️ [REVIEW-SONNET] + Codex cross-model when available — verification against an Opus blueprint only needs Sonnet 4.6; Opus for review wastes context budget. Codex as adversarial second opinion for high-stakes gates. See `references/model-routing.md`.
+> **Cognitive routing:** 🛡️ [REVIEW] + Codex cross-model when available — verification against a PLAN-tier blueprint needs only the REVIEW tier, and a PLAN-tier model here wastes context budget. Codex is the adversarial second opinion for high-stakes gates. See `references/model-routing.md`.
 >
-> **G3 adversarial UI verification (External Canvas Handoff mode):** when the artifact under review was produced via `design-ui` External Canvas Handoff (external tool + returned code), G3 MUST include a Gemini-subagent audit against `docs/specs/ui/constraint-matrix.md` per the contract in `skills/design-ui/SKILL.md` → Step C. A "looks good" visual check is not sufficient — the matrix is the mechanical gate.
+> **G3 adversarial UI verification (External Canvas Handoff mode):** when the artifact under review was produced via `design-ui` External Canvas Handoff (external tool + returned code), G3 must include a Gemini-subagent audit against `docs/specs/ui/constraint-matrix.md` per the contract in `skills/design-ui/SKILL.md` → Step C. A "looks good" visual check is not sufficient — the matrix is the mechanical gate.
 
 # Review Protocol
 
 ## Overview
 
-Every artifact state transition in the Serious Vibe Coding pipeline is gated by a review. This skill formalizes the 5-step review protocol designed around the specific failure modes of LLM agents: they miss their own errors, they agree too easily, and they rationalize incorrect output.
-
-The protocol forces adversarial reasoning — an agent must argue with itself, then a fresh agent independently validates. No artifact advances without surviving this process.
+Every artifact state transition in the pipeline is gated by a review. This skill formalizes the 5-step review protocol: an agent argues with its own findings, then a fresh agent independently validates. No artifact advances without surviving this process.
 
 **Announce at start:** "I'm using the review-gate skill to run gate [G1-G7] review on [artifact name]."
 
-## Product Questions — MANDATORY format
+## Product Questions — required format
 
 At G1, apply the shared promotion predicate to actual AC/state evidence and consequential decision resolutions; review other gates for newly surfaced decisions. Follow `_shared/product-question-format.md` with `phase: review-gate`. Reuse accepted decisions and task authorization; ask only unresolved consequential owner choices. Record real decisions in the existing companion or canonical decision artifact. No empty companion or numeric question floor is required. Unresolved consequential decisions block dependent work.
 
 ## Why This Protocol Exists
 
-LLMs have three review failure modes that prompt engineering cannot eliminate:
+It targets three review failure modes that prompting alone cannot eliminate:
 
 1. **Self-blindness.** An agent that wrote an artifact cannot reliably find its own errors — the same pattern matching that produced the error considers it correct.
 2. **Agreement bias.** When shown existing findings, an agent defaults to "looks good" rather than independent evaluation.
@@ -97,10 +95,9 @@ LLMs have three review failure modes that prompt engineering cannot eliminate:
 
 The protocol compensates for each: Step 2 forces self-confrontation, Step 3 introduces a fresh perspective, and severity classification with convergence criteria prevents theater from blocking progress.
 
-
 ## When To Use
 
-Invoke this skill at every gate in the pipeline:
+Run at every pipeline gate:
 
 | Gate | After Skill | Artifact Under Review | State Transition |
 |------|-------------|----------------------|-----------------|
@@ -131,7 +128,6 @@ If the G5 review finds issues, fix them in the worktree and re-review. The featu
 | Prior review findings (if re-entering) | From previous iteration | If iteration > 1 | First iteration starts clean |
 | Upstream artifacts for context | See gate table | Recommended | Cross-check may miss consistency issues |
 
-
 ## Concern Scan Gate (G3 mandatory step)
 
 Before running the 5-step protocol at G3 (pre-merge code review), execute the concern scanner against the PR diff:
@@ -151,7 +147,6 @@ The scanner emits matched concerns at four severity tiers (CRITICAL, HIGH, MEDIU
 3. **Universal+project merge mismatch** — if a project-side concern in `<project>/.svc/concerns/` exists with the same `name` as a universal concern but the project version's severity is LOWER than the universal default, flag as MEDIUM finding ("project bypassing universal severity — verify the override is intentional").
 
 Concern findings are CUMULATIVE with the existing 5-step protocol findings. A PR cleared by the protocol but with unresolved CRITICAL concerns still fails G3.
-
 
 ## The 5-Step Protocol (full templates: `references/five-step-protocol.md`)
 
@@ -211,7 +206,6 @@ Fail the gate when evidence only proves the new code exists, only confirms the
 happy path, or cannot show that the old path and new path behave differently on
 the same failing input.
 
-
 ## Specialized mandatory gates
 
 - **External-State Lifecycle Cross-Check (G6/G7, WI-121):** G6 verifies every manifest External-State row's coupling enforcement exists in the diff; G7 re-verifies post-merge live state (installs/symlinks/settings actually changed together). Procedures: `references/specialized-gates.md`.
@@ -249,7 +243,7 @@ Before declaring done, verify:
 | 2 | Findings list produced | Structured findings list exists in review output | |
 | 3 | No blocking unresolved consequential decisions | Apply the shared promotion predicate. Inspect TBD/TODO as evidence-gap warnings: block missing required AC/state/dependency evidence or a consequential owner choice; explicitly defer harmless details without manufacturing answers | |
 | 4 | Visual evidence gate (browser-visible) | IF the feature touches browser-visible surfaces: `track-visuals` diff exists OR an explicit "no browser-visible surface" justification is logged. A review-gate PASS without visual evidence for a UI feature is a contract violation — FAIL the gate instead. | |
-| 5 | Review depth check | For changesets >5 files or >200 lines: review MUST produce ≥3 distinct findings OR an explicit "clean, no issues found" justification with evidence of thorough inspection. A 26-second review-gate on a large changeset is procedural box-checking — FAIL. | |
+| 5 | Review depth check | For changesets >5 files or >200 lines: review must produce ≥3 distinct findings OR an explicit "clean, no issues found" justification with evidence of thorough inspection. A 26-second review-gate on a large changeset is procedural box-checking — FAIL. | |
 | 6 | Cross-system proof checked | If the change crosses runtimes/origins/protocols/SDKs/storage layers, the System Contract Map and probe evidence validators passed; migration/path-swap fixes include old-path-fails / new-path-passes proof. | |
 | 7 | Existing-component mock parity proven | For MODIFY work on an existing component/screen/route, the UI artifact includes a Production-Derived Mock Parity Ledger — missing ledger → G3 FAIL. | |
 | 8 | Existing UI mock parity carried through execution | For browser-visible MODIFY work, the executed diff + screenshot evidence cover the ledger-listed paths and intended final state — missing ledger or final-only screenshot evidence → G5 FAIL. | |

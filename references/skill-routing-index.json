@@ -189,7 +189,7 @@
     {
       "skill": "audit-implementation",
       "path": "skills/audit-implementation/SKILL.md",
-      "content_hash": "73114eed29c3e1169464db9980073c65529d0da8f25d12d6e361f52d1bd53b71",
+      "content_hash": "621c83d4b153837f91133e366c25625cb62fbe21f24750ee0929297436561bd5",
       "description": "Deep pre-landing correctness audit of worktree code against specs, ACs and journeys, with evidence-graded findings; a required receipt in the chain. Use for \"audit the implementation\", \"check correctness\", \"pre-landing audit\", \"is it ready to ship\".",
       "aliases": [],
       "positive_triggers": [],
@@ -207,7 +207,7 @@
     {
       "skill": "audit-session-execution",
       "path": "skills/audit-session-execution/SKILL.md",
-      "content_hash": "a6f7c0bc111469f66ea2c9168faaecad5cdeb6ffe6cfb0e9414fab619db9b246",
+      "content_hash": "075ba73edbcc60d7dfd25d46cee24e6d9d190b10baf6eb98945c29e4c8f34c0d",
       "description": "Audits how a real session, WI or pipeline run unfolded versus what svc expected, turning logs and transcripts into framework evidence for evolve-framework. Use for \"audit this session\", \"replay this WI\", \"why did this run go wrong\", \"session post-mortem\".",
       "aliases": [],
       "positive_triggers": [],
@@ -789,7 +789,7 @@
     {
       "skill": "execute-changeset",
       "path": "skills/execute-changeset/SKILL.md",
-      "content_hash": "cdde42be4bf9d98d3d2bfcef39c075adc03feb56212257213c060990c55e52dc",
+      "content_hash": "bab8523349ed900f4f2219c97542edb62a71c91c6d7394790e52fba0301e5607",
       "description": "Use after plan-changeset has produced a manifest and task graph. Triggers on \"execute the plan\", \"implement the changeset\", \"run the tasks\", \"start building\", or when a plan-changeset manifest exists and is ready for execution.",
       "aliases": [],
       "positive_triggers": [],
@@ -1071,7 +1071,7 @@
     {
       "skill": "land-changeset",
       "path": "skills/land-changeset/SKILL.md",
-      "content_hash": "bd4265b594317e555672306b02b18f5ace1b5761f90799115dc081e5ee78a61b",
+      "content_hash": "7dec9086b245988d398bc427f89b0cd395d113626654d58623eaa3cd3ff84434",
       "description": "Land a validated change set on main: check manifest coverage and receipts, push the branch, open the PR, squash-merge, clean up the worktree. Use when execution and review have passed and the change is ready to land.",
       "aliases": [],
       "positive_triggers": [],
@@ -1302,7 +1302,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "0b73fc668230225cb2d9753f3873435ebc1535abba0227518801ef785594a74e",
+      "content_hash": "2336393e32f3bea62e9b392ac55efcd889383377db18128213d5a438cc2a3be1",
       "description": "Turn a baselined feature spec with technical design into an implementation plan for branch-first execution: task graph, file set, validation plan, checkpoints, AC-to-test mapping. Use before execute-changeset.",
       "aliases": [],
       "positive_triggers": [],
@@ -1533,7 +1533,7 @@
     {
       "skill": "review-cross-model",
       "path": "skills/review-cross-model/SKILL.md",
-      "content_hash": "d5c18eb0b1222d45a0e129ff4420aed4edaf00c5e660b71d270d13fd9b4a4b3d",
+      "content_hash": "aec05d6954c34347ae58734796650a46bfe87c6ae846b87db6faa18a53604d19",
       "description": "Adversarial review by a second model through the canonical external-review launcher: task card, decided solution, acceptance results and diff in, proof-bearing findings out, at most two rounds per feature. Use when: cross-model review, second opinion, codex review, adversarial review.",
       "aliases": [],
       "positive_triggers": [],
@@ -1551,7 +1551,7 @@
     {
       "skill": "review-exec",
       "path": "skills/review-exec/SKILL.md",
-      "content_hash": "cedfe1d0badea44fdfee0bb2dca333c0e74dcad160e180f23d7485e808749991",
+      "content_hash": "3bfce0b4343d1cbc28a747f912a07fc424896208bd8678783c424ae2d9779e5d",
       "description": "Required review gate on an executed diff before landing: self-review plus an independent different-family review via review-cross-model, recorded as a receipt. Use after execute-changeset and before land-changeset.",
       "aliases": [],
       "positive_triggers": [],
@@ -1569,7 +1569,7 @@
     {
       "skill": "review-gate",
       "path": "skills/review-gate/SKILL.md",
-      "content_hash": "18300d85b9db92874f6a9ad348b2a20680697fb9d4c16cd5a7cfa30deb4d9814",
+      "content_hash": "0666d282c86d10ada97ae9aa5ef7208c33843cf44ce6b35e858b1857e3844526",
       "description": "Run a pipeline review gate (G1-G7) on a spec, design, change set or promotion; produces structured findings that pass or block the artifact state transition. Use when a gate is due or the user says 'review gate'.",
       "aliases": [],
       "positive_triggers": [],
@@ -1587,7 +1587,7 @@
     {
       "skill": "review-plan",
       "path": "skills/review-plan/SKILL.md",
-      "content_hash": "dfec6a83fab4ad4a2742d58ec29adeb72c3346e6941d8e7cb07727107e06e788",
+      "content_hash": "d7bfbc24a4e220af629c4896336ce7d3f4fdbb453533229800300d4075370785",
       "description": "Adversarial review of a plan-changeset manifest and task graph before execution: mechanical coverage checks plus one independent external review with receipt. Blocks execute-changeset until every finding is resolved. Use when a plan is ready to promote.",
       "aliases": [],
       "positive_triggers": [],
@@ -1605,7 +1605,7 @@
     {
       "skill": "review-security",
       "path": "skills/review-security/SKILL.md",
-      "content_hash": "02091ff1b56336f158c810d630c3eb801480a2b08bb16e7b82174f0d115b8f92",
+      "content_hash": "fcea191b2f4eef75f1fffd6b18b146bf5bb962b05caa63beec85625e9e1dedd1",
       "description": "Security review of a technical design before implementation: OWASP Top 10, STRIDE, supply chain, secrets. Use for 'security review', 'check for vulnerabilities', 'threat model this design', or when design-tech touches auth, payments, PII or integrations.",
       "aliases": [
         "threat model",
@@ -1882,7 +1882,7 @@
     {
       "skill": "test-framework",
       "path": "skills/test-framework/SKILL.md",
-      "content_hash": "1bb9713d6b16c4d3cdbbcac21f48a527ef27cf30fc073080764b09f4432d692d",
+      "content_hash": "74840c7bb6fb2a8d8a36e54081c6f2f63249a305fd1e81748304d4a0137714ec",
       "description": "Test and benchmark the svc framework itself: tier-1 static evals, scenario runs, doctrine claims, token efficiency. Use for 'test the framework', 'prove it works', 'benchmark svc', 'validate the pipeline', 'check for holes'. Not for product app tests.",
       "aliases": [],
       "positive_triggers": [],
@@ -1972,7 +1972,7 @@
     {
       "skill": "verify-promotion",
       "path": "skills/verify-promotion/SKILL.md",
-      "content_hash": "ee231862ba46590278da2fc86813fcc664a04d23979ac4aca382617c4beb8bad",
+      "content_hash": "126a8595fc54e1b6517c1421c9467b57cfefe3dd7506760ccd748a5c9efbcc01",
       "description": "After a reviewed branch is promoted, verify the shipped result against specs, tests and acceptance criteria, then close the loop into spec and journey state (G7). Use for 'verify the promotion', 'did it actually ship', post-merge verification.",
       "aliases": [],
       "positive_triggers": [],

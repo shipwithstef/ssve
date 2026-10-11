@@ -105,7 +105,7 @@ Never assign Astra or max effort. Resolve the exact tuple through owner policy;
 refuse a mismatched tuple rather than silently substituting. Milestone holistic
 review is once per milestone and distinct from feature correction rounds.
 
-Gather an ENTRY POINT for the second model, with read-only repository access:
+Gather an entry point for the second model, with read-only repository access:
 
 ```markdown
 ## Review Package
@@ -138,7 +138,7 @@ rediscovery rounds.
 
 ### Step 2: Send to the Canonical Launcher
 
-**Step 2: Send to the Canonical Launcher** — `node scripts/run-external-review.mjs --orchestrator "${SVC_HOST:-claude}" --review-kind exec --input-file .svc/review-cross-model-package.md --artifacts-dir .svc/external-review-artifacts/cross-model > <summary.json>`, then require `ok`, `findings` and `receipt` in the summary and copy them to `.svc/review-cross-model-findings.json` and `.svc/review-cross-model-receipt.json`. The launcher is the sole paid invocation path: NEVER construct provider commands in this skill. Its prompt tells the second model the package is an entry point (open whole touched files, unchanged callers, config, tests and cost path; read-only; missing access is INCOMPLETE), to return ALL findings in one pass (bugs, AC violations, security, design, missing) with severity, confidence, `file:line`, proof for blockers (otherwise downgrade to advisory), and a proposal. The resolved primary invocation is the availability probe, with no paid smoke call and no generic tri-model fallback; only for the Fable profile may a classified model-unavailable, entitlement or provider-overload failure start a separate Opus xhigh run, and auth, quota, network, timeout, schema, safety and unknown failures halt the gate. Details: `references/process-detail.md`.
+Run `node scripts/run-external-review.mjs --orchestrator "${SVC_HOST:-claude}" --review-kind exec --input-file .svc/review-cross-model-package.md --artifacts-dir .svc/external-review-artifacts/cross-model > <summary.json>`, then require `ok`, `findings` and `receipt` in the summary and copy them to `.svc/review-cross-model-findings.json` and `.svc/review-cross-model-receipt.json`. The launcher is the sole paid invocation path, so this skill never constructs provider commands itself. Its prompt tells the second model the package is an entry point (open whole touched files, unchanged callers, config, tests and cost path; read-only; missing access is INCOMPLETE), to return all findings in one pass (bugs, AC violations, security, design, missing) with severity, confidence, `file:line`, proof for blockers (otherwise downgrade to advisory), and a proposal. The resolved primary invocation is the availability probe, with no paid smoke call and no generic tri-model fallback; only for the Fable profile may a classified model-unavailable, entitlement or provider-overload failure start a separate Opus xhigh run, and auth, quota, network, timeout, schema, safety and unknown failures halt the gate. Details: `references/process-detail.md`.
 
 ### Step 3: Evaluate Each Finding and Its Receipt
 
@@ -202,15 +202,13 @@ and run the round-cap guard with `--branch-once`. Each external dispatch consume
 required cross-family review. Record calls and cost separately. A declined or unnecessary
 recheck spends zero additional model calls. Owner spending limits take precedence.
 
-
-
 ### HARD 2-round cap per feature and bounded exit (RV1)
 
-**HARD 2-round cap per feature and bounded exit (RV1)** — NEVER run more than 2 adversarial rounds per feature; "loop until zero High" is unreachable and MUST NOT be used. Keep one stable feature ID (`--feature-id`) across aliases, sessions and reviewers; the launcher reserves each round and incomplete attempts count. Round 1 is a full discovery batch; round 2 only verifies fixes against the original finding IDs, with no new discovery. Converged means no unresolved Critical and every remaining High/Medium/Low has an `accept-with-justification` or `reject-with-justification` disposition. After round 2 never start a round 3: unresolved Critical escalates to the owner (never auto-accept), otherwise disposition every High now and proceed. Record `rounds_run` and a `bounded_exit` or escalation block in the review log, and the review is not complete until `node scripts/check-review-round-cap.mjs --branch-once --log <review-log>` passes. When the final reviewer object stays raw `fail` after a compliant bounded exit, hand every launcher receipt/findings digest and the finding census back to the calling skill, which emits `pass-with-acks` with `reviewer_evidence.bounded_exit` (zero Critical, at most two rounds, unchanged candidate); never normalize the raw verdict. Details: `references/process-detail.md`.
+Run at most 2 adversarial rounds per feature, because "loop until zero High" is unreachable and is not a valid exit condition. Keep one stable feature ID (`--feature-id`) across aliases, sessions and reviewers; the launcher reserves each round and incomplete attempts count. Round 1 is a full discovery batch; round 2 only verifies fixes against the original finding IDs, with no new discovery. Converged means no unresolved Critical and every remaining High/Medium/Low has an `accept-with-justification` or `reject-with-justification` disposition. After round 2 never start a round 3: unresolved Critical escalates to the owner (never auto-accept), otherwise disposition every High now and proceed. Record `rounds_run` and a `bounded_exit` or escalation block in the review log, and the review is not complete until `node scripts/check-review-round-cap.mjs --branch-once --log <review-log>` passes. When the final reviewer object stays raw `fail` after a compliant bounded exit, hand every launcher receipt/findings digest and the finding census back to the calling skill, which emits `pass-with-acks` with `reviewer_evidence.bounded_exit` (zero Critical, at most two rounds, unchanged candidate); never normalize the raw verdict. Details: `references/process-detail.md`.
 
 ## Single-Vendor Windows (§4g)
 
-**Single-Vendor Windows (§4g)** — When only one vendor family is reachable, repeating same-family review passes buys almost nothing, so compensate with mechanism instead: every claim that would go to cross-family review must get a mechanical or grep-derived check, a contract re-derivation from source, a negative test, or be recorded as UNVERIFIED with the reason; never silently downgrade it to a same-family pass marked reviewed. Record `review_family: cross | same` per round in the Step 5 Summary block; the accumulated `same` receipts are the queue to drain when an opposite-family vendor returns, and the window ends when that queue is drained. Details: `references/single-vendor-windows.md`.
+When only one vendor family is reachable, repeating same-family review passes buys almost nothing, so compensate with mechanism instead: every claim that would go to cross-family review must get a mechanical or grep-derived check, a contract re-derivation from source, a negative test, or be recorded as UNVERIFIED with the reason; never silently downgrade it to a same-family pass marked reviewed. Record `review_family: cross | same` per round in the Step 5 Summary block; the accumulated `same` receipts are the queue to drain when an opposite-family vendor returns, and the window ends when that queue is drained. Details: `references/single-vendor-windows.md`.
 
 ### Step 5: Document the Review
 
@@ -278,31 +276,11 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 ## Pipeline Continuation
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume (also across sessions and subagents). Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose.
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; in Codex, mirror only the active step in `update_plan`) happens only in the parent/top-level session: the host exposes TaskList and there is no `SVC_SUBAGENT=1` marker in env. Otherwise skip mirroring — file state is the durable record and the parent re-mirrors after the subagent returns. Subagents do not attempt TaskUpdate calls, because a failed attempt is silent drift between the subagent's intent and the host UI.
+
+Mark this skill's task `completed` in `lane-tasks.json` before leaving, then update the host mirror and evaluate the next task: runnable → mark `in_progress`, persist, and load that skill before doing work; skippable → mark `completed` with a skip reason and evaluate the one after. Per `route-workflow` Task-Graph Execution Protocol.
 
 ### Self-Verify
 
@@ -316,15 +294,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+In task-graph mode, follow §Task-graph mode above, then:
 
 This skill is standalone — invoke it when you want a second opinion.
 It does not auto-chain in progressive mode (optional, not mandatory).
@@ -332,35 +302,13 @@ Suggest: "Cross-model review complete. Proceed to `audit-implementation` or `lan
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+`.svc/lane-tasks-<WI>.json` is the sole source of truth: take the first `in_progress` (else first unblocked `pending`) task, run `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and resume. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` disagrees on `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>`.
 
 ## Chain Receipt Emission (Mandatory Chain)
 
-This skill emits receipt type `review-plan|review-exec (per --mode flag)` per the contract in
-`references/chain-receipt-contract.md`. The receipt is stored as a git
-note on `refs/notes/svc-receipts` (authoritative) and mirrored under
-`.svc/receipts/<sha>/<type>.json` (gitignored cache).
+This skill emits receipt type `review-plan|review-exec (per --mode flag)` per `references/chain-receipt-contract.md`. The receipt is stored as a git note on `refs/notes/svc-receipts` (authoritative) and mirrored under `.svc/receipts/<sha>/<type>.json` (gitignored cache). Before a commit exists it writes to `.svc/receipts/staging/<tree-hash>/<type>.json`; the post-commit hook (`hooks/git/post-commit.d/10-receipt-promote`) promotes it to the SHA mirror and writes the consolidated git note.
 
-If the skill runs before a commit exists, it writes to
-`.svc/receipts/staging/<tree-hash>/<type>.json` — the post-commit hook
-(`hooks/git/post-commit.d/10-receipt-promote`) promotes to SHA mirror
-and writes the consolidated git note.
-
-Self-verify: receipt at `.svc/receipts/<sha>/<type>.json` exists, passes
-its schema (`schemas/receipts/<type>.schema.json`), and is reflected in
-the consolidated git note.
-
-
-## Chain Receipt Emission (Mandatory Chain — Actionable)
+### Chain Receipt Emission (Mandatory Chain — Actionable)
 
 After producing the canonical output, emit a SHA-keyed receipt:
 
@@ -377,10 +325,7 @@ JSON
 This writes to `.svc/receipts/<sha>/review-plan.json` (or staging if pre-commit)
 AND attaches it to the consolidated git note on `refs/notes/svc-receipts`.
 
-Self-verify: `node scripts/check-chain-receipts.mjs --sha HEAD` shows this
-receipt type as present + schema-valid.
-
-Reference: `references/chain-receipt-contract.md`.
+Self-verify: the receipt at `.svc/receipts/<sha>/<type>.json` passes its schema (`schemas/receipts/<type>.schema.json`), is reflected in the consolidated git note, and `node scripts/check-chain-receipts.mjs --sha HEAD` shows it present + schema-valid.
 
 ## Automatic report recovery
 The canonical launcher permits at most one same-model report-repair attempt inside the original timeout. Claude repair requires trustworthy observed spend and uses the remaining enforced dollar ceiling. Other transports report no enforced dollar ceiling; if an explicit dollar cap was requested, they cannot retry automatically. Without such a cap, the bound is one correction and the remaining timeout, not a claimed dollar limit. It preserves both raw attempts and signs only the final validated report. Incomplete/malformed reports require normal validation after repair; parsed negative findings, failed certifications, rubric failures or unread dependencies prevent automatic completion. Certification-scope repair may only remove unbound false entries; verdict, findings, dependencies, summary and every bound certification remain identical. An actual proven negative source observation must remain and block. Preserve raw provider output; canonical output may only record the required proof-or-advisory downgrade. Authorization, provider safety, model mismatch, missing proof and substantive defects are not recovery bypasses.

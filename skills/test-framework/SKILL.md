@@ -92,9 +92,9 @@ Clean up all worktrees when the scenario completes. Never leave orphaned worktre
 
 **The Loop** — Autopilot repeats a 13-step loop per scenario: pick a scenario, open a worktree from main, run all pipeline skills in order, start the server (up to 3 fix attempts), test live (`sync-spec-code`, `test-journeys`, `write-e2e` against localhost), build the obra and raw comparison worktrees, measure the three-way delta (ACs, edge cases, tokens, coverage, time to running server), find skill gaps, fix them in SKILL.md (max 3 attempts per gap, then flag for a human), commit, suggest the next scenario and close all worktrees. Repeat until completion criteria are met or the token budget is exhausted. Details: `references/autopilot-mode.md`.
 
-**What "Full Running App" Means** — The output of a run is a running app, not a spec: `plan-changeset` MUST produce all 8 parts (types, data model, unit tests, services, API routes, components if UI, e2e tests, config) and `land-changeset` writes them into the worktree. Then run `npm install`, start the server and poll the health endpoint; if it does not start, read the error, re-run `plan-changeset` for the failing part only, and retry up to 3 times before logging the failure with full error output. Details: `references/autopilot-mode.md`.
+**What "Full Running App" Means** — The output of a run is a running app, not a spec: `plan-changeset` must produce all 8 parts (types, data model, unit tests, services, API routes, components if UI, e2e tests, config) and `land-changeset` writes them into the worktree. Then run `npm install`, start the server and poll the health endpoint; if it does not start, read the error, re-run `plan-changeset` for the failing part only, and retry up to 3 times before logging the failure with full error output. Details: `references/autopilot-mode.md`.
 
-**Multi-Approach Comparison** — Comparison mode MUST run each approach (svc, gstack, obra/superpowers, raw) as a separate FOREGROUND conversation where the operator plays the user, and every skill MUST be invoked through the Skill tool, never approximated inline; background agents skip interactive skills and make the result UNFAIR. Before any approach runs, write a Phase 0 expectations checklist derived only from the user's sentence to `test-framework/results/{date}/phase-0-expectations.md`. If three sequential foreground sessions are impossible, record the comparison as PARTIAL. Afterwards measure each approach, write `methodology-usage-audit.md` with a FAIR / PARTIALLY FAIR / UNFAIR verdict, and report in `comparison.json` and `comparison.md`. Details: `references/autopilot-mode.md`.
+**Multi-Approach Comparison** — Comparison mode runs each approach (svc, gstack, obra/superpowers, raw) as a separate FOREGROUND conversation where the operator plays the user, and invokes every skill through the Skill tool rather than approximating it inline, because background agents skip interactive skills and make the result UNFAIR. Before any approach runs, write a Phase 0 expectations checklist derived only from the user's sentence to `test-framework/results/{date}/phase-0-expectations.md`. If three sequential foreground sessions are impossible, record the comparison as PARTIAL. Afterwards measure each approach, write `methodology-usage-audit.md` with a FAIR / PARTIALLY FAIR / UNFAIR verdict, and report in `comparison.json` and `comparison.md`. Details: `references/autopilot-mode.md`.
 
 ### Self-Improvement Protocol
 
@@ -297,14 +297,14 @@ Add a scenario test when:
 
 ## Anti-Patterns
 
-| Do NOT | Why | Instead |
+| Avoid | Why | Instead |
 |--------|-----|---------|
 | Call a skill "simulated" or "interface-tested" | If it cannot run, the pipeline has a bug | Fix the pipeline so the skill runs for real |
 | Produce specs without code | The point is a running application | Phase 7 must generate all 8 code parts |
 | Document gaps instead of fixing them | Documentation is not improvement | Edit the SKILL.md, re-run, verify |
 | Skip the three-way comparison | The comparison IS the value proposition | Always run svc vs obra vs raw |
 | Leave worktrees unclosed | Orphaned worktrees accumulate and confuse | Always clean up: merge, PR, or remove |
-| Hedge with "may," "could consider," "if possible" | Tests are pass/fail, not suggestions | State what MUST happen, then do it |
+| Hedge with "may," "could consider," "if possible" | Tests are pass/fail, not suggestions | State what must happen, then do it |
 | Report "STRUCTURALLY UNTESTABLE" | Everything is testable with the right infrastructure | Build the infrastructure or downgrade the claim |
 | Run only static checks and call it "tested" | Static checks prove structure, not behavior | Run live tests against running code |
 
@@ -386,43 +386,15 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 ## Pipeline Continuation
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume (also across sessions and subagents). Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose.
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; in Codex, mirror only the active step in `update_plan`) happens only in the parent/top-level session: the host exposes TaskList and there is no `SVC_SUBAGENT=1` marker in env. Otherwise skip mirroring — file state is the durable record and the parent re-mirrors after the subagent returns. Subagents do not attempt TaskUpdate calls, because a failed attempt is silent drift between the subagent's intent and the host UI.
+
+Mark this skill's task `completed` in `lane-tasks.json` before leaving, then update the host mirror and evaluate the next task: runnable → mark `in_progress`, persist, and load that skill before doing work; skippable → mark `completed` with a skip reason and evaluate the one after. Per `route-workflow` Task-Graph Execution Protocol.
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+In task-graph mode, follow §Task-graph mode above, then:
 
 **If `--progressive` flag is present:**
 - In framework lane: continue to `evolve-framework --progressive --lane framework`
@@ -440,13 +412,4 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+`.svc/lane-tasks-<WI>.json` is the sole source of truth: take the first `in_progress` (else first unblocked `pending`) task, run `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and resume. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` disagrees on `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>`.

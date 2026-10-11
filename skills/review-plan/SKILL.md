@@ -75,9 +75,9 @@ chain:
 
 ## Overview
 
-This skill is the mandatory gate between `plan-changeset` and `execute-changeset`. It reviews the complete prepared v5 contract (inline or dispatch) after Two-Box + Deterministic Transmutation, using the existing owner reviewer topology. It is not a second holistic review and not a new lane. It catches ambiguity, rename-drift, forbidden patterns, and scope creep BEFORE any executor dispatches against a broken plan. A broken plan wastes an entire execute-changeset cycle — this gate costs ~$0.05 to prevent. Advise a similar-capability high-effort reviewer via existing config; dated recipes are nonauthoritative.
+This skill is the mandatory gate between `plan-changeset` and `execute-changeset`. It reviews the complete prepared v5 contract (inline or dispatch) after Two-Box + Deterministic Transmutation, using the existing owner reviewer topology. It is not a second holistic review and not a new lane. It catches ambiguity, rename-drift, forbidden patterns, and scope creep before any executor dispatches against a broken plan, because a broken plan wastes an entire execute-changeset cycle and this gate costs ~$0.05. Advise a similar-capability high-effort reviewer via existing config; dated recipes are nonauthoritative.
 
-The protocol is enforced by the canonical `references/plan-review-protocol.md`. Read that file if you need the full finding format, accept/reject shape, or iteration rules.
+The canonical protocol is `references/plan-review-protocol.md` (finding format, accept/reject shape, iteration rules).
 
 **Announce at start:** "I'm using review-plan to gate the plan before MiMo execution."
 
@@ -87,13 +87,13 @@ The protocol is enforced by the canonical `references/plan-review-protocol.md`. 
 - `task-graph` (optional): `.svc/lane-tasks-<WI>.json` or inline JSON in the manifest
 - `originating-spec` (optional): `docs/specs/features/<name>.md`
 
-Reviewers must NOT read files outside what the plan lists. If a review requires unlisted context, the reviewer declares it in `dependencies_needing_read` and halts — the orchestrator decides whether to re-plan with that dependency explicit.
+Reviewers read only the files the plan lists, so the review judges exactly what execution will use. If a review requires unlisted context, the reviewer declares it in `dependencies_needing_read` and halts — the orchestrator decides whether to re-plan with that dependency explicit.
 
 ## Process
 
 ### Step 1 — Tier 1: Mechanical (scripts only, no model)
 
-Run the deterministic check script in the current session:
+Run in the current session:
 
 ```bash
 bash scripts/verify-plan-mechanical.sh docs/plans/<date>-<name>/manifest.md
@@ -105,11 +105,11 @@ When the plan changes money, entitlement, quota, inventory, identity, notificati
 - Exit 1 → orchestrator fixes trivially (path typos, missing npm scripts, syntax errors, forbidden patterns). Re-run Tier 1 before any model is invoked.
 - Exit 2 → input error; halt and report
 
-Tier 1 is free. Always runs first.
+Tier 1 is free and always runs first.
 
 ### Step 1.5 — External-state coupling check (mechanical, generic)
 
-Per `references/external-state-lifecycle-protocol.md` and AP-30 in `references/anti-patterns.md`, every plan-changeset manifest must contain a populated `## External State` section. Apply the following mechanical checks:
+Per `references/external-state-lifecycle-protocol.md` and AP-30 in `references/anti-patterns.md`, every plan-changeset manifest must contain a populated `## External State` section. Mechanical checks:
 
 1. **Section exists.** `grep -q '^## External State' <manifest>` — missing section is `external-state-uncoupled` HIGH severity, BLOCK.
 2. **Section is populated.** Section contains either a non-empty table OR an explicit `Untouched environments (walked the taxonomy, found nothing): <list>` line covering at least the 15 taxonomy entries (or naming the ones checked). An empty section is `external-state-uncoupled` HIGH severity, BLOCK.
@@ -135,7 +135,7 @@ Per `references/external-state-lifecycle-protocol.md` and AP-30 in `references/a
 
 Step 1.5 is mechanical first. Only after the mechanical pass does Tier 2 (the model reviewer) inspect the section for *quality* — whether the declared coupling actually catches the failure modes the planner claims to mitigate.
 
-If Step 1.5 fails: orchestrator fixes the section, re-runs Tier 1 + Tier 1.5 BEFORE invoking Tier 2 (saves model tokens on a plan that's not yet adversarially reviewable).
+If Step 1.5 fails: orchestrator fixes the section and re-runs Tier 1 + Tier 1.5 before invoking Tier 2, so model tokens are not spent on a plan that is not yet adversarially reviewable.
 
 ### Step 1.75 — Deterministic coverage + one gap pass (§4)
 
@@ -172,9 +172,7 @@ The review evaluates a **3-Way Triangulation**:
 2. **Axis 2 (Planner Manifest Scope):** Did the planner faithfully bind all contract decisions and ACs without dropping or diluting requirements in `manifest.v5.md`?
 3. **Axis 3 (Target Reality Scope):** Are paths, configuration files, storage keys, schema migrations, and deployment targets grounded in actual repository files and platform constraints?
 
-**CRITICAL EXECUTION RULE (Zero Token Burning):**
-Review stations MUST execute in non-interactive print/audit mode (`-p --output-format text` in Cursor, `--headless` in Grok, `claude -p`).
-**NEVER** run review stations with `--mode plan`, `--plan`, or planning subagents. Running a reviewer in plan mode causes severe reasoning token burning on recursive plan generation instead of producing an audit report.
+**Execution rule (Zero Token Burning):** run review stations in non-interactive print/audit mode (`-p --output-format text` in Cursor, `--headless` in Grok, `claude -p`). Do not run them with `--mode plan`, `--plan`, or planning subagents, because plan mode burns reasoning tokens on recursive plan generation instead of producing an audit report.
 
 ```bash
 SVC_HOST="${SVC_HOST:-claude}" \
@@ -198,11 +196,11 @@ Parse the review report via `scripts/lib/plan-reconciliation.mjs`:
 - `rubric_score: 10` AND `findings: []` (or `verdict: PASS`) → PROMOTE the plan. Copy review to `docs/plans/<date>-<name>/review-log.yaml`. Skill completes.
 - Else (`verdict: REVISE` or `PASS WITH FINDINGS`):
   1. Orchestrator extracts the findings table and constructs the reconciliation directive via `formatReconciliationPrompt()`.
-  2. The **Planner** receives the findings table and reconciles them. **MANDATORY:** The planner reuses its existing session/context (using flags from `reconciliationSessionFlags()` e.g. `grok --continue` or `cursor-agent -p --continue`) to prevent expensive full-repository rereads.
+  2. The **Planner** receives the findings table and reconciles them. The planner reuses its existing session/context (required) (using flags from `reconciliationSessionFlags()` e.g. `grok --continue` or `cursor-agent -p --continue`) to prevent expensive full-repository rereads.
   3. The planner categorizes each finding:
      - `ACCEPT`: applies the patch directly to `manifest.v5.md`.
      - `JUSTIFY_REFUTE`: provides concrete code/contract counter-evidence.
-  4. **Dispute Boundary (Max 1 Round):** If findings are disputed, the auditor receives a single follow-up turn (`formatAuditorDisputeRecheckPrompt()`) to concede or confirm. If disagreement persists after 1 round, the framework halts and escalates to the owner/human checkpoint (`evaluateDisputeStatus()`). Infinite loops are strictly prohibited.
+  4. **Dispute Boundary (Max 1 Round):** If findings are disputed, the auditor receives a single follow-up turn (`formatAuditorDisputeRecheckPrompt()`) to concede or confirm. If disagreement persists after 1 round, the framework halts and escalates to the owner/human checkpoint (`evaluateDisputeStatus()`); there is no further dispute loop.
 
 ### Step 4 — Apply responses and invalidate exact lenses
 
@@ -246,7 +244,6 @@ record `discovery_batches: 1` and `unlinked_followup_findings: 0` in the review 
 and run the round-cap guard with `--branch-once`. Count a parallel panel as one
 batch; record each reviewer's calls and cost separately. A declined or unnecessary
 recheck spends zero additional model calls. Owner spending limits take precedence.
-
 
 If accepted fixes change a reviewed semantic lens, send only that invalidated
 lens, prior finding and correction evidence back through the same review stage.
@@ -295,7 +292,7 @@ review_log:
 **HARD 2-round cap (WI-491; `scripts/check-review-round-cap.mjs` CAP) — mechanically enforced, fail-closed.** An
 adversarial reviewer never runs out of High findings on a complex plan, so "loop
 until zero High" is unreachable. Run at most **2** rounds. After round 2,
-terminate by DISPOSITION: an unresolved Critical is NEVER dispositioned — it gets
+terminate by DISPOSITION: an unresolved Critical is never dispositioned — it gets
 an exact `terminal_state: ESCALATED_TO_USER` and BLOCKS (the plan does not
 promote until the owner rules); every remaining High is enumerated in
 `bounded_exit`. Before writing `terminal_state`, prove the loop stayed bounded:
@@ -374,14 +371,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 Follow the canonical task-graph chaining contract: see `references/task-graph-chaining-protocol.md`.
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. Treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, not explanatory prose. Host mirrors (Claude `TaskList`/`TaskUpdate`; Kimi observation only; Codex: mirror only the active step in `update_plan`) follow the file. Mark this task `completed` before leaving, then evaluate the next task: runnable → `in_progress`, persist, load that skill; skippable → `completed` with a skip reason. Per `route-workflow` Task-Graph Execution Protocol.
 
 **Default chain:** `plan-changeset` (Two-Box + complete v5 prepare) → `review-plan` → (if PASS, issuer persists a separate verified seal) → `execute-changeset`. review-plan remains the one existing holistic gate, not a new lane and not a duplicate review — the task graph position is inside plan-changeset's self-verify, not as a separate task unless the user explicitly promotes it.
 
@@ -409,22 +399,13 @@ Before declaring the review complete:
 | 1 | Tier 1 mechanical ran | `verify-plan-mechanical.sh` exit 0 | |
 | 2 | Findings are structured | Every finding has claim + analysis + evidence + proposed_fix | |
 | 3 | Review log persisted | `docs/plans/<date>-<name>/review-log.yaml` exists with terminal_state | |
-| 4 | Skip justified (if skipped) | If skipped: lane-tasks skip_reason cites either (a) "trivial changeset (≤2 files, ≤50 lines)" or (b) "post-plan review exists at <path>". NEVER skip on >2 files / >50 lines without a prior review-log. | |
+| 4 | Skip justified (if skipped) | If skipped: lane-tasks skip_reason cites either (a) "trivial changeset (≤2 files, ≤50 lines)" or (b) "post-plan review exists at <path>". Do not skip on >2 files / >50 lines without a prior review-log. | |
 
 If any check FAILs, fix before continuing.
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+`.svc/lane-tasks-<WI>.json` is the sole source of truth: take the first `in_progress` (else first unblocked `pending`) task, run `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and resume. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` disagrees on `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>`.
 
 ## Skill Outcome Contract
 
@@ -433,22 +414,9 @@ When this skill discovers new delivery-graph signals, emit `skill_outcome` per
 
 ## Chain Receipt Emission (Mandatory Chain)
 
-This skill emits receipt type `review-plan` per the contract in
-`references/chain-receipt-contract.md`. The receipt is stored as a git
-note on `refs/notes/svc-receipts` (authoritative) and mirrored under
-`.svc/receipts/<sha>/<type>.json` (gitignored cache).
+This skill emits receipt type `review-plan` per `references/chain-receipt-contract.md`. The receipt is stored as a git note on `refs/notes/svc-receipts` (authoritative) and mirrored under `.svc/receipts/<sha>/<type>.json` (gitignored cache). Before a commit exists it writes to `.svc/receipts/staging/<tree-hash>/<type>.json`; the post-commit hook (`hooks/git/post-commit.d/10-receipt-promote`) promotes it to the SHA mirror and writes the consolidated git note.
 
-If the skill runs before a commit exists, it writes to
-`.svc/receipts/staging/<tree-hash>/<type>.json` — the post-commit hook
-(`hooks/git/post-commit.d/10-receipt-promote`) promotes to SHA mirror
-and writes the consolidated git note.
-
-Self-verify: receipt at `.svc/receipts/<sha>/<type>.json` exists, passes
-its schema (`schemas/receipts/<type>.schema.json`), and is reflected in
-the consolidated git note.
-
-
-## Chain Receipt Emission (Mandatory Chain — Actionable)
+### Chain Receipt Emission (Mandatory Chain — Actionable)
 
 After producing the canonical output, emit a SHA-keyed receipt:
 
@@ -478,10 +446,7 @@ evidence fails emission; callers cannot select a legacy version to bypass it.
 This writes to `.svc/receipts/<sha>/review-plan.json` (or staging if pre-commit)
 AND attaches it to the consolidated git note on `refs/notes/svc-receipts`.
 
-Self-verify: `node scripts/check-chain-receipts.mjs --sha HEAD` shows this
-receipt type as present + schema-valid.
-
-Reference: `references/chain-receipt-contract.md`.
+Self-verify: the receipt at `.svc/receipts/<sha>/<type>.json` passes its schema (`schemas/receipts/<type>.schema.json`), is reflected in the consolidated git note, and `node scripts/check-chain-receipts.mjs --sha HEAD` shows it present + schema-valid.
 
 ### Input preflight and certification closeout
 

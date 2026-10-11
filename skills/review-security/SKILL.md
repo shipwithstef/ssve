@@ -93,8 +93,7 @@ Blended from gstack /cso patterns. Adapted for svc's spec-first pipeline.
 
 ## Confidence Gate
 
-Every finding MUST include a confidence score from 1 to 10. The gate filters
-noise before it reaches the report.
+Every finding must include a confidence score from 1 to 10, because the gate uses it to filter noise before it reaches the report.
 
 | Score | Meaning | Action |
 |-------|---------|--------|
@@ -102,7 +101,7 @@ noise before it reaches the report.
 | 7-8 | High-confidence pattern match against known vulnerability class | Show normally |
 | 5-6 | Moderate; could be a false positive | Show with explicit caveat |
 | 3-4 | Low confidence; pattern present but context unclear | Suppress from main report; appendix only |
-| 1-2 | Speculation or theoretical-only | Only report if severity would be CRITICAL |
+| 1-2 | Speculation or theoretical-only | Only report if severity would be Critical |
 
 **Default mode:** 8/10 gate (zero noise). Only findings scored 8+ appear in the
 main report. This is the right default for most reviews.
@@ -131,7 +130,7 @@ independent scrutiny.
 - **Think like an attacker, report like a defender** — show the exploit path,
   then the fix.
 - **Zero noise > zero misses** — 3 real findings beats 3 real + 12 theoretical.
-- **Every finding MUST include a concrete exploit scenario** — step-by-step
+- **Every finding must include a concrete exploit scenario** — step-by-step
   attack path, not "an attacker could potentially..."
 - **Read-only** — never modify code. Produce findings and recommendations only.
 - **Credential storage** — the canonical svc pattern is per-project
@@ -154,7 +153,7 @@ node <SKILLS_PATH>/scripts/scan-concerns.mjs --staged --json
 # or --diff for HEAD working tree, or --paths <files> for an explicit set
 ```
 
-For each matched concern (especially `domain: security` and CRITICAL/HIGH
+For each matched concern (especially `domain: security` and Critical/High
 severity), open its `source_file` checklist and run its items in addition to the
 OWASP/STRIDE steps below. A finding for any unmet checklist item carries the
 concern name as evidence. This is the same helper `audit-implementation` (Phase
@@ -273,7 +272,7 @@ Check `.env.example` exists (not `.env` committed). Check `.gitignore` has secre
 
 ### False Positive Exclusions
 
-Do NOT report findings in these categories — they generate noise without
+Leave these categories out of the report — they generate noise without
 actionable signal:
 
 1. **DoS / resource exhaustion** — unless it's LLM cost amplification, which is
@@ -294,7 +293,7 @@ actionable signal:
 8. **Regex complexity** in code that does not process untrusted input. Internal
    config parsing with complex regex is not ReDoS.
 9. **Security concerns in documentation files** — EXCEPTION: `SKILL.md` files
-   are executable prompt code and MUST be reviewed for prompt injection.
+   are executable prompt code and must be reviewed for prompt injection.
 10. **Git history secrets** committed AND removed in the same PR. The secret
     never reached a long-lived branch.
 
@@ -350,21 +349,11 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P7-
 ## Pipeline Continuation
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume (also across sessions and subagents). Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose.
+
+Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; in Codex, mirror only the active step in `update_plan`) happens only in the parent/top-level session: the host exposes TaskList and there is no `SVC_SUBAGENT=1` marker in env. Otherwise skip mirroring — file state is the durable record and the parent re-mirrors after the subagent returns. Subagents do not attempt TaskUpdate calls, because a failed attempt is silent drift between the subagent's intent and the host UI.
+
+Mark this skill's task `completed` in `lane-tasks.json` before leaving, then update the host mirror and evaluate the next task: runnable → mark `in_progress`, persist, and load that skill before doing work; skippable → mark `completed` with a skip reason and evaluate the one after. Per `route-workflow` Task-Graph Execution Protocol.
 
 ### Self-Verify
 
@@ -377,31 +366,14 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P7-
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+In task-graph mode, follow §Task-graph mode above, then:
 
 Standalone skill — not in progressive chains by default. Invoke between
 `design-tech` and `plan-changeset` for security-sensitive features.
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+`.svc/lane-tasks-<WI>.json` is the sole source of truth: take the first `in_progress` (else first unblocked `pending`) task, run `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and resume. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` disagrees on `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>`.
 
 ## Blocking Discovery Halt
 
@@ -409,7 +381,6 @@ When a security finding makes the parent WI unsafe to verify, emit
 `BLOCKING_DISCOVERY` per `references/blocking-discovery-format.md`, validate the
 artifact, emit `skill_outcome` with `block_on_discovery`, and do not clear the
 parent as VERIFIED until the follow-up WI is resolved and verification reruns.
-
 
 ## Modes (added by WI-SPINE-003)
 

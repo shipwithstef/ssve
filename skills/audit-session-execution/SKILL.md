@@ -75,10 +75,7 @@ chain:
 
 # Audit Session Execution
 
-You are turning a real run into framework evidence. This skill is not for
-generic code review and not for implementation correctness alone. Its job is
-to reconstruct what happened, compare it to what the framework expected, and
-separate three things cleanly:
+Turn a real run into framework evidence: reconstruct what happened, compare it to what the framework expected, and separate three things cleanly:
 
 1. project-specific mistakes
 2. agent execution mistakes
@@ -98,7 +95,7 @@ Use this skill when the source of truth is a real session:
 - a suspected token/context failure mode that needs evidence, not vibes
 - **no explicit target provided** → the skill auto-resolves the current session (see "No-Argument Default" below)
 
-Do NOT use this skill when:
+Use a different skill when:
 
 - you only need to check whether code is correct against a spec → use `audit-implementation`
 - you only need to review a diff or artifact gate → use `review-gate`
@@ -146,7 +143,7 @@ artifacts already exist.
 5. `.svc/lane-tasks-<WI>.json`
 6. `.svc/pipeline-decisions.jsonl`
 7. Runtime proof artifacts referenced by the WI (E2E specs, review notes, verify-promotion evidence)
-8. Host-side session trace discovery (MANDATORY before declaring transcript unavailable)
+8. Host-side session trace discovery (required before declaring transcript unavailable)
 9. Transcript / conversation log if available
 10. `FRAMEWORK-STATE.md` only after the run has been reconstructed
 
@@ -172,10 +169,10 @@ is ambiguous even after resolution, narrow it before reading more files.
 
 Before judging the agent's execution, identify the constraints of its environment:
 - **Harness:** Identify the host (Claude Code, Sweep, Antigravity, Aider, CLI MCP, etc.)
-- **Model Classification:** Identify the model used (Claude 3.5 Sonnet, Haiku, Opus, Gemini 1.5 Pro, etc.)
+- **Model Classification:** Identify the model family and tier used
 - **Capability Rules:** Read `references/model-routing.md` and `references/benchmark-findings.md`.
 
-**Research Fallback:** If the harness, model type, or specifically applied workflow technique is undocumented in the framework artifacts, you MUST pause and invoke the `research` skill to systematically analyze external web benchmarks and techniques BEFORE passing judgment. Ignorance of a new capability is not an excuse for poor auditing.
+**Research Fallback:** If the harness, model type, or applied workflow technique is undocumented in the framework artifacts, pause and invoke the `research` skill to analyze external benchmarks and techniques before passing judgment, because judging a capability you have not looked up produces a wrong audit.
 
 Determine if the model had the required reasoning tier for the requested task. For example, trusting Haiku with an architectural refactor (`explore-solutions`) is a routing failure, not an execution failure. Mapping the model tier prevents placing the blame for inherent model limitations on "agent execution".
 
@@ -215,6 +212,7 @@ For each step, write:
 
 - what happened
 - what evidence proves it
+- whether it matched the expected contract
 
 ### 3.5. Mid-Task Correction Overreaction Check
 
@@ -224,7 +222,6 @@ to the artifacts created after its timestamp. A `method-correction` with
 spec, new lane, new WI, or broad plan. Flag **artifact-count overreaction** when
 the actual artifacts are materially larger than the recorded
 `applied_method_swap`, and cite the hint entry plus the file list.
-- whether it matched the expected contract
 
 ### 4. Run the multi-lens audit
 
@@ -285,7 +282,7 @@ If no match is found, say so explicitly in the report:
 
 Do not write "unavailable" unless the host-trace search was attempted first.
 
-**Steps 5 and 5.5: Deep Analysis and Forensic Sweep** — Step 5: tag every token claim `EXACT` (provider or tool exposed counts), `ESTIMATED` (inferred from artifact size, rereads, retries) or `UNKNOWN`; NEVER fabricate exact counts, and still analyze the dimensions when only estimated. Hunt for waste and context degradation per `context-budget.md`: over-reading and subagent bleed, blanket repo scans (AP-4), unwrapped untrusted content (AP-25), whole-file rewrites, idle MCP bloat, cyclic failures, silent context loss (omitted spec requirements, skipped lane steps, spec drift), unnecessary broad research, positional attention decay, and L1 to L4 load-order violations; then list missing skills/MCPs, knowledge rules, workflow phases and friction points. Step 5.5 sweep: AP-27 Ghost Skill (task said `Invoke: /skill` but the skill was never loaded) is an instant Contract FAIL; AP-26 Skill Substitution (a narrower shortcut replacing an invoked skill without surfacing the trade-off) is a Verification FAIL; AP-28 Premature User Handoff (asking the user to verify manually at the first hurdle without exhausting the V0 to V2 ladder, unless purely aesthetic or platform-blocked) is a Verification FAIL. Each failure MUST be flagged and come with a concrete enforcement constraint. Details: `references/steps-5-deep-analysis.md`.
+**Steps 5 and 5.5: Deep Analysis and Forensic Sweep** — Step 5: tag every token claim `EXACT` (provider or tool exposed counts), `ESTIMATED` (inferred from artifact size, rereads, retries) or `UNKNOWN`; never fabricate exact counts, and still analyze the dimensions when only estimated. Hunt for waste and context degradation per `context-budget.md`: over-reading and subagent bleed, blanket repo scans (AP-4), unwrapped untrusted content (AP-25), whole-file rewrites, idle MCP bloat, cyclic failures, silent context loss (omitted spec requirements, skipped lane steps, spec drift), unnecessary broad research, positional attention decay, and L1 to L4 load-order violations; then list missing skills/MCPs, knowledge rules, workflow phases and friction points. Step 5.5 sweep: AP-27 Ghost Skill (task said `Invoke: /skill` but the skill was never loaded) is an instant Contract FAIL; AP-26 Skill Substitution (a narrower shortcut replacing an invoked skill without surfacing the trade-off) is a Verification FAIL; AP-28 Premature User Handoff (asking the user to verify manually at the first hurdle without exhausting the V0 to V2 ladder, unless purely aesthetic or platform-blocked) is a Verification FAIL. Flag each failure with a concrete enforcement constraint. Details: `references/steps-5-deep-analysis.md`.
 
 ### 6. Separate fault domains
 
@@ -295,7 +292,7 @@ Every issue must land in exactly one bucket first:
 - **agent-specific** — skill existed, contract was clear, agent ignored it
 - **framework-specific** — contract missing, ambiguous, contradictory, or unenforced
 
-**CRITICAL SVC PHILOSOPHY:** "Agent ignored it" is not a terminal answer. If an agent-specific failure occurred, it means the framework failed to mechanically enforce the contract. Every agent-specific failure MUST immediately generate a related framework-specific gap requesting concrete mechanical enforcement (a tool hook, a check in a validator script, a required self-verify step). "The agent needs to be more disciplined" is an invalid recommendation. "The framework needs a hook to block completion if log is empty" is a valid one.
+**Core principle:** "Agent ignored it" is not a terminal answer. An agent-specific failure means the framework failed to mechanically enforce the contract, so every agent-specific failure also generates a related framework-specific gap requesting concrete mechanical enforcement (a tool hook, a check in a validator script, a required self-verify step). "The agent needs to be more disciplined" is an invalid recommendation. "The framework needs a hook to block completion if log is empty" is a valid one.
 
 Therefore, both framework-specific findings AND mechanical-enforcement proposals for agent-specific faults must feed `evolve-framework`.
 
@@ -376,46 +373,17 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P7-
 ## Pipeline Continuation
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume (also across sessions and subagents). Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose.
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; in Codex, mirror only the active step in `update_plan`) happens only in the parent/top-level session: the host exposes TaskList and there is no `SVC_SUBAGENT=1` marker in env. Otherwise skip mirroring — file state is the durable record and the parent re-mirrors after the subagent returns. Subagents do not attempt TaskUpdate calls, because a failed attempt is silent drift between the subagent's intent and the host UI.
+
+Update the current task status only after the report file exists and self-verify passes; mark this skill's task `completed` in `lane-tasks.json` before leaving, then update the host mirror and evaluate the next task: runnable → mark `in_progress`, persist, and load that skill before doing work; skippable → mark `completed` with a skip reason and evaluate the one after. Per `route-workflow` Task-Graph Execution Protocol. If this audit is a precursor task in framework work, the usual next step is `evolve-framework`.
 
 ### Chaining
 
 - If the report finds **framework-specific** repeatable gaps → route to `evolve-framework`
 - If the report only finds project or agent execution issues → route to the corrective skill directly
 - If the report already contains a concrete framework proposal or fix-ready file list → route to `improve-framework`
-
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, not prose
-- Update the current task status only after the report file exists and self-verify passes
-- If this audit is a precursor task in framework work, the usual next step is `evolve-framework`
 
 ## Key Principles
 
@@ -427,16 +395,7 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P7-
 
 ## Post-Compaction Recovery
 
-If Kimi CLI compacted context and you lost track of framework state:
-
-1. **Read the lane-tasks file** — `.svc/lane-tasks-<WI>.json` is the sole source of truth
-2. **Find the next task** — First `in_progress`, else first `pending` with blockers satisfied
-3. **Re-load the skill** — `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`
-4. **Re-read this SKILL.md** — Refresh context for the current step
-5. **Resume execution** — Continue from where the task left off
-6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
-
-If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+`.svc/lane-tasks-<WI>.json` is the sole source of truth: take the first `in_progress` (else first unblocked `pending`) task, run `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and resume. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` disagrees on `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>`.
 
 ## Skill Outcome Contract
 
