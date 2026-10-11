@@ -824,6 +824,44 @@ test("S security-payments: the ref-ep report, robustness findings included, scor
   assert.equal(byName(r, "report-well-formed").pass, true);
 });
 
+// Round 3: negated impacts, question marks in code, clause scope.
+test("S findings: a negated impact is not an impact", () => {
+  for (const t of ["The checkout handler does not crash on a bad body", "There is no race condition in the refund path", "A retry never double charges the customer", "The webhook won't hang on a slow upstream", "Nothing is lost: no corrupt state and no 500 on bad input", "The endpoint is not subject to denial of service"]) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  // a negator before a comma or in another clause does not cancel a later impact
+  for (const t of ["With no auth check, anyone can refund another customer's booking", "No rate limit exists, so a flood of requests can crash the handler"]) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
+});
+
+test("S findings: a question mark in a URL, optional chaining or code is not a question", () => {
+  for (const t of ["GET /checkout?foo=bar reads the amount from the query string, so a customer can pay 1 cent", "req.body?.amountCents is trusted from the client, so anyone can pay a cent", "`price ?? body.amount` falls back to the client amount, which lets an attacker pay 1 cent", "see https://x.test/pay?id=1: any customer can read another customer's booking"]) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
+  for (const t of ["Can the client set the price?", "Does it crash? Who knows.", "What if the body is not JSON?"]) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  assert.equal(S.affirmativeProblem("What if the body is not JSON? The handler throws an unhandled exception and crashes."), null);
+});
+
+test("S findings: soft denials are judged per clause", () => {
+  for (const t of [
+    "The signature is validated but not checked against the correct key, so anyone can forge an event",
+    "The amount is properly validated; however the refund path lets any customer refund another customer's booking",
+    "Price is already mitigated for cards although the wallet path lets an attacker pay 1 cent",
+  ]) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
+  for (const t of ["The signature is validated but that is all fine", "Amounts are properly validated; however nothing else to report"]) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+});
+
+test("S security-payments: a report made only of negated robustness lines scores no more than the stub", async () => {
+  const spec = S.loadSpec("security-payments", "S");
+  const stub = await S.grade(prepare("security-payments"), "security-payments", spec);
+  assert.equal(stub.score, 0.25);
+  const d = prepare("security-payments");
+  fs.writeFileSync(path.join(d, "SECURITY.json"), JSON.stringify([
+    { file: "src/checkout.mjs", line: 7, severity: "CRITICAL", issue: "The client price handling does not crash and the amount cannot be abused to pay less" },
+    { file: "src/checkout.mjs", line: 14, severity: "HIGH", issue: "Refund ownership: no race condition, never double charges or double refunds" },
+    { file: "src/webhook.mjs", line: 12, severity: "CRITICAL", issue: "Unsigned webhook events won't hang or crash the handler and are not a 500" },
+    { file: "src/webhook.mjs", line: 16, severity: "HIGH", issue: "Signing secret handling: nothing is lost, no corrupt state, never stuck" },
+  ]));
+  const r = await S.grade(d, "security-payments", spec);
+  assert.equal(byName(r, "report-well-formed").pass, false);
+  assert.ok(r.score <= stub.score, `denial-only ${r.score} vs stub ${stub.score}`);
+});
+
 test("S security-payments: a vague finding keeps the report valid but earns no credit", async () => {
   const spec = S.loadSpec("security-payments", "S");
   const epReport = JSON.parse(fs.readFileSync(SP_REF_EP, "utf8"));
@@ -854,8 +892,10 @@ test("S findings: soft denials reject whatever impact words they carry, and ques
     "Refunds are correctly protected against a race",
   ];
   for (const t of SOFT) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
-  const HEDGES = ["Client price: crashes?", "might possibly crash the handler", "could maybe let someone double charge", "Does the webhook hang? not sure", "perhaps an attacker can forge events"];
+  const HEDGES = ["Client price: crashes?", "might possibly crash the handler", "could maybe let someone double charge", "Does the webhook hang? not sure"];
   for (const t of HEDGES) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  // single hedges are standard phrasing in honest reports and stay accepted
+  for (const t of ["Client price handling may crash the checkout", "the price validation may allow double charges", "this could allow anyone to forge an event", "I suspect the retry allows double charges", "perhaps an attacker can forge events"]) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
   assert.equal(S.affirmativeProblem("this can be mitigated by recomputing server-side; until then an attacker pays 1 cent"), null);
   // end to end: a report saying the money defects are mitigated scores no more than the stub, on unchanged code
   const spec = S.loadSpec("security-payments", "S");

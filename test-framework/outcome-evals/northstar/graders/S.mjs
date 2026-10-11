@@ -183,14 +183,51 @@ const IMPACT = /\b(?:attackers?|attack\w*|exploit\w*|forg\w+|bypass\w*|steal\w*|
 const DENIES = "denies a defect (it says the code is safe, mitigated or not vulnerable) instead of describing an exploit";
 const NO_IMPACT = "does not state an attack or its impact";
 const HEDGED = "is a question or a hedge, not an affirmative statement";
-const HEDGE = /\?|\b(?:maybe|perhaps|possibly|probably|unsure|not sure|i (?:think|guess|suppose)|might|could maybe|no idea)\b/i;
+// Only a double hedge ("might possibly", "could maybe") or an admission of not knowing is not a
+// claim; a single hedge ("may crash", "could allow") is ordinary phrasing in an honest report.
+const HEDGE = /\b(?:might|could|may)\s+(?:possibly|maybe|perhaps)\b|\b(?:maybe|perhaps|possibly)\s+(?:might|could|may)\b|\bnot sure\b|\bunsure\b|\bno idea\b/i;
+// A "?" inside code, a URL, a query string, optional chaining or a ternary is not a question.
+const stripCode = (t) => t.replace(/`[^`]*`/g, " ").replace(/https?:\/\/\S+/gi, " ").replace(/\S\?[\w=&./%-]\S*/g, " ").replace(/\?\./g, ".").replace(/\s\?\s[^?]*?\s:\s/g, " ");
+// A finding is a question when it ends with "?", or when it asks something and no other
+// sentence of it states an impact.
+function isQuestion(text) {
+  const t = stripCode(text).trim();
+  if (!t) return false;
+  if (t.endsWith("?")) return true;
+  const sentences = t.split(/(?<=[.!?])\s+/).filter((x) => x.trim());
+  const asked = sentences.some((x) => /\?$/.test(x.trim()));
+  return asked && !sentences.some((x) => !/\?$/.test(x.trim()) && hasImpact(x));
+}
+// An impact counts only when not negated: no negator among the 2 words before it, in its own
+// clause. An impact joined to a negated one by or/and/a comma ("no race, never double charges
+// or double refunds") is negated with it.
+const NEGATOR = /^(?:not|no|never|nor|without|cannot|neither|nothing)$|n't$/i;
+const FILLER = /\b(?:subject|vulnerable|susceptible|prone|open|exposed)\s+to\b/gi;
+function hasImpact(text) {
+  const t = text.replace(FILLER, " ");
+  let prev = null;
+  for (const m of t.matchAll(new RegExp(IMPACT.source, "gi"))) {
+    const clause = t.slice(0, m.index).split(/[;:.!?\n]/).pop();
+    const own = clause.split(",").pop();
+    const before = own.split(/\s+/).filter((w) => w && !/^(?:or|nor)$/i.test(w)).slice(-2);
+    let negated = before.some((w) => NEGATOR.test(w));
+    if (!negated && prev && prev.negated && /^[\s,]*(?:(?:or|and|nor)\s*)?$/i.test(t.slice(prev.end, m.index))) negated = true;
+    prev = { end: m.index + m[0].length, negated };
+    if (!negated) return true;
+  }
+  return false;
+}
+const CLAUSE_SPLIT = /\b(?:but|however|although|though|except)\b|;/i;
 export function affirmativeProblem(issue) {
   const t = String(issue || "");
   if (WHOLE_DENIAL.some((re) => re.test(t))) return DENIES;
-  // "properly mitigated" and friends deny a defect whatever impact words sit beside them
-  if (softDenial(t)) return DENIES;
-  if (HEDGE.test(t)) return HEDGED;
-  if (IMPACT.test(t)) return null;
+  // "properly mitigated" and friends deny a defect whatever impact words sit beside them, but
+  // per clause: a denying clause does not suppress an affirmative exploit clause beside it.
+  const clauses = t.split(CLAUSE_SPLIT);
+  const denying = clauses.some((c) => softDenial(c));
+  if (denying && !clauses.some((c) => !softDenial(c) && hasImpact(c))) return DENIES;
+  if (HEDGE.test(t) || isQuestion(t)) return HEDGED;
+  if (hasImpact(t)) return null;
   return NO_IMPACT;
 }
 const credible = (dir, findings, c) => findings.filter((f) => !findingProblem(dir, f, c)).map((f) => ({ ...f, file: insideBuild(dir, f.file) }));
