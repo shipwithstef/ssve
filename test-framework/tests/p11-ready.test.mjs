@@ -48,7 +48,7 @@ test("the manifest stores the effective per-arm list and flags any difference ot
   assert.equal(e("solo").contract.tools, armTools(oe.taskConfig("ai-quest").tools, "solo"));
   assert.equal(assertBalanced(m, bar), true);
   const tamper = (fn) => { const x = good(); fn(x); return x; };
-  assert.throws(() => assertBalanced(tamper((x) => { x.runs.find((r) => r.arm === "solo").contract.tools += ",WebFetch"; }), bar), /more than Skill: WebFetch/);
+  assert.throws(() => assertBalanced(tamper((x) => { x.runs.find((r) => r.arm === "solo").contract.tools += ",NotebookEdit"; }), bar), /more than Skill: NotebookEdit/);
   assert.throws(() => assertBalanced(tamper((x) => { x.runs.find((r) => r.arm === "framework").contract.tools = x.runs.find((r) => r.arm === "framework").contract.tools.replace(",Task", ""); }), bar), /more than Skill: Task/);
 });
 
@@ -242,4 +242,12 @@ test("the builder session gets no --max-budget-usd (the CLI would show it to the
   const src = fs.readFileSync(SCRIPT, "utf8");
   const call = src.match(/const step = await runAgent\([^\n]*\n?/)[0];
   assert.doesNotMatch(call, /max-budget-usd/);
+});
+
+test("both arms get the web tools a real Claude Code user has (WebSearch, WebFetch), so research stages can run", () => {
+  for (const arm of ["solo", "framework"]) {
+    const tools = armTools(undefined, arm).split(",");
+    for (const t of ["WebSearch", "WebFetch"]) assert.ok(tools.includes(t), `${arm} has ${t}`);
+  }
+  assert.deepEqual(toolDiff(armTools(undefined, "solo"), armTools(undefined, "framework")), { only_a: [], only_b: ["Skill"] });
 });

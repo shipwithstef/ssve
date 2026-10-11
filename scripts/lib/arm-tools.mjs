@@ -1,10 +1,11 @@
 // Tool lists per arm, shared by outcome-eval (what a run is given) and northstar (what the
 // manifest says each arm is given), so the two cannot drift apart.
 //
-// solo and framework get the task's own tool list plus unrestricted Bash, Agent and Task, so
-// "solo is the bare model" holds: the arms differ only by what the framework installs.
+// solo and framework get the task's own tool list plus unrestricted Bash, Agent, Task and the
+// web tools a real Claude Code user has by default (WebSearch, WebFetch), so "solo is the bare
+// model" holds: the arms differ only by what the framework installs.
 // framework additionally gets Skill, which does nothing without installed skills.
-const FULL = ["Bash", "Agent", "Task"];
+const FULL = ["Bash", "Agent", "Task", "WebSearch", "WebFetch"];
 export const ARM_TOOLS = Object.freeze({
   swarm: ["Agent", "Task"],
   bounded: ["Bash(git:*)"],

@@ -378,7 +378,7 @@ test("plan refuses a manifest whose arms differ in contract or isolation", () =>
   const good = () => buildManifest({ model: "haiku", maxUsd: 35, slice: "dev", frameworkSha: "x", bar });
   assert.equal(assertBalanced(good(), bar), true);
   const tampered = (fn) => { const m = good(); fn(m); return m; };
-  assert.throws(() => assertBalanced(tampered((m) => { m.runs.find((e) => e.arm === "framework").contract.tools += ",WebFetch"; }), bar), /different task contracts/); // Skill is the one allowed difference (p11-ready tests)
+  assert.throws(() => assertBalanced(tampered((m) => { m.runs.find((e) => e.arm === "framework").contract.tools += ",NotebookEdit"; }), bar), /different task contracts/); // Skill is the one allowed difference (p11-ready tests)
   assert.throws(() => assertBalanced(tampered((m) => { m.runs.find((e) => e.arm === "framework").contract.timeout_ms *= 2; }), bar), /different task contracts/);
   assert.throws(() => assertBalanced(tampered((m) => { m.runs.find((e) => e.arm === "solo").isolation.builder_sandbox = false; }), bar), /not sandboxed/);
   assert.throws(() => assertBalanced(tampered((m) => { m.runs.find((e) => e.arm === "framework").isolation.private_home = false; }), bar), /no private home/);
