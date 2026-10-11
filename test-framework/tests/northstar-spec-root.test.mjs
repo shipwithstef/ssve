@@ -214,10 +214,16 @@ test("dirSha: deterministic, order independent, one changed byte changes it, sym
   assert.notEqual(dirSha(a), dirSha(c));
 });
 
+// The real bar.json carries the frozen reserve hashes; these tests need an unfrozen one.
+function unfrozenBar() {
+  const b = loadBar();
+  return { ...b, reserve: b.reserve.map((r) => ({ ...r, grader_sha256: null })) };
+}
+
 function reserveFixture() {
   const root = tmp("res");
   for (const t of ["R1", "R2"]) { write(root, `${t}/task.json`, "{}"); write(root, `${t}/hidden.test.mjs`, "// h"); write(root, `${t}/specs/E.json`, "{}"); }
-  const bar = loadBar();
+  const bar = unfrozenBar();
   const hashes = reserveHashes(root, bar);
   const frozen = { ...bar, reserve: bar.reserve.map((r) => ({ ...r, grader_sha256: hashes[r.task] })) };
   return { root, bar, hashes, frozen };
@@ -260,7 +266,7 @@ test("decide on the reserve slice refuses rows whose recorded task hash is missi
   assert.doesNotThrow(() => decide(rows(h1, h2), { slice: "reserve", bar: frozen }));
   assert.throws(() => decide(rows(h1, "0".repeat(64)), { slice: "reserve", bar: frozen }), (e) => e instanceof NorthstarError && /R2 \(recorded hash differs/.test(e.message));
   assert.throws(() => decide(rows(h1, undefined), { slice: "reserve", bar: frozen }), /no task_sha256 recorded/);
-  assert.throws(() => decide(rows(h1, h2), { slice: "reserve", bar: loadBar() }), /no frozen grader_sha256/);
+  assert.throws(() => decide(rows(h1, h2), { slice: "reserve", bar: unfrozenBar() }), /no frozen grader_sha256/);
   // the dev slice is unchanged
   assert.doesNotThrow(() => decide([], { slice: "dev", bar: loadBar() }));
 });
@@ -291,7 +297,7 @@ test("decide on the reserve refuses when any frozen grader_sha256 in bar.json is
   const { frozen } = reserveFixture();
   const partial = { ...frozen, reserve: [frozen.reserve[0], { ...frozen.reserve[1], grader_sha256: null }] };
   assert.throws(() => decide([], { slice: "reserve", bar: partial }), (e) => e instanceof NorthstarError && /R2 have no frozen grader_sha256/.test(e.message));
-  assert.throws(() => decide([], { slice: "reserve", bar: loadBar() }), /R1, R2 have no frozen grader_sha256/);
+  assert.throws(() => decide([], { slice: "reserve", bar: unfrozenBar() }), /R1, R2 have no frozen grader_sha256/);
   const row = { task: "R1", arm: "solo", rep: 1, model: "m", builder_sandbox: "bwrap", task_sha256: frozen.reserve[0].grader_sha256 };
   assert.throws(() => decide([row], { slice: "reserve", bar: partial }), /no frozen grader_sha256/);
   assert.doesNotThrow(() => decide([], { slice: "reserve", bar: frozen }));
