@@ -2402,7 +2402,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
-        "test-framework/evals/tier-1/validate-planning-signals.mjs"
+        "test-framework/evals/tier-1/validate-planning-signals.mjs",
+        "test-framework/tests/overengineering-index.test.mjs"
       ]
     },
     {
@@ -2452,7 +2453,8 @@
       "source": "scripts/probe-loop.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-probe-loop.mjs"
+        "test-framework/evals/tier-1/validate-probe-loop.mjs",
+        "test-framework/tests/probe-loop-containment.test.mjs"
       ]
     },
     {
@@ -2751,7 +2753,8 @@
       "source": "scripts/skill-ab-eval.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-skill-ab-eval.mjs"
+        "test-framework/evals/tier-1/validate-skill-ab-eval.mjs",
+        "test-framework/tests/skill-ab-eval.test.mjs"
       ]
     },
     {
