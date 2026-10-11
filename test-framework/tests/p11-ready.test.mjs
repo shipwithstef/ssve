@@ -183,3 +183,22 @@ test("--reps must be a positive integer, checked before the job count and fundin
     assert.doesNotMatch(r.stderr, /jobs/);
   }
 });
+
+// ---- multi-session tasks ----
+// P1.1 found continuity-rules scoring 0 in both arms: solo/framework sent "Build what spec.md
+// asks for." to a task that withholds spec.md, and never sent its two session instructions.
+test("solo and framework get every session instruction of a multi-session dev task", () => {
+  for (const task of bar.dev) {
+    const { steps, copy_spec } = oe.taskConfig(task);
+    for (const arm of ["solo", "framework"]) {
+      const prompts = oe.armPrompts(task, arm);
+      if (!steps || copy_spec) { assert.equal(prompts.length, 1, `${task}/${arm}`); assert.match(prompts[0], /spec\.md/, `${task}/${arm}`); continue; }
+      assert.equal(prompts.length, steps.length, `${task}/${arm}`);
+      prompts.forEach((p, i) => { assert.ok(p.startsWith(steps[i].instruction), `${task}/${arm} step ${i + 1}`); assert.doesNotMatch(p, /spec\.md/, `${task}/${arm} step ${i + 1}`); });
+      if (arm === "solo") assert.deepEqual(prompts, steps.map((s) => s.instruction));
+      else prompts.forEach((p, i) => assert.equal(p, `${steps[i].instruction} ${oe.ARMS.framework.slice("Build what spec.md asks for.".length).trim()}`));
+    }
+  }
+  assert.ok(bar.dev.some((t) => oe.taskConfig(t).steps && !oe.taskConfig(t).copy_spec), "a multi-session dev task exists");
+  assert.throws(() => oe.armPrompts("continuity-rules", "plain"), /cannot run multi-session/);
+});

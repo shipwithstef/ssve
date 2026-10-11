@@ -186,11 +186,19 @@ const stripFrontmatter = (t) => t.replace(/^---\n[\s\S]*?\n---\n/, "");
 // With an `eval` delivery profile in the framework, checkpoints log-and-continue through the
 // profile and the prompt no longer carries the sentence that overrules the skill.
 export const FRAMEWORK_EVAL_PROMPT = "Build what spec.md asks for. Start with the route-workflow skill and follow the framework from there.";
+// A multi-session task (task.json `steps` with spec.md withheld) has no spec.md to build
+// from: each step is its own session, and its instruction replaces the arm's opening
+// sentence, so solo sends the instruction alone and framework adds its usual sentences.
+const SPEC_LEAD = "Build what spec.md asks for.";
 export function armPrompts(task, arm, { checkpointMode = null } = {}) {
-  const { steps } = taskConfig(task);
+  const { steps, copy_spec } = taskConfig(task);
   if (!isPillarArm(arm)) {
     if (!ARMS[arm]) throw new Error(`unknown arm ${arm}`);
-    return [arm === "framework" && checkpointMode === "eval-profile" ? FRAMEWORK_EVAL_PROMPT : ARMS[arm]];
+    const base = arm === "framework" && checkpointMode === "eval-profile" ? FRAMEWORK_EVAL_PROMPT : ARMS[arm];
+    if (!steps || copy_spec) return [base];
+    if (!base.startsWith(SPEC_LEAD)) throw new Error(`arm ${arm} cannot run multi-session task ${task}`);
+    const rest = base.slice(SPEC_LEAD.length).trim();
+    return steps.map((s) => (rest ? `${s.instruction} ${rest}` : s.instruction));
   }
   if (!steps) throw new Error(`${task} is not a pillar task (no instruction or steps in task.json)`);
   const variant = arm.startsWith("svc:") ? taskConfig(task).variants?.[arm.slice(4)] : null;
@@ -1242,7 +1250,7 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
   const replies = [];
   // Hash the prompts actually sent, not the files as they are when the row is written.
   const prompts = armPrompts(job.task, job.arm, { checkpointMode: fw?.checkpoint_mode });
-  const sha = crypto.createHash("sha256").update(isPillarArm(job.arm) ? prompts.join("\n\0\n") : prompts[0]).digest("hex").slice(0, 12);
+  const sha = crypto.createHash("sha256").update(prompts.join("\n\0\n")).digest("hex").slice(0, 12);
   const lim = armLimits(job.arm);
   for (const prompt of prompts) {
     const left = claim.builder != null ? claim.builder - spentBefore - (agent.cost_usd || 0) : null;
