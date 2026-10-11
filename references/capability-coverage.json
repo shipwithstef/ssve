@@ -2275,6 +2275,15 @@
       ]
     },
     {
+      "id": "engine:scripts/k-preload.mjs",
+      "kind": "engine",
+      "source": "scripts/k-preload.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/k-preload.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/kimi-e2e-test.mjs",
       "kind": "engine",
       "source": "scripts/kimi-e2e-test.mjs",
