@@ -701,7 +701,12 @@ if (cmd === "resolve") {
     // IDEMPOTENT + DURABLE-FIRST (Codex H2 round 2): if a prior run already logged this id (a crash between
     // the log-append and the pending-trim), DON'T duplicate the log/ledger entry — just complete the move by
     // trimming pending. So a crash-retry converges instead of leaving a ghost "awaiting outcome" ledger row.
-    const alreadyResolved = readJsonl(logPath).some((d) => d.id === id && d.type !== "outcome");
+    // The DURABLE verdict wins on recovery: a crash-retry may be called with different arguments, but the
+    // owner's recorded decision is the one in the log. Never rebuild the role ledger from the retry args.
+    const logged = [...readJsonl(logPath)].reverse().find((d) => d.id === id && d.type !== "outcome");
+    const alreadyResolved = !!logged;
+    const durableVerdict = alreadyResolved ? logged.status : verdict;
+    const conflictingRetry = alreadyResolved && durableVerdict !== verdict;
     if (!alreadyResolved) {
       card.status = verdict; card.resolved_ts = iso();
       if (opt("--note")) card.verdict_note = opt("--note");
@@ -713,14 +718,18 @@ if (cmd === "resolve") {
       mkdirSync(join(dir, role), { recursive: true });
       const lp = join(dir, role, "ledger.jsonl");
       if (!readJsonl(lp).some((r) => r.decision_id === id))
-        appendFileSync(lp, JSON.stringify({ ts: iso(), decision_id: id, title: card.title, recommendation: card.recommendation, verdict, outcome: null }) + "\n");
+        appendFileSync(lp, JSON.stringify({ ts: iso(), decision_id: id, title: card.title, recommendation: card.recommendation, verdict: durableVerdict, outcome: null }) + "\n");
     }
     writeJsonl(pendingPath, pending.filter((d) => d.id !== id));             // ALWAYS complete the move, atomically
     console.log(alreadyResolved
-      ? `✓ ${id} was already in decisions-log — completed the interrupted move (ledger ensured; pending trimmed)`
+      ? `✓ ${id} was already in decisions-log (${durableVerdict}) — completed the interrupted move (ledger ensured; pending trimmed)`
       : `✓ ${id} resolved: ${verdict} → decisions-log + ${role}/ledger (outcome pending — close it with record-outcome)`);
+    if (conflictingRetry) {
+      console.error(`✗ ${id}: the durable verdict is '${durableVerdict}', not the requested '${verdict}'. Recovery finished with the durable verdict; the conflicting request was NOT applied.`);
+      process.exitCode = 1;
+    }
   });
-  process.exit(0);
+  process.exit(process.exitCode || 0);
 }
 
 if (cmd === "record-outcome") {

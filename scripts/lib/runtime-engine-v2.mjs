@@ -76,11 +76,22 @@ async function compensateEffects(paths, manifest, capsule, executedEffects, appe
   return { valid: errors.length === 0, errors, compensation_receipt_digests };
 }
 
+function effectHandoff(row) {
+  return { idempotency_key: row.effect.idempotency_key, adapter_id: row.effect.adapter_id, receipt_digest: row.receipt.receipt_digest, reversible: Boolean(row.receipt.reversible) };
+}
+
+// An attempt that lost its lease has no authority left to mutate, so it does not compensate. Its completed effects
+// stay visible instead: the receipts are listed in the closing event for the next owner to reconcile (reuse the
+// idempotent receipt, or compensate under its own lease).
 async function failAttempt(paths, manifest, capsule, lease, executedEffects, appendTask, options, reason, errors) {
-  const compensation = await compensateEffects(paths, manifest, capsule, executedEffects, appendTask, options);
+  const leaseLost = reason === 'heartbeat-failed';
+  const compensation = leaseLost
+    ? { valid: true, errors: [], compensation_receipt_digests: [] }
+    : await compensateEffects(paths, manifest, capsule, executedEffects, appendTask, options);
   const closed = closeTaskLease(leaseInput(paths, manifest, lease, 'CANCELLED', reason, options));
   const eventType = closed.valid ? 'TASK_ATTEMPT_FAILED' : 'TASK_LEASE_EXPIRED';
-  const appended = appendTask(eventType, { reason, errors, compensation_receipt_digests: compensation.compensation_receipt_digests }, 'attempt-failed');
+  const unreconciled_effects = leaseLost ? executedEffects.map(effectHandoff) : [];
+  const appended = appendTask(eventType, { reason, errors, compensation_receipt_digests: compensation.compensation_receipt_digests, ...(unreconciled_effects.length ? { unreconciled_effects } : {}) }, 'attempt-failed');
   return { valid: false, errors: [...errors, ...compensation.errors, ...(closed.valid ? [] : closed.errors), ...(appended.valid ? [] : appended.errors)] };
 }
 
@@ -118,14 +129,17 @@ async function executeLeasedTaskWork(paths, manifest, capsule, lease, action, ap
     result = appendTask('EFFECT_AUTHORIZED', { effect_digest: authorization.effect_digest, capability_id: effect.capability_id, adapter_id: effect.adapter_id }, `effect:${effect.idempotency_key}:authorized`);
     if (!result.valid) return { valid: false, errors: result.errors, capsule, lease, action, executedEffects };
     const executed = await executeAuthorizedEffect(capsule, effect, { repo_root: manifest.repository_root, receipt_root: paths.effectReceipts, fetch: options.fetch });
+    // Capture and journal the result before any early return: the effect happened whatever the lease says now.
+    if (executed.valid) {
+      executedEffects.push({ effect, receipt: executed.receipt });
+      result = appendTask('EFFECT_EXECUTED', { effect_digest: authorization.effect_digest, receipt_digest: executed.receipt.receipt_digest, adapter_id: effect.adapter_id, idempotent: executed.idempotent }, `effect:${effect.idempotency_key}:executed`);
+      if (!result.valid) return { valid: false, errors: result.errors, capsule, lease, action, executedEffects };
+    }
     const afterHeartbeat = heartbeat(paths, manifest, lease, options);
     if (!afterHeartbeat.valid) return { ...(await failAttempt(paths, manifest, capsule, lease, executedEffects, appendTask, options, 'heartbeat-failed', afterHeartbeat.errors)), capsule, lease, action, executedEffects };
     if (!executed.valid) {
       return { ...(await failAttempt(paths, manifest, capsule, lease, executedEffects, appendTask, options, 'effect-failed', executed.errors)), capsule, lease, action, executedEffects };
     }
-    executedEffects.push({ effect, receipt: executed.receipt });
-    result = appendTask('EFFECT_EXECUTED', { effect_digest: authorization.effect_digest, receipt_digest: executed.receipt.receipt_digest, adapter_id: effect.adapter_id, idempotent: executed.idempotent }, `effect:${effect.idempotency_key}:executed`);
-    if (!result.valid) return { valid: false, errors: result.errors, capsule, lease, action, executedEffects };
   }
 
   return { valid: true, errors: [], capsule, lease, action, appendTask, executedEffects };
