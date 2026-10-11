@@ -1,4 +1,4 @@
-<!-- Status: proposed 2026-10-11, revision 3 (consolidated) after the reviews on 7b48cc4. NOT approved. Execution waits for owner approval. -->
+<!-- Status: APPROVED 2026-10-11 (revision 4 = owner rev 3 f05c82f + §11 reconciliation). -->
 
 # Plan: one organism that beats solo, and keeps beating it as models and harnesses change
 
@@ -1046,3 +1046,59 @@ Run from a checkout or `git archive` of `7b48cc4`. `C` is shorthand for `node sc
 | T10 | `grep -n TRANSPORTS scripts/lib/harness-transports.mjs` | `{ claude }` |
 | T11 | `git merge-tree --write-tree` of #127 and #129 without a run-scoped merge driver | the crash |
 | T12 | `rangeOf({dist:"discrete", values:[100,1,10], weights:[0.2,0.4,0.4]})` from #129's `decision-engine.mjs` | p10 100, p50 1, p90 10 |
+
+---
+
+## 11. Revision 4: reconciliation of rev 3 with the verified review verdicts (this section overrides §0–§10 where they conflict)
+Rev 3 (owner, f05c82f) is the base. Each item below was checked at `7b48cc4`. For each, the better-grounded version against the goal is kept: at least 2× on what solo misses, at near-solo cost and speed, robust, with no over-engineering.
+
+**Factual corrections to rev 3:**
+- **"Typo ≤ 4 stages" can't be met**, because the mandatory tail is 8 tasks (T2: production 15, prototype 9). It is replaced in §4, §5.2 and §7 #11 by: *no lane-upstream stages beyond the invariant tail*, counted after the §5.2 compiler change.
+- **The injectors are already one process** (§5.4 step 2): `svc-rule-injector` already runs the learning and owner injectors in-process. Hooks run in parallel, so wall time ≈ the slowest handler (the dispatcher, 321 ms in `hook-bench` today). H3 folds the rule injector into the dispatcher, which saves one Node start and shares the git memo. The budget is lowered only when the measured wall drops.
+- **§5.2 step 13 describes target behaviour as current.** Today `compile-delivery-graph.mjs:263` adds base44-environment on any `deploy-affecting` flag. The fix is Base44 detection.
+- **Appendix B's T11 and T12 don't match §3.** The commands get relabelled, and an install-follows-the-branch command is added for §3 T11.
+- **Internal contradictions:**
+  - §5.4 treats explore-solutions as a "measured no-gain" skip, but it is **unmeasured**. It is off by default (`one_way_door`), labelled unmeasured.
+  - §5.11's CLAUDE.md variant conflicts with "nothing appended to CLAUDE.md". The memory variants are a capped always-loaded block (≤2 KB) vs topic files (4 KB per topic, 16 KB in total). CLAUDE.md is never appended to.
+
+**Where the verified verdicts override rev 3:**
+1. **Typo cost.** It stays capped at ≤1.3× solo, **net of the measured fixed catalog overhead**. Reporting it uncapped would drop the near-solo-speed requirement for the most common task.
+2. **`ARM_LIMITS`.** It stays a safety timeout (2× time, 3× turns). The bar judges the *measured* total USD and wall time. A hard cap that scores a stopped run 0 would truncate runs that would have succeeded, and score the framework below what it does.
+3. **Opus gate.** P1.6 Opus confirmation (owner yes) gates **deletions, merges and any 2× claim**. Additive owner asks (cockpit, router, slots, founder formulas, governance records) may proceed after P1.4, each re-measured per batch.
+4. **Always-on agents (§5.12).** The governance record, the needs-you approval item and COS as the sole card writer are adopted. The "one real connection per product" slice is **deferred** until the owner supplies documented APIs or an export sample. Both products are unverified here.
+5. **No four-arm skill matrix** (§5.5, §5.3). A/B uses bare vs skill, with the skill's whole folder mounted. create-skill requires a coverage row plus a bare A/B.
+6. **Failover** (§5.1, §5.10) is a fresh attempt under the same task, between supported CLIs only, with one quota-after-partial-write test. No full fault matrix.
+7. **Served models.** Every model is recorded with its tokens. A run is rejected only when a non-arm model did **real work**, so the CLI's small background calls are tolerated.
+8. **Adoption rule.** n ≥ 5 per arm and p < .05, else "inconclusive", confirmed on a held-out task. The n ≥ 3 bootstrap rule stays for the exploratory headline only.
+9. **X1.** The contract is `"$SVC_ROOT"/scripts/…`, exported at SessionStart, which already works on the fresh-project run. The `svc-run` launcher is built only if the baseline shows path failures on hookless hosts.
+10. **Founder context** is a **generated view** over the existing owner files, never a third source of truth.
+11. **trace-check-deps.** It resolves relative paths and keeps paths to missing files. A check whose trace failed or came back empty is always selected.
+12. **Review skip on small work.** The runtime proxy is no zone, a small diff and green tests. It never applies to auth, money, data or a failing check. It is measured before adoption.
+13. **Kept from rev 3 over my earlier verdict:** a run with a non-zero fail-open counter is re-run once, then scored as is and flagged. Excluding it would flatter the framework.
+
+**Moved to Program 0 / Track F** (live defects or exposures; tests first):
+- #6 security-payments: every arm's prompt carries the deliverable contract (a test checks it names SECURITY.json).
+- #9 skill-ab: n ≥ 3 per arm, otherwise `inconclusive`.
+- #11 classify-change-risk: skill, rule, CLAUDE.md and spec-AC edits become `logic`; a README typo stays cosmetic.
+- #12 craft-prompt: `--orchestrator-family` is required and passed from the host.
+- The Codex review sandbox bypass (`harness-playbook.json:87,130`) is replaced by a read-only sandbox, or our bwrap read-only.
+- The company briefing becomes the `dashboard --json` payload: no path, never cut mid-line.
+- The over-engineering score strips negated clauses (it stays advisory).
+- §5.12/governance: `plan_sha` in the transition record; never run PR code under `pull_request_target`; inventory the AC-digest producers and consumers before Gate C.
+
+**Small adds from my verdicts:**
+- review-gate is relabelled `partial` (4 vs 2 secondary findings), with model, date and n on coverage rows.
+- Hermes is never offered by the router.
+- The graph is recompiled after the harness pick.
+- route-workflow's four-line announcement moves to the agent log.
+- destructive-migration → review-security; native-release → verify-promotion live.
+- Budget: P1.5 ≥ $18 and Program 2 batches ≥ $6 (the $0.50 floor). The preflight refuses a run below the floor.
+
+**Owner side requests:**
+- **Games repo.** After approval, once the owner creates an empty private repo `shipwithstef/hearthlight` (repo creation from this session is blocked by a GitHub 403):
+  1. `add_repo`.
+  2. Copy every kept game build into `rpg/<title>/` and `quest/<title>/`. These are the 9 ai-quest builds and every rpg-founder build under `~/.svc/outcome-eval-artifacts`, Hearthlight and Ardwyn included.
+  3. Strip `__hidden.test.mjs`, eval notes, `node_modules` and any secrets.
+  4. Give each a README: arm, model, date, hidden score, judge score. The rev 3 §0 privacy rule applies: no personal or company data.
+  5. Commit as the owner's author, then push.
+- **Plan file.** The plan doc in the repo is updated to this rev 4 in the same push as the first Program 0 commit.
