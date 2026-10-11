@@ -3669,6 +3669,7 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+        "test-framework/tests/delivery-graph-ordering.test.mjs",
         "test-framework/tests/research-decision.test.mjs"
       ]
     },
@@ -3751,7 +3752,8 @@
       "source": "scripts/lib/runtime-engine-v2.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-runtime-v2.mjs"
+        "test-framework/evals/tier-1/validate-runtime-v2.mjs",
+        "test-framework/tests/runtime-effect-lease-expiry.test.mjs"
       ]
     },
     {
