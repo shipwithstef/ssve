@@ -2002,6 +2002,15 @@
       ]
     },
     {
+      "id": "engine:scripts/cockpit-state.mjs",
+      "kind": "engine",
+      "source": "scripts/cockpit-state.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cockpit-live.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/codex-load-skill.mjs",
       "kind": "engine",
       "source": "scripts/codex-load-skill.mjs",
@@ -3946,9 +3955,9 @@
       "source": "scripts/orch/serve.mjs",
       "status": "tested",
       "evidence": [
+        "test-framework/evals/tier-1/validate-cockpit-live.mjs",
         "scripts/orch/orch.test.mjs",
-        "scripts/orch/owner-view.test.mjs",
-        "scripts/orch/recovery.test.mjs"
+        "scripts/orch/owner-view.test.mjs"
       ]
     },
     {

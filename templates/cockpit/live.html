@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Orchestration Cockpit</title>
+<style>
+:root{
+  --bg:#f6f5f1; --panel:#ffffff; --ink:#1e2024; --muted:#6b6f78; --line:#e3e1da; --soft:#efede7;
+  --done:#2f8f6b; --active:#2f6fde; --blocked:#d1493f; --stalled:#c98a1b; --pending:#b4b6bd; --skipped:#d9dade;
+  --accent:#2f6fde; --shadow:0 1px 2px rgba(20,22,28,.06),0 4px 16px rgba(20,22,28,.05);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121417; --panel:#1a1d21; --ink:#e8e9ec; --muted:#9a9ea7; --line:#2a2e34; --soft:#22262c;
+  --done:#3fb58a; --active:#5b93f2; --blocked:#ef6a60; --stalled:#e0a53a; --pending:#5b6068; --skipped:#3a3f46;
+  --accent:#5b93f2; --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121417; --panel:#1a1d21; --ink:#e8e9ec; --muted:#9a9ea7; --line:#2a2e34; --soft:#22262c;
+  --done:#3fb58a; --active:#5b93f2; --blocked:#ef6a60; --stalled:#e0a53a; --pending:#5b6068; --skipped:#3a3f46;
+  --accent:#5b93f2; --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 16px 48px;display:grid;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
+h1{margin:0;font-size:1.35rem;letter-spacing:-.01em}
+.live{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.85rem}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--pending)}
+.live.on .dot{background:var(--done);box-shadow:0 0 0 0 var(--done);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--done) 60%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.spacer{flex:1}
+.repos{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:.75rem;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--muted);white-space:nowrap}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;box-shadow:var(--shadow)}
+.kpi .v{font-size:1.4rem;font-weight:650;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.kpi .n{font-size:.78rem;color:var(--muted)}
+.slots{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.slot{width:14px;height:14px;border-radius:4px;background:var(--soft);border:1px solid var(--line)}
+.slot.used{background:var(--active);border-color:var(--active)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font:inherit;font-size:.85rem;padding:6px 12px;min-height:36px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip:focus-visible,.goal-head:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=search]{font:inherit;font-size:.9rem;padding:7px 12px;min-height:36px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);min-width:0;flex:1 1 200px;max-width:320px}
+.group{display:grid;gap:8px}
+.group h2{margin:8px 0 0;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:flex;gap:8px;align-items:center}
+.goal{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--pending);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
+.goal.new{animation:enter .25s ease-out}
+@keyframes enter{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.goal[data-s=active]{border-left-color:var(--active)} .goal[data-s=blocked]{border-left-color:var(--blocked)}
+.goal[data-s=stalled]{border-left-color:var(--stalled)} .goal[data-s=done]{border-left-color:var(--done)}
+.goal-head{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:16px;align-items:center;padding:12px 14px;cursor:pointer;width:100%;text-align:left;background:none;border:0;color:inherit;font:inherit}
+.who{min-width:0;display:grid;gap:4px}
+.id{font-weight:650;font-size:.92rem;overflow-wrap:anywhere}
+.title{color:var(--muted);font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:.8rem;color:var(--muted)}
+.pill{font-size:.72rem;font-weight:600;padding:1px 8px;border-radius:999px;color:#fff;background:var(--pending);text-transform:capitalize}
+.pill.active{background:var(--active)} .pill.blocked{background:var(--blocked)} .pill.stalled{background:var(--stalled)} .pill.done{background:var(--done)}
+.progress{height:6px;background:var(--soft);border-radius:999px;overflow:hidden}
+.progress>i{display:block;height:100%;background:var(--done);border-radius:999px;transition:width .4s}
+.pipe{display:flex;align-items:center;overflow-x:auto;padding:6px 2px;scrollbar-width:thin;min-width:0}
+.node{display:flex;align-items:center;flex:none}
+.stage{display:grid;justify-items:center;gap:4px;min-width:68px}
+.stage .c{width:18px;height:18px;border-radius:50%;background:var(--pending);border:3px solid var(--panel);box-shadow:0 0 0 1px var(--line)}
+.stage[data-s=done] .c{background:var(--done)} .stage[data-s=skipped] .c{background:var(--skipped)}
+.stage[data-s=active] .c{background:var(--active);animation:pulse2 1.6s infinite}
+.stage[data-s=blocked] .c{background:var(--blocked)} .stage[data-s=stalled] .c{background:var(--stalled)}
+@keyframes pulse2{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+.stage .k{font-size:.68rem;color:var(--muted);max-width:84px;text-align:center;line-height:1.2;overflow-wrap:anywhere}
+.stage[data-s=active] .k{color:var(--ink);font-weight:600}
+.link{width:22px;height:2px;background:var(--line);flex:none;margin-bottom:18px}
+.link.done{background:var(--done)}
+.detail{border-top:1px solid var(--line);padding:10px 14px 14px;display:none}
+.goal.open .detail{display:block}
+.rows{width:100%;border-collapse:collapse;font-size:.85rem}
+.rows th{text-align:left;font-weight:600;color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;padding:4px 8px 6px 0}
+.rows td{padding:5px 8px 5px 0;border-top:1px solid var(--soft);vertical-align:top;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+.empty{color:var(--muted);padding:24px;text-align:center;background:var(--panel);border:1px dashed var(--line);border-radius:10px}
+.fold{font:inherit;font-size:.8rem;background:none;border:0;color:var(--accent);cursor:pointer;padding:4px 0}
+.needs{color:#fff;background:var(--stalled);border:0;font-weight:600}
+.needs[hidden]{display:none}
+.reason{font-size:.8rem;color:var(--ink);background:color-mix(in srgb,var(--stalled) 14%,transparent);border-radius:6px;padding:4px 8px;margin-top:2px;overflow-wrap:anywhere}
+.goal[data-s=blocked] .reason{background:color-mix(in srgb,var(--blocked) 14%,transparent)}
+.goal.kb{outline:2px solid var(--accent);outline-offset:2px}
+#toasts{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:grid;gap:8px;z-index:10;max-width:min(360px,calc(100vw - 32px))}
+.toast{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--done);border-radius:10px;box-shadow:var(--shadow);padding:10px 12px;font-size:.85rem;cursor:pointer;animation:enter .2s ease-out}
+.toast.warn{border-left-color:var(--stalled)} .toast.bad{border-left-color:var(--blocked)}
+.toast b{display:block;font-size:.8rem}
+.keys{font-size:.75rem;color:var(--muted)}
+kbd{font:inherit;font-size:.72rem;border:1px solid var(--line);border-radius:4px;padding:0 4px;background:var(--panel)}
+@media (max-width:720px){.goal-head{grid-template-columns:1fr}.pipe{margin:0 -4px}
+  .rows thead{display:none}.rows tr{display:grid;grid-template-columns:1fr auto;gap:0 12px;padding:6px 0;border-top:1px solid var(--soft)}
+  .rows td{border:0;padding:0}.rows td:nth-child(1){font-weight:600}.rows td:nth-child(3),.rows td:nth-child(5){grid-column:1/-1;color:var(--muted);font-size:.8rem;overflow-wrap:anywhere}}
+@media (max-width:720px),(pointer:coarse){.keys{display:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Orchestration</h1>
+    <span class="live" id="live"><span class="dot"></span><span id="liveText">connecting…</span></span>
+    <button class="chip needs" id="needs" hidden></button>
+    <span class="spacer"></span>
+    <span class="keys" aria-hidden="true"><kbd>j</kbd>/<kbd>k</kbd> move · <kbd>Enter</kbd> open · <kbd>n</kbd> needs you</span>
+    <div class="repos" id="repos"></div>
+  </header>
+  <section class="kpis" id="kpis" aria-label="Summary"></section>
+  <div class="bar" role="toolbar" aria-label="Filter goals">
+    <span id="filters"></span>
+    <input type="search" id="q" placeholder="Search goals, lanes, skills" aria-label="Search goals">
+  </div>
+  <main id="lanes"></main>
+</div>
+<div id="toasts" aria-live="polite"></div>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const FILTERS = [["open", "Open"], ["active", "Running"], ["blocked", "Blocked"], ["stalled", "Stalled"], ["done", "Done"], ["all", "All"]];
+let seen = new Set(), state = null, filter = "open", query = "", open = new Set(JSON.parse(sessionStorage.getItem("cockpit-open") || "[]")), showDone = false;
+
+const fmtMin = (m) => m == null ? "–" : m < 60 ? `${Math.round(m)} min` : m < 60 * 24 ? `${(m / 60).toFixed(1)} h` : `${(m / 1440).toFixed(1)} d`;
+const ago = (iso) => { if (!iso) return "–"; const m = (Date.now() - Date.parse(iso)) / 60000; return m < 1 ? "just now" : m < 60 ? `${Math.round(m)} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
+const label = (st) => (st.skill === "task" && st.title ? st.title : st.skill);
+const short = (s) => String(s).slice(0, 40).replace(/-changeset|-implementation/g, "").replace(/^(review|audit|execute|verify|validate)-?/, (m) => m);
+
+// What a goal needs from the person, in the agent's own words where there are any.
+function needsYou(g) {
+  if (g.status === "blocked") { const st = g.stages.find((x) => x.status === "blocked"); return `Blocked at ${label(st || { skill: "a stage" })}${st?.blocked_reason ? `: ${st.blocked_reason}` : ""}`; }
+  if (g.status === "stalled") return `No progress for ${Math.round(g.idle_hours)} h while ${g.active_stages.join(", ")} is marked running: resume or close it.`;
+  return "";
+}
+// Stable order: needs-you first, then running, then the rest, each by id. Rows do not move
+// on every update; only a goal that starts needing you moves up.
+const RANK = { blocked: 0, stalled: 1, active: 2, paused: 3, pending: 4, done: 5 };
+const order = (a, b) => (RANK[a.status] - RANK[b.status]) || a.id.localeCompare(b.id, undefined, { numeric: true });
+
+let prev = null;
+function announce(next) {
+  if (!prev) { prev = next; return; }
+  const before = Object.fromEntries(prev.goals.map((g) => [g.repo + "/" + g.id, g]));
+  for (const g of next.goals) {
+    const key = g.repo + "/" + g.id, old = before[key];
+    if (!old) { toast(key, "", `${g.id}`, "New goal started"); continue; }
+    if (old.status !== g.status) {
+      if (g.status === "done") toast(key, "", g.id, "Goal complete");
+      else if (g.status === "blocked" || g.status === "stalled") toast(key, g.status === "blocked" ? "bad" : "warn", g.id, needsYou(g));
+    }
+    for (const st of g.stages) {
+      const o = old.stages.find((x) => x.id === st.id);
+      if (o && o.status !== "done" && st.status === "done") toast(key, "", g.id, `${label(st)} finished${st.minutes ? ` in ${fmtMin(st.minutes)}` : ""}`);
+    }
+  }
+  prev = next;
+}
+function toast(key, kind, title, text) {
+  const t = document.createElement("div");
+  t.className = `toast ${kind}`; t.innerHTML = `<b>${esc(title)}</b>${esc(text)}`;
+  t.onclick = () => { open.add(key); filter = "all"; render(); t.remove(); document.querySelector(`[data-key="${CSS.escape(key)}"]`)?.scrollIntoView({ block: "center" }); };
+  $("#toasts").append(t);
+  while ($("#toasts").children.length > 4) $("#toasts").firstChild.remove();
+  setTimeout(() => t.remove(), 9000);
+}
+
+function kpis(s) {
+  const c = s.orchestrator.capacity, t = s.totals;
+  const slots = Array.from({ length: Math.min(c.slots, 24) }, (_, i) => `<span class="slot ${i < c.in_use ? "used" : ""}"></span>`).join("") + (c.in_use > c.slots ? Array.from({ length: Math.min(c.in_use - c.slots, 12) }, () => `<span class="slot" style="background:var(--blocked);border-color:var(--blocked)"></span>`).join("") : "");
+  return [
+    `<div class="kpi"><div class="l">Capacity</div><div class="v">${c.in_use} / ${c.slots}</div><div class="slots" aria-hidden="true">${slots}</div><div class="n">${c.in_use > c.slots ? `<strong style="color:var(--blocked)">${c.in_use - c.slots} over the plan's limit: sessions may stop mid-task</strong>` : `${c.free} slot${c.free === 1 ? "" : "s"} free to allocate`}</div></div>`,
+    `<div class="kpi"><div class="l">Open goals</div><div class="v">${t.open}</div><div class="n">${t.active} running · ${t.blocked} blocked · ${t.stalled} stalled</div></div>`,
+    `<div class="kpi"><div class="l">Work left</div><div class="v">${t.remaining_agent_hours} h</div><div class="n">agent time, from measured stage history</div></div>`,
+    `<div class="kpi"><div class="l">At full capacity</div><div class="v">${t.days_at_capacity ?? "–"} d</div><div class="n">8-hour days with ${c.slots} parallel slot${c.slots === 1 ? "" : "s"}</div></div>`,
+    `<div class="kpi"><div class="l">Done</div><div class="v">${t.done}</div><div class="n">of ${t.goals} goals</div></div>`,
+  ].join("");
+}
+
+function pipeline(g) {
+  return g.stages.map((st, i) => {
+    const s = g.status === "stalled" && st.status === "active" ? "stalled" : st.status;
+    const link = i ? `<span class="link ${g.stages[i - 1].status === "done" || g.stages[i - 1].status === "skipped" ? "done" : ""}"></span>` : "";
+    return `<span class="node">${link}<span class="stage" data-s="${s}" title="${esc(label(st))}: ${esc(s)}"><span class="c"></span><span class="k">${esc(short(label(st)))}</span></span></span>`;
+  }).join("");
+}
+
+function detail(g) {
+  const rows = g.stages.map((st) => `<tr><td>${esc(label(st))}</td><td>${esc(st.status)}</td><td>${st.started_at ? esc(new Date(st.started_at).toLocaleString()) : "–"}</td><td>${fmtMin(st.minutes)}</td><td>${esc(st.blocked_reason || st.artifact || "")}</td></tr>`).join("");
+  const est = g.estimate ? `About ${fmtMin(g.estimate.minutes)} of agent time left, from ${g.estimate.basis_runs} measured runs${g.estimate.stages_without_history ? ` (${g.estimate.stages_without_history} stage${g.estimate.stages_without_history > 1 ? "s" : ""} without history use the overall median)` : ""}.` : "Nothing left to run.";
+  const stall = g.status === "stalled" ? ` Its graph has not changed for ${g.idle_hours} h while a stage is marked running: the session most likely ended mid-stage. Resume it or close it.` : "";
+  return `<p class="n" style="margin:0 0 8px;color:var(--muted)">${esc(est)}${esc(stall)} Last change ${esc(ago(g.updated))}.</p><div class="tablewrap"><table class="rows"><thead><tr><th>Stage</th><th>Status</th><th>Started</th><th>Took</th><th>Output or reason</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function goalCard(g) {
+  const isOpen = open.has(g.repo + "/" + g.id);
+  const key = g.repo + "/" + g.id, fresh = seen.size > 0 && !seen.has(key);
+  return `<article class="goal ${isOpen ? "open" : ""} ${fresh ? "new" : ""}" data-s="${g.status}" data-key="${esc(g.repo + "/" + g.id)}">
+    <button class="goal-head" aria-expanded="${isOpen}">
+      <span class="who">
+        <span class="id">${esc(g.id)}</span>
+        ${g.title ? `<span class="title" title="${esc(g.title)}">${esc(g.title)}</span>` : ""}
+        <span class="meta"><span class="pill ${g.status}">${esc(g.status)}</span>${g.lane ? `<span class="tag">${esc(g.lane)}</span>` : ""}<span>${g.done}/${g.total}</span>${g.estimate ? `<span>· ~${fmtMin(g.estimate.minutes)} left</span>` : ""}${g.agents ? `<span>· ${g.agents} agent${g.agents > 1 ? "s" : ""}</span>` : ""}</span>
+        ${needsYou(g) ? `<span class="reason">${esc(needsYou(g))}</span>` : ""}
+        <span class="progress" aria-label="${Math.round(g.progress * 100)}% done"><i style="width:${Math.round(g.progress * 100)}%"></i></span>
+      </span>
+      <span class="pipe" aria-label="Stages">${pipeline(g)}</span>
+    </button>
+    <div class="detail">${isOpen ? detail(g) : ""}</div>
+  </article>`;
+}
+
+function render() {
+  if (!state) return;
+  $("#kpis").innerHTML = kpis(state);
+  $("#repos").innerHTML = state.orchestrator.repos.map((r) => `<span class="tag">${esc(r)}</span>`).join("");
+  const counts = { open: state.totals.open, active: state.totals.active, blocked: state.totals.blocked, stalled: state.totals.stalled, done: state.totals.done, all: state.totals.goals };
+  $("#filters").innerHTML = FILTERS.map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${filter === k}">${l} <span style="opacity:.6">${counts[k]}</span></button>`).join(" ");
+  const q = query.toLowerCase();
+  const match = (g) => (filter === "all" || (filter === "open" ? g.status !== "done" : g.status === filter)) && (!q || [g.id, g.title, g.lane, g.repo, ...g.stages.map((s) => s.skill)].join(" ").toLowerCase().includes(q));
+  const goals = state.goals.filter(match).sort(order);
+  const need = state.goals.filter((g) => g.status === "blocked" || g.status === "stalled").length;
+  const chip = $("#needs"); chip.hidden = !need; chip.textContent = `${need} need${need === 1 ? "s" : ""} you`;
+  if (!goals.length) { $("#lanes").innerHTML = `<div class="empty">No goals here. When an orchestrator starts one, it appears in this view.</div>`; return; }
+  const byRepo = {};
+  for (const g of goals) (byRepo[g.repo] ??= []).push(g);
+  $("#lanes").innerHTML = Object.entries(byRepo).map(([repo, gs]) => {
+    const done = gs.filter((g) => g.status === "done"), rest = gs.filter((g) => g.status !== "done");
+    const doneHtml = done.length && filter !== "done" && filter !== "all" ? "" : done.map(goalCard).join("");
+    return `<section class="group"><h2>${esc(repo)} <span class="tag">${gs.length}</span></h2>${rest.map(goalCard).join("")}${doneHtml}</section>`;
+  }).join("");
+  seen = new Set(state.goals.map((g) => g.repo + "/" + g.id));
+}
+
+document.addEventListener("click", (e) => {
+  const f = e.target.closest("[data-f]");
+  if (f) { filter = f.dataset.f; render(); return; }
+  const head = e.target.closest(".goal-head");
+  if (head) {
+    const key = head.closest(".goal").dataset.key;
+    open.has(key) ? open.delete(key) : open.add(key);
+    try { sessionStorage.setItem("cockpit-open", JSON.stringify([...open])); } catch {}
+    render();
+  }
+});
+$("#q").addEventListener("input", (e) => { query = e.target.value; render(); });
+$("#needs").addEventListener("click", () => { filter = "open"; render(); document.querySelector('.goal[data-s="blocked"], .goal[data-s="stalled"]')?.scrollIntoView({ block: "start" }); });
+let kb = -1;
+document.addEventListener("keydown", (e) => {
+  if (e.target.closest("input")) return;
+  const cards = [...document.querySelectorAll(".goal")];
+  if (!cards.length) return;
+  if (e.key === "j" || e.key === "k") { kb = Math.max(0, Math.min(cards.length - 1, kb + (e.key === "j" ? 1 : -1))); }
+  else if (e.key === "n") { kb = cards.findIndex((c) => c.dataset.s === "blocked" || c.dataset.s === "stalled"); if (kb < 0) return; }
+  else if (e.key === "Enter" && kb >= 0 && !e.target.closest("button")) { cards[kb].querySelector(".goal-head").click(); return; }
+  else return;
+  cards.forEach((c, i) => c.classList.toggle("kb", i === kb));
+  cards[kb].scrollIntoView({ block: "nearest" });
+});
+
+function connect() {
+  const live = $("#live");
+  const es = new EventSource("/api/events");
+  es.onmessage = (m) => { state = JSON.parse(m.data); announce(state); live.classList.add("on"); $("#liveText").textContent = `live · updated ${new Date(state.generated_at).toLocaleTimeString()}`; render(); };
+  es.onerror = () => { live.classList.remove("on"); $("#liveText").textContent = "reconnecting…"; };
+}
+if (window.__COCKPIT_STATE__) { state = window.__COCKPIT_STATE__; $("#liveText").textContent = `snapshot · ${new Date(state.generated_at).toLocaleString()}`; render(); }
+else connect();
+</script>
+</body>
+</html>
