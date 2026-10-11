@@ -165,10 +165,12 @@ const WHOLE_DENIAL = [
 //    ("is not properly validated", "never correctly checked", "without proper escaping").
 const SOFT_DENIAL = [
   /\b(?:properly|correctly|safely|securely|adequately|already)\s+(?:validated|handled|escaped|sanitised|sanitized|authenticated|authorised|authorized|verified|signed|checked|parameterised|parameterized|mitigated|protected|enforced)\b/gi,
-  /\b(?:is|are|was|were|appears|seems|looks|remains|found|deemed|considered)\s+(?:to be\s+)?(?:\w+\s+and\s+)?(?:safe|secure|fine|ok|okay|mitigated|validated|handled|protected|sanitised|sanitized|sound|correct|adequate)\b/gi,
+  /\b(?:is|are|was|were|appears|seems|looks|remains|found|deemed|considered)\s+(?:to be\s+)?(?:\w+\s+and\s+)?(?:safe|secure|fine|ok|okay|mitigated|protected|sanitised|sanitized|sound|correct|adequate)\b/gi,
   /\b(?:parameteri[sz]ed|sanitis?zed|escaped|validated)\b[^.;\n]{0,30}\b(?:and|,)\s*(?:safe|secure)\b/gi,
 ];
 const NEGATION = /\b(?:not|never|no|without|improperly|incorrectly|inadequately|insufficiently|isn'?t|aren'?t|wasn'?t|weren'?t|doesn'?t|don'?t|didn'?t|cannot|can'?t|lacks?|lacking|missing|fails? to|failed to|un(?:validated|checked|verified|saniti[sz]ed|escaped|protected|guarded|handled|safe|secured)|insecure)\b|n't\b/i;
+const BARE = /\b(?:is|are|was|were)\s+(?:validated|checked|handled|verified)\b/gi;
+const DEFECT_QUALIFIER = /\b(?:wrong|incorrect(?:ly)?|only|insufficient(?:ly)?|weak(?:ly)?|partial(?:ly)?|client|too late|after|before|without|against the wrong)\b/i;
 function softDenial(text) {
   for (const re of SOFT_DENIAL) {
     for (const m of text.matchAll(re)) {
@@ -176,6 +178,11 @@ function softDenial(text) {
       const lead = clause.split(/\s+/).slice(-6).join(" ");
       if (!NEGATION.test(lead) && !NEGATION.test(m[0].replace(/^\w+\s+/, "").split(/\s+/).slice(0, 1).join(" "))) return true;
     }
+  }
+  // A bare "is validated" denies only when its clause names no defect and states no impact.
+  for (const m of text.matchAll(BARE)) {
+    const lead = text.slice(0, m.index).split(/[.;:!?\n]/).pop().split(",").pop().split(/\s+/).slice(-6).join(" ");
+    if (!NEGATION.test(lead) && !DEFECT_QUALIFIER.test(text) && !impactScan(text).positive) return true;
   }
   return false;
 }
@@ -188,35 +195,42 @@ const HEDGED = "is a question or a hedge, not an affirmative statement";
 const HEDGE = /\b(?:might|could|may)\s+(?:possibly|maybe|perhaps)\b|\b(?:maybe|perhaps|possibly)\s+(?:might|could|may)\b|\bnot sure\b|\bunsure\b|\bno idea\b/i;
 // A "?" inside code, a URL, a query string, optional chaining or a ternary is not a question.
 const stripCode = (t) => t.replace(/`[^`]*`/g, " ").replace(/https?:\/\/\S+/gi, " ").replace(/\S\?[\w=&./%-]\S*/g, " ").replace(/\?\./g, ".").replace(/\s\?\s[^?]*?\s:\s/g, " ");
-// A finding is a question when it ends with "?", or when it asks something and no other
-// sentence of it states an impact.
+// A finding is a question when it ends with "?" (ignoring trailing quotes, backticks, emphasis
+// and closing brackets), or when it asks something and no other sentence states an impact.
+const TRAIL = /[\s"'`*_)\]}>\u201d\u2019]+$/;
+const endsAsked = (t) => t.replace(TRAIL, "").endsWith("?");
 function isQuestion(text) {
+  if (endsAsked(text)) return true;
   const t = stripCode(text).trim();
   if (!t) return false;
-  if (t.endsWith("?")) return true;
   const sentences = t.split(/(?<=[.!?])\s+/).filter((x) => x.trim());
-  const asked = sentences.some((x) => /\?$/.test(x.trim()));
-  return asked && !sentences.some((x) => !/\?$/.test(x.trim()) && hasImpact(x));
+  const asked = sentences.some(endsAsked);
+  return asked && !sentences.some((x) => !endsAsked(x) && hasImpact(x));
 }
-// An impact counts only when not negated: no negator among the 2 words before it, in its own
-// clause. An impact joined to a negated one by or/and/a comma ("no race, never double charges
-// or double refunds") is negated with it.
+// An impact counts only when not negated: no negator among the 4 words before it, within its own
+// clause (a comma, colon, "so", "but", "which", "and" or "and then" ends the window; so does a
+// verb like "lets"/"allows", and those verbs themselves look back only 2 words, so "No rate limit
+// lets attackers ..." stays affirmative). An impact joined to a negated one by or/and/to/a comma
+// ("no race, never double charges or double refunds") is negated with it.
 const NEGATOR = /^(?:not|no|never|nor|without|cannot|neither|nothing)$|n't$/i;
 const FILLER = /\b(?:subject|vulnerable|susceptible|prone|open|exposed)\s+to\b/gi;
-function hasImpact(text) {
+const WINDOW_END = /[;:.!?\n,]|\b(?:so|but|which|and then|and|lets?|allows?|allowing|permits?|enables?)\b/i;
+const PERMISSIVE = /^(?:lets?|allows?|allowing|permits?|enables?)$/i;
+function impactScan(text) {
   const t = text.replace(FILLER, " ");
-  let prev = null;
+  let prev = null; let negatedSeen = false;
   for (const m of t.matchAll(new RegExp(IMPACT.source, "gi"))) {
-    const clause = t.slice(0, m.index).split(/[;:.!?\n]/).pop();
-    const own = clause.split(",").pop();
-    const before = own.split(/\s+/).filter((w) => w && !/^(?:or|nor)$/i.test(w)).slice(-2);
-    let negated = before.some((w) => NEGATOR.test(w));
-    if (!negated && prev && prev.negated && /^[\s,]*(?:(?:or|and|nor)\s*)?$/i.test(t.slice(prev.end, m.index))) negated = true;
+    const clause = t.slice(0, m.index).split(new RegExp(WINDOW_END.source, "gi")).pop();
+    const words = clause.split(/\s+/).filter((w) => w && !/^(?:or|nor)$/i.test(w));
+    let negated = words.slice(PERMISSIVE.test(m[0]) ? -2 : -4).some((w) => NEGATOR.test(w));
+    if (!negated && prev && prev.negated && /^[\s,]*(?:(?:or|and|nor|to)\s*)?$/i.test(t.slice(prev.end, m.index))) negated = true;
     prev = { end: m.index + m[0].length, negated };
-    if (!negated) return true;
+    if (!negated) return { positive: true, negated: negatedSeen };
+    negatedSeen = true;
   }
-  return false;
+  return { positive: false, negated: negatedSeen };
 }
+const hasImpact = (t) => impactScan(t).positive;
 const CLAUSE_SPLIT = /\b(?:but|however|although|though|except)\b|;/i;
 export function affirmativeProblem(issue) {
   const t = String(issue || "");
@@ -227,8 +241,10 @@ export function affirmativeProblem(issue) {
   const denying = clauses.some((c) => softDenial(c));
   if (denying && !clauses.some((c) => !softDenial(c) && hasImpact(c))) return DENIES;
   if (HEDGE.test(t) || isQuestion(t)) return HEDGED;
-  if (hasImpact(t)) return null;
-  return NO_IMPACT;
+  const imp = impactScan(t);
+  if (imp.positive) return null;
+  // a recognised negated impact ("does not crash") is a denial, like "not vulnerable"
+  return imp.negated ? DENIES : NO_IMPACT;
 }
 const credible = (dir, findings, c) => findings.filter((f) => !findingProblem(dir, f, c)).map((f) => ({ ...f, file: insideBuild(dir, f.file) }));
 // A report is valid when it is well formed, holds no denial and has at least one credited

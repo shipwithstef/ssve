@@ -846,6 +846,50 @@ test("S findings: soft denials are judged per clause", () => {
   for (const t of ["The signature is validated but that is all fine", "Amounts are properly validated; however nothing else to report"]) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
 });
 
+// Round 4 (the cap): wider negation, negated impacts as denials, decorated questions, bare "is validated".
+test("S findings: negation reaches 4 words back but stops at a clause boundary", () => {
+  for (const t of ["The handler never causes a crash on bad input", "There is no possibility of a race condition in the refund path", "It is not possible to take down the endpoint with a bad body"]) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  for (const t of [
+    "The request is not signed, so attackers can forge a paid event",
+    "The check is not enforced and lets anyone forge a paid event",
+    "No rate limit lets attackers brute-force the login",
+    "The refund is not idempotent, but a retry causes a double charge",
+    "Nothing validates the amount, which lets an attacker pay 1 cent",
+    "The handler never validates the body and then crashes on a malformed payload",
+    "The server does not allow retries to be deduplicated, so a retry causes a double charge",
+  ]) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
+  assert.ok(S.affirmativeProblem("The server does not allow attackers to forge events"));
+});
+
+test("S findings: a recognised negated impact is a denial, not just vague", async () => {
+  for (const t of ["The handler does not crash on a bad body", "never causes a crash", "There is no race condition here"]) assert.match(S.affirmativeProblem(t), /denies a defect/, t);
+  // vague text with no impact word at all stays merely uncredited
+  assert.match(S.affirmativeProblem("bad code here, fix it"), /does not state/);
+  const spec = { secrets: false, checks: [{ type: "report_valid", name: "valid" }] };
+  const src = { "src/a.mjs": "l1\nl2\nl3\n" };
+  const run = async (report) => byName(await S.grade(put(tmp(), { ...src, "SECURITY.json": JSON.stringify(report) }), "x", spec), "valid");
+  const good = { file: "src/a.mjs", line: 3, severity: "HIGH", issue: "anyone can forge a paid event without a signature" };
+  assert.equal((await run([good])).pass, true);
+  assert.equal((await run([good, { file: "src/a.mjs", line: 2, severity: "LOW", issue: "The handler does not crash on bad input" }])).pass, false);
+  assert.equal((await run([good, { file: "src/a.mjs", line: 2, severity: "LOW", issue: "bad code here, fix it" }])).pass, true);
+});
+
+test("S findings: decorated questions are questions", () => {
+  for (const t of ["`Is the price trusted?`", "**Crashes?**", "_Can the client set the price?_", "(does it crash?)", "\"Is it safe to retry?\"  ", "Client price: *double charges?*"]) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  assert.equal(S.affirmativeProblem("`req.body?.amountCents` is trusted from the client, so anyone can pay a cent"), null);
+});
+
+test("S findings: a bare 'is validated' denies only without a defect qualifier or impact", () => {
+  for (const t of ["The signature is validated.", "Amounts are checked server-side.", "The body is handled correctly in the route", "The webhook payload is verified"]) assert.ok(S.affirmativeProblem(t), `should reject: ${t}`);
+  for (const t of [
+    "The signature is validated against the wrong key, so anyone can forge a paid event",
+    "The amount is checked only on the client, so a customer can pay 1 cent",
+    "The signature is validated after the event is processed, so anyone can forge an event",
+    "The body is handled without a try/catch, so a malformed payload can crash the endpoint",
+    "The owner is checked, and a race lets a customer refund twice",
+  ]) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
+});
+
 test("S security-payments: a report made only of negated robustness lines scores no more than the stub", async () => {
   const spec = S.loadSpec("security-payments", "S");
   const stub = await S.grade(prepare("security-payments"), "security-payments", spec);
