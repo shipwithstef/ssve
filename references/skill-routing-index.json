@@ -459,7 +459,7 @@
     {
       "skill": "craft-prompt",
       "path": "skills/craft-prompt/SKILL.md",
-      "content_hash": "4fd007bea577dc99c6abab2853d94550622fa9201f313539a5b041c7ba5602cc",
+      "content_hash": "681a77b5992a1514d18f1b70a1a889a416a51a86f1a4c2ac9ebf7016fd75d3cc",
       "description": "Crafts a standalone, output-shaped prompt for a task and checks it beats a bare baseline with a best-of-2 floor. Use for \"craft me a prompt\", \"make this prompt better\", \"beat this viral prompt\". Not for routing svc work. Opt-in, default off.",
       "aliases": [],
       "positive_triggers": [],

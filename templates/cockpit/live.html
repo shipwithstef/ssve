@@ -258,9 +258,19 @@ document.addEventListener("keydown", (e) => {
   cards[kb].scrollIntoView({ block: "nearest" });
 });
 
+// The token arrives in the URL fragment (#t=...), which is never sent to the server. Keep it
+// in memory and tab-session storage, then drop it from the address bar and history.
+let token = "";
+try { token = new URLSearchParams(location.hash.slice(1)).get("t") || ""; } catch {}
+try { if (token) sessionStorage.setItem("cockpit-token", token); else token = sessionStorage.getItem("cockpit-token") || ""; } catch {}
+if (location.hash) { try { history.replaceState(null, "", location.pathname + location.search); } catch {} }
+// Any fetch() to /api/* must send `Authorization: Bearer <token>`. EventSource cannot set
+// headers, so the stream takes the token as a query parameter (a cookie would be shared with
+// every other 127.0.0.1 port).
+
 function connect() {
   const live = $("#live");
-  const es = new EventSource("/api/events");
+  const es = new EventSource("/api/events?t=" + encodeURIComponent(token));
   es.onmessage = (m) => { state = JSON.parse(m.data); announce(state); live.classList.add("on"); $("#liveText").textContent = `live · updated ${new Date(state.generated_at).toLocaleTimeString()}`; render(); };
   es.onerror = () => { live.classList.remove("on"); $("#liveText").textContent = "reconnecting…"; };
 }

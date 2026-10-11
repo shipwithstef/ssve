@@ -1813,7 +1813,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-blind-floor.sh",
-        "test-framework/evals/tier-1/validate-prompt-floor.sh"
+        "test-framework/evals/tier-1/validate-prompt-floor.sh",
+        "test-framework/tests/craft-prompt-orchestrator-family.test.mjs"
       ]
     },
     {
@@ -1999,6 +2000,16 @@
         "test-framework/evals/tier-1/validate-delivery-graph-closeout-classification.sh",
         "test-framework/evals/tier-1/validate-delivery-graph-replay-autorun.sh",
         "test-framework/evals/tier-1/validate-delivery-tier.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/cockpit-serve.mjs",
+      "kind": "engine",
+      "source": "scripts/cockpit-serve.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cockpit-live.mjs",
+        "test-framework/tests/cockpit-token.test.mjs"
       ]
     },
     {
@@ -2215,7 +2226,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
-        "test-framework/evals/tier-1/validate-harness-intel.mjs"
+        "test-framework/evals/tier-1/validate-harness-intel.mjs",
+        "test-framework/tests/harness-playbook-review-sandbox.test.mjs"
       ]
     },
     {
@@ -2374,6 +2386,15 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-no-loss-verify.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/northstar.mjs",
+      "kind": "engine",
+      "source": "scripts/northstar.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/northstar.test.mjs"
       ]
     },
     {
@@ -3739,7 +3760,8 @@
       "source": "scripts/lib/runtime-engine-v2.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-runtime-v2.mjs"
+        "test-framework/evals/tier-1/validate-runtime-v2.mjs",
+        "test-framework/tests/runtime-effect-lease-expiry.test.mjs"
       ]
     },
     {
@@ -3810,6 +3832,15 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-g1-lane-tasks-edit-guard.sh",
         "test-framework/evals/tier-1/validate-stage-registry-single-source.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/stats.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/stats.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/stats.test.mjs"
       ]
     },
     {
@@ -3986,8 +4017,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-cockpit-live.mjs",
-        "scripts/orch/orch.test.mjs",
-        "scripts/orch/owner-view.test.mjs"
+        "test-framework/tests/cockpit-token.test.mjs",
+        "scripts/orch/orch.test.mjs"
       ]
     },
     {
