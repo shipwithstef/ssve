@@ -3,6 +3,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
+import { rebuildReopenedEdges } from "./lib/reopened-edges.mjs";
 import { writeJsonAtomic } from "./state-io.mjs";
 import { injectMandatoryDeliveryChain, validateMandatoryDeliveryChain } from "./lib/mandatory-delivery-chain.mjs";
 import {
@@ -529,7 +530,7 @@ function taskMatchKey(task) {
   return skill + ":" + String(task.metadata?.mode || "");
 }
 
-function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrated: [] }) {
+function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrated: [], required: new Map() }) {
   const existing = Array.isArray(existingGraph?.tasks) ? existingGraph.tasks : [];
   if (!existing.length) return tasks;
   const reserved = new Set();
@@ -570,6 +571,7 @@ function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrat
   const position = new Map(pairs.map(({ clone }, index) => [clone.id, index]));
   const out = pairs.map(({ task, prev, clone }, index) => {
     const required = (task.blocked_by || []).map(id => remap.get(id));
+    notes.required?.set(clone.id, required);
     const inherited = [...(prev?.blocked_by || [])];
     const stale = inherited.filter(id => position.has(id) && position.get(id) >= index);
     if (stale.length) clone.blocked_by = [...new Set([...inherited.filter(id => !stale.includes(id)), ...required])];
@@ -866,7 +868,7 @@ export function compileDeliveryGraph(input) {
     closeout_classification_required: true,
   };
 
-  const notes = { reopened: [], migrated: [] };
+  const notes = { reopened: [], migrated: [], required: new Map() };
   const remap = { ...(existingGraph?.delivery_graph?.research?.requester_remap || {}) };
   const tasks = attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph, notes), questions, (() => {
     for (const row of notes.migrated) remap[String(row.task.id)] = "execute-changeset";
@@ -878,6 +880,11 @@ export function compileDeliveryGraph(input) {
   if (notes.reopened.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "reopen_for_process_steps", reason: "A prerequisite moved upstream or gained a required process step; execution and downstream stages reopened until it is done and its evidence exists (per-task reasons below).", tasks: notes.reopened });
   const reopened = applyPlanningDepth(tasks, planning);
   if (reopened.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "reopen_for_depth", reason: "Planning depth increased; lighter completed stages reopened.", tasks: reopened });
+  // A reopened stage waits for what the CURRENT obligations require, not for the edges the
+  // lighter plan left on it. Research requestor edges stay with the research wiring.
+  const edgeChanges = rebuildReopenedEdges(tasks, notes.required);
+  if (edgeChanges.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "rebuild_reopened_edges", reason: "Reopened stages re-pointed at the edges their current obligations require.", edges: edgeChanges });
+  assertAcyclic(tasks);
   const superseded = [...(existingGraph?.delivery_graph?.research?.superseded_tasks || []),
     ...existingTasks.filter(task => !tasks.some(current => current.id === task.id)).map(task => ({
       task: structuredClone(task), disposition: "research no longer required; no completion receipt issued",
