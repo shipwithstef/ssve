@@ -30,8 +30,10 @@ test("fake runner A/B: contract gain earns keep, ties are no-gain, tokens are me
   assert.equal(r.status, 0, r.stderr);
   const out = JSON.parse(r.stdout);
   const by = Object.fromEntries(out.tasks.map((t) => [t.task, t]));
-  assert.equal(by["write-spec-csv-export"].verdict, "earns-keep");
-  assert.equal(by["diagnose-off-by-one"].verdict, "no-gain");
+  assert.equal(by["write-spec-csv-export"].verdict, "earns-keep (pending held-out confirmation)", "one task is never a confirmed keep");
+  assert.equal(by["write-spec-csv-export"].needs_holdout, true);
+  assert.equal(by["diagnose-off-by-one"].verdict, "inconclusive", "a tie is never a retirement verdict");
+  assert.equal(by["diagnose-off-by-one"].exploratory, "no-gain");
   assert.equal(out.runs.length, out.tasks.length * 2 * 5);
   for (const t of out.tasks) assert.deepEqual(t.models, ["fake-model-1"], "the served model is recorded");
   for (const t of out.tasks) assert.ok(t.token_delta > 0, "with-skill arm must pay the skill's context cost");
@@ -96,7 +98,7 @@ process.stdout.write(JSON.stringify({ result: 'ok' }));`);
     assert.equal(r.status, 0, r.stderr);
     const out = JSON.parse(r.stdout); const row = out.tasks[0];
     for (const a of [row.bare, row.with_skill]) { assert.equal(a.pass_rate, 1); assert.equal(a.errors, 2); assert.equal(a.runs, 5); }
-    assert.equal(row.verdict, "no-gain");
+    assert.equal(row.verdict, "inconclusive"); assert.equal(row.exploratory, "no-gain");
     assert.deepEqual(out.runs.map((x) => x.crashed), [true, true, false, false, false, false, false, true, true, false, false, false, false, false]);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
   // summarize: crashed runs are excluded, an arm with zero successful runs is still "error"
@@ -125,12 +127,12 @@ test("helpers: argv split, output parsing, graders, verdict margins", () => {
     assert.equal(grade({ type: "command", argv: [process.execPath, g] }, "ok"), true);
     assert.equal(grade({ type: "command", argv: [process.execPath, g] }, "no"), false);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
-  const mk = (arm, pass) => ({ task: "t", skill: "s", arm, pass, exit: 0, tokens: null, answer_chars: 1 });
+  const mk = (arm, pass) => ({ task: "t", skill: "s", arm, pass, exit: 0, tokens: null, answer_chars: 1, skill_hash: "h", models: ["m"] });
   const five = (arm, pass) => Array.from({ length: 5 }, () => mk(arm, pass));
   assert.equal(summarize([mk("bare", false), mk("with-skill", true)], 0.15)[0].verdict, "inconclusive");
-  assert.equal(summarize([...five("bare", false), ...five("with-skill", true)], 0.15)[0].verdict, "earns-keep");
+  assert.equal(summarize([...five("bare", false), ...five("with-skill", true)], 0.15)[0].verdict, "earns-keep (pending held-out confirmation)");
   assert.equal(summarize([...five("bare", true), ...five("with-skill", false)], 0.15)[0].verdict, "regresses");
-  assert.equal(summarize([...five("bare", true), ...five("with-skill", true)], 0.15)[0].verdict, "no-gain");
+  assert.equal(summarize([...five("bare", true), ...five("with-skill", true)], 0.15)[0].verdict, "inconclusive", "identical outcomes carry no evidence of equivalence");
 });
 
 test("bad arguments are usage errors", () => {
@@ -188,7 +190,7 @@ test("--regrade re-scores stored answers with the current graders, without calli
     const r = cli(["--tasks", t2, "--regrade", report, "--json"], { EVALS: "0" });
     assert.equal(r.status, 0, r.stderr);
     const row = JSON.parse(r.stdout).tasks[0];
-    assert.equal(row.bare.pass_rate, 1); assert.equal(row.with_skill.pass_rate, 1); assert.equal(row.verdict, "no-gain");
+    assert.equal(row.bare.pass_rate, 1); assert.equal(row.with_skill.pass_rate, 1); assert.equal(row.verdict, "inconclusive"); assert.equal(row.exploratory, "no-gain");
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
 

@@ -18,10 +18,18 @@
  * Verdicts need evidence. Crashed runs do not count. Fewer than 3 finished runs
  * in either arm is "inconclusive". Adopting a direction (earns-keep / regresses)
  * needs >= 5 finished runs per arm, a pass-rate delta beyond --margin and a
- * permutation p < .05 (compareSamples from scripts/outcome-eval.mjs); no-gain
- * needs >= 5 per arm and a delta within --margin. Anything else is
- * "inconclusive" and the report says why; 3-4 runs per arm only record the
- * point-estimate direction in `exploratory`. A verdict is bound to the measured
+ * permutation p < .05 (compareSamples from scripts/outcome-eval.mjs). Anything
+ * else is "inconclusive" and the report says why. "no-gain" is never a verdict:
+ * without significance there is no evidence of equivalence, so a tie or a small
+ * difference is "inconclusive" with `exploratory: "no-gain"` (a label that must
+ * not drive retirement). 3-4 runs per arm only record the point-estimate
+ * direction in `exploratory`. A significant win on one task is
+ * "earns-keep (pending held-out confirmation)" with needs_holdout: true; it
+ * becomes "earns-keep" only when a second task of the same skill (same folder
+ * hash and model) also wins significantly, in the same report or in
+ * --holdout-report FILE. The counted runs must be fully bound: every one has the
+ * same skill_hash and exactly one served model, the same in both arms; otherwise
+ * the verdict is "inconclusive". A verdict is bound to the measured
  * candidate: each task row records `skill_hash` (sha256 over the whole skill
  * folder) and `models` (ids the runner reported serving). `--check-stale`
  * reports a verdict whose hash or model no longer matches as stale; stale
@@ -35,11 +43,14 @@
  *     exit 1 when any verdict's skill folder hash or served model differs from
  *     the current skill / MODEL_ID (or was never recorded).
  *   node scripts/skill-ab-eval.mjs --tasks FILE [--runner "CMD ARGS"]
- *        [--repeat 5] [--margin 0.15] [--only skill,skill] [--json] [--out FILE]
+ *        [--repeat 5] [--margin 0.15] [--only skill,skill] [--holdout-report FILE]
+ *        [--json] [--out FILE]
  *   (--arms bare,with-skill is accepted for old command lines; any other arm
  *   set is refused: there is no multi-arm matrix.)
  *
- * Every run executes in its own empty sandbox directory (or the shared --cwd),
+ * Every run executes in its own empty sandbox directory (or the shared --cwd;
+ * an existing .claude/skills/<skill> there is refused, never overwritten or
+ * deleted: only what the runner itself mounted is removed afterwards),
  * so neither arm picks up this repo's CLAUDE.md/AGENTS.md and no run sees
  * another run's files. Skills that produce artifacts are graded on what they
  * actually wrote: files left in the sandbox are collected and, per the task's
@@ -81,15 +92,17 @@ export const MIN_RUNS = 3;
 /** Adopting a direction (earns-keep / regresses / no-gain) needs this many finished runs per arm and, for a difference, p < ALPHA. */
 export const ADOPT_RUNS = 5;
 export const ALPHA = 0.05;
+/** A significant win on one task is only a signal; adoption needs a second significant win on a different task (§11 item 8). */
+export const PENDING_KEEP = "earns-keep (pending held-out confirmation)";
 export const DEFAULT_RUNNER = 'claude -p --output-format json --setting-sources "" --strict-mcp-config --no-session-persistence';
 
 export function parseArgs(argv, env = process.env) {
-  const o = { repeat: 5, margin: null, runner: null, only: null, json: false, out: null, tasks: null, cwd: null, arms: null, "check-stale": null, model: null };
+  const o = { repeat: 5, margin: null, runner: null, only: null, json: false, out: null, tasks: null, cwd: null, arms: null, "check-stale": null, model: null, "holdout-report": null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--json") { o.json = true; continue; }
     if (a === "--help" || a === "-h") { o.help = true; continue; }
-    if (!["--tasks", "--runner", "--repeat", "--margin", "--only", "--out", "--cwd", "--regrade", "--arms", "--check-stale", "--model"].includes(a)) throw new Error(`unknown option: ${a}`);
+    if (!["--tasks", "--runner", "--repeat", "--margin", "--only", "--out", "--cwd", "--regrade", "--arms", "--check-stale", "--model", "--holdout-report"].includes(a)) throw new Error(`unknown option: ${a}`);
     const v = argv[++i];
     if (v === undefined || v.startsWith("--")) throw new Error(`${a} requires a value`);
     o[a.slice(2)] = ["--repeat", "--margin"].includes(a) ? Number(v) : v;
@@ -157,12 +170,22 @@ export function skillFolderHash(skill, root = ROOT) {
   return h.digest("hex");
 }
 
-/** Copy the whole skill folder into the run sandbox for the with-skill arm. Returns the mounted dir. */
+/**
+ * Copy the whole skill folder into the run sandbox for the with-skill arm.
+ * Refuses an existing destination (a shared --cwd may hold the user's own skill) and
+ * returns { dest, remove } where remove() deletes only what this call created.
+ */
 export function mountSkill(cwd, skill) {
   const dest = path.join(cwd, mountPath(skill));
+  if (fs.existsSync(dest) || fs.lstatSync(dest, { throwIfNoEntry: false })) {
+    throw new Error(`refusing to mount skill '${skill}': ${dest} already exists (remove it or run without --cwd)`);
+  }
+  // the highest directory this mount has to create, so cleanup leaves pre-existing .claude/ content alone
+  let created = dest;
+  for (let d = path.dirname(dest); d.startsWith(cwd) && d !== cwd && !fs.existsSync(d); d = path.dirname(d)) created = d;
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.cpSync(skillDir(skill), dest, { recursive: true, filter: (src) => !HASH_SKIP.has(path.basename(src)) });
-  return dest;
+  fs.cpSync(skillDir(skill), dest, { recursive: true, errorOnExist: true, force: false, filter: (src) => !HASH_SKIP.has(path.basename(src)) });
+  return { dest, remove: () => fs.rmSync(created, { recursive: true, force: true }) };
 }
 
 export function buildPrompt(task, arm) {
@@ -263,28 +286,64 @@ export function grade(grader, answer, cwd = ROOT, artifacts = []) {
   throw new Error(`unknown grader type: ${grader.type}`);
 }
 
+/** Why the counted runs are not a bound measurement of one skill folder on one model, or null when they are. */
+export function bindingProblem(bareRuns, skillRuns) {
+  const all = [...bareRuns, ...skillRuns];
+  if (all.some((x) => !x.skill_hash)) return "a counted run has no skill_hash";
+  if (new Set(all.map((x) => x.skill_hash)).size !== 1) return "counted runs carry different skill hashes";
+  if (all.some((x) => !(x.models || []).length)) return "a counted run reports no served model";
+  const armModels = (xs) => [...new Set(xs.flatMap((x) => x.models))];
+  const [mb, ms] = [armModels(bareRuns), armModels(skillRuns)];
+  if (mb.length !== 1 || ms.length !== 1) return "an arm was served by more than one model";
+  if (mb[0] !== ms[0]) return `the arms were served by different models (${mb[0]} vs ${ms[0]})`;
+  return null;
+}
+
 /**
- * Verdict from the finished pass/fail outcomes of the two arms (crashed runs already removed).
- * Returns { verdict, reason?, exploratory?, p? }. Incomplete evidence never recommends keep.
+ * Verdict from the two arms' finished (non-crashed) runs.
+ * Returns { verdict, reason?, exploratory?, p? }. Incomplete or unbound evidence never recommends keep, and
+ * "no-gain" is never a verdict: with no significant difference the answer is "inconclusive".
+ * A significant win comes back as { verdict: "earns-keep", significant: true }; held-out confirmation is applied by summarize().
  */
-export function decideVerdict(bare, skill, margin) {
+export function decideVerdict(bareRuns, skillRuns, margin) {
+  const bare = bareRuns.map((x) => Boolean(x.pass)), skill = skillRuns.map((x) => Boolean(x.pass));
   const nb = bare.length, ns = skill.length;
   const delta = skill.filter(Boolean).length / (ns || 1) - bare.filter(Boolean).length / (nb || 1);
   const direction = delta > margin ? "earns-keep" : delta < -margin ? "regresses" : "no-gain";
   if (nb < MIN_RUNS || ns < MIN_RUNS) {
     return { verdict: "inconclusive", reason: `needs at least ${MIN_RUNS} finished runs per arm (bare ${nb}, with-skill ${ns})` };
   }
+  const unbound = bindingProblem(bareRuns, skillRuns);
+  if (unbound) return { verdict: "inconclusive", exploratory: direction, reason: `evidence is not bound to one skill folder and model: ${unbound}` };
   if (nb < ADOPT_RUNS || ns < ADOPT_RUNS) {
     return { verdict: "inconclusive", exploratory: direction, reason: `needs at least ${ADOPT_RUNS} finished runs per arm to adopt a verdict (bare ${nb}, with-skill ${ns}); point estimate only: ${direction}` };
   }
-  const stats = compareSamples(skill.map(Number), bare.map(Number));
-  const p = stats.p;
-  if (direction === "no-gain") return { verdict: "no-gain", p };
-  if (p < ALPHA) return { verdict: direction, p };
-  return { verdict: "inconclusive", exploratory: direction, p, reason: `pass-rate delta ${delta.toFixed(2)} is not significant (permutation p ${p} >= ${ALPHA})` };
+  const p = compareSamples(skill.map(Number), bare.map(Number)).p;
+  if (direction !== "no-gain" && p < ALPHA) return direction === "earns-keep" ? { verdict: "earns-keep", significant: true, p } : { verdict: direction, p };
+  const why = direction === "no-gain" ? `pass-rate delta ${delta.toFixed(2)} is within the margin ${margin}` : `pass-rate delta ${delta.toFixed(2)} is not significant`;
+  return { verdict: "inconclusive", exploratory: direction, p,
+    reason: `${why} (permutation p ${p}${direction === "no-gain" ? "; no significant difference is not evidence of equivalence" : ` >= ${ALPHA}`})` };
 }
 
-export function summarize(runs, margin) {
+const isKeepSignal = (r) => r.verdict === "earns-keep" || r.verdict === PENDING_KEEP;
+const sameBinding = (a, b) => a.skill_hash && a.skill_hash === b.skill_hash && a.models?.length === 1 && b.models?.length === 1 && a.models[0] === b.models[0];
+
+/**
+ * Held-out confirmation (§11 item 8): a significant win on one task is pending until a second, different task of
+ * the same skill (same folder hash and model) also wins significantly, here or in `extraRows` (a holdout report's rows).
+ */
+export function applyHoldout(rows, extraRows = []) {
+  const pool = [...rows, ...extraRows];
+  for (const r of rows) {
+    if (!r.significant) continue;
+    const confirmers = pool.filter((o) => o !== r && o.skill === r.skill && o.task !== r.task && isKeepSignal(o) && sameBinding(r, o)).map((o) => o.task);
+    if (confirmers.length) { r.verdict = "earns-keep"; r.needs_holdout = false; r.confirmed_by = [...new Set(confirmers)].sort(); }
+    else { r.verdict = PENDING_KEEP; r.needs_holdout = true; r.reason = "significant on this task; needs a second significant win on a different task of the same skill (same folder hash and model) to be confirmed"; }
+  }
+  return rows;
+}
+
+export function summarize(runs, margin, extraRows = []) {
   const by = {};
   for (const r of runs) {
     if (!ARMS.includes(r.arm)) throw new Error(`unknown arm '${r.arm}': only ${ARMS.join(" and ")} exist`);
@@ -304,16 +363,17 @@ export function summarize(runs, margin) {
     const delta = withSkill.pass_rate - bare.pass_rate;
     // An arm whose runner never completed is a broken run, not evidence: it
     // must not read as "no-gain" (which would argue for retiring the skill).
-    const finished = (xs) => xs.filter((x) => !isCrashed(x)).map((x) => Boolean(x.pass));
+    const finished = (xs) => xs.filter((x) => !isCrashed(x));
     const call = !finished(t.bare).length || !finished(t["with-skill"]).length ? { verdict: "error" } : decideVerdict(finished(t.bare), finished(t["with-skill"]), margin);
-    // Evidence binding: what was measured. Hash and served models come from the runs themselves.
-    const all = [...t.bare, ...t["with-skill"]];
-    const hashes = [...new Set(all.map((x) => x.skill_hash).filter(Boolean))];
-    const models = [...new Set(all.flatMap((x) => x.models || []))].sort();
+    // Evidence binding: what was measured. A hash is reported only when every counted run carries the same one.
+    const counted = [...finished(t.bare), ...finished(t["with-skill"])];
+    const hashes = [...new Set(counted.map((x) => x.skill_hash || null))];
+    const models = [...new Set(counted.flatMap((x) => x.models || []))].sort();
     tasks.push({ task: id, skill: t.skill, bare, with_skill: withSkill, pass_delta: Number(delta.toFixed(3)),
       token_delta: bare.mean_tokens !== null && withSkill.mean_tokens !== null ? withSkill.mean_tokens - bare.mean_tokens : null, ...call,
       skill_hash: hashes.length === 1 ? hashes[0] : null, models });
   }
+  applyHoldout(tasks, extraRows);
   return tasks;
 }
 
@@ -339,6 +399,14 @@ export function checkStale(report, model, root = ROOT) {
   });
 }
 
+/** Task rows of a saved report that may confirm this run's significant wins on a different task. */
+function holdoutRows(o) {
+  if (!o["holdout-report"]) return [];
+  const rep = JSON.parse(fs.readFileSync(o["holdout-report"], "utf8"));
+  if (!Array.isArray(rep.tasks)) throw new Error("--holdout-report: not a skill-ab-eval report (no tasks)");
+  return rep.tasks;
+}
+
 /** Re-score stored runs with the task file's current graders (no runner calls). */
 export function regrade(o) {
   const spec = JSON.parse(fs.readFileSync(o.tasks, "utf8"));
@@ -354,7 +422,7 @@ export function regrade(o) {
     return { ...r, pass: !isCrashed(r) && grade(t.grader, r.answer, ROOT, (r.artifacts || []).map((a) => ({ path: a.path, text: a.text }))) };
   });
   const margin = o.margin ?? report.margin ?? 0.15;
-  return { ...report, regraded_from: o.regrade, margin, tasks: summarize(runs, margin), runs };
+  return { ...report, regraded_from: o.regrade, margin, tasks: summarize(runs, margin, holdoutRows(o)), runs };
 }
 
 export function run(o) {
@@ -365,11 +433,15 @@ export function run(o) {
   const runs = [];
   const hashes = new Map(); // skill -> folder hash, taken once before any run
   for (const task of tasks) if (!hashes.has(task.skill)) hashes.set(task.skill, skillFolderHash(task.skill));
+  if (o.cwd) for (const skill of hashes.keys()) {
+    const dest = path.join(path.resolve(o.cwd), mountPath(skill));
+    if (fs.lstatSync(dest, { throwIfNoEntry: false })) throw new Error(`refusing to run: ${dest} already exists in --cwd and would be overwritten and deleted (remove it or run without --cwd)`);
+  }
   for (const task of tasks) {
     for (const arm of ARMS) {
       for (let i = 0; i < o.repeat; i++) {
         const cwd = o.cwd ? path.resolve(o.cwd) : fs.mkdtempSync(path.join(os.tmpdir(), "svc-ab-run-"));
-        const mounted = arm === "with-skill" ? mountSkill(cwd, task.skill) : null;
+        const mounted = arm === "with-skill" ? mountSkill(cwd, task.skill) : null; // throws before any cleanup if the destination exists
         const r = spawnSync(bin, args, { input: buildPrompt(task, arm), cwd, encoding: "utf8",
           timeout: (spec.timeout_seconds || 600) * 1000, maxBuffer: 64 * 1024 * 1024,
           env: { ...process.env, SVC_AB_ARM: arm, SVC_AB_TASK: task.id } });
@@ -377,14 +449,14 @@ export function run(o) {
         const crashed = r.status !== 0 || !parsed.has_result;
         const artifacts = collectArtifacts(cwd);
         if (!o.cwd) fs.rmSync(cwd, { recursive: true, force: true });
-        else if (mounted) fs.rmSync(mounted, { recursive: true, force: true });
+        else if (mounted) mounted.remove();
         runs.push({ task: task.id, skill: task.skill, arm, i, skill_hash: hashes.get(task.skill), models: parsed.models || [], exit: r.status, error: r.error?.code ?? null, signal: r.signal ?? null, crashed, pass: !crashed && grade(task.grader, parsed.answer, ROOT, artifacts),
           tokens: parsed.tokens, cost_usd: parsed.cost_usd, answer_chars: parsed.answer.length, answer: parsed.answer,
           artifacts: artifacts.map((a) => ({ path: a.path, chars: a.text.length, text: a.text })) });
       }
     }
   }
-  return { runner: o.runner, arms: [...ARMS], repeat: o.repeat, margin: o.margin, min_runs: MIN_RUNS, adopt_runs: ADOPT_RUNS, alpha: ALPHA, tasks: summarize(runs, o.margin), runs };
+  return { runner: o.runner, arms: [...ARMS], repeat: o.repeat, margin: o.margin, min_runs: MIN_RUNS, adopt_runs: ADOPT_RUNS, alpha: ALPHA, tasks: summarize(runs, o.margin, holdoutRows(o)), runs };
 }
 
 if (__svcIsMain(import.meta.url)) {
