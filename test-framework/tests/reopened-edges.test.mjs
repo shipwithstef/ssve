@@ -1,3 +1,4 @@
+// @organism-suite
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rebuildReopenedEdges } from '../../scripts/lib/reopened-edges.mjs';
