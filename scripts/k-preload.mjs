@@ -42,9 +42,21 @@ const DECISION_FILES = [
   ".svc/decision-log.md",
 ];
 
-const SECRET = /(?:sk|pk|rk|ghp|gho|github_pat)_[A-Za-z0-9_-]{8,}|(?:sk|pk|rk)-[A-Za-z0-9_-]{8,}|AKIA[0-9A-Z]{16}|Bearer\s+[A-Za-z0-9._-]{8,}|(?:api[_-]?key|secret|token|password)\s*[:=]\s*\S+/gi;
+const CREDENTIAL = String.raw`(?:api[_-]?key|secret|token|password)`;
+const SECRET = new RegExp(
+  [
+    String.raw`(?:sk|pk|rk|ghp|gho|github_pat)_[A-Za-z0-9_-]{8,}`,
+    String.raw`(?:sk|pk|rk)-[A-Za-z0-9_-]{8,}`,
+    String.raw`AKIA[0-9A-Z]{16}`,
+    String.raw`Bearer\s+[A-Za-z0-9._-]{8,}`,
+    `["']?${CREDENTIAL}["']?\\s*[:=]\\s*(?:"[^"\\n]*"|'[^'\\n]*')`,
+    `${CREDENTIAL}\\s*[:=]\\s*\\S+`,
+  ].join("|"),
+  "gi",
+);
 
 function redact(text) {
+  SECRET.lastIndex = 0;
   return text.replace(SECRET, "[redacted]");
 }
 
@@ -85,35 +97,50 @@ function extractMarkdownFacts(source) {
     lines.push(raw);
   }
 
-  const bullets = [];
-  const paragraphs = [];
+  const facts = [];
   let paragraph = [];
-  const flush = () => {
+  let bullet = null;
+  const flushParagraph = () => {
     if (paragraph.length === 0) return;
-    paragraphs.push(paragraph.join(" "));
+    facts.push(paragraph.join(" "));
     paragraph = [];
+  };
+  const flushBullet = () => {
+    if (bullet === null) return;
+    facts.push(bullet);
+    bullet = null;
   };
   for (const raw of lines) {
     const line = raw.trim();
     if (!line || /^---+$/.test(line)) {
-      flush();
+      flushParagraph();
+      flushBullet();
       continue;
     }
-    const bullet = line.match(/^(?:[-*+]|\d+[.)])\s+(.+)$/);
-    if (bullet) {
-      flush();
-      bullets.push(bullet[1]);
+    const bulletMatch = line.match(/^(?:[-*+]|\d+[.)])\s+(.+)$/);
+    if (bulletMatch) {
+      flushParagraph();
+      flushBullet();
+      bullet = bulletMatch[1];
       continue;
     }
     if (/^#{1,6}\s/.test(line)) {
-      flush();
+      flushParagraph();
+      flushBullet();
       continue;
     }
-    paragraph.push(line.replace(/^(?:>\s*)+/, ""));
+    const content = line.replace(/^(?:>\s*)+/, "");
+    if (!content) continue;
+    if (bullet !== null && /^\s+\S/.test(raw)) {
+      bullet = `${bullet} ${content}`;
+      continue;
+    }
+    flushBullet();
+    paragraph.push(content);
   }
-  flush();
-  const chosen = bullets.length > 0 ? bullets : paragraphs;
-  return chosen.map(normalizeFact).filter(Boolean);
+  flushParagraph();
+  flushBullet();
+  return facts.map(normalizeFact).filter(Boolean);
 }
 
 function decisionText(obj) {
@@ -295,7 +322,7 @@ function finish(facts, cap) {
     const omitted = facts.length - kept.length;
     const text = assemble(kept, cap, omitted);
     const bytes = Buffer.byteLength(text, "utf8");
-    if (bytes <= cap || kept.length === 0) {
+    if (bytes <= cap) {
       return {
         text,
         bytes,
@@ -304,10 +331,10 @@ function finish(facts, cap) {
         facts: kept.map((fact) => ({ text: fact.text, source: fact.source })),
       };
     }
+    if (kept.length === 0) break;
     dropLowest(kept);
   }
-  const text = assemble([], cap, facts.length);
-  return { text, bytes: Buffer.byteLength(text, "utf8"), cap, truncated: facts.length, facts: [] };
+  throw new Error("cap is smaller than the digest header");
 }
 
 export function preloadKnowledge(root, options = {}) {

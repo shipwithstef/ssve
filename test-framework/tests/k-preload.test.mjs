@@ -127,6 +127,68 @@ test("prose owner notes with no bullets still yield a fact", () => {
   });
 });
 
+test("quoted credential labels and spaced quoted values are fully redacted", () => {
+  fixture((root) => {
+    const password = ["orchid", "123456789"].join("");
+    const spaced = ["coral", "reef", "phrase"].join(" ");
+    write(root, "OWNER-NOTES.md", [
+      `Store the admin credential as "password": "${password}" and rotate it yearly.`,
+      `The backup reads password: "${spaced}" before anyone prints it.`,
+      "",
+    ].join("\n"));
+    const digest = preloadKnowledge(root);
+    assert.equal(digest.text.includes(password), false);
+    assert.equal(digest.text.includes(spaced), false);
+    assert.equal(digest.text.includes("reef"), false);
+    assert.match(digest.text, /\[redacted\]/);
+    assert.match(digest.text, /rotate it yearly/);
+    assert.match(digest.text, /before anyone prints it/);
+    assert.equal(digest.text, preloadKnowledge(root).text);
+  });
+});
+
+test("prose facts survive beside bullets and multiline bullets stay joined", () => {
+  fixture((root) => {
+    write(root, "OWNER-NOTES.md", [
+      "Games must look like a real game.",
+      "",
+      "- Use real art,",
+      "  never primitive placeholders.",
+      "- Ship the smallest journey.",
+      "  Qualifier: every paid screen stays specific.",
+      "",
+      "Painters must keep the palette warm.",
+    ].join("\n"));
+    const digest = preloadKnowledge(root);
+    assert.deepEqual(digest.facts.map((fact) => fact.text), [
+      "Games must look like a real game.",
+      "Use real art, never primitive placeholders.",
+      "Ship the smallest journey. Qualifier: every paid screen stays specific.",
+      "Painters must keep the palette warm.",
+    ]);
+  });
+});
+
+test("caps smaller than the digest header are rejected", () => {
+  fixture((root) => {
+    assert.throws(() => preloadKnowledge(root, { cap: 1 }), /smaller than the digest header/);
+    const ran = spawnSync(process.execPath, [cli, "--root", root, "--cap", "1"], { encoding: "utf8" });
+    assert.equal(ran.status, 1);
+    assert.equal(ran.stdout, "");
+    assert.match(ran.stderr, /smaller than the digest header/);
+
+    write(root, "NOTES.md", "- Keep the journey runnable from a clean tree.\n");
+    assert.throws(() => preloadKnowledge(root, { cap: 1 }), /smaller than the digest header/);
+    const fitted = preloadKnowledge(root, { cap: 80 });
+    assert.ok(fitted.bytes <= 80);
+    assert.equal(fitted.bytes, Buffer.byteLength(fitted.text, "utf8"));
+    assert.match(fitted.text, /^k-preload facts=\d+ bytes=\d+ cap=80 truncated=\d+\n/);
+    for (const line of fitted.text.trimEnd().split("\n")) {
+      assert.match(line, /^(?:k-preload facts=\d+ bytes=\d+ cap=80 truncated=\d+|- requirement: .+ \(.+\))$/);
+    }
+  });
+});
+
 test("cli --root prints the same digest", () => {
   fixture((root) => {
     write(root, "NOTES.md", "- Keep the journey runnable from a clean tree.\n");
