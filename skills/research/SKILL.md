@@ -39,7 +39,7 @@ phases:
   - id: P5-VerificationLanding
     trigger: always
     reads: ["research outputs", "coverage gates", "git remote state"]
-    writes: [".svc/coverage.lock", ".svc/pending-push.json", "git commit", "git tag"]
+    writes: [".svc/coverage.lock"]
     evidence_kind: command_output
     required_for_completion: true
   - id: P6-SelfVerifyReturnControl
@@ -175,7 +175,7 @@ Detect mode automatically. The user says what to analyze; the skill knows how.
 extracts a named source repository (not current-worktree inspection):
 1. **Systematic Sweep** — list all dirs; sample largest files in `bin/`, `src/`, `sdk/`, `tests/`.
 2. **Tiered Extraction** — Layer 3 categorized into Unique Mechanics / Common Implementations / Intelligence Data.
-3. **Reliability Proofs** — SHA-256 ledger for 100% of manifest files in `.sources.jsonl`; cross-verify ≥1 complex algorithm/regex against raw source before commit.
+3. **Reliability Proofs** — SHA-256 ledger for 100% of manifest files in `.sources.jsonl`; cross-verify ≥1 complex algorithm/regex against raw source before finalizing.
 
 ## Process
 
@@ -276,21 +276,12 @@ heuristic in `references/knowledge/<domain>/source-heuristics.jsonl` (schema + g
 Invoked by another skill → return the finding so the caller can proceed. Standalone →
 report to the user.
 
-### Step 8: Commit, Tag, and Push
+### Step 8: Hand Off Files (no git writes)
 
-After persisting (research-log.md, knowledge files, INDEX.md, source-heuristics.jsonl):
-stage all changed/new files; commit `research: <topic summary>`; tag
-`research-<slugified-topic>` (analysis mode only); push commit and tag. This applies to
-both modes without asking the user, because research output is always safe to land.
-
-```bash
-if git remote get-url origin >/dev/null 2>&1; then
-  git push origin <branch> && git push origin <tag>
-else
-  echo "No remote — push skipped."
-  printf '{"timestamp":"%s","reason":"no_remote"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .svc/pending-push.json
-fi
-```
+After persisting (research-log.md, knowledge files, INDEX.md, source-heuristics.jsonl),
+list the changed and new files for the user and stop. Research does not auto-commit, tag or
+push; the user reviews the diff and decides what to commit and when. Report the suggested
+commit subject `research: <topic summary>` as text only.
 
 ## Analysis Mode (full extraction — sub-agent + gates)
 
@@ -299,11 +290,11 @@ fi
 1. Clone/pull the source.
 2. Pre-scope (required) at `docs/specs/research-prescope-<source>.md` (use `node skills/research/scripts/website-prescope.mjs <url> --domain <domain>` for websites).
 3. Domain gate (required): `node skills/research/scripts/domain-gate.mjs --source <name> --domain <d> --justification "<why>"`; nothing is written under `references/knowledge/` if it refuses.
-4. Dispatch with `dispatch-agy.mjs`; read every checklist file fully in a single pass into `CAPABILITIES.md`, `details/<area>.md` and `.version`, tiering sources per Step 4; commit.
+4. Dispatch with `dispatch-agy.mjs`; read every checklist file fully in a single pass into `CAPABILITIES.md`, `details/<area>.md` and `.version`, tiering sources per Step 4. Do not commit.
 5. Coverage check (required): `coverage-check.mjs --prescope <ps> --domain references/knowledge/<domain>/` exits 0 at 100% before proceeding; then `deep-extraction-check.mjs`; `playwright-extract.mjs` when accordion or SPA content is suspected.
 6. Activity validation (`blog-crawl.mjs`) for website, competitor and vendor sources; `synthesize-meaning.mjs` for 5+ detail files.
 7. Provenance to `.sources.jsonl` (required): no citable sources means the extraction is REFUSED and CAPABILITIES.md is not written.
-8. Reflect source heuristics; update `INDEX.md` and `.version`; commit, tag `research-<source>` and push.
+8. Reflect source heuristics; update `INDEX.md` and `.version`; list the changed files for the user. Never commit, tag or push.
 
 Details: `references/analysis-mode.md`.
 ## ingest-guide Handoff Format
@@ -333,7 +324,7 @@ If `ingest-guide` short-circuits because `ingest-ready.json` already exists, ski
 | 5 | Knowledge protocol conformance | Library checked first, .version updated | |
 | 6 | ALL source files read (analysis mode) | File checklist matches detail files — no unread references | |
 | 7 | Detail files have 3 sections (analysis mode) | Mechanism + Analysis + L4 pointers in each | |
-| 8 | Committed, tagged, and pushed | `git log -1` shows research commit; `git tag` includes research tag; remote up to date | |
+| 8 | No git writes performed | `git status --short` shows the files left uncommitted for the user; git was never invoked to write (research left it to the user) | |
 | 9 | Pre-scope artifact exists (analysis mode) | `docs/specs/research-prescope-<source>.md` present with non-empty checklist | |
 | 10 | Domain gate invoked (analysis mode) | `domain-gate.mjs` exited 0 with verdict:approved before any write under `references/knowledge/` | |
 | 11 | Single-pass coverage = 100% | Every file on pre-scope checklist has an extraction entry; no partial extractions tolerated | |

@@ -117,7 +117,7 @@
     {
       "skill": "assess-market-readiness",
       "path": "skills/assess-market-readiness/SKILL.md",
-      "content_hash": "5dec6050521b26ca709e14843a8ff8cc31c9efc1fda5a249c201d720424c9823",
+      "content_hash": "709ab0863442a2871bec1ef3de8156b21cd54c7dc762de8465d9651c8a141fc9",
       "description": "Scores whether the product is ready for its next milestone (launch, hackathon, VC pitch, PMF) from project artifacts: 0-100 score, blocking gaps and a GTM-vs-features route. Use for \"is this ready?\", \"should I launch?\", \"market fit check\".",
       "aliases": [],
       "positive_triggers": [],
@@ -699,8 +699,8 @@
     {
       "skill": "discover-skills",
       "path": "skills/discover-skills/SKILL.md",
-      "content_hash": "e3e2d666166197b343c658700c1b9f24a94398e57ea085ef32ab6a81169f7d46",
-      "description": "Find and install external agent skills from the open skill ecosystem when there is a capability gap. Use for \"find a skill for X\", \"is there a skill that can\", \"what skills exist for\".",
+      "content_hash": "5dbd297a51014ae6b04946d5129b030536e040bbcffa1f96bc6714206d985b12",
+      "description": "Find external agent skills from the open skill ecosystem when there is a capability gap, and install one only after explicit user approval. Use for \"find a skill for X\", \"is there a skill that can\", \"what skills exist for\".",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
@@ -1482,7 +1482,7 @@
     {
       "skill": "research",
       "path": "skills/research/SKILL.md",
-      "content_hash": "3a2a13602fcd1d016253c83c730243f47a4d0962aaa0a092b938168c93327329",
+      "content_hash": "47ac1842e1a0e1094692dfd99a154c7c1da510ec329e01b8be4c78b40e97c44b",
       "description": "In-flow research on an API, library version, pattern or domain fact: registries and vendor docs first, dated and cross-checked, logged to the research log; big questions go to deep-research. Use when the user asks to research, look up or find out a named scope, or researchDecision() returns external_research_required. Not for ordinary coding uncertainty or local unknowns.",
       "aliases": [
         "look up",
@@ -1918,7 +1918,7 @@
     {
       "skill": "track-topology-diff",
       "path": "skills/track-topology-diff/SKILL.md",
-      "content_hash": "2105d59cfd3de33561e62fa9f34a5ff8265c3d756afd7f33ad00855ed1c408b6",
+      "content_hash": "3043e16219fe11149d559ac4fb44c73196e32059878c8af01dc67eb4833329e2",
       "description": "Snapshot infra state after an apply (terraform state, kubectl resources) and diff against the prior baseline, flagging drift not in IaC. Use for 'topology drift', 'state diff', 'what changed in the cluster', or after verify-promotion in infra lanes.",
       "aliases": [],
       "positive_triggers": [],

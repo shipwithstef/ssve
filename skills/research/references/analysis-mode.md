@@ -34,7 +34,7 @@ competitor homepages / JS-rendered / incomplete indexes.
 5. **Single-pass extraction** — read every checklist file FULLY into
    `CAPABILITIES.md` (Layer 2), `details/<area>.md` (Layer 3, one per area), `.version`. No
    bit-by-bit re-prompting. Apply Step 4 tiering to every cited source.
-6. **Commit after the pass** (incremental for a single large pass, not per-file).
+6. **Leave files uncommitted** after the pass. Never run git commit for the user.
 7. **Verify coverage (mandatory)** — `node skills/research/scripts/coverage-check.mjs --prescope <ps>
    --domain references/knowledge/<domain>/`. Exit 0 = 100%; non-zero lists missing URLs.
    Do not proceed until 100% — re-dispatch missing URLs, re-run.
@@ -64,12 +64,11 @@ competitor homepages / JS-rendered / incomplete indexes.
     (WI-SPINE-006); `validate-knowledge-domain-provenance.sh` enforces it.
 13. **Reflect source heuristics** — apply Step 6 per `(domain, claim_class)` bet made.
 14. Update `references/knowledge/INDEX.md` + `.version`.
-15. **Commit, tag, push.** Stage all knowledge files (CAPABILITIES.md, .version, details/*.md,
-    .sources.jsonl, source-heuristics.jsonl, INDEX.md, research-log.md, prescope). Verify
-    `.svc/coverage.lock` matches the current `--prescope` + resolved `--domain` (a stale lock
-    from another domain is not valid proof). Run git from the repo that owns the resolved
-    `knowledge_root`. Commit `research: extract <source> knowledge (<repo>)`; tag
-    `research-<source>`; push per the Step 8 remote-handling block.
+15. **Hand off, no git writes.** List the knowledge files written (CAPABILITIES.md, .version,
+    details/*.md, .sources.jsonl, source-heuristics.jsonl, INDEX.md, research-log.md, prescope).
+    Verify `.svc/coverage.lock` matches the current `--prescope` + resolved `--domain` (a stale lock
+    from another domain is not valid proof). Do not commit, tag or push; offer the suggested
+    commit subject `research: extract <source> knowledge (<repo>)` as text and let the user decide.
 
 **The coverage check is mandatory.** The #1 failure of research is "read the main file, skim
 the rest, declare done." If the repo has 7 reference docs, you read 7.

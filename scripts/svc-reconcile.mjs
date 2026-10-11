@@ -176,12 +176,19 @@ function getMainBranch() {
 // The branch to reconcile: origin/<main> when the project has a remote, else the local
 // branch, else HEAD. A project with no commits yet has nothing to reconcile.
 function reconcileRef(main) {
-  for (const ref of [`origin/${main}`, main, "HEAD"]) if (run("git", ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`]).ok) return ref;
-  return null;
+  for (const ref of [`origin/${main}`, main, "HEAD"]) {
+    const probe = run("git", ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`]);
+    if (probe.ok) return { ref };
+    // A ref that does not exist exits non-zero ("error"). A timeout or spawn failure says nothing
+    // about the ref, so it must not be read as "no commits yet" and silently advance the checkpoint.
+    if (probe.classification === "timeout" || probe.classification === "spawn-error") return { ref: null, failed: probe };
+  }
+  return { ref: null };
 }
 
 function getCommitsSince(base, main) {
-  const ref = reconcileRef(main);
+  const { ref, failed } = reconcileRef(main);
+  if (failed) return { shas: [], result: failed, ref: null };
   if (!ref) return { shas: [], result: { ok: true, classification: "success", duration_ms: 0, stdout: "" }, ref };
   const args = base
     ? ["log", "--format=%H", `${base}..${ref}`]

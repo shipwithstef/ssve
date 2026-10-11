@@ -58,7 +58,7 @@ phases:
   - id: P7-AssessmentArtifactAndCommit
     trigger: after:P6-RoutingDecision
     reads: ["dimension scores", "judge verdict notes", "gap notes", "routing decision"]
-    writes: ["docs/specs/readiness-assessment.md", "git commit"]
+    writes: ["docs/specs/readiness-assessment.md"]
     evidence_kind: file
     required_for_completion: true
   - id: P8-SelfVerifyContinuation
@@ -286,26 +286,13 @@ either..." hedging. The pipeline takes a position.
 
 **Step 7: Write assessment** — Write `docs/specs/readiness-assessment.md` containing: header (date, stage, overall score, verdict GTM first / Fix gaps then GTM / Build more), the dimension score table (score, weight, weighted, key finding), judge verdicts, blocking and non-blocking gaps (each with dimension, score and a specific fix), the ICP simulation if applicable, a score-evolution roadmap (today, after 10 customers, after 100), and a routing decision naming the exact next skill or WI. Missing critical artifacts are findings, not blockers for the assessment itself. Details: `references/process.md`.
 
-### Step 8: Commit the assessment to git
+### Step 8: Hand off the assessment (no git writes)
 
-After producing the assessment file, commit it so it's versioned and traceable:
-
-```bash
-git add docs/specs/readiness-assessment.md
-git commit -m "docs(readiness): [stage] assessment — [score]/100, [verdict]"
-# Optional: tag the milestone for easy reference
-# git tag "assessment-[stage]-$(date +%Y-%m-%d)"
-```
-
-**Why commit:** the assessment is a milestone snapshot. It should be in version
-control so future assessments can compare against it and so the git log shows
-the progression from build → launch. An uncommitted assessment file is invisible
-to the project history and can be silently overwritten.
-
-**Why not auto-tag:** tagging creates a public milestone marker. Some builders
-want this; others don't. Tag if the assessment verdict is "GTM first" and the
-builder treats this as the official launch decision. Skip the tag if this is
-a routine re-assessment mid-build.
+This skill writes `docs/specs/readiness-assessment.md` and stops. It does not auto-commit,
+tag or push. Tell the user the file is uncommitted and suggest
+`docs(readiness): [stage] assessment, [score]/100, [verdict]` as a commit subject (text
+only) so they can commit it when they choose. A milestone tag is the builder's call; never
+create one on their behalf.
 
 ## Self-Verify
 
@@ -318,7 +305,7 @@ a routine re-assessment mid-build.
 | 5 | Routing decision is a single position, not hedge | grep for "Routing Decision" — no "you could either" | |
 | 6 | ICP exemplars found (launch/vc modes) | count exemplar briefs ≥ 3 | |
 | 7 | No user input was requested for data the pipeline already has | review tool calls — no AskUserQuestion for artifact data | |
-| 8 | Assessment committed to git | `git log --oneline docs/specs/readiness-assessment.md \| head -1` returns a commit | |
+| 8 | No git writes performed | `git status --short docs/specs/readiness-assessment.md` shows the file left for the user to commit; no commit or tag was created | |
 | 9 | Score Evolution Roadmap present in output | grep for "Score Evolution Roadmap" in readiness-assessment.md | |
 
 ## Phase Receipt Contract
