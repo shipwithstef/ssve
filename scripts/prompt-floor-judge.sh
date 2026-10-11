@@ -5,7 +5,7 @@
 # launcher/CLI hard failure. There is no anonymous degraded judge.
 set -euo pipefail
 
-BLIND='' MERGED='' ROWS='' ORCH_FAMILY='anthropic'
+BLIND='' MERGED='' ROWS='' ORCH_FAMILY=''
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --blind) BLIND="$2"; shift 2 ;;
@@ -15,9 +15,12 @@ while [[ $# -gt 0 ]]; do
     *) printf 'unknown arg: %s\n' "$1" >&2; exit 2 ;;
   esac
 done
-[[ -r "$BLIND" && -r "$MERGED" && -r "$ROWS" ]] || { printf 'usage: prompt-floor-judge.sh --blind B.json --merged F.json --rows rows.json\n' >&2; exit 2; }
+[[ -r "$BLIND" && -r "$MERGED" && -r "$ROWS" ]] || { printf 'usage: prompt-floor-judge.sh --blind B.json --merged F.json --rows rows.json --orchestrator-family <host-family>\n' >&2; exit 2; }
+# The author family comes from the host's own identity and is never defaulted: a default
+# would let a same-family review be certified as independent.
+[[ -n "$ORCH_FAMILY" ]] || { printf 'prompt-floor-judge: --orchestrator-family is required (the family of the host that authored the work: claude/anthropic or codex/openai)\n' >&2; exit 2; }
 
-case "$ORCH_FAMILY" in anthropic) ORCHESTRATOR=claude ;; openai) ORCHESTRATOR=codex ;; *) printf 'prompt-floor-judge: unsupported orchestrator family %q\n' "$ORCH_FAMILY" >&2; exit 4 ;; esac
+case "$(printf '%s' "$ORCH_FAMILY" | tr '[:upper:]' '[:lower:]')" in anthropic|claude) ORCH_FAMILY=anthropic; ORCHESTRATOR=claude ;; openai|codex) ORCH_FAMILY=openai; ORCHESTRATOR=codex ;; *) printf 'prompt-floor-judge: unsupported orchestrator family %q\n' "$ORCH_FAMILY" >&2; exit 4 ;; esac
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LAUNCHER="$ROOT/scripts/run-external-review.mjs"
 CONTENT_SHA="$(node -e 'const{createHash}=require("crypto"),fs=require("fs");for(const f of process.argv.slice(1)){const b=fs.readFileSync(f);process.stdout.write(createHash("sha256").update(b).digest("hex"))}' "$BLIND" "$MERGED" "$ROWS" | sha256sum | awk '{print $1}')"
@@ -37,11 +40,14 @@ EOF
   printf '\nROWS TO CERTIFY OR REJECT:\n'; cat "$ROWS"
 } | node "$LAUNCHER" --orchestrator "$ORCHESTRATOR" --review-kind prompt-floor --candidate-digest "$CONTENT_SHA" --context-root "$CONTEXT_ROOT" --artifacts-dir "$ARTIFACTS" > "$SUMMARY" || exit 4
 
-node - "$SUMMARY" "$BLIND" "$MERGED" <<'NODE' || { printf 'prompt-floor-judge: findings missing or malformed\n' >&2; exit 2; }
+node - "$SUMMARY" "$BLIND" "$MERGED" "$ORCH_FAMILY" <<'NODE' || { rc=$?; [[ $rc -eq 4 ]] && exit 4; printf 'prompt-floor-judge: findings missing or malformed\n' >&2; exit 2; }
 const {createHash}=require('crypto');const fs=require('fs');
 const summary=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));const findings=JSON.parse(fs.readFileSync(summary.findings,'utf8'));
 const map=p=>new Map((JSON.parse(fs.readFileSync(p,'utf8')).elements||[]).map(e=>[e.key,typeof e.content==='string'?e.content:JSON.stringify(e.content??'')]));
 const B=map(process.argv[3]),F=map(process.argv[4]);
+const fam=h=>{h=String(h||'').toLowerCase();return /claude|anthropic/.test(h)?'anthropic':/codex|openai/.test(h)?'openai':/gemini|google|antigravity|agy/.test(h)?'google':/grok|xai/.test(h)?'xai':'unknown'};
+// A reviewer of the author's own family (or one whose family cannot be derived) is not independent.
+if(fam(findings.reviewer&&findings.reviewer.family)===fam(process.argv[5])||fam(findings.reviewer&&findings.reviewer.family)==='unknown'){process.stderr.write(`prompt-floor-judge: reviewer is the same family as (or not provably independent of) the author family ${process.argv[5]}; refusing to certify independence\n`);process.exit(4)}
 const bind=k=>F.has(k)?createHash('sha256').update(`ALTER\n${B.get(k)}\n=>\n${F.get(k)}`).digest('hex'):createHash('sha256').update(`REMOVE\n${B.get(k)}`).digest('hex');
 if(!Array.isArray(findings.certifications))process.exit(2);
 const certifications=findings.certifications.filter(c=>c&&typeof c.key==='string'&&B.has(c.key)).map(c=>({key:c.key,certified_strict_improvement:c.certified===true,reviewer_family:findings.reviewer.family,for_content_sha:bind(c.key)}));

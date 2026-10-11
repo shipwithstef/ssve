@@ -43,8 +43,8 @@ test("the example dispatch policy is valid, and resolve-model honours its format
 test("prompt-floor-route reads the class from --task as craft-prompt documents", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "pf-"));
   fs.mkdirSync(path.join(root, ".svc")); fs.writeFileSync(path.join(root, ".svc/chain-policy.json"), '{"prompt_craft":"measured"}');
-  const viaTask = JSON.parse(node([path.join(ROOT, "scripts/prompt-floor-route.mjs"), "--task", "infra", "--size", "M", "--root", root]).stdout);
-  const viaClass = JSON.parse(node([path.join(ROOT, "scripts/prompt-floor-route.mjs"), "--class", "infra", "--size", "M", "--root", root]).stdout);
+  const viaTask = JSON.parse(node([path.join(ROOT, "scripts/prompt-floor-route.mjs"), "--task", "infra", "--size", "M", "--root", root, "--orchestrator-family", "claude"]).stdout);
+  const viaClass = JSON.parse(node([path.join(ROOT, "scripts/prompt-floor-route.mjs"), "--class", "infra", "--size", "M", "--root", root, "--orchestrator-family", "claude"]).stdout);
   assert.deepEqual(viaTask, viaClass);
   assert.equal(viaTask.run, true);
 });
