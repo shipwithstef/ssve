@@ -3678,6 +3678,7 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+        "test-framework/tests/delivery-graph-ordering.test.mjs",
         "test-framework/tests/research-decision.test.mjs"
       ]
     },

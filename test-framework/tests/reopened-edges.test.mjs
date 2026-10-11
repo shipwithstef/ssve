@@ -48,10 +48,8 @@ test('edges to ids that are not in the graph are dropped; a missing entry leaves
   assert.deepEqual(tasks[1].blocked_by, [1]);
 });
 
-// Integration through the compiler. The compiler must call rebuildReopenedEdges with the edges it computed
-// from the current obligations after it reopens stages; until that call is wired in
-// scripts/compile-delivery-graph.mjs these are reported as todo rather than failing the suite.
-const WIRED = process.env.SVC_REOPENED_EDGES_WIRED === '1';
+// Integration through the compiler: it calls rebuildReopenedEdges with the edges it computed from the
+// current obligations after it reopens stages.
 const base = { wi: 'WI-EDGES', lane: 'greenfield', change_type: 'feature', user_intent: 'Prototype a game', risk_flags: ['user-facing'] };
 const completed = (input) => { const g = compileDeliveryGraph(input); for (const t of g.tasks) t.status = 'completed'; return g; };
 const skillsOf = (graph, t) => new Set((t.blocked_by || []).map((id) => graph.tasks.find((x) => x.id === id)?.metadata.skill));
@@ -66,7 +64,7 @@ function assertReopenedEdgesMatchObligations(merged, fresh) {
   }
 }
 
-test('bounded -> production: reopened stages are rebuilt from the production obligations', { todo: !WIRED && 'compile-delivery-graph.mjs has not called rebuildReopenedEdges yet' }, () => {
+test('bounded -> production: reopened stages are rebuilt from the production obligations', () => {
   const bounded = { ...base, delivery_profile: 'prototype', planned_files: ['src/game.js'] };
   const production = { ...base, delivery_profile: 'production', planned_files: ['src/game.js'] };
   const merged = compileDeliveryGraph({ ...production, existing_graph: completed(bounded) });
