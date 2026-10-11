@@ -40,6 +40,7 @@ import { reserveFrozenCheck } from "./lib/reserve-frozen.mjs";
 import { writeJsonAtomic } from "./state-io.mjs";
 import { probe } from "./quality-probes.mjs";
 import { probe as chaosProbe } from "./chaos-probe.mjs";
+import { checkJourney, validateSpec } from "./lib/journey-conformance.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const TASKS = path.join(ROOT, "test-framework", "outcome-evals", "tasks");
@@ -483,6 +484,29 @@ export function cloneHome(from, to) {
   fs.mkdirSync(to, { recursive: true });
   const r = spawnSync("cp", ["-a", `${from}${path.sep}.`, to], { encoding: "utf8" });
   if (r.status !== 0) throw new Error(`cloning the framework home failed: ${(r.stderr || "").slice(-200)}`);
+  // `cp -a src/. dst` copies src's own mode onto dst; the framework's preflight refuses a
+  // HOME that is not private, so the clone is as private as a fresh mkdtemp home.
+  fs.chmodSync(to, 0o700);
+}
+
+// Journey specs: what a framework run is expected to do for a task (see journeys/README.md).
+const JOURNEYS = path.join(NORTHSTAR, "journeys");
+export function journeySpecPath(task, dir = JOURNEYS) { return path.join(dir, `${task}.json`); }
+export function loadJourneySpec(task, dir = JOURNEYS) {
+  const f = journeySpecPath(task, dir);
+  if (!fs.existsSync(f)) return null;
+  return JSON.parse(fs.readFileSync(f, "utf8"));
+}
+export function journeyProblems(tasks, dir = JOURNEYS) {
+  const out = [];
+  for (const task of new Set(tasks)) {
+    let spec;
+    try { spec = loadJourneySpec(task, dir); } catch (e) { out.push(`journey spec for ${task} is not valid JSON: ${e.message}`); continue; }
+    if (!spec) continue;
+    if (spec.task !== task) out.push(`journey spec for ${task} names task ${JSON.stringify(spec.task)}`);
+    for (const p of validateSpec(spec)) out.push(`journey spec ${task}: ${p}`);
+  }
+  return out;
 }
 
 // Every entry under <home>/.claude/skills that is a symlink must resolve inside the archive
@@ -1016,7 +1040,7 @@ export function reserveProblems(tasks, bar, dirOf = taskDir) {
 }
 
 // { error } (exit 2) or { line, jobs, share } for the one line printed before the run starts.
-export function preflightRun({ tasks, arms, reps, maxUsd, bar = readBar(), dirOf = taskDir }) {
+export function preflightRun({ tasks, arms, reps, maxUsd, bar = readBar(), dirOf = taskDir, journeysDir = JOURNEYS }) {
   const bp = barProblem(bar);
   if (bp) return { error: `refusing to start: ${bp}` };
   const jobs = tasks.length * arms.length * reps;
@@ -1032,6 +1056,9 @@ export function preflightRun({ tasks, arms, reps, maxUsd, bar = readBar(), dirOf
   const promptErrors = [];
   for (const task of new Set(tasks)) for (const arm of new Set(arms)) { try { armPrompts(task, arm); } catch (e) { promptErrors.push(e.message); } }
   if (promptErrors.length) return { error: `refusing to start: ${promptErrors.join("; ")}` };
+  // A malformed journey spec would make every framework row of its task unscorable.
+  const jp = journeyProblems(tasks, journeysDir);
+  if (jp.length) return { error: `refusing to start: ${jp.join("; ")}` };
   const line = `plan: tasks ${tasks.join(",")}; ${jobs} jobs; ${share != null ? `$${share.toFixed(3)} per job` : "no cap"}; arms ${arms.join(",")}`;
   return { line, jobs, share };
 }
@@ -1232,6 +1259,15 @@ async function runJob(job, budget, ctx) {
   return row;
 }
 
+// Copy <jobHome>/.claude/projects to `to`; returns `to`, or null when the run left none.
+export function keepTranscripts(jobHome, to) {
+  const src = jobHome ? path.join(jobHome, ".claude", "projects") : null;
+  if (!src || !fs.existsSync(src)) return null;
+  fs.rmSync(to, { recursive: true, force: true });
+  fs.cpSync(src, to, { recursive: true });
+  return to;
+}
+
 async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
   const { model, effort, judgeModel, workRoot, keepRoot, framework } = ctx;
   const hideRoots = ctx.hide || [];
@@ -1303,6 +1339,15 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
   fs.rmSync(path.join(dir, "__hidden.test.mjs"), { force: true });
   fs.cpSync(dir, keep, { recursive: true, filter: (src) => !src.includes(`${path.sep}node_modules`) });
   row.artifact = keep;
+  // Claude Code's session transcripts, kept beside (never inside) the build: graders and
+  // regrade read the build dir.
+  row.transcripts = keepTranscripts(jobHome, `${keep}.transcripts`);
+  if (fw) {
+    try {
+      const spec = loadJourneySpec(job.task, ctx.journeysDir || JOURNEYS);
+      if (spec) row.journey = checkJourney(spec, { transcriptsDir: row.transcripts, buildDir: keep });
+    } catch (e) { row.journey = { error: e.message }; }
+  }
   cleanup();
   return row;
 }
