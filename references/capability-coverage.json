@@ -2293,6 +2293,15 @@
       "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
     },
     {
+      "id": "engine:scripts/lane-stop-guard.mjs",
+      "kind": "engine",
+      "source": "scripts/lane-stop-guard.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/lane-stop-guard.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/learning-eval.mjs",
       "kind": "engine",
       "source": "scripts/learning-eval.mjs",
@@ -2384,6 +2393,15 @@
       ]
     },
     {
+      "id": "engine:scripts/model-intel.mjs",
+      "kind": "engine",
+      "source": "scripts/model-intel.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/model-intel-check.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/no-loss-verify.mjs",
       "kind": "engine",
       "source": "scripts/no-loss-verify.mjs",
@@ -2398,9 +2416,9 @@
       "source": "scripts/northstar.mjs",
       "status": "tested",
       "evidence": [
+        "test-framework/tests/journey-conformance.test.mjs",
         "test-framework/tests/northstar-spec-root.test.mjs",
-        "test-framework/tests/northstar.test.mjs",
-        "test-framework/tests/p11-ready.test.mjs"
+        "test-framework/tests/northstar.test.mjs"
       ]
     },
     {
@@ -2511,6 +2529,7 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-quality-probes.mjs",
+        "test-framework/tests/outcome-eval-budget-watch.test.mjs",
         "test-framework/tests/p11-ready.test.mjs"
       ]
     },
@@ -2667,7 +2686,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
-        "test-framework/evals/tier-1/validate-route-model.mjs"
+        "test-framework/evals/tier-1/validate-route-model.mjs",
+        "test-framework/tests/stage-close.test.mjs"
       ]
     },
     {
@@ -2826,6 +2846,15 @@
       ]
     },
     {
+      "id": "engine:scripts/stage-close.mjs",
+      "kind": "engine",
+      "source": "scripts/stage-close.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/stage-close.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/stage-segment.mjs",
       "kind": "engine",
       "source": "scripts/stage-segment.mjs",
@@ -2834,6 +2863,15 @@
         "test-framework/evals/tier-1/validate-stage-isolation.sh",
         "test-framework/evals/tier-1/validate-stage-registry-single-source.sh",
         "test-framework/tests/two-box-receipts.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/standing-rules.mjs",
+      "kind": "engine",
+      "source": "scripts/standing-rules.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/standing-rules.test.mjs"
       ]
     },
     {
@@ -3585,6 +3623,16 @@
       "status": "tested",
       "evidence": [
         "test-framework/tests/issue-tracker.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/journey-conformance.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/journey-conformance.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/journey-conformance.test.mjs",
+        "test-framework/tests/journey-intended-specs.test.mjs"
       ]
     },
     {

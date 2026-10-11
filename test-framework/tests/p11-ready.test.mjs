@@ -221,3 +221,25 @@ test("preflight refuses an arm that cannot prompt a multi-session task, before a
   const r = run(["--arms", "plain", "--tasks", "continuity-rules", "--reps", "1", "--max-usd", "5", "--judge", "none"]);
   assert.equal(r.status, 2, r.stderr); assert.match(r.stderr, /cannot run multi-session task continuity-rules/);
 });
+
+// ---- the task repo is an ordinary checkout, and the model sees no per-job budget ----
+test("prepare seeds main with one root commit and origin/main, identically for every arm", () => {
+  const a = oe.prepare("bugfix-rootcause"), b = oe.prepare("bugfix-rootcause");
+  const git = (d, ...args) => spawnSync("git", args, { cwd: d, encoding: "utf8" }).stdout.trim();
+  for (const d of [a, b]) {
+    assert.equal(git(d, "branch", "--show-current"), "main");
+    assert.equal(git(d, "rev-list", "--count", "HEAD"), "1");
+    assert.equal(git(d, "log", "-1", "--format=%s"), oe.SEED_MESSAGE);
+    assert.equal(git(d, "rev-parse", "origin/main"), git(d, "rev-parse", "HEAD"));
+    assert.equal(git(d, "remote"), "", "no network remote");
+    assert.equal(git(d, "status", "--porcelain"), "", "every task file is in the root commit");
+  }
+  assert.equal(git(a, "rev-parse", "HEAD"), git(b, "rev-parse", "HEAD"), "same seed commit for both arms");
+  for (const d of [a, b]) fs.rmSync(d, { recursive: true, force: true });
+});
+
+test("the builder session gets no --max-budget-usd (the CLI would show it to the model)", () => {
+  const src = fs.readFileSync(SCRIPT, "utf8");
+  const call = src.match(/const step = await runAgent\([^\n]*\n?/)[0];
+  assert.doesNotMatch(call, /max-budget-usd/);
+});
