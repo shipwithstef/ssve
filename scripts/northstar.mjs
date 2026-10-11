@@ -21,6 +21,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
 import { dirSha } from "./lib/dir-sha.mjs";
+import { armTools, toolDiff } from "./lib/arm-tools.mjs";
+import { reserveFrozenCheck } from "./lib/reserve-frozen.mjs";
 import { stratifiedDeltaRaw, adoptionDecision, avg, rng } from "./lib/stats.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -481,13 +483,10 @@ export function reserveHashes(root, bar = loadBar()) {
 
 // A reserve task in the plan must exist, be frozen in bar.json, and hash to the frozen value.
 function assertReserveFrozen(task, dir, bar) {
-  const entry = bar.reserve.find((r) => r.task === task);
-  if (!entry) return null;
-  if (!fs.existsSync(dir)) throw new NorthstarError(`reserve task ${task} not found: pass --tasks-root <dir> holding ${task}/`);
-  if (entry.grader_sha256 == null) throw new NorthstarError(`reserve task ${task} has no frozen grader_sha256 in bar.json: freeze it first (node scripts/northstar.mjs reserve-hash <root>)`);
-  const got = taskDirSha(dir);
-  if (got !== entry.grader_sha256) throw new NorthstarError(`reserve task ${task} differs from its frozen grader_sha256 (bar.json ${entry.grader_sha256.slice(0, 12)}, directory ${got.slice(0, 12)}): the reserve changed after it was frozen`);
-  return got;
+  const res = reserveFrozenCheck(task, dir, bar);
+  if (!res) return null;
+  if (res.problem) throw new NorthstarError(res.problem);
+  return res.sha;
 }
 
 export function buildManifest({ model, maxUsd, slice = "all", reps, frameworkSha = null, parallel, bar = loadBar(), tasksDir = TASKS_DIR, tasksRoots = [], dryRun = false } = {}) {
@@ -523,7 +522,7 @@ export function buildManifest({ model, maxUsd, slice = "all", reps, frameworkSha
         contract: {
           task_files_sha256: shas[task],
           ...(reserveShas[task] ? { task_sha256: reserveShas[task] } : {}),
-          tools: cfg.tools,
+          tools: armTools(cfg.tools, arm),
           timeout_ms: cfg.timeout_min * 60000 * bar.arm_limits.time,
           max_turns: cfg.max_turns * bar.arm_limits.turns,
           limits: { time_x: bar.arm_limits.time, turns_x: bar.arm_limits.turns },
@@ -563,7 +562,12 @@ export function assertBalanced(manifest, bar = loadBar()) {
   for (const [k, pair] of by) {
     for (const arm of bar.arms) if (!pair[arm]) throw new NorthstarError(`unbalanced manifest: ${k} has no ${arm} run`);
     const [a, b] = bar.arms.map((x) => pair[x]);
-    if (JSON.stringify(a.contract) !== JSON.stringify(b.contract)) throw new NorthstarError(`unbalanced manifest: ${k} arms have different task contracts (files, tools or timeouts)`);
+    // The arms differ only by the installed framework: the effective tool lists may differ by Skill and nothing else.
+    const strip = (c) => ({ ...c, tools: undefined });
+    if (JSON.stringify(strip(a.contract)) !== JSON.stringify(strip(b.contract))) throw new NorthstarError(`unbalanced manifest: ${k} arms have different task contracts (files or timeouts)`);
+    const td = toolDiff(String(a.contract.tools ?? ""), String(b.contract.tools ?? ""));
+    const extra = [...td.only_a, ...td.only_b].filter((t) => t !== "Skill");
+    if (extra.length) throw new NorthstarError(`unbalanced manifest: ${k} arms have different task contracts (tools differ by more than Skill: ${extra.join(", ")})`);
     for (const arm of bar.arms) {
       const iso = pair[arm].isolation;
       if (iso?.builder_sandbox !== true) throw new NorthstarError(`unbalanced manifest: ${k}/${arm} is not sandboxed`);

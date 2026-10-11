@@ -1957,7 +1957,8 @@
       "source": "scripts/chaos-probe.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-chaos-probe.mjs"
+        "test-framework/evals/tier-1/validate-chaos-probe.mjs",
+        "test-framework/tests/p11-ready.test.mjs"
       ]
     },
     {
@@ -2398,7 +2399,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/tests/northstar-spec-root.test.mjs",
-        "test-framework/tests/northstar.test.mjs"
+        "test-framework/tests/northstar.test.mjs",
+        "test-framework/tests/p11-ready.test.mjs"
       ]
     },
     {
@@ -2508,7 +2510,8 @@
       "source": "scripts/quality-probes.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-quality-probes.mjs"
+        "test-framework/evals/tier-1/validate-quality-probes.mjs",
+        "test-framework/tests/p11-ready.test.mjs"
       ]
     },
     {

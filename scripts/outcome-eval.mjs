@@ -35,6 +35,8 @@ import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
 import { dirSha } from "./lib/dir-sha.mjs";
+import { ARM_TOOLS, armTools } from "./lib/arm-tools.mjs";
+import { reserveFrozenCheck } from "./lib/reserve-frozen.mjs";
 import { writeJsonAtomic } from "./state-io.mjs";
 import { probe } from "./quality-probes.mjs";
 import { probe as chaosProbe } from "./chaos-probe.mjs";
@@ -153,19 +155,15 @@ export const ARMS = {
   ].join("\n"),
 };
 
-// Extra tools an arm needs beyond the task's list.
-export const ARM_TOOLS = { swarm: ["Agent", "Task"], bounded: ["Bash(git:*)"], solo: ["Bash(git:*)"], framework: ["Skill", "Agent", "Task", "Bash"] };
+// Extra tools an arm needs beyond the task's list (scripts/lib/arm-tools.mjs). solo and
+// framework differ by exactly `Skill`.
+export { ARM_TOOLS, armTools };
 // Pre-registered safety timeout, the SAME for every arm: 2x the task's time and 3x its
 // turns. It stops a runaway; it is not a score. The bar judges the measured USD and wall
 // time (organism plan section 11, item 2). A run the timeout kills is an error row.
 const SAFETY_LIMITS = Object.freeze({ turns: 3, time: 2 });
 export const ARM_LIMITS = Object.freeze(Object.fromEntries([...Object.keys(ARMS), "bare", "svc"].map((a) => [a, SAFETY_LIMITS])));
 export const armLimits = (arm) => ARM_LIMITS[arm] || SAFETY_LIMITS;
-export function armTools(taskTools, arm) {
-  const base = taskTools || "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)";
-  const extra = (ARM_TOOLS[arm] || []).filter((t) => !base.split(",").includes(t));
-  return [base, ...extra, ...(arm === "swarm" && !base.includes("Bash(git:*)") ? ["Bash(git:*)"] : [])].join(",");
-}
 
 // Optional per-task settings: tasks/<id>/task.json { max_turns, timeout_min, judge_model }.
 // Pillar tasks (one svc stage or checkpoint each) also set `pillar`, and either
@@ -852,14 +850,16 @@ export async function pool(items, n, fn) {
 // flight overspend. A job whose share is below the floor is skipped and recorded.
 export const JUDGE_SHARE = 0.15;
 export class Budget {
-  constructor(capUsd, jobs, floorUsd = 0.5) { this.cap = capUsd; this.left = jobs; this.floor = floorUsd; this.spent = 0; this.promised = 0; }
+  // judgeShare is the part of a job's share kept for the judge; with no judge (--judge none) it is 0
+  // and the builder gets the whole share.
+  constructor(capUsd, jobs, floorUsd = 0.5, judgeShare = JUDGE_SHARE) { this.cap = capUsd; this.left = jobs; this.floor = floorUsd; this.judgeShare = judgeShare; this.spent = 0; this.promised = 0; }
   claim() {
     if (this.cap == null) { this.left--; return { usd: null }; }
     const share = (this.cap - this.spent - this.promised) / Math.max(1, this.left);
     this.left--;
     if (share < this.floor) return null;
     this.promised += share;
-    return { usd: share, builder: +(share * (1 - JUDGE_SHARE)).toFixed(2), judge: +(share * JUDGE_SHARE).toFixed(2) };
+    return { usd: share, builder: +(share * (1 - this.judgeShare)).toFixed(2), judge: +(share * this.judgeShare).toFixed(2) };
   }
   settle(claim, actualUsd) { if (claim?.usd != null) this.promised -= claim.usd; this.spent += actualUsd || 0; }
 }
@@ -962,6 +962,67 @@ export function check() {
   return problems;
 }
 
+// ---- run preflight --------------------------------------------------------------------
+// Everything that can be refused before a paid job starts, with no model call.
+const BAR_FILE = path.join(NORTHSTAR, "bar.json");
+const readBar = () => { try { return JSON.parse(fs.readFileSync(BAR_FILE, "utf8")); } catch { return null; } };
+export const barFloor = (bar) => (typeof bar?.floor_usd === "number" ? bar.floor_usd : 0.5);
+// The bar must load and carry a reserve list of { task, grader_sha256 (64 hex or null) }, otherwise
+// reserve verification would silently be off. Returns the refusal text or null.
+export function barProblem(bar) {
+  if (!bar || typeof bar !== "object" || Array.isArray(bar)) return "northstar/bar.json is missing, unreadable or not an object: the reserve cannot be verified, so no run starts";
+  if (!Array.isArray(bar.reserve)) return "northstar/bar.json has no reserve array: the reserve cannot be verified, so no run starts";
+  if (!bar.reserve.every((e) => e && typeof e.task === "string" && e.task && (e.grader_sha256 === null || typeof e.grader_sha256 === "string"))) return "northstar/bar.json reserve must be a list of { task, grader_sha256 } (grader_sha256 a string or null)";
+  if ("floor_usd" in bar && !(typeof bar.floor_usd === "number" && bar.floor_usd > 0)) return "northstar/bar.json floor_usd must be a positive number";
+  return null;
+}
+
+// --sealed writes the scored rows to --out, so --out must be a plain file: not a device, FIFO,
+// directory, or anything under /dev or /proc (/dev/stdout, /dev/fd/N). Returns the refusal or null.
+export function sealedOutProblem(out) {
+  const bad = (why) => `--sealed --out ${out}: ${why}; it must be a regular file path (new or existing) outside /dev and /proc`;
+  const forbidden = (p) => /^\/(dev|proc)(\/|$)/.test(p);
+  const abs = path.resolve(out);
+  if (forbidden(abs)) return bad("under /dev or /proc");
+  let target = abs;
+  try { target = fs.realpathSync(abs); }
+  catch (e) {
+    if (e.code !== "ENOENT") return bad("cannot be resolved");
+    // Does not exist yet: a dangling symlink is refused, a new file needs a real parent directory.
+    try { fs.lstatSync(abs); return bad("is a dangling symlink"); } catch { /* not there at all */ }
+    try { target = path.join(fs.realpathSync(path.dirname(abs)), path.basename(abs)); } catch { return bad("its directory does not exist"); }
+    return forbidden(target) ? bad("under /dev or /proc") : null;
+  }
+  if (forbidden(target)) return bad("resolves under /dev or /proc");
+  return fs.statSync(target).isFile() ? null : bad("is not a regular file");
+}
+
+// Every reserve task named in the run must exist and hash to its frozen grader_sha256.
+export function reserveProblems(tasks, bar, dirOf = taskDir) {
+  const out = [];
+  for (const task of new Set(tasks)) {
+    const res = reserveFrozenCheck(task, dirOf(task), bar);
+    if (res?.problem) out.push(res.problem);
+  }
+  return out;
+}
+
+// { error } (exit 2) or { line, jobs, share } for the one line printed before the run starts.
+export function preflightRun({ tasks, arms, reps, maxUsd, bar = readBar(), dirOf = taskDir }) {
+  const bp = barProblem(bar);
+  if (bp) return { error: `refusing to start: ${bp}` };
+  const jobs = tasks.length * arms.length * reps;
+  const floor = barFloor(bar);
+  const share = maxUsd != null && jobs > 0 ? maxUsd / jobs : null;
+  if (share != null && share < floor) {
+    return { error: `refusing to start: tasks ${tasks.join(",")}; ${jobs} jobs (${tasks.length} tasks x ${arms.length} arms x ${reps} reps) at --max-usd ${maxUsd} is $${share.toFixed(3)} per job (arms ${arms.join(",")}), below the $${floor} floor, so later jobs would be skipped. Narrow --tasks / --arms / --reps, or raise --max-usd to at least $${(jobs * floor).toFixed(2)}.` };
+  }
+  const problems = reserveProblems(tasks, bar, dirOf);
+  if (problems.length) return { error: `refusing to start: ${problems.join("; ")}` };
+  const line = `plan: tasks ${tasks.join(",")}; ${jobs} jobs; ${share != null ? `$${share.toFixed(3)} per job` : "no cap"}; arms ${arms.join(",")}`;
+  return { line, jobs, share };
+}
+
 async function main(argv) {
   const opt = (n, d) => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : d; };
   // Extra task roots apply to every subcommand (check and regrade find external tasks too).
@@ -1051,16 +1112,26 @@ async function main(argv) {
     process.stdout.write(JSON.stringify(out, null, 2) + "\n");
     return 0;
   }
-  if (argv[0] !== "run") { process.stderr.write("usage: outcome-eval.mjs run --parallel N [--model haiku] [--reps 3] [--arms plain,blueprint] [--tasks ...] [--tasks-root <dir>]... [--framework-sha <sha>] [--max-usd 40] [--out file] | check\n"); return 2; }
+  if (argv[0] !== "run") { process.stderr.write("usage: outcome-eval.mjs run --parallel N [--model haiku] [--reps 3] [--arms plain,blueprint] [--tasks ...] [--tasks-root <dir>]... [--framework-sha <sha>] [--max-usd 40] [--sealed --out file] | check\n  --sealed  print no score (progress counts, cost and wall time only); the full rows go to --out, which --sealed requires\n"); return 2; }
   const par = parseParallel(argv);
   if (par.error) { process.stderr.write(par.error + "\n"); return 2; }
   const parallel = par.parallel;
-  const model = opt("--model", "haiku"), reps = Number(opt("--reps", 3));
+  const repsArg = String(opt("--reps", 3));
+  if (!/^[1-9]\d*$/.test(repsArg)) { process.stderr.write(`--reps must be a positive integer (got ${JSON.stringify(repsArg)})\n`); return 2; }
+  const model = opt("--model", "haiku"), reps = Number(repsArg);
   const judgeModel = opt("--judge", "sonnet") === "none" ? null : opt("--judge", "sonnet");
   const arms = opt("--arms", "plain,blueprint").split(",");
   const probeMutants = Number(opt("--probes", 0));
   const effort = opt("--effort", null);
   const tasks = opt("--tasks") ? opt("--tasks").split(",") : listTasks();
+  const sealed = argv.includes("--sealed");
+  if (sealed && !opt("--out")) { process.stderr.write("--sealed requires --out <file>: the rows are written there and nothing is printed that scores them\n"); return 2; }
+  if (sealed) { const sp = sealedOutProblem(opt("--out")); if (sp) { process.stderr.write(sp + "\n"); return 2; } }
+  const maxUsdArg = opt("--max-usd", null) == null ? null : Number(opt("--max-usd"));
+  if (maxUsdArg != null && !(maxUsdArg > 0)) { process.stderr.write("--max-usd must be a positive number of dollars\n"); return 2; }
+  const pre = preflightRun({ tasks, arms, reps, maxUsd: maxUsdArg });
+  if (pre.error) { process.stderr.write(pre.error + "\n"); return 2; }
+  process.stderr.write(pre.line + "\n");
   const keepRoot = opt("--keep", path.join(os.homedir(), ".svc", "outcome-eval-artifacts", new Date().toISOString().replace(/[:.]/g, "-")));
   fs.mkdirSync(keepRoot, { recursive: true });
   // Builds live under a root this runner owns; nothing above them may carry agent context.
@@ -1071,11 +1142,11 @@ async function main(argv) {
   const workRoot = fs.mkdtempSync(path.join(workBase, "oe-run-"));
   try {
     try { assertCleanAncestors(workRoot); } catch (e) { process.stderr.write(`${e.message}\n`); return 2; }
-    return await runAll({ argv, opt, parallel, workRoot, workBase, keepRoot, tasks, model, reps, judgeModel, arms, probeMutants, effort });
+    return await runAll({ argv, opt, parallel, workRoot, workBase, keepRoot, tasks, model, reps, judgeModel, arms, probeMutants, effort, sealed });
   } finally { fs.rmSync(workRoot, { recursive: true, force: true }); }
 }
 
-async function runAll({ argv, opt, parallel, workRoot, workBase, keepRoot, tasks, model, reps, judgeModel, arms, probeMutants, effort }) {
+async function runAll({ argv, opt, parallel, workRoot, workBase, keepRoot, tasks, model, reps, judgeModel, arms, probeMutants, effort, sealed = false }) {
   let framework = null;
   if (arms.includes("framework")) {
     const sha = opt("--framework-sha", null);
@@ -1088,9 +1159,10 @@ async function runAll({ argv, opt, parallel, workRoot, workBase, keepRoot, tasks
   for (const task of tasks) for (const arm of arms) for (let r = 0; r < reps; r++) jobs.push({ task, arm, rep: r });
   const maxUsd = opt("--max-usd", null) == null ? null : Number(opt("--max-usd"));
   if (maxUsd != null && !(maxUsd > 0)) { process.stderr.write("--max-usd must be a positive number of dollars\n"); return 2; }
-  const budget = new Budget(maxUsd, jobs.length);
+  const budget = new Budget(maxUsd, jobs.length, barFloor(readBar()), judgeModel ? JUDGE_SHARE : 0);
   process.stderr.write(`running ${jobs.length} jobs on ${model}, ${parallel} in parallel${maxUsd != null ? ` within $${maxUsd}` : ""}\n`);
-  const ctx = { model, effort, judgeModel, workRoot, keepRoot, framework, hide: [workBase, keepRoot] };
+  const t0Run = Date.now();
+  const ctx = { model, effort, judgeModel, workRoot, keepRoot, framework, hide: [workBase, keepRoot], sealed, progress: { done: 0, total: jobs.length } };
   const settled = [];
   const rows = await pool(jobs, parallel, async (job) => {
     const t0 = Date.now();
@@ -1113,6 +1185,12 @@ async function runAll({ argv, opt, parallel, workRoot, workBase, keepRoot, tasks
   const result = { ran_at: new Date().toISOString(), model, reps, tasks, arms, parallel, task_roots: getTaskRoots().slice(1), ...(framework ? { framework_sha: framework.sha } : {}), summary: summarize(rows), rows };
   const out = opt("--out");
   if (out) fs.writeFileSync(out, JSON.stringify(result, null, 2) + "\n");
+  if (sealed) {
+    // Counts, cost and wall time only: no solve rates, no pass/fail, no components.
+    const cost = rows.reduce((n, r) => n + (r.cost_usd || 0) + (r.judge_cost_usd || 0), 0);
+    process.stdout.write(JSON.stringify({ sealed: true, jobs: rows.length, error_rows: rows.filter((r) => r.error).length, cost_usd: +cost.toFixed(2), wall_s: Math.round((Date.now() - t0Run) / 1000), out }, null, 2) + "\n");
+    return 0;
+  }
   process.stdout.write(JSON.stringify(result.summary, null, 2) + "\n");
   return 0;
 }
@@ -1126,7 +1204,8 @@ export function skippedRow(job, budget) {
 // One job: up to two attempts (a second only after a fail-open count), spend summed.
 async function runJob(job, budget, ctx) {
   const claim = budget.claim();
-  if (!claim) { process.stderr.write(`${job.task}/${job.arm}#${job.rep}: skipped, budget spent\n`); return skippedRow(job, budget); }
+  const tick = (what) => { if (ctx.progress) ctx.progress.done++; return ctx.sealed ? `job ${ctx.progress.done}/${ctx.progress.total}: ${what}` : null; };
+  if (!claim) { const m = tick("skipped, budget spent"); process.stderr.write(`${m ?? `${job.task}/${job.arm}#${job.rep}: skipped, budget spent`}\n`); return skippedRow(job, budget); }
   let prior = 0;
   const row = await withFailOpenRerun(async (n) => {
     const r = await attemptJob(job, claim, ctx, n, prior);
@@ -1134,6 +1213,8 @@ async function runJob(job, budget, ctx) {
     return r;
   }, { model: ctx.model });
   budget.settle(claim, (row.cost_usd || 0) + (row.judge_cost_usd || 0));
+  const sealedMsg = tick(`${row.error ? "error row (see --out)" : "done"}, $${row.cost_usd}, ${Math.round((row.wall_ms || 0) / 1000)}s`);
+  if (sealedMsg) { process.stderr.write(sealedMsg + "\n"); return row; }
   process.stderr.write(`${job.task}/${job.arm}#${job.rep}: ${row.error ? "ERROR " + row.error : `${row.hidden_pass}/${row.hidden_total}${row.solved ? " solved" : ""} $${row.cost_usd}`}${row.fail_open_rerun ? " (re-run after fail-open)" : ""}\n`);
   return row;
 }

@@ -307,6 +307,18 @@ test("solo arm end to end (fake claude): private home, no SVC env, model usage r
   assert.equal(fs.existsSync(path.join(row.artifact, "__hidden.test.mjs")), false);
 });
 
+test("--sealed (fake claude): stdout and stderr show no score, the rows with scores are in --out", { skip: !bwrapOk }, () => {
+  const tr = taskRootWith("tiny");
+  const { r, result } = runEval(["--arms", "solo", "--tasks", "tiny", "--tasks-root", tr, "--parallel", "1", "--sealed"]);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(result.rows[0].solved, true, "the full row is in --out");
+  const shown = r.stdout + r.stderr;
+  assert.doesNotMatch(shown, /solved|solve_rate|hidden|mean_hidden_score|components|\b\d+\/\d+ solved/i);
+  assert.match(r.stderr, /job 1\/1: done, \$/);
+  const out = JSON.parse(r.stdout);
+  assert.deepEqual(Object.keys(out).sort(), ["cost_usd", "error_rows", "jobs", "out", "sealed", "wall_s"]);
+});
+
 test("off-model work is an error row; background calls are not; ending at the turn limit is still graded", { skip: !bwrapOk }, () => {
   const tr = taskRootWith("tiny");
   let { result } = runEval(["--arms", "solo", "--tasks", "tiny", "--tasks-root", tr, "--parallel", "1"], { mode: "offmodel" });
