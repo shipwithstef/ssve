@@ -8,7 +8,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { closeStage, ledgerPath } from "../../scripts/stage-close.mjs";
-import { readOutcomes, tally } from "../../scripts/route-model.mjs";
+import { loadIntel, readOutcomes, tally } from "../../scripts/route-model.mjs";
 
 const script = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../scripts/stage-close.mjs");
 
@@ -164,4 +164,105 @@ test("cli prints the record, rejects a bad outcome, and does not write the home 
   assert.equal(bad.status, 2);
   assert.match(bad.stderr, /outcome/);
   assert.equal(fs.readFileSync(ledgerPath(root), "utf8").trim().split("\n").length, 1);
+});
+
+test("effort is required, and a recorded effort is counted by the router", () => {
+  const root = tmp();
+  const args = [
+    script,
+    "--stage", "execute-changeset",
+    "--wi", "WI-R2",
+    "--model", "sonnet",
+    "--harness", "claude",
+    "--outcome", "pass",
+    "--duration", "1",
+    "--cost", "0",
+    "--project-root", root,
+  ];
+  const missing = spawnSync(process.execPath, args, { encoding: "utf8" });
+  assert.equal(missing.status, 2);
+  assert.match(missing.stderr, /--effort is required/);
+  assert.equal(fs.existsSync(ledgerPath(root)), false);
+
+  const ok = spawnSync(process.execPath, [...args.slice(0, -2), "--effort", "high", "--project-root", root], {
+    encoding: "utf8",
+  });
+  assert.equal(ok.status, 0, ok.stderr);
+  const counts = tally(readOutcomes([ledgerPath(root)]), loadIntel().models);
+  assert.equal(counts.get("exec|sonnet|high").n, 1);
+  assert.equal(counts.get("exec|sonnet|high").pass, 1);
+});
+
+test("claude and codex outcomes with the same model and effort do not share a posterior", () => {
+  const root = tmp();
+  const ledger = ledgerPath(root);
+  closeStage({ ...base, projectRoot: root, harness: "claude", outcome: "pass" });
+  closeStage({ ...base, projectRoot: root, harness: "codex", outcome: "fail", attempt: 2 });
+  const modelId = loadIntel().models.models.sonnet.id;
+  fs.appendFileSync(ledger, `${JSON.stringify({
+    id: "legacy-claude",
+    task_type: "exec",
+    model: "sonnet",
+    model_id: modelId,
+    effort: "high",
+    outcome: "pass",
+  })}\n`);
+  const counts = tally(readOutcomes([ledger]), loadIntel().models);
+  assert.equal(counts.get("exec|sonnet|high").n, 2);
+  assert.equal(counts.get("exec|sonnet|high").pass, 2);
+  let n = 0;
+  for (const row of counts.values()) n += row.n;
+  assert.equal(n, 2);
+});
+
+test("rejects a receipt hard-linked to the ledger without changing either file", () => {
+  const root = tmp();
+  const ledger = ledgerPath(root);
+  fs.mkdirSync(path.dirname(ledger), { recursive: true });
+  const bytes = Buffer.from('{"phase":"exec"}\n');
+  fs.writeFileSync(ledger, bytes);
+  const receipt = path.join(root, ".svc", "receipts", "exec.json");
+  fs.mkdirSync(path.dirname(receipt), { recursive: true });
+  fs.linkSync(ledger, receipt);
+  const ledgerStat = fs.statSync(ledger);
+  const receiptStat = fs.statSync(receipt);
+  assert.equal(ledgerStat.ino, receiptStat.ino);
+  assert.equal(ledgerStat.dev, receiptStat.dev);
+  assert.notEqual(path.resolve(ledger), path.resolve(receipt));
+
+  assert.throws(
+    () => closeStage({ ...base, projectRoot: root, receipt }),
+    (error) => error.code === "USAGE" && error.message === "--receipt must not be the outcome ledger",
+  );
+  assert.deepEqual(fs.readFileSync(ledger), bytes);
+  assert.deepEqual(fs.readFileSync(receipt), bytes);
+});
+
+test("rejects a receipt that aliases the ledger lock before stale recovery can delete it", () => {
+  const root = tmp();
+  const ledger = ledgerPath(root);
+  const lock = `${ledger}.lock`;
+  fs.mkdirSync(path.dirname(ledger), { recursive: true });
+  const bytes = Buffer.from('{"phase":"exec","ok":true}\n');
+  fs.writeFileSync(lock, bytes);
+  const old = new Date(Date.now() - 11 * 60 * 1000);
+  fs.utimesSync(lock, old, old);
+
+  assert.throws(
+    () => closeStage({ ...base, projectRoot: root, receipt: lock }),
+    (error) => error.code === "USAGE" && error.message === "--receipt must not be the outcome ledger lock",
+  );
+  assert.deepEqual(fs.readFileSync(lock), bytes);
+  assert.equal(fs.existsSync(ledger), false);
+
+  const alias = path.join(root, "receipt-alias.json");
+  fs.linkSync(lock, alias);
+  assert.notEqual(path.resolve(alias), path.resolve(lock));
+  assert.throws(
+    () => closeStage({ ...base, projectRoot: root, receipt: alias }),
+    (error) => error.code === "USAGE" && error.message === "--receipt must not be the outcome ledger lock",
+  );
+  assert.deepEqual(fs.readFileSync(alias), bytes);
+  assert.deepEqual(fs.readFileSync(lock), bytes);
+  assert.equal(fs.existsSync(ledger), false);
 });

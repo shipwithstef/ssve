@@ -99,6 +99,9 @@ export function tally(outcomes, models = null) {
     if (!o.task_type || !o.model || !o.effort || !["pass", "fail"].includes(o.outcome)) continue;
     if (o.failure_kind === "refusal" || o.failure_kind === "infra") continue; // not a capability signal
     if (models && o.model_id && models.models[o.model] && o.model_id !== models.models[o.model].id) continue;
+    // Claude-only posterior. Legacy rows omit harness and stay on this key.
+    // A named non-Claude harness must not share a model/effort count.
+    if (o.harness && o.harness !== "claude") continue;
     const k = armKey(o.task_type, o.model, o.effort);
     const cur = t.get(k) || { n: 0, pass: 0 };
     cur.n += 1;

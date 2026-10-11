@@ -13,11 +13,14 @@
  * a receipt, a git note, or any ledger line.
  *
  *   node scripts/stage-close.mjs \
- *     --stage S --wi WI --model M --harness H \
+ *     --stage S --wi WI --model M --harness H --effort E \
  *     --outcome pass|fail|blocked --duration <seconds> --cost <usd> \
- *     [--effort E] [--task-type T] [--tokens N] [--signal tests|review|harden] \
+ *     [--task-type T] [--tokens N] [--signal tests|review|harden] \
  *     [--attempt N] [--id ID] [--corrects ID] [--receipt PATH] \
  *     [--project-root DIR]
+ *
+ * `--effort` is required. The router counts only rows that carry one, so a
+ * record without it would not be a usable learning.
  */
 
 import crypto from "node:crypto";
@@ -131,6 +134,30 @@ function refuseSymlink(file) {
   }
 }
 
+// Device and inode, so a hard link or a symlink to the same file compares equal
+// even when the path strings differ. stat follows links; a missing path does not.
+function fileIdentity(file) {
+  try {
+    const st = fs.statSync(file);
+    return `${st.dev}:${st.ino}`;
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+function assertReceiptDistinct(receiptPath, otherPath, label) {
+  if (!receiptPath) return;
+  if (path.resolve(receiptPath) === path.resolve(otherPath)) {
+    throw usage(`--receipt must not be the ${label}`);
+  }
+  const receiptId = fileIdentity(receiptPath);
+  const otherId = fileIdentity(otherPath);
+  if (receiptId && otherId && receiptId === otherId) {
+    throw usage(`--receipt must not be the ${label}`);
+  }
+}
+
 /**
  * Append one stage outcome. `opts.projectRoot` selects the project whose
  * `.svc/model-outcomes.jsonl` is updated. Returns `{ record, appended, ledger }`.
@@ -148,10 +175,10 @@ export function closeStage(opts = {}) {
     ? 1
     : nonNegative(opts.attempt, "--attempt", { integer: true });
   if (attempt < 1) throw usage("--attempt must be an integer >= 1");
-  let effort = null;
-  if (opts.effort !== undefined && opts.effort !== null && opts.effort !== "") {
-    effort = requiredToken(String(opts.effort), "--effort");
+  if (opts.effort === undefined || opts.effort === null || opts.effort === "") {
+    throw usage("--effort is required");
   }
+  const effort = requiredToken(String(opts.effort), "--effort");
   let tokens = null;
   if (opts.tokens !== undefined && opts.tokens !== null && opts.tokens !== "") {
     tokens = nonNegative(opts.tokens, "--tokens", { integer: true });
@@ -180,10 +207,12 @@ export function closeStage(opts = {}) {
   const svcDir = path.join(root, ".svc");
   refuseSymlink(svcDir);
   refuseSymlink(ledger);
-  if (opts.receipt && path.resolve(opts.receipt) === path.resolve(ledger)) {
-    throw usage("--receipt must not be the outcome ledger");
-  }
-  const receipt = inspectReceipt(opts.receipt ? path.resolve(opts.receipt) : null);
+  const receiptPath = opts.receipt ? path.resolve(String(opts.receipt)) : null;
+  const lockFile = `${ledger}.lock`;
+  // Before the lock: stale-lock recovery unlinks `<ledger>.lock`.
+  assertReceiptDistinct(receiptPath, lockFile, "outcome ledger lock");
+  assertReceiptDistinct(receiptPath, ledger, "outcome ledger");
+  const receipt = inspectReceipt(receiptPath);
 
   const record = {
     id,
@@ -197,7 +226,7 @@ export function closeStage(opts = {}) {
     model_id: modelId,
     harness,
     effort,
-    arm: effort ? `${harness}:${model}:${effort}` : `${harness}:${model}`,
+    arm: `${harness}:${model}:${effort}`,
     rung: null,
     outcome,
     failure_kind: null,
@@ -213,6 +242,9 @@ export function closeStage(opts = {}) {
   };
 
   return withStateLock(ledger, () => {
+    // Re-check after the lock is held, immediately before any append. A hard
+    // link created after the earlier check would otherwise share the ledger inode.
+    assertReceiptDistinct(receiptPath, ledger, "outcome ledger");
     const prior = readLedger(ledger).find((row) => row && row.id === record.id);
     if (prior) return { record: prior, appended: false, ledger };
     let existing = "";
