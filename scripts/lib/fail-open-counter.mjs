@@ -10,7 +10,6 @@
 // (error.code || error.name || "Error"), never the message.
 import fs from "node:fs";
 import path from "node:path";
-import { withStateLock } from "../state-io.mjs";
 import { isMain } from "./is-main.mjs";
 
 export const COUNTER_FILE = "fail-open-counter.json";
@@ -47,6 +46,26 @@ export function counterPath(root) {
   return path.join(root, ".svc", COUNTER_FILE);
 }
 
+// A mkdir lock: atomic, no pid bookkeeping that could free a live holder's lock. The
+// critical section is a few milliseconds, so a lock older than STALE_MS or still held after
+// WAIT_MS belongs to a dead process and is broken.
+const WAIT_MS = 3000, STALE_MS = 10000;
+const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+function withLock(file, fn) {
+  const lock = `${file}.lock.d`;
+  let deadline = Date.now() + WAIT_MS;
+  for (;;) {
+    try { fs.mkdirSync(lock); break; } catch (error) {
+      if (error.code !== "EEXIST") throw error;
+      let age;
+      try { age = Date.now() - fs.statSync(lock).mtimeMs; } catch { continue; }   // released meanwhile
+      if (age > STALE_MS || Date.now() > deadline) { try { fs.rmdirSync(lock); } catch { /* raced */ } deadline = Date.now() + WAIT_MS; continue; }
+      pause(2);
+    }
+  }
+  try { return fn(); } finally { try { fs.rmdirSync(lock); } catch { /* already broken */ } }
+}
+
 function readCounter(file) {
   try {
     const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
@@ -74,7 +93,7 @@ export function recordFailOpen(hookName, error, { root, cwd } = {}) {
     const file = path.join(dir, COUNTER_FILE);
     const hook = clean(hookName, "unknown-hook");
     const cls = errorClass(error);
-    withStateLock(file, () => {
+    withLock(file, () => {
       const c = readCounter(file);
       const byHook = Object.assign(Object.create(null), c.by_hook);
       const classes = Object.assign(Object.create(null), byHook[hook]);
@@ -84,7 +103,7 @@ export function recordFailOpen(hookName, error, { root, cwd } = {}) {
       const tmp = `${file}.tmp.${process.pid}.${Math.random().toString(36).slice(2, 10)}`;
       fs.writeFileSync(tmp, JSON.stringify({ total, by_hook: byHook }, null, 2) + "\n");
       try { fs.renameSync(tmp, file); } catch (e) { try { fs.unlinkSync(tmp); } catch {} throw e; }
-    }, { timeoutMs: 3000, staleMs: 10000, retryMs: 5 });
+    });
   } catch { /* a failure path must never fail again */ }
 }
 

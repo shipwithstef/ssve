@@ -158,7 +158,7 @@ test("the installed enforcement bundle ships the counter: a forced child failure
     "--host", "codex", "--repo-root", ROOT, "--skills-path", installed, "--json"], { env, encoding: "utf8" });
   assert.equal(built.status, 0, built.stderr);
   const bundle = path.join(home, ".svc", "enforcement", "1");
-  for (const rel of ["hooks/lib/fail-open.mjs", "hooks/lib/process-liveness.mjs", "scripts/lib/fail-open-counter.mjs", "scripts/lib/is-main.mjs", "scripts/state-io.mjs"]) {
+  for (const rel of ["hooks/lib/fail-open.mjs", "scripts/lib/fail-open-counter.mjs", "scripts/lib/is-main.mjs"]) {
     assert.ok(fs.existsSync(path.join(bundle, rel)), `bundle ships ${rel}`);
   }
   const child = path.join(project, "bad-hook.mjs");
@@ -219,18 +219,25 @@ test("learning and owner injectors count memo failures against the payload's pro
   assert.equal(fs.existsSync(path.join(elsewhere, ".svc")), false, "nothing is counted against the process cwd");
 });
 
-test("spec-index-update counts a failing index build and counts against the payload's project", () => {
-  const dir = repo();
-  fs.mkdirSync(path.join(dir, "scripts"));
-  fs.writeFileSync(path.join(dir, "scripts", "build-spec-index.mjs"), "process.exit(3);\n");
-  const elsewhere = repo({ svc: false });
-  const r = spawnSync(process.execPath, [path.join(ROOT, "hooks", "svc-spec-index-update.mjs")], {
-    cwd: dir, input: JSON.stringify({ cwd: dir, tool_input: { file_path: path.join(dir, "docs", "specs", "a.md") } }), encoding: "utf8",
-    env: { ...process.env, SVC_HOST: "claude" },
+test("spec-index-update counts a failing build where it ran, and a bad payload against the payload's project", () => {
+  const payloadProject = repo();                 // named by the payload's cwd
+  const buildProject = repo();                   // the hook's process cwd: where the index is built
+  fs.mkdirSync(path.join(buildProject, "scripts"));
+  fs.writeFileSync(path.join(buildProject, "scripts", "build-spec-index.mjs"), "process.exit(3);\n");
+  const hook = path.join(ROOT, "hooks", "svc-spec-index-update.mjs");
+  const env = { ...process.env, SVC_HOST: "claude" };
+  const r = spawnSync(process.execPath, [hook], {
+    cwd: buildProject, env, encoding: "utf8",
+    input: JSON.stringify({ cwd: payloadProject, tool_input: { file_path: path.join(payloadProject, "docs", "specs", "a.md") } }),
   });
   assert.equal(r.status, 0);
-  assert.deepEqual(read(dir).by_hook, { "svc-spec-index-update": { Exit3: 1 } });
-  assert.equal(fs.existsSync(path.join(elsewhere, ".svc")), false);
+  assert.deepEqual(read(buildProject).by_hook, { "svc-spec-index-update": { Exit3: 1 } }, "the failing build is counted in the repo it ran in");
+  assert.equal(fs.existsSync(counterPath(payloadProject)), false, "the other project is not charged for it");
+  // A payload that is not JSON has no project: it falls back to the process cwd, never a third place.
+  const bad = spawnSync(process.execPath, [hook], { cwd: payloadProject, env, input: "{not json", encoding: "utf8" });
+  assert.equal(bad.status, 0);
+  assert.deepEqual(read(payloadProject).by_hook, { "svc-spec-index-update": { SyntaxError: 1 } });
+  assert.equal(read(buildProject).total, 1, "the first project's count is unchanged");
 });
 
 test("telemetry hooks count against the payload's cwd, not process.cwd()", () => {
@@ -286,4 +293,50 @@ test("the live cockpit page shows the fail-open total and per-project counts", a
   const clean = render(buildState([quiet]));
   assert.match(clean.kpis, /Hook fail-opens<\/div><div class="v">0</);
   assert.match(clean.kpis, /no hook has failed open/);
+});
+
+test("rule-injector counts a corrupt registry, a corrupt concerns registry, a bad pattern and an unreadable rule", () => {
+  const dir = repo();
+  const elsewhere = repo({ svc: false });
+  const rules = path.join(dir, "rules");
+  fs.mkdirSync(rules);
+  const corrupt = path.join(dir, "corrupt.json");
+  fs.writeFileSync(corrupt, "{ not json");
+  const manifest = path.join(dir, "manifest.json");
+  fs.writeFileSync(manifest, JSON.stringify({ rulesRegistry: { entries: [
+    { path: "missing-rule.md", type: "correction", auto_inject: "signal", signals: { paths: ["([", "a\\.ts$"] } },
+  ] } }));
+  const run = (env) => spawnSync(process.execPath, [path.join(ROOT, "hooks", "svc-rule-injector.mjs")], {
+    cwd: elsewhere, encoding: "utf8", env: { ...process.env, HOME: dir, SVC_RULES_ROOT: rules, ...env },   // the once-per-session finding memo lives in the runtime dir: a fresh session id per run
+    input: JSON.stringify({ hook_event_name: "PreToolUse", tool_name: "Edit", tool_input: { file_path: path.join(dir, "a.ts"), new_string: "x" }, session_id: `s-rules-${process.pid}-${Date.now()}`, cwd: dir }),
+  });
+  let r = run({ SVC_RULES_MANIFEST: corrupt });
+  assert.equal(r.status, 0); assert.equal(r.stdout, "");
+  assert.deepEqual(read(dir).by_hook, { "svc-rule-injector": { SyntaxError: 1 } }, "corrupt registry");
+  r = run({ SVC_RULES_MANIFEST: manifest, SVC_CONCERNS_REGISTRY: corrupt });
+  assert.equal(r.status, 0);
+  const c = read(dir).by_hook["svc-rule-injector"];
+  assert.equal(c.SyntaxError, 3, "corrupt concerns registry and the bad pattern are counted: " + JSON.stringify(c));
+  assert.equal(c.ENOENT, 1, "the matched rule that cannot be read is counted");
+  assert.equal(fs.existsSync(path.join(elsewhere, ".svc")), false);
+});
+
+test("boundary attributes a failing child to the operation's canonical root, then working_directory", () => {
+  const session = repo(), operation = repo(), other = repo(), working = repo();
+  const child = path.join(other, "child.mjs");
+  fs.writeFileSync(child, "process.exit(1);\n");
+  const spec = (event) => Buffer.from(JSON.stringify({ command: `node ${child}`, host: "claude", event, timeoutMs: 20000 })).toString("base64url");
+  const env = { ...process.env, SVC_HOOK_MODE: "advisory", HOME: other };
+  delete env.SVC_REPO_MODE;
+  const go = (event, payload) => spawnSync(process.execPath, [path.join(ROOT, "hooks", "svc-hook-boundary.mjs"), "child", "--spec", spec(event)], { cwd: other, env, input: JSON.stringify(payload), encoding: "utf8" });
+  // A tool call whose explicit workdir is another governed worktree: the operation root pays.
+  let r = go("PreToolUse", { cwd: session, hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "echo hi > out.txt", workdir: operation } });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(read(operation).total, 1);
+  assert.equal(fs.existsSync(counterPath(session)), false, "the session repo is not charged");
+  // No cwd, only working_directory.
+  r = go("UserPromptSubmit", { working_directory: working, hook_event_name: "UserPromptSubmit", prompt: "hi" });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(read(working).total, 1);
+  assert.equal(fs.existsSync(counterPath(other)), false, "the process cwd is not charged");
 });

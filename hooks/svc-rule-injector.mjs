@@ -42,11 +42,16 @@ const CAP = 10000;          // documented additionalContext cap
 const BUDGET = 8500;        // full-text packing budget; remainder listed as pointers
 
 function safeJson(s) { try { return JSON.parse(s); } catch { return null; } }
+// Every swallowed registry/rule error below is a fail-open: the injector stays quiet and the
+// action proceeds, so it is counted where it is swallowed.
+const swallowed = (error) => failOpen("svc-rule-injector", error);
+// Parse JSON that must be well formed; a corrupt document is counted and treated as absent.
+function parseRegistry(text) { try { return JSON.parse(text); } catch (error) { swallowed(error); return null; } }
 
 function loadRegistry() {
   // SVC_RULES_MANIFEST override exists for hermetic validator fixtures (PLAN-004)
   const mp = process.env.SVC_RULES_MANIFEST || path.join(SVC_ROOT, "skills-manifest.json");
-  const m = safeJson(readFileSync(mp, "utf8"));
+  const m = parseRegistry(readFileSync(mp, "utf8"));
   return (m && m.rulesRegistry && m.rulesRegistry.entries) || [];
 }
 
@@ -72,7 +77,7 @@ function loadConcernBridge(paths) {
   // spawn (latency budget per WI-359).
   try {
     const rp = process.env.SVC_CONCERNS_REGISTRY || path.join(SVC_ROOT, "concerns", "REGISTRY.json");
-    const reg = safeJson(readFileSync(rp, "utf8"));
+    const reg = parseRegistry(readFileSync(rp, "utf8"));
     const out = new Set();
     for (const c of (reg && reg.concerns) || []) {
       const rules = (c.handled_by && c.handled_by.required_rules) || [];
@@ -83,7 +88,7 @@ function loadConcernBridge(paths) {
       if (hit) for (const r of rules) out.add(r);
     }
     return out;
-  } catch { return new Set(); }
+  } catch (error) { swallowed(error); return new Set(); }
 }
 
 // Stack-specific rules may declare signals.repo_markers: the rule fires only
@@ -98,7 +103,7 @@ function repoHasMarker(root, markers) {
     try {
       if (i > 0) { if (readFileSync(path.join(root, s.slice(0, i)), "utf8").includes(s.slice(i + 1))) return true; }
       else if (s && existsSync(path.join(root, s))) return true;
-    } catch { /* unreadable marker file = no marker */ }
+    } catch (error) { if (error?.code !== "ENOENT") swallowed(error); /* unreadable marker file = no marker; an absent one is normal */ }
   }
   return false;
 }
@@ -150,19 +155,19 @@ function ruleContext(call) {
     }
     let hit = false;
     for (const rx of sig.paths || []) {
-      let re; try { re = new RegExp(rx); } catch { continue; }
+      let re; try { re = new RegExp(rx); } catch (error) { swallowed(error); continue; }
       if (paths.some((p) => re.test(p))) { hit = true; break; }
     }
     if (!hit && bashCmd) {
       for (const rx of sig.bash || []) {
-        let re; try { re = new RegExp(rx); } catch { continue; }
+        let re; try { re = new RegExp(rx); } catch (error) { swallowed(error); continue; }
         if (re.test(bashCmd)) { hit = true; break; }
       }
     }
     if (!hit && content) {
       // PLAN-005: subject-in-content rules (e.g. IGNORECASE regexes being written)
       for (const rx of sig.keywords || []) {
-        let re; try { re = new RegExp(rx); } catch { continue; }
+        let re; try { re = new RegExp(rx); } catch (error) { swallowed(error); continue; }
         if (re.test(content)) { hit = true; break; }
       }
     }
@@ -186,7 +191,7 @@ function ruleContext(call) {
   for (const e of fresh) {
     let text = "";
     const rulesRoot = process.env.SVC_RULES_ROOT || SVC_ROOT;
-    try { text = readFileSync(path.join(rulesRoot, e.path), "utf8"); } catch { continue; }
+    try { text = readFileSync(path.join(rulesRoot, e.path), "utf8"); } catch (error) { swallowed(error); continue; }
     // Registry metadata (scope/stack/source_sha/paths) is for tooling, not the model.
     text = text.replace(/^\uFEFF?---\r?\n[\s\S]*?\r?\n---\r?\n+/, "");
     if (ctx.length + text.length + 64 <= BUDGET) {

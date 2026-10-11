@@ -146,8 +146,7 @@ function enforcementDir(stateRoot) {
 }
 
 const OPTIONAL_BUNDLE_FILES = new Set([
-  "hooks/lib/fail-open.mjs", "hooks/lib/process-liveness.mjs", "scripts/lib/fail-open-counter.mjs",
-  "scripts/lib/is-main.mjs", "scripts/state-io.mjs",
+  "hooks/lib/fail-open.mjs", "scripts/lib/fail-open-counter.mjs", "scripts/lib/is-main.mjs",
 ]);
 
 // Materialize the launcher + canonical core as byte/hash-verified COPIES (never
@@ -184,10 +183,8 @@ function materializeLauncher(stateRoot, repoRoot, effectiveSource, registry) {
     // Fail-open counter: the boundary and hooks run from this bundle, so it must carry the
     // counter and its relative imports (otherwise every run would report a false zero).
     ["hooks/lib/fail-open.mjs", "hooks/lib/fail-open.mjs", 0o600],
-    ["hooks/lib/process-liveness.mjs", "hooks/lib/process-liveness.mjs", 0o600],
     ["scripts/lib/fail-open-counter.mjs", "scripts/lib/fail-open-counter.mjs", 0o600],
     ["scripts/lib/is-main.mjs", "scripts/lib/is-main.mjs", 0o600],
-    ["scripts/state-io.mjs", "scripts/state-io.mjs", 0o600],
   ]) {
     // A minimal fixture source tree may predate the counter files: skip those, never fail.
     if (OPTIONAL_BUNDLE_FILES.has(source) && !fs.existsSync(path.join(repoRoot, source))) continue;

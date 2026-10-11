@@ -250,8 +250,17 @@ async function main() {
   const marker = process.argv.slice(2, process.argv.indexOf("--spec")).join(" ") || "svc-hook";
   // Every advisory-mode path below that swallows an error and lets the call continue is
   // counted (hook name + error class only). Enforce mode fails closed, so it is not counted.
+  // The count belongs to the operation's canonical root, the same one the boundary resolves
+  // below (explicit workdir / target worktree), falling back to the payload's cwd or
+  // working_directory when no operation scope can be resolved.
   let countCwd;
-  const open = (error) => { if (mode.mode !== "enforce") failOpen(marker, error, countCwd ? { cwd: countCwd } : undefined); };
+  let operationRoots = () => [];
+  const open = (error) => {
+    if (mode.mode === "enforce") return;
+    let at = countCwd;
+    try { at = operationRoots().find((root) => fs.existsSync(path.join(root, ".svc"))) || operationRoots()[0] || countCwd; } catch { /* fall back to the payload cwd */ }
+    failOpen(marker, error, at ? { cwd: at } : undefined);
+  };
   let spec;
   try { spec = decodeSpec(process.argv[process.argv.indexOf("--spec") + 1]); }
   catch (error) { open(error); process.stderr.write(warning(marker, error.message) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
@@ -265,7 +274,7 @@ async function main() {
   catch (error) { open(error); process.stderr.write(warning(marker, `cannot read hook payload: ${error.message}`) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
   let original;
   try { original = JSON.parse(input.toString("utf8")); } catch {}
-  if (typeof original?.cwd === "string" && original.cwd) countCwd = original.cwd;
+  countCwd = [original?.cwd, original?.working_directory].find((value) => typeof value === "string" && value) || undefined;
   const pretool = /^(?:PreToolUse|BeforeTool|preToolUse|beforeShellExecution)$/i.test(spec.event);
   const toolEvent = pretool || /^(?:PostToolUse|AfterTool|postToolUse|afterShellExecution)$/i.test(spec.event);
   const hasTool = original?.tool_name || original?.toolName || original?.command;
@@ -275,6 +284,11 @@ async function main() {
     if (runtimeSource) {
       ({ evaluatePreToolObservation, evaluateAdvisoryObservation } = await import(pathToFileURL(path.join(runtimeSource, "lib/pretool-decision-engine.mjs"))));
       ({ resolveOperationScope } = await import(pathToFileURL(path.join(runtimeSource, "lib/operation-scope.mjs"))));
+      operationRoots = () => {
+        const scope = resolveOperationScope(original, { host: spec.host });
+        return [scope.operation_repository?.worktree_root, scope.session_repository?.worktree_root,
+          ...(scope.targets || []).map((t) => t.worktree_root)].filter(Boolean);
+      };
     }
   }
   const observation = evaluatePreToolObservation?.(original) || (mode.mode === "advisory" && evaluateAdvisoryObservation?.(original));
@@ -289,10 +303,7 @@ async function main() {
   }
   let repository = original?.cwd || original?.working_directory || process.cwd();
   if (mode.mode === "advisory" && pretool && hasTool && resolveOperationScope) {
-    const scope = resolveOperationScope(original, { host: spec.host });
-    const roots = [scope.operation_repository?.worktree_root, scope.session_repository?.worktree_root,
-      ...(scope.targets || []).map(t => t.worktree_root)].filter(Boolean);
-    const governed = roots.filter(root => fs.existsSync(path.join(root, ".svc")));
+    const governed = operationRoots().filter(root => fs.existsSync(path.join(root, ".svc")));
     if (!governed.length) { process.stdout.write("{}\n"); return; }
     repository = governed[0];
   }
