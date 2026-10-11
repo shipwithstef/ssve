@@ -259,8 +259,13 @@ export function apply(result, to) {
   for (const f of w.changed) {
     const src = path.join(w.dir, f);
     const dst = path.join(to, f);
-    if (fs.existsSync(src)) { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.copyFileSync(src, dst); }
-    else fs.rmSync(dst, { force: true });
+    // lstat, not existsSync: a link (even one whose target is missing) is applied as a link,
+    // and only a path that is really gone in the winner is removed from the target.
+    let st = null; try { st = fs.lstatSync(src); } catch {}
+    if (!st) { fs.rmSync(dst, { force: true }); continue; }
+    fs.mkdirSync(path.dirname(dst), { recursive: true });
+    if (st.isSymbolicLink()) { fs.rmSync(dst, { force: true }); fs.symlinkSync(fs.readlinkSync(src), dst); }
+    else fs.copyFileSync(src, dst);
   }
   return w.changed;
 }

@@ -40,9 +40,12 @@ function freePort() {
   return new Promise((resolve) => { const s = net.createServer().listen(0, () => { const { port } = s.address(); s.close(() => resolve(port)); }); });
 }
 
-async function waitReady(base, ready, ms = 20000) {
+// Polls until ready; stops at once if the app process has already exited, so a build that
+// crashes on start costs milliseconds, not the full wait, for each fault.
+async function waitReady(base, ready, ms = 20000, child = null) {
   const end = Date.now() + ms;
   while (Date.now() < end) {
+    if (child && child.exitCode !== null) return false;
     try { const r = await fetch(base + ready); if (r.ok) return true; } catch {}
     await sleep(150);
   }
@@ -57,7 +60,7 @@ async function startApp(dir, spec, env = {}) {
   child.stdout.on("data", (c) => { log = (log + c).slice(-4000); });
   child.stderr.on("data", (c) => { log = (log + c).slice(-4000); });
   const base = `http://127.0.0.1:${port}`;
-  const up = await waitReady(base, spec.ready || "/");
+  const up = await waitReady(base, spec.ready || "/", 20000, child);
   if (up && spec.prepare && !env.__noPrepare) spawnSync("sh", ["-c", spec.prepare], { cwd: dir, encoding: "utf8", timeout: 60000, env: { ...process.env, BASE_URL: base } });
   const stop = () => { try { process.kill(-child.pid, "SIGKILL"); } catch {} };
   return { base, port, up, stop, log: () => log, alive: () => child.exitCode === null };
@@ -166,14 +169,17 @@ const FAULTS = {
     return { pass: s.ok, detail: s.ok ? `steady state held with ${spec.latency_ms ?? 150} ms added each way` : `under latency: ${s.out}` };
   },
   async clock(dir, spec) {
-    const pre = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "chaos-")), "skew.cjs");
-    const skew = spec.clock_skew_ms ?? 3 * 3600 * 1000;
-    fs.writeFileSync(pre, `const real = Date.now; Date.now = () => real() + ${skew};\n`);
-    const a = await startApp(dir, spec, { NODE_OPTIONS: `${process.env.NODE_OPTIONS || ""} --require ${pre}`.trim() });
-    if (!a.up) { a.stop(); return { pass: false, detail: "app did not start with a skewed clock" }; }
-    const s = await steady(dir, spec, a.base);
-    a.stop();
-    return { pass: s.ok, detail: s.ok ? `steady state held with the server clock ${Math.round(skew / 60000)} min ahead` : `with a skewed clock: ${s.out}` };
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "chaos-"));
+    try {
+      const pre = path.join(tmp, "skew.cjs");
+      const skew = spec.clock_skew_ms ?? 3 * 3600 * 1000;
+      fs.writeFileSync(pre, `const real = Date.now; Date.now = () => real() + ${skew};\n`);
+      const a = await startApp(dir, spec, { NODE_OPTIONS: `${process.env.NODE_OPTIONS || ""} --require ${pre}`.trim() });
+      if (!a.up) { a.stop(); return { pass: false, detail: "app did not start with a skewed clock" }; }
+      const s = await steady(dir, spec, a.base);
+      a.stop();
+      return { pass: s.ok, detail: s.ok ? `steady state held with the server clock ${Math.round(skew / 60000)} min ahead` : `with a skewed clock: ${s.out}` };
+    } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
   },
   async bots(dir, spec) {
     const fails = [];

@@ -60,7 +60,19 @@ export function repoSettingsOff(cwd = process.cwd()) {
         if (JSON.parse(fs.readFileSync(path.join(dir, ".claude", f), "utf8"))?.env?.SVC_REPO_MODE === "off") return true;
       } catch { /* absent or unreadable settings do not switch svc off */ }
     }
-    if (fs.existsSync(path.join(dir, ".git"))) return false;
+    const git = path.join(dir, ".git");
+    if (fs.existsSync(git)) {
+      // A linked worktree's .git is a file pointing into the main checkout's .git; the
+      // switch is usually set there (settings.local.json is untracked), so read it too.
+      try {
+        const m = fs.readFileSync(git, "utf8").match(/^gitdir:\s*(.+?)\s*$/m);
+        const main = m && m[1].includes(`${path.sep}.git${path.sep}worktrees${path.sep}`) ? m[1].slice(0, m[1].indexOf(`${path.sep}.git${path.sep}worktrees${path.sep}`)) : null;
+        if (main) for (const f of ["settings.local.json", "settings.json"]) {
+          try { if (JSON.parse(fs.readFileSync(path.join(main, ".claude", f), "utf8"))?.env?.SVC_REPO_MODE === "off") return true; } catch { /* absent or unreadable */ }
+        }
+      } catch { /* .git is a directory: the main checkout itself */ }
+      return false;
+    }
     const up = path.dirname(dir);
     if (up === dir) return false;
     dir = up;

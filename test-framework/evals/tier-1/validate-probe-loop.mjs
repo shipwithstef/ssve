@@ -155,3 +155,14 @@ test("on this host either bubblewrap contains a worker's outside writes, or sand
   assert.equal(resolveSandbox({})?.prefix, BWRAP);
   assert.equal(hasBwrap(), true);
 });
+
+test("apply keeps a winner's link as a link, even when its target is missing (review #127)", async () => {
+  const dir = base();
+  const r = await run({ question: "q", base: dir, prompt: "p", owned: ["src"], check: "true", variants: 1, worker_cmd: "ln -s ./later.txt src/pending" }, { sandbox: null, lanes: { max_parallel: 1, why: "t" } });
+  assert.equal(r.variants[0].status, "pass");
+  const target = fs.mkdtempSync(path.join(os.tmpdir(), "probe-apply-link-"));
+  fs.cpSync(dir, target, { recursive: true });
+  apply(r, target);
+  assert.equal(fs.lstatSync(path.join(target, "src/pending")).isSymbolicLink(), true);
+  assert.equal(fs.readlinkSync(path.join(target, "src/pending")), "./later.txt");
+});

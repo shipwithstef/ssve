@@ -155,3 +155,18 @@ test("OpenCode reads the repo switch exactly as the shared resolver does", async
   assert.equal(repoSettingsOff(path.join(dir, "local-off", "a", "b")), true);
   assert.equal(repoSettingsOff(path.join(dir, "broken", "a", "b")), false);
 });
+
+test("a linked worktree follows the switch set in its main checkout (review #127)", async () => {
+  const { repoSettingsOff } = await import("../../../hooks/lib/hook-policy.mjs");
+  const main = tmp("svc-repo-main-");
+  spawnSync("git", ["init", "-q", main]);
+  spawnSync("git", ["-C", main, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "init"]);
+  const wt = path.join(tmp("svc-repo-wt-"), "wt");
+  assert.equal(spawnSync("git", ["-C", main, "worktree", "add", "-q", wt]).status, 0);
+  const sub = path.join(wt, "src"); fs.mkdirSync(sub);
+  assert.equal(repoSettingsOff(sub), false);
+  assert.equal(spawnSync(process.execPath, [script, "off", "--dir", main]).status, 0);
+  assert.equal(repoSettingsOff(sub), true, "off in the main checkout reaches its worktrees");
+  assert.equal(spawnSync(process.execPath, [script, "on", "--dir", main]).status, 0);
+  assert.equal(repoSettingsOff(sub), false);
+});
