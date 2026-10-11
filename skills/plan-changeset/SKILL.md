@@ -106,6 +106,8 @@ Log the classification (archetype, reasoning, planning mode) before proceeding. 
 
 ## Inputs
 
+Before planning, run `node "$SVC_ROOT"/scripts/k-preload.mjs --root .` (from the project directory) and treat each printed fact as a requirement.
+
 Read and hold in context:
 
 | Artifact | Path | What You Extract |
