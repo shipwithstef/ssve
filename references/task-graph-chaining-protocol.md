@@ -29,7 +29,11 @@ If either check fails → **skip host mirroring**. The file state is the durable
 
 Subagents MUST NOT attempt `TaskUpdate` calls. Trying and failing is not graceful — it creates silent drift between the subagent's intent and the host UI.
 
-### Lifecycle actions in every skill
+### Lane graphs: `svc-next` owns completion and successor selection
+
+For a compiled lane graph (`.svc/lane-tasks-<WI>.json` written by `compile-delivery-graph.mjs`), `node "$SVC_ROOT"/scripts/svc-next.mjs --root . [--wi <WI>]` prints the card for the current stage, and a skill hands control back only with `svc-next.mjs --done <skill> --receipt <type>:<sha256>|load-skill` (each skill's `## Handback`). `svc-next` validates the receipt the way `emit-receipt.mjs` would, completes the task, and prints the next card. In that mode the lifecycle steps below that mark a task `completed`, start the next task, load the next skill, or skip a stage do NOT apply: they are the standalone behavior for hosts and sessions without a compiled lane graph. `progressive: true` means do not ask a person; it never names the next skill. `task-graph.mjs next` and `set-status` remain for older callers.
+
+### Lifecycle actions in every skill (standalone, no compiled lane graph)
 
 A skill running in task-graph mode MUST:
 

@@ -297,6 +297,8 @@ Run `node scripts/scan-deprecated-foundations.mjs --root . --path <file-or-dir> 
 
 ## Pipeline Continuation
 
+**Lane graph driven by `svc-next`.** When `.svc/lane-tasks-<WI>.json` was compiled for this work, `svc-next` alone completes this stage and picks the successor: do not mark the task completed, start or load the next task or skill, or follow a next-skill default from this section; finish through `## Handback` at the end of this file. The rules below apply only without a compiled lane graph.
+
 ### Phase Receipt Contract
 
 Record each phase before completing the task — canonical form:

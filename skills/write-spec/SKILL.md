@@ -166,6 +166,8 @@ Brownfield: also read `project-state.md` + open WIs; reuse a WI's framing when i
 
 ## Pipeline Continuation
 
+**Lane graph driven by `svc-next`.** When `.svc/lane-tasks-<WI>.json` was compiled for this work, `svc-next` alone completes this stage and picks the successor: do not mark the task completed, start or load the next task or skill, or follow a next-skill default from this section; finish through `## Handback` at the end of this file. The rules below apply only without a compiled lane graph.
+
 Task-graph mode — source of truth: `.svc/lane-tasks-<WI>.json`:
 - Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. Claude mirrors TaskList; Kimi observes /task; for Codex coordination, mirror only the active step in `update_plan` (never the full graph). Treat `Invoke: /skill-name` + `metadata.skill` as routing instructions.
 - Host UI mirroring only in the parent/top-level session (TaskList tool present AND no `SVC_SUBAGENT=1`); subagents never call TaskUpdate — file state is the durable record.

@@ -420,6 +420,8 @@ Common root-cause patterns (race, null access, state-machine violation, stale ca
 
 ## Pipeline Continuation
 
+**Lane graph driven by `svc-next`.** When `.svc/lane-tasks-<WI>.json` was compiled for this work, `svc-next` alone completes this stage and picks the successor: do not mark the task completed, start or load the next task or skill, or follow a next-skill default from this section; finish through `## Handback` at the end of this file. The rules below apply only without a compiled lane graph.
+
 ### Task-graph mode (when authorized; source of truth: `.svc/lane-tasks-<WI>.json`)
 
 Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. In the parent Codex session, mirror only the active step in `update_plan`. These instructions apply only when a task graph is authorized; report-only and terminal-answer boundaries below remain controlling. Complete the diagnosis only after the brief and actual required phase evidence are ready. Follow `references/task-graph-chaining-protocol.md` for task status, conditions, skill loading and parent-only UI mirroring; subagents do not call TaskUpdate. Preserve the explicit owner diagnosis-only/no-edit boundary and the mode-specific handoffs below.
