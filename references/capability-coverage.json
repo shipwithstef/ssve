@@ -3576,7 +3576,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
-        "test-framework/tests/two-box-large-request.test.mjs"
+        "test-framework/tests/review-relay.test.mjs"
       ]
     },
     {
@@ -3595,7 +3595,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/tests/journey-conformance.test.mjs",
-        "test-framework/tests/journey-intended-specs.test.mjs"
+        "test-framework/tests/journey-intended-specs.test.mjs",
+        "test-framework/tests/review-relay.test.mjs"
       ]
     },
     {

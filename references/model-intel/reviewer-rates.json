@@ -1,0 +1,10 @@
+{
+  "$comment": "Estimated token prices for the cross-family reviewer (Codex) used by the eval's review relay, USD per million tokens. scripts/outcome-eval.mjs prices relayed reviewer calls from this table and always reports the result as an estimate (the provider's price list is not read at run time). A model not listed in `models` is priced at `fallback`, a deliberate ceiling, and flagged unknown. Replace the fallback or add the reviewer model with the provider's list price to tighten the estimate.",
+  "updated": "2026-10-11",
+  "models": {},
+  "fallback": {
+    "input_per_m": 5,
+    "cached_input_per_m": 0.5,
+    "output_per_m": 30
+  }
+}

@@ -212,9 +212,32 @@ const canonical = (v) => {
 };
 export const specSha = (spec) => crypto.createHash("sha256").update(canonical(spec)).digest("hex").slice(0, 12);
 
-export function checkJourney(spec, { transcriptsDir = null, buildDir = null } = {}) {
-  const sessions = readSessions(transcriptsDir);
-  const all = { tools: toolUses(sessions.flatMap((x) => x.events)), buildDir };
+// Events grouped by the session they belong to: the event's own sessionId, else the transcript
+// file's name. A subagent's transcript carries its parent's sessionId, so it joins the outer
+// session it ran in instead of becoming a session of its own.
+export function eventsBySessionId(dir) {
+  const by = new Map();
+  for (const s of readSessions(dir)) {
+    const fileId = path.basename(s.file, ".jsonl");
+    for (const e of s.events) {
+      const id = (typeof e?.sessionId === "string" && e.sessionId) || fileId;
+      if (!by.has(id)) by.set(id, []);
+      by.get(id).push(e);
+    }
+  }
+  return by;
+}
+
+// sessionIds: the outer session id of each run step, in step order (the runner records them).
+// With them, "session n" is that session's events (its subagents included); without them each
+// transcript file is a numbered session, in start order.
+export function checkJourney(spec, { transcriptsDir = null, buildDir = null, sessionIds = null } = {}) {
+  let sessions = readSessions(transcriptsDir);
+  if (Array.isArray(sessionIds) && sessionIds.length) {
+    const by = eventsBySessionId(transcriptsDir);
+    sessions = sessionIds.map((id) => ({ events: (id && by.get(id)) || [] }));
+  }
+  const all = { tools: toolUses(readSessions(transcriptsDir).flatMap((x) => x.events)), buildDir };
   // A step with `session: n` sees only the n-th session's tool uses, so one session's
   // work never counts for another (continuity: session 2 must walk its own journey).
   const ctxFor = (s) => (s.session == null ? all : { tools: toolUses(sessions[s.session - 1]?.events || []), buildDir });
