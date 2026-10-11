@@ -362,8 +362,6 @@ Formalizes `rules/common/research-before-build.md` as a mid-reasoning loop. Repo
 
 ## Pipeline Continuation
 
-**Lane graph driven by `svc-next`.** When `.svc/lane-tasks-<WI>.json` was compiled for this work, `svc-next` alone completes this stage and picks the successor: do not mark the task completed, start or load the next task or skill, or follow a next-skill default from this section; finish through `## Handback` at the end of this file. The rules below apply only without a compiled lane graph.
-
 Task-graph mode — source of truth: `.svc/lane-tasks-<WI>.json`. Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. Claude mirrors TaskList; Kimi observes /task; for Codex coordination, mirror only the active step in `update_plan` (never the full graph). Treat `Invoke:`/`metadata.skill` as routing; parent-session-only host mirroring (no `SVC_SUBAGENT=1`); subagents never TaskUpdate; mark completed before leaving; evaluate next (runnable → in_progress + load skill; skippable → completed + reason).
 
 ### Self-Verify
@@ -385,7 +383,7 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
-After self-verify passes, report the execution summary and follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage.
+`--progressive` + self-verify passed → next per lane task graph (typically `review-exec`, then `audit-implementation`). Otherwise report execution summary + suggest the next skill.
 
 ## Post-Compaction Recovery
 
@@ -420,7 +418,3 @@ On new delivery-graph signals, emit `skill_outcome` per `references/skill-outcom
 ## Chain Receipt Emission (Mandatory Chain)
 
 This skill emits receipt type `exec-record` per `references/chain-receipt-contract.md`: staging at `.svc/receipts/staging/<tree-hash>/exec-record.json` pre-commit; post-commit hook promotes to the SHA mirror + consolidated note on `refs/notes/svc-receipts`. Emit via `scripts/emit-receipt.mjs --type exec-record --wi <WI> --sha <SHA> --body <file>`. Self-verify: receipt exists, passes `schemas/receipts/exec-record.schema.json`, reflected in the consolidated note.
-
-## Handback
-
-Run the `EMIT` command `svc-next` printed for this stage (it writes the `exec-record` receipt and prints `exec-record:<sha256>`), then `node "$SVC_ROOT"/scripts/svc-next.mjs --root . --done execute-changeset --receipt exec-record:<sha256>` and follow the printed card: do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill.
