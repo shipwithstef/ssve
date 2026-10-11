@@ -794,6 +794,75 @@ test("S security-payments: a report that denies the planted vulnerabilities scor
   assert.equal((await S.grade(ok, "security-payments", spec)).score, 1);
 });
 
+// Robustness findings (crash, stuck state, double charge) state an impact without an attacker.
+test("S findings: availability, integrity and state impacts count as stated impacts", () => {
+  const IMPACTS = [
+    "JSON.parse on the raw body is not guarded: a malformed payload throws an unhandled exception from the handler instead of answering 400, so one bad request can crash or 500 the endpoint",
+    "the booking is set to refunding before the gateway call and never rolled back when gateway.refund throws, so a failed refund leaves it stuck in that state",
+    "a slow upstream call can hang the request handler and take down the whole worker",
+    "unbounded request bodies make the endpoint easy to knock over: a denial of service (DoS)",
+    "a retry of the same webhook event produces a double charge because nothing dedupes by event id",
+    "two concurrent refunds race on the balance and leave the account with a negative balance",
+    "a failure half way leaves the ledger inconsistent and the stored record corrupt",
+  ];
+  for (const t of IMPACTS) assert.equal(S.affirmativeProblem(t), null, `should accept: ${t}`);
+});
+
+const SP_REF_EP = path.join(OE, "northstar", "ref-ep", "security-payments", "SECURITY.json");
+const spBuild = (report) => {
+  const d = refBuild("security-payments");
+  if (report === undefined) fs.rmSync(path.join(d, "SECURITY.json"), { force: true });
+  else fs.writeFileSync(path.join(d, "SECURITY.json"), typeof report === "string" ? report : JSON.stringify(report));
+  return d;
+};
+test("S security-payments: the ref-ep report, robustness findings included, scores S = 1 on the reference build", async () => {
+  const spec = S.loadSpec("security-payments", "S");
+  const epReport = JSON.parse(fs.readFileSync(SP_REF_EP, "utf8"));
+  assert.equal(epReport.length, 6);
+  const r = await S.grade(spBuild(epReport), "security-payments", spec);
+  assert.equal(r.score, 1, JSON.stringify(r.checks.filter((c) => !c.pass)));
+  assert.equal(byName(r, "report-well-formed").pass, true);
+});
+
+test("S security-payments: a vague finding keeps the report valid but earns no credit", async () => {
+  const spec = S.loadSpec("security-payments", "S");
+  const epReport = JSON.parse(fs.readFileSync(SP_REF_EP, "utf8"));
+  const vague = { file: "src/checkout.mjs", line: 7, severity: "LOW", issue: "bad code here, fix it" };
+  assert.ok(S.affirmativeProblem(vague.issue), "no impact words");
+  // valid: an extra vague finding does not invalidate an otherwise good report
+  const withVague = await S.grade(spBuild([...epReport, vague]), "security-payments", spec);
+  assert.equal(byName(withVague, "report-well-formed").pass, true, byName(withVague, "report-well-formed").detail);
+  assert.equal(withVague.score, 1);
+  // no credit: the planted defect reported only vaguely is not handled
+  const only = await S.grade(spBuild([{ ...vague, severity: "CRITICAL" }, ...epReport.filter((f) => !(f.file === "src/checkout.mjs" && f.line === 7))]), "security-payments", spec);
+  assert.equal(byName(only, "report-well-formed").pass, true);
+  const stub = await S.grade(prepare("security-payments"), "security-payments", spec);
+  const d = prepare("security-payments");
+  fs.writeFileSync(path.join(d, "SECURITY.json"), JSON.stringify([{ ...vague, severity: "CRITICAL" }]));
+  const vagueReport = await S.grade(d, "security-payments", spec);
+  assert.equal(byName(vagueReport, "report-well-formed").pass, true);
+  assert.equal(byName(vagueReport, "client-price-handled").pass, false);
+  for (const n of ["refund-idor-handled", "unsigned-webhook-handled", "secret-in-logs-handled", "money-defects-rated-serious"]) assert.equal(byName(vagueReport, n).pass, false, n);
+  assert.ok(vagueReport.score < 0.5 && vagueReport.score >= stub.score, `vague ${vagueReport.score} vs stub ${stub.score}`);
+});
+
+test("S report_valid: structural problems and denials still invalidate, a finding without impact does not", async () => {
+  const spec = { secrets: false, checks: [{ type: "report_valid", name: "valid" }] };
+  const src = { "src/a.mjs": "l1\nl2\nl3\n" };
+  const run = async (report) => byName(await S.grade(put(tmp(), { ...src, "SECURITY.json": JSON.stringify(report) }), "x", spec), "valid");
+  const ok = { file: "src/a.mjs", line: 2, severity: "LOW", issue: "bad code here, fix it" };
+  assert.equal((await run([ok])).pass, true);
+  assert.equal((await run([{ ...ok, issue: "tidy" }])).pass, true);
+  assert.equal((await run([{ ...ok, line: 99 }])).pass, false);
+  assert.equal((await run([{ ...ok, severity: "SHRUG" }])).pass, false);
+  assert.equal((await run([{ ...ok, file: "../etc/passwd" }])).pass, false);
+  assert.equal((await run([{ ...ok, file: "src/missing.mjs" }])).pass, false);
+  assert.equal((await run([{ ...ok, issue: "This is a false positive, the code is not vulnerable." }])).pass, false);
+  assert.equal((await run([{ ...ok, issue: "Signatures are properly validated here." }])).pass, false);
+  assert.equal((await run([{ ...ok, issue: "not vulnerable" }])).pass, false);
+  assert.equal((await run({ not: "an array" })).pass, false);
+});
+
 test("S guest checkout: a bare {ok:true}, unrecorded or duplicate bookings, and lost bookings fail", async () => {
   const run = async (from, to) => S.grade(build({ "server.mjs": swap(GUEST_APP, from, to) }), "yoga-studio", yogaSpec());
   const FULL = "db.bookings.push(b); save();\n        return send(res, 201, { id: b.id, amountCents: b.amountCents, cancelCode: b.cancelCode });";

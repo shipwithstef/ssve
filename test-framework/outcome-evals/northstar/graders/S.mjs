@@ -178,21 +178,28 @@ function softDenial(text) {
   }
   return false;
 }
-const IMPACT = /\b(?:attackers?|attack\w*|exploit\w*|forg\w+|bypass\w*|steal\w*|tamper\w*|leak\w*|expos\w+|impersonat\w+|unauthori[sz]ed|arbitrary|inject\w*|escalat\w+|replay\w*|spoof\w*|abus\w+|take ?over|anyone|any (?:user|customer|client|caller|person)|(?:another|other) (?:user|customer|account|person)s?|for free|pay(?:s|ing)? (?:less|nothing|1|a cent|only)|without (?:paying|authenticat\w+|authori[sz]\w+|a valid|any|the signature|a signature|checking)|can (?:be )?(?:read|refund\w*|obtain\w*|trigger\w*|pay|cancel\w*|reuse\w*|access\w*|modif\w+|delet\w+|overwrit\w+|forg\w+|steal\w*|see|view)|allows?|lets?|written to (?:the )?(?:logs?|console|stdout)|(?:secret|signing material|credential|password|token|key|hmac)\b[^.\n]{0,60}\b(?:logs?|logged)|\blogs?\b[^.\n]{0,60}\b(?:secret|signing material|credential|password|token|key|hmac))/i;
+const IMPACT = /\b(?:attackers?|attack\w*|exploit\w*|forg\w+|bypass\w*|steal\w*|tamper\w*|leak\w*|expos\w+|impersonat\w+|unauthori[sz]ed|arbitrary|inject\w*|escalat\w+|replay\w*|spoof\w*|abus\w+|take ?over|anyone|any (?:user|customer|client|caller|person)|(?:another|other) (?:user|customer|account|person)s?|for free|pay(?:s|ing)? (?:less|nothing|1|a cent|only)|without (?:paying|authenticat\w+|authori[sz]\w+|a valid|any|the signature|a signature|checking)|can (?:be )?(?:read|refund\w*|obtain\w*|trigger\w*|pay|cancel\w*|reuse\w*|access\w*|modif\w+|delet\w+|overwrit\w+|forg\w+|steal\w*|see|view)|allows?|lets?|written to (?:the )?(?:logs?|console|stdout)|crash\w*|denial[- ]of[- ]service|\bdos\b|tak(?:es?|ing) (?:the )?\w*\s?(?:\w+ )?down|\bhang\w*|unhandled (?:exception|error|rejection)s?|\b500s?\b|\bstuck\b|left (?:in|with)\b[^.\n]{0,40}\bstate|never (?:rolled back|reverted|restored|released|cleaned up)|\blost\b|double[- ](?:charg\w+|refund\w*|book\w*|spen\w+|count\w*|pay\w*)|corrupt\w*|inconsisten\w+|\brace\b|\brace condition|overdr\w+|negative balance|(?:secret|signing material|credential|password|token|key|hmac)\b[^.\n]{0,60}\b(?:logs?|logged)|\blogs?\b[^.\n]{0,60}\b(?:secret|signing material|credential|password|token|key|hmac))/i;
+const DENIES = "denies a defect (it says the code is safe, mitigated or not vulnerable) instead of describing an exploit";
+const NO_IMPACT = "does not state an attack or its impact";
 export function affirmativeProblem(issue) {
   const t = String(issue || "");
-  if (WHOLE_DENIAL.some((re) => re.test(t))) return "denies a defect (it says the code is safe, mitigated or not vulnerable) instead of describing an exploit";
+  if (WHOLE_DENIAL.some((re) => re.test(t))) return DENIES;
   if (IMPACT.test(t)) return null;
-  if (softDenial(t)) return "denies a defect (it says the code is safe, mitigated or not vulnerable) instead of describing an exploit";
-  return "does not state an attack or its impact";
+  if (softDenial(t)) return DENIES;
+  return NO_IMPACT;
 }
 const credible = (dir, findings, c) => findings.filter((f) => !findingProblem(dir, f, c)).map((f) => ({ ...f, file: insideBuild(dir, f.file) }));
+// A report is valid when it is well formed and holds no denial. A finding that states no impact
+// is only not credited (it stays out of credible()); it never invalidates the report.
+const UNCREDITED_ONLY = new Set([NO_IMPACT, "has no real description of the attack"]);
 function reportValid(dir, c) {
   const rep = readReport(dir, c.file);
   if (rep.error) return check(c.name || "report_valid", false, rep.error);
   for (const [i, f] of rep.findings.entries()) {
     const p = findingProblem(dir, f, c);
-    if (p) return check(c.name || "report_valid", false, `finding ${i + 1} ${p}`);
+    if (!p) continue;
+    const denial = UNCREDITED_ONLY.has(p) && affirmativeProblem(f.issue) === DENIES;
+    if (!UNCREDITED_ONLY.has(p) || denial) return check(c.name || "report_valid", false, `finding ${i + 1} ${denial ? DENIES : p}`);
   }
   return check(c.name || "report_valid", true, `${rep.findings.length} well-formed findings`);
 }
