@@ -143,9 +143,15 @@ test("a missing bar.json refuses the run (exit 2) even for a task with a directo
   fs.cpSync(path.join(ROOT, "scripts", "lib"), path.join(repo, "scripts", "lib"), { recursive: true });
   fs.cpSync(path.join(ROOT, "hooks", "lib"), path.join(repo, "hooks", "lib"), { recursive: true });
   for (const f of ["outcome-eval.mjs", "state-io.mjs", "quality-probes.mjs", "chaos-probe.mjs"]) fs.copyFileSync(path.join(ROOT, "scripts", f), path.join(repo, "scripts", f));
+  const task = path.join(repo, "test-framework", "outcome-evals", "tasks", "R1");
+  fs.mkdirSync(task, { recursive: true });
+  fs.writeFileSync(path.join(task, "spec.md"), "Export add(a, b) from solution.mjs.\n");
+  fs.writeFileSync(path.join(task, "hidden.test.mjs"), "// grader\n");
+  assert.ok(fs.existsSync(task), "the task directory is there, so the refusal cannot be 'not found'");
   const r = spawnSync(process.execPath, [path.join(repo, "scripts", "outcome-eval.mjs"), "run", "--parallel", "1", "--arms", "solo", "--tasks", "R1", "--reps", "1"], { encoding: "utf8", timeout: 60000 });
   assert.equal(r.status, 2, r.stderr);
   assert.match(r.stderr, /bar\.json/);
+  assert.doesNotMatch(r.stderr, /not found/);
 });
 
 test("--sealed --out must be a regular file outside /dev and /proc, checked before any job", () => {
@@ -166,5 +172,14 @@ test("--sealed --out must be a regular file outside /dev and /proc, checked befo
     assert.equal(r.status, 2, bad);
     assert.match(r.stderr, /--sealed --out/);
     assert.doesNotMatch(r.stdout, /solve|score/i);
+  }
+});
+
+test("--reps must be a positive integer, checked before the job count and funding", () => {
+  for (const bad of ["1.5", "0", "-1", "abc", "", "2e0x"]) {
+    const r = run(["--arms", "solo,framework", "--tasks", "typo-readme", "--reps", bad, "--max-usd", "5"]);
+    assert.equal(r.status, 2, `--reps ${JSON.stringify(bad)}: ${r.stderr}`);
+    assert.match(r.stderr, /--reps must be a positive integer/);
+    assert.doesNotMatch(r.stderr, /jobs/);
   }
 });

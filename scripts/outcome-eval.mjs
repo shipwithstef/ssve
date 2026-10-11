@@ -1116,7 +1116,9 @@ async function main(argv) {
   const par = parseParallel(argv);
   if (par.error) { process.stderr.write(par.error + "\n"); return 2; }
   const parallel = par.parallel;
-  const model = opt("--model", "haiku"), reps = Number(opt("--reps", 3));
+  const repsArg = String(opt("--reps", 3));
+  if (!/^[1-9]\d*$/.test(repsArg)) { process.stderr.write(`--reps must be a positive integer (got ${JSON.stringify(repsArg)})\n`); return 2; }
+  const model = opt("--model", "haiku"), reps = Number(repsArg);
   const judgeModel = opt("--judge", "sonnet") === "none" ? null : opt("--judge", "sonnet");
   const arms = opt("--arms", "plain,blueprint").split(",");
   const probeMutants = Number(opt("--probes", 0));
