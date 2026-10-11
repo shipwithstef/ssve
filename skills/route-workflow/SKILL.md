@@ -41,20 +41,27 @@ Follow the steps in order. Do not write product code until step 7 hands you a sk
 1. Root. Run every script as `node "$SVC_ROOT"/scripts/<name>.mjs` from the project directory. If `$SVC_ROOT` is empty, use the path on the session line `SSVE framework root:`. If `skills-manifest.json` exists in this directory, this is the framework repo: stop here and follow `references/framework-and-host-route.md`.
 2. Init. If `.svc/` is missing, run `node "$SVC_ROOT"/scripts/init-project-state.mjs`.
 3. Bootstrap. Run `node "$SVC_ROOT"/scripts/svc-bootstrap-repo.mjs` from the project directory. It gives a repo with no commit a root commit and a local `origin/main`. Stop if it fails.
-4. Classify. Take the first row that fits. Decide the values now; write them in step 6. A new request gets a new WI id, `WI-PREFIX-` plus `$(date -u +%y%m%d%H%M%S)`; reuse an id only to continue work you were told to continue. SLUG is the WI id in lowercase.
+4. Classify. Take the first row that fits. Decide the values now; write them in step 6. A new request gets a new WI id: `WI-PREFIX-` plus the output of `node -e 'console.log(Date.now().toString(36).toUpperCase()+crypto.randomBytes(3).toString("hex").toUpperCase())'`. Reuse an id only to continue work. SLUG is the new WI id in lowercase.
 
 | Request | lane | change_type | PREFIX | risk_flags |
 |---|---|---|---|---|
-| continue earlier work: a `.svc/lane-tasks-*.json` task is pending or in_progress | that graph's lane | that graph's | that graph's WI id, as is | that graph's |
+| continue earlier work, or a follow-up that corrects the method or scope of work in progress (a method-correction), while a `.svc/lane-tasks-*.json` task is pending or in_progress | that graph's | that graph's | its WI id, as is | that graph's |
 | docs or typo only | refactor | docs | DOCS | none |
 | security review only (auth, payment, secrets) | bugfix if source exists, else greenfield | bugfix or feature | SEC | auth-sensitive |
 | bug report, source exists | bugfix | bugfix | FIX | none |
 | new behavior, source exists, `git rev-parse --verify HEAD` works | brownfield-feature | feature | FEAT | user-facing if a person uses the result |
 | anything else, including "build what spec.md asks" | greenfield | feature | NEW | user-facing if a person uses the result |
 
-5. Worktree. The session id is the one already in your environment (`SVC_SESSION_ID`, `CLAUDE_SESSION_ID`, `CODEX_THREAD_ID` or the host's equivalent): check with `env | grep -E '_(SESSION|THREAD|CONVERSATION)_ID='`. If there is none, make one UUID for this session, remember it, and start every Bash call that runs a svc script with `export SVC_SESSION_ID=<uuid>;`. Never keep it in a file in the repo. Run `node "$SVC_ROOT"/scripts/svc-ensure-worktree.mjs --wi WI --branch SLUG --from origin/main --json` and `cd` to `absolute_worktree`. On any error, stop; never build in place.
-6. Record and compile, inside the worktree. Write `.svc/route-record.json` here with class, wi, lane, change_type, risk_flags, assumptions. The worktree starts with a one-task placeholder graph, so compile only when it is not yet compiled: `grep -q '"delivery_graph"' .svc/lane-tasks-WI.json || node "$SVC_ROOT"/scripts/compile-delivery-graph.mjs --wi WI --lane LANE --change-type TYPE --intent "ONE LINE" --repo-mode MODE --risk-flags FLAGS --out .svc/lane-tasks-WI.json --force`
-   MODE is `bootstrap` for greenfield, else `convert`. Leave out `--risk-flags` when there are none. Never pass `--delivery-profile`. Never compile a graph that is already compiled.
+   A correction keeps its WI, branch and graph: do not start a new lane; swap only the method it names and append the correction to `assumptions`. Only a new goal gets a new WI. If the request asks for proof after deploy, on production or live, add the risk flag `deploy-affecting`, put the exact proof in `post_deploy_proof`, read the project's AGENTS.md or CLAUDE.md deploy rules first, and run that proof only after deployment against the live URL. Local or staging evidence is supporting only; if the proof cannot run, closeout says `post-deploy PROOF was not run` and why.
+
+5. Worktree. The session id is the one already in your environment (`SVC_SESSION_ID`, `CLAUDE_SESSION_ID`, `CODEX_THREAD_ID` or the host's equivalent): check with `env | grep -E '_(SESSION|THREAD|CONVERSATION)_ID='`. If there is none, make one UUID for this session, remember it, and start every Bash call that runs a svc script with `export SVC_SESSION_ID=<uuid>;`. Never keep it in a file in the repo.
+   New work: run `node "$SVC_ROOT"/scripts/svc-ensure-worktree.mjs --wi WI --branch SLUG --from origin/main --json`.
+   Continuing: find the graph with `git worktree list --porcelain` (each `.svc/lane-tasks-*.json` under a listed worktree). Its file name gives WI; BRANCH is `git -C <that worktree> branch --show-current`. Run the same command with `--branch BRANCH`, never a branch rebuilt from the WI.
+   Then `cd` to `absolute_worktree`. On any error, stop; never build in place.
+6. Record and compile, inside the worktree. Write `.svc/route-record.json` here with class, wi, lane, change_type, risk_flags, assumptions, post_deploy_proof. Check the graph: `node -e 'let g;try{g=JSON.parse(require("fs").readFileSync(process.argv[1]))}catch{console.log("missing");process.exit()}console.log(g.delivery_graph?"compiled":g.tasks?.length===1&&g.tasks[0].skill==="route-workflow"?"placeholder":"legacy")' .svc/lane-tasks-WI.json`
+   `compiled` or `legacy`: do not compile; keep the graph as is. `missing`: compile. `placeholder`: compile with `--force`.
+   `node "$SVC_ROOT"/scripts/compile-delivery-graph.mjs --wi WI --lane LANE --change-type TYPE --intent "ONE LINE" --repo-mode MODE --risk-flags FLAGS --out .svc/lane-tasks-WI.json`
+   MODE is `bootstrap` for greenfield, else `convert`. Leave out `--risk-flags` when there are none. Never pass `--delivery-profile`.
 7. Hand off. Run `node "$SVC_ROOT"/scripts/svc-next.mjs --root .` and read the card. Load exactly the SKILL on its `SKILL` line and follow it. When that skill ends, run the `CLOSEOUT` line it names, read the next card, and repeat.
 8. Finish only when `svc-next` prints `STATUS done`. `STATUS not_done` means a required receipt is missing: produce what `MISSING` lists. Nothing else ends the run, not a finished product and not a passing test.
 

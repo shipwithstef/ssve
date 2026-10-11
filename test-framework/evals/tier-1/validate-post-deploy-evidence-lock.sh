@@ -30,6 +30,14 @@ require_fixed() {
 
 echo "=== Tier 1: post-deploy evidence lock ==="
 
+# User-project path: the short entry must carry the live-proof constraint into routing.
+ENTRY="$REPO_ROOT/skills/route-workflow/SKILL.md"
+require_fixed "$ENTRY" "add the risk flag \`deploy-affecting\`" "entry forwards post-deploy proof to compilation as deploy-affecting"
+require_fixed "$ENTRY" "post_deploy_proof" "entry records the requested live proof"
+require_fixed "$ENTRY" "only after deployment against the live URL" "entry requires after-deploy proof target"
+require_fixed "$ENTRY" "Local or staging evidence is supporting only" "entry marks local evidence supporting only"
+require_fixed "$ENTRY" "was not run" "entry requires an honest not-run closeout"
+
 require_fixed "$REPO_ROOT/skills/route-workflow/references/intent-normalization.md" \
   "post dpeloyemnt" \
   "typo normalization preserves post-deployment intent"

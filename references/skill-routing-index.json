@@ -1672,7 +1672,7 @@
     {
       "skill": "route-workflow",
       "path": "skills/route-workflow/SKILL.md",
-      "content_hash": "90d04417288e545140120d4712f5955842a9f23d8d39c96f1b8c54ef600f14ed",
+      "content_hash": "1d1e0a9f6ae1e841d4f214f2b0a75876ad40935c3ea1d372ccfa5714346fa569",
       "description": "Entry for any build, fix, or review request in a user project, including a project with no .svc yet. Sets up state and a worktree, classifies the lane, compiles the lane graph, and hands off to the first skill. Not needed for questions, explanations or read-only lookups.",
       "aliases": [
         "what should I do next",
