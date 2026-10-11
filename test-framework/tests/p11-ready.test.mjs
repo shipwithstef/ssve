@@ -4,6 +4,7 @@
 // exactly Skill, and no judge means the builder gets the whole share. No model is called.
 import test from "node:test";
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -182,4 +183,41 @@ test("--reps must be a positive integer, checked before the job count and fundin
     assert.match(r.stderr, /--reps must be a positive integer/);
     assert.doesNotMatch(r.stderr, /jobs/);
   }
+});
+
+// ---- multi-session tasks ----
+// P1.1 found continuity-rules scoring 0 in both arms: solo/framework sent "Build what spec.md
+// asks for." to a task that withholds spec.md, and never sent its two session instructions.
+test("solo and framework get every session instruction of a multi-session dev task", () => {
+  for (const task of bar.dev) {
+    const { steps, copy_spec } = oe.taskConfig(task);
+    for (const arm of ["solo", "framework"]) {
+      const prompts = oe.armPrompts(task, arm);
+      if (!steps || copy_spec) { assert.equal(prompts.length, 1, `${task}/${arm}`); assert.match(prompts[0], /spec\.md/, `${task}/${arm}`); continue; }
+      assert.equal(prompts.length, steps.length, `${task}/${arm}`);
+      prompts.forEach((p, i) => { assert.ok(p.startsWith(steps[i].instruction), `${task}/${arm} step ${i + 1}`); assert.doesNotMatch(p, /spec\.md/, `${task}/${arm} step ${i + 1}`); });
+      if (arm === "solo") assert.deepEqual(prompts, steps.map((s) => s.instruction));
+      else prompts.forEach((p, i) => assert.equal(p, `${steps[i].instruction} ${oe.ARMS.framework.slice("Build what spec.md asks for.".length).trim()}`));
+    }
+  }
+  assert.ok(bar.dev.some((t) => oe.taskConfig(t).steps && !oe.taskConfig(t).copy_spec), "a multi-session dev task exists");
+  assert.throws(() => oe.armPrompts("continuity-rules", "plain"), /cannot run multi-session/);
+});
+
+test("promptSha hashes the prompts a multi-session task actually sends, and is unchanged for one-prompt tasks", () => {
+  const h = (s) => crypto.createHash("sha256").update(s).digest("hex").slice(0, 12);
+  for (const arm of ["solo", "framework"]) {
+    assert.equal(oe.promptSha(arm, "continuity-rules"), h(oe.armPrompts("continuity-rules", arm).join("\n\0\n")));
+    assert.notEqual(oe.promptSha(arm, "continuity-rules"), h(oe.ARMS[arm]));
+    assert.equal(oe.promptSha(arm, "yoga-studio"), h(oe.ARMS[arm]));
+  }
+});
+
+test("preflight refuses an arm that cannot prompt a multi-session task, before any job runs", () => {
+  const bad = oe.preflightRun({ tasks: ["continuity-rules"], arms: ["solo", "plain"], reps: 1, maxUsd: 5, bar: { floor_usd: 0.5, reserve: [] }, dirOf: () => null });
+  assert.match(bad.error, /refusing to start: arm plain cannot run multi-session task continuity-rules/);
+  const ok = oe.preflightRun({ tasks: ["continuity-rules"], arms: ["solo", "framework"], reps: 1, maxUsd: 5, bar: { floor_usd: 0.5, reserve: [] }, dirOf: () => null });
+  assert.equal(ok.error, undefined);
+  const r = run(["--arms", "plain", "--tasks", "continuity-rules", "--reps", "1", "--max-usd", "5", "--judge", "none"]);
+  assert.equal(r.status, 2, r.stderr); assert.match(r.stderr, /cannot run multi-session task continuity-rules/);
 });
