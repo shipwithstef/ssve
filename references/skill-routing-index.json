@@ -1071,7 +1071,7 @@
     {
       "skill": "land-changeset",
       "path": "skills/land-changeset/SKILL.md",
-      "content_hash": "6c1d0668591545dd96429e8c0562b0eb11a21b98bd2e1fa0a8c855c103331307",
+      "content_hash": "b975a770435345d4ec113e94b2447b5b4a874e073f52da4feda7d8f466b75210",
       "description": "Land a validated change set on main: check manifest coverage and receipts, push the branch, open the PR, squash-merge, clean up the worktree. Use when execution and review have passed and the change is ready to land.",
       "aliases": [],
       "positive_triggers": [],

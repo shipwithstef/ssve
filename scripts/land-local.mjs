@@ -6,13 +6,15 @@
 //   node "$SVC_ROOT"/scripts/land-local.mjs --root <wi-worktree> --wi <WI> [--json] [--dry-run] [--cleanup]
 // --cleanup (run it from the project root) removes the WI worktree and its merged branch after a landing.
 //
-// Lands only when (1) the chain receipts validate for the LOCAL consumer
-// (`check-chain-receipts --consumer stop`, note-sourced) for the WI tip as the full five-receipt
-// envelope with mandatory cross-family adversarial review evidence (schema v3 reviewer_evidence and
-// differing author/reviewer families; no same-host route exists), or for EVERY incoming commit
-// (main..tip) as an eligible tree-bound quick-fix receipt, (2) the main checkout is clean and on the main branch, and
-// (3) the merge cannot conflict. It fast-forwards main when possible, otherwise makes a merge
-// commit; it never rewrites history, never forces and never auto-resolves a conflict.
+// Lands only when (1) the FULL five-receipt chain validates for the WI tip with the LOCAL consumer
+// (`check-chain-receipts --consumer stop --expected-stage audit`, note-sourced) AND every review-plan /
+// review-exec receipt carries verified cross-family adversarial review evidence (integer schema_version
+// >= 3, reviewer_evidence authenticated by verifyReviewerEvidence, differing author/reviewer families).
+// Cross-family review is mandatory for every landing: quick-fix-only receipts are not accepted and no
+// same-host route exists. (2) the main checkout is clean and on the main branch, and (3) main is an
+// ancestor of the WI tip: land-local only FAST-FORWARDS, because the receipts cover exactly the WI tip's
+// tree. If main moved, merge main into the WI branch, re-run the reviews, then re-run. It never makes a
+// merge commit, never rewrites history, never forces and never resolves a conflict.
 // Receipts are git notes keyed by commit SHA in the shared object store, so they stay attached to
 // the WI tip commit, which becomes (or stays) an ancestor of main; nothing needs moving.
 // When no origin remote exists, refs/remotes/origin/main is advanced to the new main so the
@@ -27,6 +29,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
 import { familyOf } from "./lib/cognitive-family.mjs";
+import { verifyReviewerEvidence } from "./lib/reviewer-evidence.mjs";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const CHECKER = path.join(SCRIPT_DIR, "check-chain-receipts.mjs");
@@ -112,6 +115,10 @@ export function crossFamilyProblems(wtRoot, sha, wi) {
         problems.push(`${type}: cross-family reviewer evidence required (schema_version >= 3 with reviewer_evidence); a v1/v2 or self-declared review is not accepted`);
         continue;
       }
+      try {
+        const reasons = verifyReviewerEvidence({ root: wtRoot, reviewKind: type === "review-plan" ? "plan" : "exec", body: b });
+        if (reasons.length) { problems.push(`${type}: reviewer evidence not verified: ${reasons.join("; ")}`); continue; }
+      } catch (e) { problems.push(`${type}: reviewer evidence not verifiable: ${e.message}`); continue; }
       if (type === "review-exec") {
         const ar = b.adversarial_review || {};
         const reviewerHost = ar.fallback_used ? ar.fallback_host : ar.primary_reviewer_host;
@@ -123,30 +130,17 @@ export function crossFamilyProblems(wtRoot, sha, wi) {
   return problems;
 }
 
-// Returns {mode, commits}. Full chain at the tip covers the whole branch (tree-bound reviews of the
-// cumulative change). Otherwise EVERY incoming commit must carry its own eligible quick-fix receipt,
-// so an unreviewed code commit cannot ride in under a later documentation-only commit.
-function checkReceipts(wtRoot, tip, wi, incoming) {
-  // The local cross-family fence runs BEFORE the shared checker: a review that fails it is never handed
-  // to evidence verification (whose own version gate a non-integer schema_version could otherwise skip).
-  const fullProblems = crossFamilyProblems(wtRoot, tip, wi);
+// Full chain with verified cross-family review at the tip, or refusal. No quick-fix acceptance path.
+// The local fence runs BEFORE the shared checker, so a review that fails it is never handed to
+// evidence verification (whose own version gate a non-integer schema_version could otherwise skip).
+function checkReceipts(wtRoot, tip, wi) {
+  const problems = crossFamilyProblems(wtRoot, tip, wi);
   let full = null;
-  if (!fullProblems.length) {
+  if (!problems.length) {
     full = runChecker(wtRoot, tip, wi, ["--expected-stage", "audit"]);
-    if (full.ok) return { type: full.type || "complete", sha: tip, commits: incoming.length };
+    if (full.ok) return { type: full.type || "complete", sha: tip };
   }
-  const quickFailures = [];
-  const merges = incoming.filter((c) => git(wtRoot, ["rev-list", "--parents", "-n", "1", c]).out.split(" ").length > 2);
-  if (merges.length) quickFailures.push(`merge commit(s) ${merges.map((c) => c.slice(0, 12)).join(", ")} in the WI branch need the full reviewed chain`);
-  else {
-    for (const c of incoming) {
-      const q = runChecker(wtRoot, c, wi, []);
-      if (!(q.ok && q.type === "quick-fix")) quickFailures.push(`${c.slice(0, 12)}: ${(q.missing || []).join("; ")}`);
-    }
-  }
-  if (!quickFailures.length) return { type: "quick-fix", sha: tip, commits: incoming.length };
-  const missing = fullProblems.length ? fullProblems : full.missing;
-  throw new Refusal("RECEIPTS_MISSING", `chain receipts do not validate for local landing of ${incoming.length} incoming commit(s)`, { missing: [...missing, ...quickFailures], sha: tip });
+  throw new Refusal("RECEIPTS_MISSING", "landing requires the full plan/review/exec/audit receipt chain with verified cross-family adversarial reviews; quick-fix receipts and same-host reviews cannot land", { missing: problems.length ? problems : full.missing, sha: tip });
 }
 
 function incomingCollisions(mainRoot, mainSha, tip) {
@@ -221,16 +215,6 @@ function cleanupWorktree(mainRoot, wtTop, branch, mainBranch, tip) {
   return br.ok ? "removed" : `worktree-removed-branch-kept: ${br.err || br.out}`;
 }
 
-function conflictCheck(mainRoot, mainSha, tip) {
-  const r = git(mainRoot, ["merge-tree", "--write-tree", "--name-only", "--no-messages", mainSha, tip], { allowFail: true });
-  if (r.ok) return [];
-  if (r.status === 1) {
-    const lines = r.out.split(/\r?\n/).filter(Boolean).slice(1); // first line is the tree id
-    return lines.length ? lines : ["(unspecified conflict)"];
-  }
-  throw new Error(`git merge-tree failed: ${r.err || r.out}`);
-}
-
 const ZERO_OID = "0".repeat(40);
 export function advanceLocalOrigin(mainRoot, newMain, seams = {}) {
   if (git(mainRoot, ["remote"]).out) return "skipped-has-remote";
@@ -252,7 +236,8 @@ export function advanceLocalOrigin(mainRoot, newMain, seams = {}) {
   return result;
 }
 
-export function landLocal({ root, wi, dryRun = false, cleanup = false }) {
+// `receiptCheck` is an in-process seam for unit tests of the git mechanics; the CLI never sets it.
+export function landLocal({ root, wi, dryRun = false, cleanup = false, receiptCheck = checkReceipts }) {
   if (!wi || !WI_RE.test(wi)) throw new Refusal("USAGE", "--wi <WI-###> is required");
   const wtRoot = fs.realpathSync(path.resolve(root || process.cwd()));
   const top = git(wtRoot, ["rev-parse", "--show-toplevel"], { allowFail: true });
@@ -275,9 +260,7 @@ export function landLocal({ root, wi, dryRun = false, cleanup = false }) {
 
   const mainSha = resolveRef(mainRoot, `refs/heads/${mainBranch}`);
   // Receipts first: the same check also makes an already-landed repeat run honest (receipts persist).
-  // An already-landed branch has no incoming commits, so it is judged on its tip's full-chain/quick-fix receipt.
-  const incoming = git(wtTop, ["rev-list", "--reverse", `${mainSha}..${tip}`]).out.split(/\r?\n/).filter(Boolean);
-  const receipts = checkReceipts(wtTop, tip, wi, incoming.length ? incoming : [tip]);
+  const receipts = receiptCheck(wtTop, tip, wi);
 
   const common = { branch, main_branch: mainBranch, main_root: mainRoot, wi_sha: tip, receipts: receipts.type };
 
@@ -295,29 +278,20 @@ export function landLocal({ root, wi, dryRun = false, cleanup = false }) {
   const { same, clash } = incomingCollisions(mainRoot, mainSha, tip);
   if (clash.length) throw new Refusal("MAIN_UNTRACKED_COLLISION", "untracked files in the main checkout would be overwritten by the incoming change", { paths: clash });
 
-  const ff = isAncestor(mainRoot, mainSha, tip);
-  if (!ff) {
-    const conflicts = conflictCheck(mainRoot, mainSha, tip);
-    if (conflicts.length) throw new Refusal("MERGE_CONFLICT", "the WI branch conflicts with main; resolve it in the WI worktree (merge main into the branch), re-review as needed, then re-run", { conflicts });
+  if (!isAncestor(mainRoot, mainSha, tip)) {
+    throw new Refusal("MAIN_MOVED", `${mainBranch} has commits the WI branch does not contain, so landing would need a merge commit that no review covers. Merge ${mainBranch} into the WI branch in its worktree (git merge ${mainBranch}, no rebase), resolve any conflicts there, re-run the plan/exec/audit reviews on the resulting tip, then re-run land-local`, { main_sha: mainSha, wi_sha: tip });
   }
-  const method = ff ? "fast-forward" : "merge-commit";
+  const method = "fast-forward";
   if (dryRun) return { landed: false, would_land: true, main_sha: mainSha, method, dry_run: true, ...common };
 
   const aside = setAside(mainRoot, same);
   try {
-    if (ff) {
-      const r = git(mainRoot, ["merge", "--ff-only", "--quiet", tip], { allowFail: true });
-      if (!r.ok) throw new Refusal("MERGE_FAILED", `git merge failed; main is unchanged: ${r.err || r.out}`);
-    } else {
-      const hasIdent = git(mainRoot, ["config", "user.name"], { allowFail: true }).ok && git(mainRoot, ["config", "user.email"], { allowFail: true }).ok;
-      const ident = hasIdent ? [] : ["-c", "user.name=svc-land-local", "-c", "user.email=svc-land-local@localhost"];
-      const r = git(mainRoot, [...ident, "merge", "--no-ff", "--no-edit", "--quiet", "-m", `Land ${wi}: merge ${branch} into ${mainBranch}`, tip], { allowFail: true });
-      if (!r.ok) {
-        git(mainRoot, ["merge", "--abort"], { allowFail: true });
-        throw new Refusal("MERGE_FAILED", `git merge failed and was aborted; main is unchanged: ${r.err || r.out}`);
-      }
-    }
+    const r = git(mainRoot, ["merge", "--ff-only", "--quiet", tip], { allowFail: true });
+    if (!r.ok) throw new Refusal("MERGE_FAILED", `git merge failed; main is unchanged: ${r.err || r.out}`);
   } catch (e) {
+    // A rejected ref update can leave the merge's checkout half-applied (index and files at the new tree,
+    // HEAD at the old one). The tracked state was verified clean above, so returning it to the old HEAD loses nothing.
+    if (resolveRef(mainRoot, "HEAD") === mainSha) git(mainRoot, ["reset", "--hard", "--quiet", mainSha], { allowFail: true });
     aside.restore();
     throw e;
   }
