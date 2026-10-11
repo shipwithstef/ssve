@@ -2398,7 +2398,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/tests/northstar-spec-root.test.mjs",
-        "test-framework/tests/northstar.test.mjs"
+        "test-framework/tests/northstar.test.mjs",
+        "test-framework/tests/p11-ready.test.mjs"
       ]
     },
     {
