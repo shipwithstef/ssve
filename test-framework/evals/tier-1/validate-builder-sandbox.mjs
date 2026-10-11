@@ -19,8 +19,10 @@ test("builders see no answers, can read the framework, and write only their buil
   const w = builderWrap(dir);
   if (!w) { assert.notEqual(spawnSync("sh", ["-c", "command -v bwrap"]).status, 0, "builderWrap is null only without bubblewrap"); return; }
   const tasks = path.join(ROOT, "test-framework/outcome-evals/tasks");
-  const inner = `ls ${JSON.stringify(tasks)} | wc -l; test -r ${JSON.stringify(path.join(tasks, "ai-quest/quiz.json"))} && echo quiz-readable; ls ${JSON.stringify(path.join(ROOT, "scripts"))} | wc -l; touch "$PROBE_DIR/ok" && echo inside-ok; touch ${JSON.stringify(path.join(ROOT, ".builder-escape"))} 2>/dev/null && echo escaped`;
-  const r = spawnSync("sh", ["-c", `${w.prefix} sh -c ${JSON.stringify(inner)}`], { env: { ...process.env, ...w.env }, encoding: "utf8" });
+  // Paths travel as environment values and the sandbox as an argument list: no shell
+  // string is built from them.
+  const inner = 'ls "$TASKS" | wc -l; test -r "$TASKS/ai-quest/quiz.json" && echo quiz-readable; ls "$SCRIPTS" | wc -l; touch "$PROBE_DIR/ok" && echo inside-ok; touch "$ESCAPE" 2>/dev/null && echo escaped';
+  const r = spawnSync(w.argv[0], [...w.argv.slice(1), "sh", "-c", inner], { env: { ...process.env, ...w.env, TASKS: tasks, SCRIPTS: path.join(ROOT, "scripts"), ESCAPE: path.join(ROOT, ".builder-escape") }, encoding: "utf8" });
   const out = r.stdout.trim().split("\n");
   assert.equal(out[0].trim(), "0", "the task folders look empty inside");
   assert.ok(!r.stdout.includes("quiz-readable"), "the hidden quiz cannot be read");

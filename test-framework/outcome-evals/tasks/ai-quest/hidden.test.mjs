@@ -178,7 +178,7 @@ test("point and click: the walkthrough plays by clicking in the browser, and the
     await page.screenshot({ path: "__shots/1-start.png" });
     const w = read("docs/walkthrough.json");
     for (const [i, a] of w.entries()) {
-      const el = page.locator(`[data-action="${a.replace(/"/g, '\\"')}"]`).first();
+      const el = page.locator(`[data-action="${a.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"]`).first();
       assert.ok(await el.count(), `step ${i + 1}: something clickable performs "${a}"`);
       await el.click();
       if (i === Math.floor(w.length / 2)) await page.screenshot({ path: "__shots/2-middle.png" });

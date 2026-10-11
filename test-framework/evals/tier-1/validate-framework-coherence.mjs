@@ -35,3 +35,11 @@ test("lane-layers flags a compiler step missing from the manifest lane", () => {
   delete undeclared.mandatoryChainOutOfLane["review-plan"];
   assert.ok(checkLaneLayers(undeclared).some((f) => /review-plan is in the mandatory chain/.test(f.msg)));
 });
+
+test("a non-code lane keeps its own steps; code lanes get the delivery chain (review #127, #129 lane kinds)", async () => {
+  const { effectiveLanes } = await import("../../../scripts/framework-coherence.mjs");
+  const m = { laneDefinitions: { research: { kind: "non-code", skills: ["analyze-domain", "strategic-decision"] }, feature: { skills: ["analyze-domain", "plan-changeset"] } } };
+  const lanes = effectiveLanes(m);
+  assert.deepEqual(lanes.research, ["analyze-domain", "strategic-decision"]);
+  assert.ok(lanes.feature.includes("verify-promotion") && lanes.feature.includes("execute-changeset"), "a code lane gets the mandatory chain");
+});

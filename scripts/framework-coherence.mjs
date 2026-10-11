@@ -38,10 +38,15 @@ const DECISION_TREE_LANES = new Set(["framework"]);
 // chain has started (track-visuals diff, benchmark-landing) runs as a process step inside a
 // chain stage (compile-delivery-graph.mjs: the visual diff runs before review-gate), so it
 // has no lane neighbours of its own.
+// A lane declared `kind: "non-code"` (research, strategy, writing: no delivery graph) keeps
+// its own steps; the code-delivery chain is injected only into code lanes.
+export const isNonCode = (def) => !Array.isArray(def) && def.kind === "non-code";
+
 export function effectiveLanes(m = manifest()) {
   const chain = new Set(MANDATORY_DELIVERY_CHAIN);
   return Object.fromEntries(Object.entries(m.laneDefinitions).map(([lane, def]) => {
     const skills = def.skills || def;
+    if (isNonCode(def)) return [lane, [...skills]];
     const first = skills.findIndex((s) => chain.has(s));
     const upstream = first < 0 ? skills : skills.slice(0, first);
     return [lane, injectMandatoryDeliveryChain(upstream)];

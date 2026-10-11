@@ -216,8 +216,9 @@ export function builderWrap(dir) {
   if (process.env.OE_NO_BUILDER_SANDBOX === "1" || spawnSync("sh", ["-c", "command -v bwrap"]).status !== 0) return null;
   const home = fs.mkdtempSync(path.join(path.dirname(dir), "home-"));
   const kept = path.join(os.homedir(), ".svc", "outcome-eval-artifacts");
-  const masks = [TASKS, path.join(ROOT, "test-framework", "outcome-evals", "results"), kept].filter((m) => fs.existsSync(m)).map((m) => `--tmpfs ${JSON.stringify(m)}`).join(" ");
-  return { name: "bwrap", prefix: `bwrap --ro-bind / / --tmpfs /tmp --bind "$PROBE_DIR" "$PROBE_DIR" --bind "$PROBE_HOME" "$PROBE_HOME" --tmpfs /sys/fs/cgroup ${masks} --dev /dev --proc /proc --unshare-pid --die-with-parent --`, env: { PROBE_DIR: dir, PROBE_HOME: home, npm_config_cache: path.join(home, ".npm") } };
+  // An argument list, never a shell string: the paths reach bwrap verbatim.
+  const masks = [TASKS, path.join(ROOT, "test-framework", "outcome-evals", "results"), kept].filter((m) => fs.existsSync(m)).flatMap((m) => ["--tmpfs", m]);
+  return { name: "bwrap", argv: ["bwrap", "--ro-bind", "/", "/", "--tmpfs", "/tmp", "--bind", dir, dir, "--bind", home, home, "--tmpfs", "/sys/fs/cgroup", ...masks, "--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent", "--"], env: { PROBE_DIR: dir, PROBE_HOME: home, npm_config_cache: path.join(home, ".npm") } };
 }
 
 export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40, effort = null, extraArgs = [], wrap = null) {
@@ -225,8 +226,9 @@ export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit
     // The model guides tell you to sweep effort on your own evals rather than assume a level.
     const args = ["-p", "--model", model, "--output-format", "json", "--max-turns", String(maxTurns), ...(effort ? ["--effort", effort] : []), ...extraArgs, "--allowedTools", tools];
     // The prompt goes on stdin: --allowedTools is variadic and would swallow it.
-    // wrap: an OS sandbox prefix (probe-loop.mjs) that the claude command runs inside.
-    const [bin, argv] = wrap ? ["sh", ["-c", `${wrap.prefix} "$@"`, "sh", "claude", ...args]] : ["claude", args];
+    // wrap: an OS sandbox the claude command runs inside, as an argument list (builders) or
+    // a shell prefix (probe-loop's sandbox_cmd, which callers write as shell).
+    const [bin, argv] = wrap?.argv ? [wrap.argv[0], [...wrap.argv.slice(1), "claude", ...args]] : wrap ? ["sh", ["-c", `${wrap.prefix} "$@"`, "sh", "claude", ...args]] : ["claude", args];
     const child = spawn(bin, argv, { cwd: dir, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry(), ...(wrap?.env || {}) } });
     child.stdin.end(prompt);
     let out = "";
