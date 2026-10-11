@@ -1050,6 +1050,17 @@ Run from a checkout or `git archive` of `7b48cc4`. `C` is shorthand for `node sc
 ---
 
 ## 11. Revision 4: reconciliation of rev 3 with the verified review verdicts (this section overrides §0–§10 where they conflict)
+
+### Owner directives 2026-10-11 (after P1.1)
+
+These five directives sit above the reconciliation below. Where they conflict with the rest of §11, or with §0–§10, they win. The text under them stays as history.
+
+1. **P1.1 at `dc358c08` is void as a baseline.** 0 of 21 framework runs executed the framework journey. route-workflow loaded, then it was skipped. Receipts were 0. Record this as a finding. It is not Gate A.
+2. **A framework run counts only when its task's intended journey is hit.** Journey specs and a conformance checker read the transcripts and the final repo. A framework run that does not conform is void.
+3. **The order is now three steps.** First, make the framework work. That work is the §5.2 one scheduler as `svc-next`, the route-workflow user entry at 60 lines or fewer, fresh-project bootstrap, the completion guard, sandbox-capable reviews, and harness fidelity. Harness fidelity means a mode `0700` home, a seeded root commit and `origin/main` for both arms, and no visible per-job budget. Second, prove 100% conformance on every dev task with diagnostic runs. Third, measure solo against that working framework. P1.3 items b, c, d and f are built now. They are not later treatments.
+4. **R ≥ 2 is arithmetically unreachable on dev** with the measured solo means. The highest R those means can produce is about 1.54. Record that. The bar stays as written, pending an owner decision.
+5. **Games repo.** Copy only builds that pass the K real-art checks. Never copy a primitive-shape build. Do not archive old builds.
+
 Rev 3 (owner, f05c82f) is the base. Each item below was checked at `7b48cc4`. For each, the better-grounded version against the goal is kept: at least 2× on what solo misses, at near-solo cost and speed, robust, with no over-engineering.
 
 **Factual corrections to rev 3:**
@@ -1095,10 +1106,10 @@ Rev 3 (owner, f05c82f) is the base. Each item below was checked at `7b48cc4`. Fo
 - Budget: P1.5 ≥ $18 and Program 2 batches ≥ $6 (the $0.50 floor). The preflight refuses a run below the floor.
 
 **Owner side requests:**
-- **Games repo.** After approval, once the owner creates an empty private repo `shipwithstef/hearthlight` (repo creation from this session is blocked by a GitHub 403):
+- **Games repo.** After approval, once the owner creates an empty private repo `shipwithstef/hearthlight` (repo creation from this session is blocked by a GitHub 403). Copy only builds that pass the K real-art checks. Never copy a primitive-shape build. Do not archive old builds.
   1. `add_repo`.
-  2. Copy every kept game build into `rpg/<title>/` and `quest/<title>/`. These are the 9 ai-quest builds and every rpg-founder build under `~/.svc/outcome-eval-artifacts`, Hearthlight and Ardwyn included.
-  3. Strip `__hidden.test.mjs`, eval notes, `node_modules` and any secrets.
-  4. Give each a README: arm, model, date, hidden score, judge score. The rev 3 §0 privacy rule applies: no personal or company data.
-  5. Commit as the owner's author, then push.
+  2. Copy a build into `rpg/<title>/` or `quest/<title>/` only when it passes the K real-art checks. Never copy a primitive-shape build. Hearthlight and Ardwyn are included only when they pass. Do not archive old builds.
+  3. Strip `__hidden.test.mjs`, eval notes, `node_modules` and any secrets from each copied build.
+  4. Give each copied build a README: arm, model, date, hidden score, judge score. The rev 3 §0 privacy rule applies: no personal or company data.
+  5. Commit as the owner's author, then push. Do not archive the builds that were not copied.
 - **Plan file.** The plan doc in the repo is updated to this rev 4 in the same push as the first Program 0 commit.
