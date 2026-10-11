@@ -126,6 +126,17 @@ Read and hold in context:
 
 `docs/plans/<YYYY-MM-DD>-<feature-name>/manifest.md` — single source of truth. On the **dispatch** path (a zero-context executor builds it) it carries exact code payloads (CREATE = full contents; MODIFY = before/after context diffs, ≥3 lines each side). On the **inline** path (the orchestrator executes with full context already loaded) the Changeset Blueprint is skipped — see §3a.
 
+### Done means
+
+Put a **Done means** checklist in the manifest, after the AC digest (every user story, including later ones). Every acceptance criterion maps to a check that proves it. List the hidden-behaviour edge cases (bad input, failure paths). Also list hidden requirements the work touches: journeys, empty and error states, auth, payments, data lifecycle, and phone. Done means every check passes. A criterion or listed edge case with no check is not planned.
+
+| Check | Proves |
+|---|---|
+| One row per AC id from the digest | The command or observation that fails when that criterion is unmet |
+| Bad input | What the product does with input it must reject |
+| Failure paths | What the product does when a dependency or step fails |
+| Hidden requirements in scope | Journeys, empty/error states, auth, payments, data lifecycle, phone — one check each when the work touches that area |
+
 ## Delivery Profile, Chain and Over-engineering Check
 
 1. **Pick the delivery profile first** from `references/delivery-profiles.json`: `prototype`, `mvp` (default) or `production`. It sets the test budget, chain depth, review depth and receipt level. A prototype needs a smoke test per AC, not an edge-case matrix; production needs edge cases and journeys. Moving a prototype up is one range attestation, never per-commit backfill. Record the profile and why in `decision_trace`.
