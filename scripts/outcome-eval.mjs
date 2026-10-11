@@ -276,6 +276,8 @@ export const promptSha = (arm, task) => crypto.createHash("sha256").update(task 
 
 // A task is either greenfield (ref.mjs is the reference solution.mjs) or brownfield
 // (repo/ is the starting codebase and ref/ overlays the reference change on it).
+export const SEED_MESSAGE = "Initial commit";
+const SEED_DATE = "2026-01-01T00:00:00Z";
 export function prepare(task, root = os.tmpdir()) {
   fs.mkdirSync(root, { recursive: true });
   const dir = fs.mkdtempSync(path.join(root, `oe-${task}-`));
@@ -284,11 +286,18 @@ export function prepare(task, root = os.tmpdir()) {
   const files = taskConfig(task).copy_spec ? ["spec.md", "visible.test.mjs"] : ["visible.test.mjs"];
   for (const f of files) if (fs.existsSync(path.join(taskDir(task), f))) fs.copyFileSync(path.join(taskDir(task), f), path.join(dir, f));
   fs.writeFileSync(path.join(dir, "package.json"), '{"type":"module"}\n');
-  // A git repository with no commits, so the probes can read when and how often the
-  // agent committed (time to first runnable, commit cadence).
-  spawnSync("git", ["init", "-q"], { cwd: dir });
-  spawnSync("git", ["config", "user.name", "outcome-eval"], { cwd: dir });
-  spawnSync("git", ["config", "user.email", "outcome-eval@local"], { cwd: dir });
+  // Both arms get an ordinary checkout: branch main, one root commit holding the task
+  // files, and origin/main pointing at it (no network remote). A brand-new empty repo is
+  // not what a user's project looks like, and the framework's worktree step needs a base.
+  const g = (...a) => spawnSync("git", a, { cwd: dir, encoding: "utf8", env: { ...process.env, GIT_AUTHOR_DATE: SEED_DATE, GIT_COMMITTER_DATE: SEED_DATE } });
+  g("init", "-q", "-b", "main");
+  g("config", "user.name", "outcome-eval");
+  g("config", "user.email", "outcome-eval@local");
+  g("add", "-A");
+  const c = g("commit", "-q", "--no-verify", "-m", SEED_MESSAGE);
+  if (c.status !== 0) throw new Error(`seeding the task repo failed: ${(c.stderr || "").slice(-200)}`);
+  g("update-ref", "refs/remotes/origin/main", "HEAD");
+  g("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main");
   return dir;
 }
 
@@ -1297,9 +1306,10 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
   const sha = crypto.createHash("sha256").update(prompts.join("\n\0\n")).digest("hex").slice(0, 12);
   const lim = armLimits(job.arm);
   for (const prompt of prompts) {
-    const left = claim.builder != null ? claim.builder - spentBefore - (agent.cost_usd || 0) : null;
-    const stepCap = left != null ? Math.max(0.01, +left.toFixed(2)) : null;
-    const step = await runAgent(dir, prompt, model, cfg.timeout_ms * lim.time, isPillarArm(job.arm) ? cfg.tools : armTools(cfg.tools, job.arm), cfg.max_turns * lim.turns, effort, stepCap != null ? ["--max-budget-usd", String(stepCap)] : [], wrap);
+    // No --max-budget-usd: the CLI shows it to the model ("USD budget: $0.71"), and runs
+    // quoted it as the reason to skip the framework's stages. The run cap is enforced
+    // between jobs (Budget.claim) and each job is bounded by ARM_LIMITS turns and time.
+    const step = await runAgent(dir, prompt, model, cfg.timeout_ms * lim.time, isPillarArm(job.arm) ? cfg.tools : armTools(cfg.tools, job.arm), cfg.max_turns * lim.turns, effort, [], wrap);
     replies.push(String(step.text || "").slice(-400));
     usage = mergeModelUsage(usage, step.model_usage);
     if (step.session_id) outerIds.add(step.session_id);
