@@ -34,7 +34,7 @@ Status values:
 | 15 | Self-improvement on harness version drift | done | `scripts/harness-drift.mjs` |
 | 16 | Over-engineering index | done | `scripts/overengineering-index.mjs` |
 | 17 | Reference prompts for Claude Code, Codex, agy, Grok, Cursor and others | done | `references/harness-playbook.json` |
-| 18 | Planning defines the chain dynamically | done | `stage-activation --manifest --profile` |
+| 18 | Planning defines the chain dynamically | partial | `stage-activation --manifest --profile` evaluates conditions, but (2026-10-11 live run and simulation) most conditional stages have no condition and `compile-delivery-graph` ignores activation, so a prototype todo CLI got 32 tasks and an SSO change no security review. Wiring in progress: docs/decisions/2026-10-11-task-shaped-graphs-and-evolve-loop.md |
 | 19 | Worktree cleanup discipline; no fake receipts | partial | `svc-state-janitor` agent exists. No scheduled cleanup yet |
 | 20 | Orchestrator knows when to compact, per layer | partial | Policy written (`references/cockpit-protocol.md`, Compaction by layer); not yet enforced by a hook |
 

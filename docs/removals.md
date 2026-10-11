@@ -204,3 +204,12 @@ The reintroduction check is either `pattern: /regex/ in <path prefix>[, <path pr
 - **Intent now delivered by:** hooks.json lists exactly what `scripts/wire-hooks.mjs` wires plus a separate `engine_children` list, and installs only through `./setup` / `wire-hooks.mjs` (`validate-hooks-json-matches-wirer.mjs`).
 - **Date / record:** 2026-10-11, hook audit.
 - **Reintroduction check:** pattern: /Copy the hooks you want into/ in hooks/hooks.json
+
+## stage-conditions.json and stage-conditions.mjs (parallel stage selection)
+- **Kind:** rejected design
+- **Existed for:** giving each task a graph of only the stages that fit it (dynamic lanes and tasks), with the conditions in configuration.
+- **Evidence:** the framework already owns this: `references/stage-registry.json` classes every stage essential, conditional or situational; `scripts/stage-activation.mjs` evaluates conditions mechanically over the plan's scope or a diff; `references/delivery-profiles.json` says which conditional stages each profile keeps; the request ledger row 18 records it. The new module was a fourth stage vocabulary beside the registry, `compile-delivery-graph`'s `LANE_BASE_SKILLS` and `task-graph generate`'s story profiles, written without checking what existed.
+- **Why removed:** duplication of an existing mechanism, the drift class the registry exists to prevent.
+- **Intent now delivered by:** filling the missing conditions in `stage-activation.mjs` and the registry, and making the compiler derive its stages from them (docs/decisions/2026-10-11-task-shaped-graphs-and-evolve-loop.md, revised).
+- **Date / record:** 2026-10-11, never committed.
+- **Reintroduction check:** pattern: /stage-conditions\.(json|mjs)/ in scripts/, references/
