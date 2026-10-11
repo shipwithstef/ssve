@@ -27,3 +27,14 @@ export function crossFamily(authorHost, reviewerHost) {
   const r = familyOf(reviewerHost);
   return { crossFamily: a !== r && a !== "unknown" && r !== "unknown", author_family: a, reviewer_family: r };
 }
+
+// The author (orchestrator) family must come from the host's own identity. It is never
+// defaulted: a default would let a same-family review be certified as independent.
+export function requireOrchestratorFamily(value) {
+  if (typeof value !== "string" || !value.trim() || value.startsWith("--")) {
+    throw new Error("--orchestrator-family is required: pass the family of the host that authored the work (claude/anthropic, codex/openai, google, xai)");
+  }
+  const family = familyOf(value);
+  if (family === "unknown") throw new Error(`--orchestrator-family value "${value}" is unrecognised (expected claude/anthropic, codex/openai, gemini/google, grok/xai)`);
+  return family;
+}

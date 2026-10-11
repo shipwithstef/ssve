@@ -18,7 +18,7 @@ done
 
 printf '%s  %s\n' \
   075ac6eabf4af6e576134095d341346c7c194191c98f9f01cdb6caad6b0a879b scripts/quick-fix-eligibility.mjs \
-  6d4dc7dafe8752d6569025df1c5457524ae9178b3beb1f3d636ecec208e30143 scripts/classify-change-risk.mjs \
+  8bf7684fe94de3ead74fb145c50cb9b32184c188ddc62d5968fe3a29df246d0d scripts/classify-change-risk.mjs \
   cf549b9e572acfc21e066c5defc82bb2eb7db14661e6e46a336b32f660f74e32 hooks/git/pre-commit.d/20-quick-fix-eligibility | sha256sum -c -
 
 grep -q '^  DEPRECATED (retired as a lane)' skills/quick-fix/SKILL.md
