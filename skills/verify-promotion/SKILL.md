@@ -85,6 +85,7 @@ Read:
 | Feature spec | `docs/specs/features/<name>.md` | ACs, implementation notes |
 | Implementation manifest | `docs/plans/<date>-<name>/manifest.md` | File set, AC/test mapping |
 | Promotion evidence | squash-diff / validation summary | Promotion truth |
+| Local landing (no remote) | `land-local` output `main_sha`; the WI tip is an ancestor of the main branch in the project checkout | Promotion truth for a local project: check `git -C <project> merge-base --is-ancestor <wi-tip> <main>` and that the main checkout's files hold the change; there is no PR or squash SHA |
 | Live environment | localhost / preview / staging | QA and E2E runtime proof |
 | Verification patterns | `references/verification-patterns.md` | 4-level verification hierarchy (L3-L4 for promotion) |
 | Anti-patterns | `references/anti-patterns.md` | AP-13: treating existence as implementation |

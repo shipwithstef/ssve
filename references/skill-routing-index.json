@@ -1071,7 +1071,7 @@
     {
       "skill": "land-changeset",
       "path": "skills/land-changeset/SKILL.md",
-      "content_hash": "7dec9086b245988d398bc427f89b0cd395d113626654d58623eaa3cd3ff84434",
+      "content_hash": "20d90a2ae3da71e62bf729fc30eecb48e3ebad0bde05cdcad20026a94d1428b8",
       "description": "Land a validated change set on main: check manifest coverage and receipts, push the branch, open the PR, squash-merge, clean up the worktree. Use when execution and review have passed and the change is ready to land.",
       "aliases": [],
       "positive_triggers": [],
@@ -1972,7 +1972,7 @@
     {
       "skill": "verify-promotion",
       "path": "skills/verify-promotion/SKILL.md",
-      "content_hash": "126a8595fc54e1b6517c1421c9467b57cfefe3dd7506760ccd748a5c9efbcc01",
+      "content_hash": "a066096aeed2ccbc047814ae812396ed140b5e8aafceb238de925ed4b578f490",
       "description": "After a reviewed branch is promoted, verify the shipped result against specs, tests and acceptance criteria, then close the loop into spec and journey state (G7). Use for 'verify the promotion', 'did it actually ship', post-merge verification.",
       "aliases": [],
       "positive_triggers": [],
