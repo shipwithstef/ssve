@@ -1,13 +1,31 @@
-<!-- Status: proposed 2026-10-11, revision 2 after owner review 5482766246, NOT approved. Under owner + external review. Source of truth for review; execution waits for owner approval. -->
+<!-- Status: proposed 2026-10-11, revision 3 (consolidated) after the reviews on 7b48cc4. NOT approved. Execution waits for owner approval. -->
 
-# Plan: one organism that beats solo — component-by-component redesign, with proof
+# Plan: one organism that beats solo, and keeps beating it as models and harnesses change
 
-## 1. Context: start, achieved, why, goal
+## 0. How to read revision 3
+
+**What changed from revision 2.**
+- One bar (§4), one order and one budget (§6). The old §6–§8 disposition sections are folded into the body. Appendix A records every review finding by its ID and quotes the body sentence that implements it.
+- The headline is defined when solo scores 0. Failed runs score 0. Cost is total USD.
+- Solo gets a private home. The framework arm runs from `git archive` of a sha. The home is built once and cloned.
+- Opus confirmation comes before any deletion. Receipt deletion waits until Program 1 has passed on Haiku and on Opus.
+- New direction (§2): durable versus decaying components, founder domain expertise as a scored component (K), one dated store of harness knowledge, and a router that has to beat the harness's own default.
+- New evidence (§3): traversals run as commands at `7b48cc4`, not imagined. Several revision 2 assumptions failed. The compiler ignores the data files revision 2 called the source of truth. The launcher refuses most harnesses. The router has never recorded an outcome.
+- A pre-mortem with kill criteria (§7) and an integration contract for #129 (§8).
+
+**Precedence. There is one.**
+1. §4 is the only bar. §6 is the only order and the only budget.
+2. §5 says what to build and how to prove it, never when.
+3. Appendix A adds no requirement. Where a row and the body disagree, the body wins and the row is a defect.
+
+**Evidence rule.** A sentence about what runs today names a command in Appendix B, run at `7b48cc4`.
+
+**Privacy rule.** This repository is public. The plan, PR comments and eval artifacts carry no machine paths, account names, consumer project names or private policy contents. A finding about a machine-local file names only the harness or model needed to reproduce it.
+
+## 1. Context
 
 **Where we started.** Main was at d283041, the rc.1 baseline.
-- 106 skills, 48 rules and 44 hook rows.
-- About 67K characters loaded into every turn.
-- The pre-edit hooks took 648 ms per edit.
+- 106 skills, 48 rules and 44 hook rows. About 67K characters loaded into every turn. Pre-edit hooks took 648 ms per edit.
 - Hidden breakage, found on 10/11:
   - 64 scripts were no-ops through the symlinked install.
   - `task-graph checkpoint` did not exist, though 55 skills call it.
@@ -15,712 +33,1016 @@
   - Review failed closed with no policy file.
 - So the framework did not really run in user projects.
 
-**What was achieved (PR #127, 123 commits).**
+**What PR #127 achieved.**
 - **Context:** always-loaded text 67K → 34.5K characters. Skills over 500 lines: 33 → 1.
-- **Hooks:** Edit hooks 648 → 289–318 ms. Context injected per session 6366 → 442 characters. 15 hooks or behaviours were removed, each with its reason in `docs/removals.md`, and a validator refuses their return.
-- **Fresh-project fixes** (fcf04a9, dac098a, 4a86f3a, 9d2fe48): the framework now runs end to end on a fresh project on Haiku for $0.02.
-- **Measurement:**
-  - `outcome-eval.mjs` runs four arms against hidden graders, with budgets.
-  - A removals ledger with checks against reintroduction.
-  - The cockpit.
-  - A dependency tracer for choosing which checks to run.
-- **Two measured wins:**
-  - Owner rules carried to the next session: 19/20 vs 10/20 bare.
-  - A one-sentence product on Haiku: 14.71/16 vs 7.14/16 for plain, at 8–10× the cost. This measured a condensed prompt, not the installed framework.
+- **Hooks:** context injected per session 6366 → 442 characters. 15 hooks or behaviours removed, each with its reason in `docs/removals.md`, and a validator refuses their return.
+- **Hook latency is not settled.** The PR measured 289–318 ms per Edit. A later five-run synthetic `hook-bench` measured 562 ms PreToolUse/Edit and 345 ms PostToolUse/Edit (6108295955). §5.4 re-measures with a sanitised environment before any hook decision.
+- **Fresh-project fixes** (fcf04a9, dac098a, 4a86f3a, 9d2fe48): the installed framework runs on a fresh project.
+- **Measurement:** `outcome-eval.mjs` with four arms, hidden graders and budgets; a removals ledger; the cockpit; a dependency tracer.
 
-**Why.** The owner's words: a wrapper that *enhances* Claude Code. It should ship production-ready, distinctive products with just-enough engineering, as a probabilistic chain that is shaped per task, not a static process.
+**What the evidence supports, and what it does not.**
+- Owner rules carried to the next session: 19/20 versus 10/20 bare (p = 0.002), from one two-session comparison. It is a reason to keep a memory component. It is not yet a component score.
+- A one-sentence product on Haiku: 14.71/16 versus 7.14/16 for plain, at 8–10× the cost. This measured a condensed prompt, not the installed framework.
+- Revision 2 said the framework runs end to end on a fresh project on Haiku for $0.02. No command, sha, stage list or token total for that figure is recorded in the repo. It is withdrawn as evidence. Tokens per chain session are a separate row in §4.
+- "0 skills show a gain" covers the dozen or so skills that were measured. The other skills are unmeasured, not known no-gain.
 
-**North star (10/11 08:40).** Speed and cost near a solo run of the same model, with at least 2× its end-result score, by adding what the model does not think about on its own, robust for any task.
+**Why.** The owner's words: a wrapper that *enhances* the harness. It ships production-ready, distinctive products with just-enough engineering, as a probabilistic chain shaped per task, not a static process.
 
-**Honest distance today.**
-- The installed framework has never produced a scored run.
-- The proxies (bounded, swarm) tie or trail solo on judged quality.
-- 2× is impossible on rubrics where solo already scores 84–93%.
-- The goal metric is undefined. Fixing that is step 1.
+**North star (10/11 08:40).** Speed and cost near a solo run of the same model, with at least 2× its end-result score on what solo does not think about. It must hold for any task, and still hold after the next model and harness release.
 
-## 1b. Design rule that governs every section: dynamic, never static (owner, 10/11)
-Models and harnesses change every week. Anything hard-wired dies in the first week. So every component follows these rules:
-- **Fix the outcome, free the path.**
-  - Skills state what "done" means and the check that proves it. They don't prescribe steps the model would take anyway.
-  - Gates check results: tests, the reviewed tree, probes. They never check the ritual.
-- **Everything that changes is data, not code.**
-  - Models, efforts, prices, harnesses and roles live in `model-registry.json`, `harness-playbook.json` and `priors.json`.
-  - Stages and conditions live in the stage registry and delivery profiles.
-  - Slots are set by owner policy.
-  - Validator: no model id, harness name or price outside those files (it extends `validate-slot-config`).
-- **Thin adapters.**
-  - A harness is one JSON entry plus the existing `orch/dispatch.mjs` launcher.
-  - A new model is one registry line. The router (§3i) retries cheaper options automatically when a new id appears.
-- **Detect, don't pin.** `harness-drift.mjs` runs weekly and on session start. A new model, harness version or Claude built-in (e.g. `/design-sync`) is picked up and tried. It is not ignored until someone edits code.
-- **Let the model breathe.**
-  - Prompts stay short.
-  - Effort and turns are decided by the router, not fixed per skill.
-  - The ≤80-line skill cores (X6) carry only techniques measured to beat bare.
-- **The change-absorption test (new tier-1 check).** In a fixture:
-  - add a fake model and a fake harness by editing data only;
-  - the router, ladder, slots, cockpit and eval arms must all pick them up with no code change;
-  - remove a harness, and everything fails over.
+**Honest distance today.** The installed framework has never produced a scored run. The proxies tie or trail solo on judged quality. Revision 2's headline was undefined exactly where the win would be; §4 fixes that.
 
-  If this test needs a code edit, the design is static and fails review.
+## 2. Direction
 
-## 2. The proof: a fixed benchmark (new component, small)
+Models and harnesses change every week. A framework that encodes what this week's model forgets is redundant by next quarter. A framework that carries what no model can know stays useful. This section sets the direction. §5 holds the design and §6 the order.
 
-`test-framework/outcome-evals/northstar/`, reusing `outcome-eval.mjs` arms (`solo` = bare model; `framework` = installed, route-workflow driving, already built in d57d44e).
+### 2a. Durable versus decaying
 
-**The score is "what solo doesn't think about".** It is computed per task by hidden graders, not by a judge's taste. Five components, 0–1 each:
+Every component gets one of two labels in the capability-coverage registry.
 
-| Component | What it measures | Existing parts reused |
-|---|---|---|
-| **H** | Hidden acceptance checks solved: the stated behaviour | Each task's `hidden.test.mjs` |
-| **E** | Edge and failure robustness: chaos checks (bad input, network loss, restart), dead-end walk | `chaos-probe.mjs`, the quest dead-end grader |
-| **S** | Security and data: secrets, authz on every route, injection probes, migration safety | Lens-security prompts converted into probes. New: small per-task probe files |
-| **P** | Production basics: README run-path works from clean, tests exist and fail on mutation, phone overflow, a11y smoke | web-probes, perception probes, mutation check |
-| **J** | Judge, capped at 20% weight: taste and coherence | The existing judge |
-
-**Score** = 0.3 H + 0.2 E + 0.2 S + 0.1 P + 0.2 J. Solo's measured weak spots (quest hidden 0/3, no security review, dead ends) are where the ≥2× is possible. The headline still reports H and J separately, so a framework win can't hide a regression on the stated task.
-
-**Six tasks**, covering the "boxes / no boxes" range. Existing tasks are reused wherever one fits (review M-minor):
-1. A one-sentence product (yoga-studio).
-2. A game (ai-quest).
-3. A brownfield feature (`csv` / `waitlist-feature`).
-4. A bugfix (`bugfix-rootcause`).
-5. An auth/money change (`security-payments`).
-6. A typo/README fix (new and tiny; the proportionality check).
-
-**Same model everywhere (review B1).**
-- The eval sandbox pins every slot to the arm's model: a sandbox dispatch policy plus `CLAUDE_CODE_SUBAGENT_MODEL`.
-- Each run records the models actually served from its usage. A run that used any other model is rejected.
-
-**Chain policy in the sandbox (review M11).**
-- Each run reports its `chain-policy` and `same_family_release` setting.
-- The framework arm runs in advisory mode, with receipts still emitted and counted. A Claude-only sandbox can't satisfy cross-family release.
-
-**Pre-registered and held out (review B2).**
-- Before the baseline, I commit the weights, the grader hashes and this pass bar, and get them reviewed independently.
-- Tasks 2 and 5, plus a separate probe set, are **held out**: harden and the improvement loop never see them. The loop iterates only on tasks 1, 3, 4 and 6.
-- The headline result counts only if the held-out tasks also pass.
-
-**Pass bar (revised after the owner review of `dc358c0`).** Decided by a new `northstar decide` step that uses the existing `compareSamples` bootstrap CI.
-- **Headline (the 2×):**
-  - The geometric mean of the **E, S and P** ratios (framework ÷ solo), taken only over tasks where that component applies.
-  - It must be ≥ 2×, with the CI lower bound > 1.
-  - These are the things solo does not think about. Ceiling components (H, J) are not averaged in, so a real gain there can't be hidden by a tie.
-- **H is a constraint, per task:**
-  - never more than 0.05 below solo;
-  - never a miss where solo passes every hidden test.
-- **The typo task is a constraint, outside the 2× mean:**
-  - at most 4 stages;
-  - cost at most 1.3× solo;
-  - H not worse.
-- **J** is reported, never in the headline.
-- **Cost** is reported as three numbers per task and arm: prompt tokens, turns, and paid reviewer calls. The ≤1.5× cost and ≤1.3× wall-time caps apply to the **single-model advisory arm**: every slot pinned to one model, no cross-family review.
-- **Zone review** (a second family on auth/money) is a separate column. It is not part of the north star unless the owner asks.
-- **The router and the reviewer ladder stay out of the measured arm.** The router follows priors and may never un-pin a baseline.
-- **Graders** are written from a task spec that does not cite the pilot postmortems (quest 0/3, SSO gap). Their hashes are frozen **before** `harden.mjs` and the security patterns are written, so the held-out tasks measure generalisation, not the probes.
-
-**One budget.** Every run uses `--max-usd`. A step marked "owner yes" waits for a forecast and the owner's approval.
-
-| Step | Runs | Cap | Owner yes |
+| Label | What it carries | Examples | Life |
 |---|---|---|---|
-| P1.1 Frozen baseline at `dc358c0`, Haiku, solo vs framework | 6 tasks × 2 arms × 3 = 36 | $20 | no |
-| P1.2 Build swarm (Haiku about $5, Sonnet about $15) | agents | $20 | no |
-| P1.3 After-number on the Program 1 organism | 36 | $20 | no |
-| P1.4 Loop iterations, dev tasks only | variable | $10 | no |
-| P2 waves: each batch's dev-slice re-measure | 12 per batch | $5 per batch | no |
-| Opus confirmation (3 runs) | 36 | forecast first (about $150) | **yes** |
+| **Durable** | Facts and checks the model cannot have: private, recent, or outside the model | owner standing rules and decisions; founder context (ICP, pricing, claims); the product's domain bank; dated harness knowledge; hidden probes and graders; the three invariants; worktree isolation; company governance | Grows with the founder and the project |
+| **Decaying** | Scaffolding a stronger model does on its own | step-by-step procedures; templates the model writes anyway; review volume at ceiling; prompt boilerplate; forced minimums | Shrinks with every release |
 
-## 3. Component map — every component, decision, reason, proof
+**Decay rule.**
+- **Trigger:** `harness-drift` sees a new model id behind an allowed slot, or a harness version that changes a recorded flag.
+- **Ablation:** each decaying component that serves that slot runs on versus off on the dev slice, with the new model.
+- **Retire:** a component whose off arm scores within 0.05 of its on arm and costs less moves to on-demand. Its removals entry names the model id. It returns only by the same measurement.
+- **Re-baseline:** when a vendor retires a pinned baseline model, the Program 1 baseline is re-run on its successor before any new claim.
+- Durable components are never retired by the decay rule. K (§4) measures them.
+
+### 2b. Founder domain expertise is the moat, so it gets a score
+
+The lasting value to a founder is that each session knows more about this product, this market and this owner than a fresh model does. That layer exists today and is not connected:
+- `scripts/expertise.mjs` preloads four layers: training, the domain bank with currency windows, the ledger and the playbook. The 13 company-role agents declare `domain:`. No delivery agent does. `expertise.mjs preload --agent svc-stage-exec` exits with "no 'domain:' declaration".
+- `expertise.mjs refresh-scan` marks all 13 domain banks stale. Of 66 `.version` stamps under `references/knowledge/`, the newest is 2026-07-16, 87 days old. None is inside the 30-day domain window.
+- The prototype profile starts even a typo fix with analyze-domain and `teach_terms` 10 (T2).
+
+Direction:
+- The product's domain bank lives in the product repo. Each fact carries `as_of`, `source` and `owner_confirmed`. analyze-domain's terms mode seeds it, and owner decisions add to it.
+- Delivery agents (plan, exec, the review lenses) preload a bounded, topic-matched slice of it, plus the standing rules and the founder context.
+- Teaching runs when a task brings terms the glossary lacks, not on every prototype task.
+- A stale fact is shown as stale, never as current. It is refreshed when a task cites it, not on a schedule for every bank.
+
+### 2c. Harness knowledge: one dated, sourced store
+
+Harness and model truth is spread over seven places: `model-registry.json`, `model-intel/models.json`, `priors.json`, `harness-playbook.json`, `harness-baseline.json`, `provision/hosts/*.json`, and argv code in `orch/dispatch.mjs`. They disagree (T5–T7). `references/model-intel/` becomes the one store. Every fact carries `as_of` and `source`: a vendor page, or the command and output hash that verified it. The other six are generated from it (§5.9).
+
+### 2d. Routing must beat the harness default, or step aside
+
+Every harness already has a default: the model and effort it uses with no framework. The router has to beat that default on cost per solved task at equal or better quality, inside the owner's policy. With no evidence, it uses the owner's tuple. When the evidence says the default wins, the default wins (§5.10).
+
+## 3. What runs today: real traversals at `7b48cc4`
+
+Each row is a command in Appendix B. Nothing here is simulated.
+
+| # | Path | What the command showed | Consequence |
+|---|---|---|---|
+| T1 | Compiler source of truth | Identical graphs after deleting the prototype profile from `delivery-profiles.json`, removing lane skills from `skills-manifest.json`, and adding `skip_skills`. Lanes are a JS constant (`LANE_BASE_SKILLS`, `compile-delivery-graph.mjs:40`) that disagrees with the manifest (greenfield 18 versus 25). Profile names, `validModes`, `IRREVERSIBLE_PATH` and `IRREVERSIBLE_FLAGS` are code too | "Everything that changes is data" is false today. Pointing the compiler at the manifest as it stands would add 7 greenfield skills, so the lists are reconciled first (§5.2) |
+| T2 | Typo fix | Production: 15 tasks, from validate-feature through verify-promotion, including write-spec, audit-ac, write-journeys, design-ux, design-ui and design-tech; design-ui is also listed as skipped. Prototype: 9 tasks, starting with analyze-domain | The typo constraint (at most 4 stages) fails today |
+| T3 | Product from one sentence, production | 22 tasks; write-e2e and test-journeys come after verify-promotion | Prerequisites after promotion (also 6108295955) |
+| T4 | Auth and money | `auth-sensitive` attaches review-security as a required process step inside audit-implementation. The flag `auth`, which is in `IRREVERSIBLE_FLAGS`, attaches nothing. A payments webhook bugfix with no flag is marked an irreversible zone and gets no security review | Two vocabularies. The `security` condition must read the irreversible zones (§5.2) |
+| T5 | Two routing authorities | For exec, `route-model.mjs` picks a Claude model, while the owner's machine-local policy resolves EXEC to a non-Claude harness. `route-model stats` shows every arm at n=0. No outcomes file exists in the repo or the home. `route-model check` passes with no coverage of the non-Claude harnesses the policy uses | The router has never learned, and nothing joins it to the policy (§5.10) |
+| T6 | Launch by data | `orch/dispatch.mjs` `workerCommand` accepts only codex, cursor, agy and claude. Anything else throws "cli must be codex, cursor, agy or claude". The cursor path hard-codes a grok model version that differs from the one in the policy and the registry. The policy's EXEC harness, opencode, kimi and a fake fixture harness are refused | The change-absorption test fails today at its second step (§5.1) |
+| T7 | Drift | `harness-drift.mjs` has no codex host. `harness-playbook.mjs verify` reports broken flags for opencode and kimi. The Codex CLI on the review machine is configured with a model id that no registry file lists | Drift and flag checks are not joined and do not cover the harnesses in use (§5.9) |
+| T8 | Hard-coded model ids | 170 model-id strings in 61 non-test files under skills, agents, rules, hooks and scripts; 33 distinct ids, some retired. Some are legitimate (pricing tables, provider docs) | A "no model id outside the store" validator fails on 61 files today. It needs a migration list and an allowlist (§5.9) |
+| T9 | Expertise | §2b: no delivery agent declares `domain:`; 13 of 13 banks stale; newest stamp 87 days old | K is unwired (§5.11) |
+| T10 | Cross-harness evals | `scripts/lib/harness-transports.mjs` exports `TRANSPORTS = { claude }` | No eval can compare harnesses, so the router cannot be measured against another harness's default (§5.10) |
+| T11 | Install follows the branch | Installed skill links point into this repo's working tree, so a branch checked out in the main checkout changes what every installed host loads. A stale merge driver left in local git config by an earlier in-repo eval crashes `git merge-tree` until overridden | Eval runs use `git archive` of a sha (§4). In-repo evals never write repo config (§5.5) |
+| T12 | #129 | A dry merge with #127 conflicts in 5 files. The ledger's hindsight replays the model file now on disk, not the recorded one. A discrete distribution listed out of order returns p10 100, p50 1, p90 10 | §8 |
+
+## 4. The proof: one bar
+
+`test-framework/outcome-evals/northstar/`, on `outcome-eval.mjs` arms. `solo` is the bare model. `framework` is the installed framework with route-workflow driving.
+
+**Components.** Hidden graders score each run from 0 to 1 per component. They score the built artifact, for both arms. They are not the install's own checks; the install at `dc358c0` never runs them.
+
+| Component | Measures | Reuses |
+|---|---|---|
+| H | Hidden acceptance checks: the stated behaviour | each task's `hidden.test.mjs` |
+| E | Edge and failure robustness: bad input, network loss, restart, dead ends | `chaos-probe.mjs`, the dead-end grader |
+| S | Security and data: secrets, authz on every route, injection, migration safety | lens-security prompts turned into probes |
+| P | Production basics: README run-path from clean; tests that fail on mutation. For UI tasks, the numbers `web-probes.mjs` already records (axe serious/critical, contrast, tab reach, overflow at 390×844, tap targets under 44 px, load-to-interactive, JS bytes, frame p95) plus `mobile-occlusion.mjs` with a logged-in session where the control needs one | `web-probes`, `mobile-occlusion`, the mutation check |
+| K | Knowledge the model cannot have: a standing rule from an earlier session, a private domain fact, a founder pricing rule, each checked in the build | the continuity-rules task; one embedded fact per reserve task |
+| J | Judge: taste and coherence | the existing judge. Reported, never in the headline |
+
+The weighted formula from revision 2 is deleted. There is one score.
+
+**Tasks.**
+- **Dev** (the loop may see these): 1 yoga-studio (a product from one sentence); 2 ai-quest (a game); 3 brownfield (`csv` / `waitlist-feature`); 4 `bugfix-rootcause`; 5 `security-payments`; 6 a typo/README fix (new, tiny); 7 `continuity-rules` (two sessions).
+- **Reserve** (unseen): R1, a product task, and R2, an auth/money task, each with one embedded private fact for K. Tasks 2 and 5 informed the diagnosis, so they are dev tasks now, not holdouts.
+- The reserve is written in a fresh session that gets only the task template, not the pilot evidence. Only the grader hashes are committed. The files stay outside the repo until the after-number.
+- An applicability matrix says which of E, S, P and K applies to which task. It is committed with the bar, before the baseline.
+
+**Headline, pre-registered.**
+- A cell is one task and one of E, S, P or K that the matrix applies to it.
+- A crashed, timed-out, capped or skipped run scores 0 on every component, and its spend stays in the cost. The report names how many runs entered each mean. A cell with fewer than 3 finished runs per arm gets no number.
+- **Δ** is the mean over cells of (framework mean − solo mean). Its 95% interval is the paired bootstrap that `compareSamples` already computes on a difference of means, resampling runs within task and arm.
+- **R** is the sum of framework means divided by the sum of solo means over the same cells. A both-zero cell adds 0 to both sums. If solo scores 0 on every cell, R is reported as "not defined: solo 0 everywhere", never as infinity.
+- **Pass:** R ≥ 2.0 (or R not defined), Δ ≥ 0.20, and Δ's lower bound above 0. This must hold on dev and, separately, on the reserve.
+
+**Constraints, per task.**
+- **H:** never more than 0.05 below solo, and never a miss where solo passes every hidden test.
+- **Typo task:** at most 4 stages, and H not worse. Its cost is reported, not capped: one planning turn would break a ratio cap with no change in quality.
+- **Product tasks** (1–5, R1, R2): total USD at most 1.5× solo and wall time at most 1.3× solo, in the single-model advisory arm.
+
+**Cost is money.** Cost is actual total USD from usage: input, output, cache, subagents, failed attempts and repairs. These are reported beside it as diagnostics:
+- prompt tokens;
+- turns;
+- paid reviewer calls;
+- browser-probe seconds;
+- hook seconds (edits × measured p50).
+
+The always-loaded catalog overhead is measured on an empty task and reported, so the token cut has a target. Nothing is subtracted from the cap.
+
+**Fair arms.**
+- **Same model everywhere.** Every slot is pinned to the arm's model (a sandbox dispatch policy plus `CLAUDE_CODE_SUBAGENT_MODEL`). A run whose usage shows another model is rejected.
+- **Solo gets a private HOME with no skills and no ancestor `CLAUDE.md`.**
+- **The framework arm runs from `git archive` of its sha** into its own private HOME, so no branch checked out on the machine can leak in (T11).
+- **The framework home is built once per sha and cloned into each job.** `./setup` does not run once per framework job.
+- **A row whose `builder_sandbox` is null is rejected, for every arm.**
+- **Grader cleanup.** The grader copied into the build (`__hidden.test.mjs`) is deleted in a `finally` before the build is kept, including when the judge throws.
+- **Chain policy.** Each run reports its chain policy and `same_family_release`. The framework arm runs advisory, with receipts still emitted and counted.
+- **Router and ladder stay out of the measured arm.** The router follows the pins and may never un-pin a baseline. Zone review by a second family is its own column, outside the headline.
+- **Fail-open counter.** Each framework run reports the fail-open counter (§5.4).
+  - A non-zero count marks the run "rules not loaded". It is re-run once. If it repeats, it is scored as it is and flagged.
+  - The install at `dc358c0` has no counter, so its runs are marked "counter absent".
+- **Checkpoints.** The eval profile sets every `human_checkpoint` to log-and-continue through the profile, not through a prompt sentence that overrules the skill. At `dc358c0` that profile does not exist, so the baseline keeps its current prompt sentence and the report says so.
+
+**Run shape.**
+- `--parallel 4` is stated on every run. Host-state validators keep their sequential pre-pass.
+- The `ARM_LIMITS` values are part of the pre-registration. A run stopped by the cap scores 0.
+- **Manifest first.** Before any paid run, `northstar plan` prints a balanced manifest:
+  - every task × arm × rep is funded at or above the $0.50 per-run floor;
+  - both arms have the same task contract and the same isolation;
+  - a manifest that cannot fund every pair does not start.
+- Wall time is forecast from the first wave and printed before the rest.
+
+**Decision.** `northstar decide` implements exactly this section. Its fixtures cover:
+- zeros and missing components;
+- paired outcomes;
+- interrupted runs;
+- mixed usage;
+- exhausted budgets.
+
+The loop gets at most 3 iterations on dev before the reserve is opened, once. Before the baseline, these are committed and reviewed independently:
+- the graders;
+- the matrix;
+- the bar;
+- `ARM_LIMITS`;
+- the reserve hashes.
+
+## 5. Components: what to build and how to prove it
+
 Legend: **K** keep · **S** sharpen · **M** merge · **R** rewrite · **X** remove (each gets a removals.md entry) · **N** new.
 
-### 3a. Skills (108) — see §3a table (filled from the two full audits)
-Two full audits read all 108 SKILL.md files.
+### 5.1 The change-absorption test (tier-1, written first)
 
-**Measured so far:**
-- 0 skills show a gain over bare.
-- No gain: decide, discuss-phase, review-gate (5.7× tokens), write-spec (3.6× tokens).
-- At ceiling (bare solves it too): review-plan, review-exec, review-security, audit-implementation, diagnose-bug, sync-spec-code, blind-control-plan (37× the cost of a bare build).
-- The 2 framework wins came from *what "done" means* (yoga 7.14 → 14.71) and *standing rules carried across sessions* (10 → 19/20), not from review.
+In a fixture, editing data only:
+1. Add a fake model. The router, ladder, slots, cockpit and eval arms all pick it up.
+2. Add a fake harness record to the store. `orch/dispatch.mjs` launches it from its argv template, and the eval runner has a transport for it.
+3. Edit a delivery profile. The compiled skill list changes, with no SKILL.md edit and no manifest edit.
+4. Remove Claude from the playbook. design-bridge drops off the visual step, and non-Claude hosts stay on the file path.
+5. Mark a model id as new. A decay ablation is scheduled (§2a).
+6. Remove a harness. Everything fails over to the next allowed one.
 
-**So the redesign moves weight from review volume to the "done" definition, hardening and memory.**
+It fails today at steps 2 and 3 (T6, T1). A design that needs a code edit to pass it fails review.
 
-**Cross-cutting fixes. Each is direct, proven by a tier-1 check:**
-- **X1 Script paths: one resolver, no codemod (owner review).**
-  - **Scope:** 86 SKILL.md files with 760 `node|bash scripts/…` calls keep their single relative form.
-  - **Resolver:** one resolver maps a leading `scripts/` (or `bash scripts/`) that does not exist in the working directory to the framework root.
-    - On Claude: a PreToolUse Bash rewrite (`updatedInput`), in the existing single injector process.
-    - On other hosts: the same function, called from each host dispatcher.
-    - The resolver uses `SVC_ROOT`, which SessionStart always exports (including inside the framework repo; this fixes `svc-origin-orchestrator-prompt.mjs:55` and `framework-root.mjs:21`).
-  - **Absorbs layout changes:** a new layout is one resolver change, not another codemod. No bulk hot-path edit.
-  - **Validator:** a script call in skills, references, agents or rules must use the relative `scripts/` form the resolver handles.
-  - **Measured:** the hook latency added per Bash call, with `hook-bench.mjs`.
-  - **Scheduling:** Program 2, unless the frozen baseline shows path failures cost the framework arm.
-- **X2 Boilerplate:**
-  - Re-counted: Task-Graph Mode in 82 skills, phase receipts in 78, compaction in 60.
-  - This is also a codemod, in lane batches, never one bulk edit of the hot path.
-  - The hook (WI-363) already records phases.
-  - Replace these blocks with a one-line pointer to the shared reference (like 5ce26a1, but complete).
-  - Pinned validators get updated in the same change.
+### 5.2 Delivery chain: one scheduler, compiled from data
+
+**Today.**
+- The compiled graph comes from a JS constant (T1).
+- Skills also continue on their own: 28 skills set `progressive: true` and tell the model to start their `next` skill, so a skill the compiler dropped still starts.
+- 46 skills set `human_checkpoint: true`.
+
+1. **Lanes are data.**
+   - First, the manifest lists are reconciled to the lists the compiler runs today. A tier-1 case compiles every lane × profile before and after the switch and requires identical output.
+   - Then the compiler reads the manifest, and later edits go through data.
+2. **Activation is a library (R).** `stage-activation.mjs` exports `evaluateActivation` behind an `__svcIsMain` guard. Its import-time exit becomes a thrown error.
+3. **Conditions with real patterns.**
+   - `ui`, `user-flow`, `security`, `live-proof` and `compliance` match code and config only, never docs about them.
+   - Each registry stage points its `activation_condition` at its condition in the same commit that adds the condition, with a tier-1 case.
+   - design-ux and design-ui point at `ui`. `marketing` gets real route patterns.
+   - `security` matches the irreversible zones of class auth, payments, secrets and migrations, plus the flags `auth`, `auth-sensitive`, `security-sensitive`, `payments`, `money` and `secrets`. A payments bugfix with no flag gets review-security (T4).
+   - The prototype keep-list gets `security` in the same commit as the condition. A prototype diff under an auth path keeps it; a docs-only diff does not.
+4. **Flags the compiler reads.** route-workflow or diagnose-bug writes a lean record on the task. No `next` pointer may override a flag.
+
+   | Flag | Default | Drops when false |
+   |---|---|---|
+   | `new_product` | false on brownfield, bugfix, refactor and typo work | write-vision, analyze-domain, analyze-competitors |
+   | `ui` | from the `ui` condition | build-personas, design-ux, design-ui |
+   | `marketing_page` | from the `marketing` condition | landing-page, benchmark-landing |
+   | `one_way_door` | false | explore-solutions. The 3-paradigm / 5-approach gate is deleted in the same change |
+   | `drift` | false | sync-spec-code, which is not `essential` on a feature or a typo |
+   | `behavior_change` | true; false on refactor | design-tech, unless `one_way_door` is set |
+   | `claude_design` | true only when the harness pick is Claude and the Design built-in is present | design-logo and generate-visuals. design-bridge is the visual step |
+   | `new_terms` | true when the task brings terms the glossary lacks | analyze-domain teach mode |
+
+5. **One scheduler.**
+   - When a skill finishes, it starts the next compiled task, not its `next` field.
+   - `progressive: true` means only "continue without asking", never "start this skill".
+   - Checkpoints read the profile: production stops; eval logs and continues.
+6. **The session sees only what it may run.** After compile, the host skill listing for the session is the compiled list plus on-demand skills. The model is never offered a skill the compiler dropped, and the prompt is smaller.
+7. **Order and dedupe.**
+   - Personas, e2e and journeys come before land in every mode (T3).
+   - Each stage maps to one skill:
+     - one track-visuals diff after implementation, with a baseline only when an earlier capture exists;
+     - one test-journeys stage;
+     - one write-e2e stage.
+   - The UI profile includes journeys and e2e.
+8. **Obligations rebuild edges.** When activation or risk raises review depth, the compiler adds the obligation and rebuilds the dependency edges. A completed task whose obligation changed reopens. This is tested on bounded→production and safe→auth-sensitive transitions with an already completed graph.
+9. **Diff re-check.**
+   - review-exec and land re-run activation on the actual diff.
+   - A dropped stage that now activates is reinserted, or land fails.
+   - Security patterns also cover oauth, jwt, rbac, schema files and release workflows.
+10. **Registry owners.** Every stage key has an owner skill that exists, or it leaves the registry in the same change. A tier-1 check fails otherwise.
+    - Six stages have no owner today: `ledger`, `translations`, `evasion`, `demo-asset`, `destructive-migration` and `native-release`.
+    - Six more name skills that are not in the repo: `perf`, `device-proof`, `pricing`, `analytics`, `ab-testing` and `seo-audit`.
+    - `perf` owns the web-probes performance numbers with render and asset patterns, or it leaves the registry.
+    - `device-proof` owns `mobile-occlusion` plus the device diff.
+    - `pricing` points at monetization-architecture.
+11. **Planning mode.** Contract planning stays the default for greenfield and underspecified product requests. It protects 14.71 versus 7.14. Brownfield, bugfix and refactor work with named files gets mvp. mvp-for-greenfield is measured first, on yoga-studio.
+12. **review-plan on trivial work** runs its mechanical pass (`verify-plan-mechanical.sh`) and still emits its record, so refuse mode holds and no skip is added.
+13. **base44-environment** is inserted only when the platform contract detects Base44 (`compile-delivery-graph.mjs:263`).
+
+**UI surfaces.**
+- **App screen:** the state list (LOADING / EMPTY / ERROR, AC trace) inside the brief; design-ui for components and tokens; implement; one track-visuals diff; harden.
+- **Marketing page:** the app-screen flow, then landing-page, with benchmark-landing as its gate.
+- design-logo is on demand. design-ui's `next` matches the split.
+- The UX experience document and the solution templates stay where skill slimming moved them:
+  - `skills/design-ux/references/process.md`
+  - `skills/explore-solutions/references/artifact-templates.md`
+  - `skills/explore-ux/references/templates.md`
+
+**Proof.** `validate-dynamic-chain-scenarios.mjs` asserts the stage set for every traversal in §3 and every path in review 5482813786:
+- the typo gets at most 4 stages and no UX or UI;
+- a payments bugfix with no flag gets review-security;
+- a production product puts personas, e2e and journeys before land;
+- an app screen gets no landing page and no logo;
+- a profile edit changes the list.
+
+`validate-delivery-graph.mjs` also asserts ordering. Today it passes graphs with prerequisites after promotion. Live: todo-CLI and SSO through route-workflow on Haiku, under $2.
+
+### 5.3 Skills
+
+Two full audits read every SKILL.md. Of the dozen or so skills measured, none shows a gain over bare. The two framework wins came from *what "done" means* (yoga 7.14 → 14.71) and *standing rules carried across sessions* (10 → 19/20), not from review. So weight moves from review volume to the done-definition, hardening and memory.
+
+**Cross-cutting fixes, each proven by a tier-1 check.**
+- **X1 Script paths: a launcher that works without hooks.**
+  - Skills move from `node scripts/<name>` to `svc-run <name>` lane by lane, never in one bulk edit. Setup installs `svc-run`. It resolves through `SVC_ROOT`, which SessionStart always exports, and falls back to the install root.
+  - The form names a script, not a layout, so a later layout change is one launcher change.
+  - The validator accepts both forms during the migration and only `svc-run` after it.
+  - A Claude PreToolUse rewrite may later be added as a speed-up. It is allowed only if it produces the same argv as the launcher, and it never ships on a failed parse.
+  - **Acceptance:**
+    - installed-consumer tests for advisory, enforce and repo-off;
+    - Claude, Codex and a hookless host;
+    - an unset root, spaces in paths, an explicit workdir, a local `scripts/` collision, nested invocation, and `cd` before invocation;
+    - the latency added per call is measured on each host.
+  - **When:** Program 2, unless the baseline shows path failures cost the framework arm.
+- **X2 Boilerplate.**
+  - Re-counted at `7b48cc4`: Task-Graph Mode in 85 skills, phase receipts in 79, compaction in 60.
+  - Phase-receipt blocks are deleted with §5.6, not pointed at.
+  - The rest become one-line pointers, in lane batches. Pinned validators are updated in the same change.
 - **X3 Safety bugs:**
-  - `track-topology-diff` snapshots Kubernetes secrets into the repo: redact them.
-  - `research` auto-commits and pushes: remove.
-  - `discover-skills` auto-installs third-party skills: require approval.
-  - `assess-market-readiness` auto-commits: remove.
-  - `compile-delivery-graph.mjs:263` inserts base44-environment on any deploy work: only when Base44 is detected.
+  - `track-topology-diff` redacts Kubernetes secrets;
+  - `research` no longer auto-commits or pushes;
+  - `discover-skills` requires approval to install;
+  - `assess-market-readiness` no longer auto-commits.
 - **X4 Phantom references:**
-  - Skills named that don't exist: mor-vs-stripe, pricing, launch, cro, eks-…, and quick-fix routes.
-  - Lanes 8–12, which exist only in prose.
-  - Hard-coded model names (Veo 3, Sol 6.1, gpt-5.6-luna, Sonnet 4.6) go to registry lookups.
-  - A validator checks that every skill name a SKILL.md mentions exists or is an add-on known to the addon gateway.
-- **X5 Consumer leftovers:** Example Marketplace, the loyalty domain, the Base44 app id, BG jurisdiction, adb/iOS. These move to examples in references or are deleted.
-- **X6 Chain token weight:**
-  - A full chain session loads about 200k tokens of instructions before any code. The bounded subset is about 8–10k.
-  - Each chain skill gets a ≤80-line core that holds only its unique techniques. Everything else moves to on-demand references.
+  - Skills named that do not exist, and lanes 8–12 that exist only in prose.
+  - Hard-coded model names become store lookups.
+  - A validator checks that every skill a SKILL.md names exists or is an add-on known to the addon gateway.
+- **X5 Consumer leftovers:** consumer-specific examples move to reference examples or are deleted. The audit lists them; this public plan does not repeat them.
+- **X6 Chain token weight.**
+  - ≤80-line cores for the chain skills and for design-ux, design-ui and track-visuals; everything else moves to on-demand references.
   - route-workflow's hot path is ≤60 lines.
-  - Measured: tokens per chain session before vs after on the Haiku fresh-project run, with no northstar score loss.
+  - Measured: tokens per chain session before and after, on Haiku, with no score loss. Revision 2's estimates (about 200k for a full chain, 8–10k bounded) are re-measured, not quoted.
+- **X7 execute-changeset stays byte-identical.** A Two-Box executor key is bound to those bytes. A change rotates the key and records a new retained run in the same commit.
+- **X8 Author family from identity, not a default.** craft-prompt, `blind-floor-check.mjs` and `prompt-floor-judge.sh` take the author family from the actual orchestrator, so a same-family review is never certified as independent.
 
-**Per-skill decisions.** Unique techniques are kept. A merged or removed skill gets a removals.md entry (a skill entry also checks it is no longer shipped).
+**Per-skill decisions.** Unique techniques are kept. A merged or removed skill gets a removals.md entry.
 
 | Group | Skills | Decision | Reason / proof |
 |---|---|---|---|
-| **Chain: plan** | plan-changeset | **R** ≤80-line brief core. Keep work-shape classification, the dry-run against disk, the scope-cut ban with coverage matrix (prototype exemption stated), and the test-value inventory. **Add the hidden-requirements "done means" checklist**: the yoga win made explicit (journeys, empty/error states, auth, payments, data lifecycle, phone) | northstar H and P components; plan-task-with-hidden-requirements pillar |
-| | review-plan | **S** Run `verify-plan-mechanical.sh` by default. External review only on irreversible zones or the production profile. Fix rounds 2 vs 3, two Self-Verify sections, the MiMo text | ceiling data; C5 |
-| | review-gate | **Measure first.** Candidate: merge into review-exec. The PR-merge receipt name stays the same: an alias keeps `svc-workflow-guard.mjs:870-935`, `merge-pr-with-review-receipt.mjs` and `lib/pr-review-receipt.mjs` valid. Pinned in `mandatory-delivery-chain.mjs:5`, `validate-mandatory-delivery-chain.sh`, the visual-diff `before:"review-gate"` checks, 7 manifest lanes and 73 other files | The evidence is **PARTIAL**, not no-gain: benchmark-findings.md:17,97 shows 4 secondary findings vs 2. Only after a northstar A/B |
-| **Chain: exec** | execute-changeset | **S** The harden step becomes `scripts/harden.mjs`, a **thin, profile-aware wrapper** over the existing `quality-probes.mjs` (tests, mutation), `web-probes`, `chaos-probe` and the dead-end walk. Prototype: own tests plus a smoke walk. MVP: plus probes. Production: mutation ≥0.6. Triggered by stage conditions (UI → web probes). Delete the 3× "Step 0" and the consumer cost tables | Targets the seed-bot failure. Reuses existing tools; the typo task must stay ≤1.3× |
-| | review-exec | **R** One post-execution review, profile-aware: prototype = self-review plus harden results; mvp = one independent pass through the ladder (§3c); production and zones = lenses plus cross-family. **M** review-cross-model into it. Fix G5/G6 naming and round caps | ceiling 1.2–2.8× cost; C3 measures first |
-| | audit-implementation | **S** Keep the per-AC verification contract. Drop the specialist dispatch (it duplicates the lenses). The post-merge scan moves to verify-promotion | ceiling; subtler-overclaim scenario test |
-| | review-security | **S** Becomes the security lens, triggered by activation `security` (fixes the SSO gap) | scenario test SSO |
-| | land-changeset | **S** One helper call. VERSION/CHANGELOG/coverage only in production. Delete the per-task audit (it duplicates audit). Local-only land for prototypes | — |
-| | verify-promotion | **R** Split `verification: local|live`. Move the test-quality audit (circular tests, expected-value provenance) into harden. Live verification only when a deploy target exists | todo-CLI scenario; refuse-local-for-prod pillar |
-| | route-workflow | **R** ≤60-line hot path: classify, compile, worktree. Closeouts move into scripts | ~44k tokens per session today; routing eval 0.86→0.89 |
-| **Spec/design** | write-spec | **R** ~50-line template plus 3 checks (zero-state AC, vision trace, parseable table). **M** audit-ac into it | no gain at 3.6× |
-| | design-ux | **S** Per-screen LOADING/EMPTY/ERROR plus the AC trace go into the bounded brief by default, triggered by activation `ui` | yoga, northstar P |
-| | design-ui | **S** One design-system artifact. Keep the production-derived mock and test selectors | — |
-| | design-tech | **S** Cost/ops scale with risk. Keep the feasibility matrix, contract map and deprecated-foundation scan | — |
-| | write-journeys | **S** Gap analysis plus the producer→consumer check by default. Drop the approval rounds | hidden-journeys pillar |
-| | write-e2e, test-journeys | **K/S** Fix the work-item path and quick-fix routes. Keep the evidence tiers | — |
-| | track-visuals | **S** One viewport registry. The occlusion/safe-area gate is called from harden for web apps | — |
-| | explore-solutions | **S** Only on one-way-door decisions; no forced 3/5 minimum | — |
-| | explore-ux | **M** → propose-ux-improvements | — |
-| | define-code-style | **M** → design-tech | bare does greenfield conventions |
-| | write-vision, validate-feature | **S** Fix the chain fields. Keep the K1–K7 kill signals | — |
-| **Research/upstream** | analyze-domain | **S** Terms mode is the core. Link its eval. Write consumer output to the project, not the framework | ambiguity n=36 |
-| | analyze-competitors | **S**, **M** catalog-domain-capabilities into it (as a table-stakes checklist) | — |
-| | build-personas | **S** Build and gap modes only. Only for user-facing features when activation `ui` is set | — |
+| **Chain: plan** | plan-changeset | **R** ≤80-line brief core. Keep work-shape classification, the dry-run against disk, the scope-cut ban with its coverage matrix, and the test-value inventory. **Add the hidden-requirements "done means" checklist**: journeys, empty/error states, auth, payments, data lifecycle, phone | northstar H and P |
+| | review-plan | **S** Mechanical pass by default. External review only on irreversible zones or the production profile | ceiling data |
+| | review-gate | **Measure first.** Candidate merge into review-exec, with the PR-merge receipt name kept by an alias. Pinned in `mandatory-delivery-chain.mjs:5`, `validate-mandatory-delivery-chain.sh`, the visual-diff `before:"review-gate"` checks and 7 manifest lanes | Its no-gain label cites an older model's benchmark (§5.5) |
+| **Chain: exec** | execute-changeset | **K bytes** (X7). The harden step is `scripts/harden.mjs`, called by the step and selected by file type: a thin, profile-aware wrapper over `quality-probes.mjs`, `web-probes`, `mobile-occlusion`, `chaos-probe` and the dead-end walk. Prototype: own tests plus a smoke walk. MVP: plus probes. Production: mutation ≥0.6 | the pilot failure where a build passed its own checks and failed in use |
+| | review-exec | **R** One post-execution review, profile-aware. **M** review-cross-model into it | ceiling 1.2–2.8× cost |
+| | audit-implementation | **S** Keep the per-AC verification contract. Drop the specialist dispatch | ceiling |
+| | review-security | **S** The security lens, triggered by the `security` condition (§5.2 step 3) | T4 |
+| | land-changeset | **S** One helper call. VERSION/CHANGELOG/coverage only in production. Local-only land for prototypes | — |
+| | verify-promotion | **R** `verification: local|live`; live only when a deploy target is in the task record. The test-quality audit moves into harden | — |
+| | route-workflow | **R** ≤60-line hot path: classify, write the lean record, compile, worktree | 44k tokens per session today |
+| **Spec/design** | write-spec | **R** ~50-line template plus 3 checks. **M** audit-ac into it, after the AC digest sees later user stories (§5.8) | no gain at 3.6× |
+| | design-ux, design-ui | **S** Under the `ui` flag. The app-screen and marketing-page split (§5.2) | — |
+| | design-tech | **S** Cost and ops scale with risk. Keep the feasibility matrix, contract map and deprecated-foundation scan | — |
+| | write-journeys, write-e2e, test-journeys | **S** One stage each, ordered before land | T3 |
+| | track-visuals | **S** One diff after implementation, under the X6 cap | — |
+| | explore-solutions | **S** Only under `one_way_door`. The 3/5 minimum is deleted | — |
+| | explore-ux | **M** → propose-ux-improvements. The live browse stays opt-in | a network tour on every UI fix otherwise |
+| | define-code-style | **M** → design-tech. It leaves the lane in the same change | — |
+| | write-vision, validate-feature | **S** Under `new_product`. Keep the K1–K7 kill signals | — |
+| **Research/upstream** | analyze-domain | **S** Terms mode is the core. Teach only under `new_terms`. It writes to the product's domain bank (§5.11) | T2 |
+| | analyze-competitors | **S** Under `new_product`. **M** catalog-domain-capabilities into it as a table-stakes checklist; catalog leaves the lane in the same change | — |
+| | build-personas | **S** Build and gap modes only, under `ui` | — |
 | | research | **S** ~60-line question mode. Keep the volatile-fact live re-check. No auto-push. **M** recall-stack-knowledge into it | — |
-| | sync-spec-code, onboard-repo | **K/S** Fix next-skill. No competitor sweep in onboarding by default. **M** audit-coverage into onboard-repo | ceiling |
-| | plan-capabilities | **X** from the brownfield-conversion lane (on demand only). Remove phantom skill recommendations | — |
-| | diagnose-bug | **S** ≤1.5K-word core: classify domain first, SKIP comments, persistence bisect, pattern scan | ceiling at 12× tokens |
-| | audit-feature, align-feature | **R** Ship the branch-enumeration method in the skill. Move align-feature's aspect sweep into review-plan/review-exec. The consumer-specific rest goes to a reference example | — |
-| **Decisions** | decide | **S** Inline the 7 card rules, cut 2/3. **M** discuss-phase into it | both no-gain; hidden-constraint decision test |
-| | strategic-decision | **S** One-file lite mode by default. **M** procurement into it | — |
-| | blind-control-plan | **X from the default path** (the script stays opt-in) | 37× cost for no gain |
-| **Company roles (14)** | cos, comms, counsel, customer-cs, fin-analyst, growth-eng, growth-lead, infra-sre, market-intel, privacy-dpo, product-lead, revops, security-ops, tax-auditor | **M → one `company-role` skill** with role cards as references. cos stays the router | Same template. The owner set a condition ("only if outcomes hold"), so **measure first**: 3 role tasks, separate vs merged, Haiku, $2 |
-| **Builder advisor** | capability-concierge, honest-diagnosis | **M → `builder-advisor`**. Fix the forced ≥3 blockers | — |
-| | capability-registry | **K** as a command | — |
-| | find-opportunity, assess-market-readiness, roadmap-evaluation, stage-revenue, mine-builder, launch-knowledge, manage-finops, monetization-architecture, platform-operating-architect | **K on demand / S**: dated facts get live re-checks with an as-of date. launch-knowledge becomes a knowledge pack. monetization's enforcement audit becomes a review lens for money paths | — |
-| **Marketing/visual** | landing-page, benchmark-landing, design-logo, generate-visuals, analyze-marketing, ad-video-script, produce-ad-video, grow-social, design-sync, reverse-engineer, propose-ux-improvements | **K/S**. design-logo gets a stopping rule and budget. analyze-marketing is made generic. Providers come from the registry | — |
-| **Framework self-improvement** | improve-framework | **S** Owner of the loop (§3e). **M** evolve-framework into it. "Done" requires `promote` for skill-text changes | — |
-| | test-framework | **R** Around outcome-eval, skill-ab-eval, probe-loop and PILLARS | — |
-| | evaluate-rule | **R** Pass 1 runs in a fresh subagent, or it becomes an outcome A/B | — |
-| | create-skill | **S** Requires a capability-coverage row plus a bare A/B before shipping | — |
-| | blend-external | **S**, **M** blend-private into it (`--private`; fix the multi-word leak grep) | — |
-| | ingest-guide | **S**, **M** ingest-guide-batch into it | — |
-| | audit-session-execution, manage-learnings, svc-advisor, teach-project | **K/S**. manage-learnings writes accepted owner rules into CLAUDE.md (the measured mechanism, 19/20) | — |
-| **Infra** | plan-blast-radius, track-topology-diff | **S/R** Triggered by the compiler's infra irreversible-path rule, not phantom lanes. Topology secrets are redacted (X3) | — |
-| **Ops/utility** | list-work-items, sync-work-items, dispatch-waves, craft-prompt, addon-gateway, discover-skills, base44-environment | **K/S**. addon-gateway is wired into route-workflow; discover-skills becomes a mode of it, with approval. base44 becomes an optional platform pack | — |
-| **Remove** | quick-fix (stub), extract-bootstrap, suno-architect, wsl2-audio | **X**. Personal skills move to the owner's personal skill dir, not the framework. Fix the 3 quick-fix references | dead or personal |
+| | sync-spec-code, onboard-repo | **S** sync-spec-code only under `drift`. Onboarding writes the lean flags and stops, or continues into brownfield-feature with them. **M** audit-coverage into onboard-repo | ceiling |
+| | plan-capabilities | **X** from the brownfield-conversion lane: on demand only | — |
+| | diagnose-bug | **S** ≤1.5K-word core. It writes the lean record | ceiling at 12× tokens |
+| | audit-feature, align-feature | **R** Ship the branch-enumeration method. align-feature's aspect sweep moves into review-plan and review-exec | — |
+| **Decisions** | decide | **S** Inline the 7 card rules. **M** discuss-phase into it | both no-gain |
+| | strategic-decision | **S** One-file lite mode by default, computed by the #129 engine (§8). **M** procurement into it | — |
+| | blind-control-plan | **X from the default path**; the script stays opt-in | 37× cost for no gain |
+| **Company roles (14)** | the role skills | **M → one `company-role` skill**, with role cards as references and cos as the router. **Measure first**: 3 role tasks, separate versus merged, Haiku, $2 | owner condition |
+| **Builder advisor** | capability-concierge, honest-diagnosis | **M → `builder-advisor`**. Remove the forced ≥3 blockers | — |
+| | find-opportunity, assess-market-readiness, roadmap-evaluation, stage-revenue, mine-builder, launch-knowledge, manage-finops, monetization-architecture, platform-operating-architect, capability-registry | **K on demand / S.** Dated facts get live re-checks with an as-of date | — |
+| **Marketing/visual** | landing-page, benchmark-landing, design-logo, generate-visuals, analyze-marketing, ad-video-script, produce-ad-video, grow-social, design-sync, reverse-engineer, propose-ux-improvements | **K/S.** design-logo gets a stopping rule and a budget. design-sync is renamed design-bridge (§5.8). Providers come from the store | — |
+| **Self-improvement** | improve-framework | **S** Owns the loop (§5.5). **M** evolve-framework into it | — |
+| | test-framework, evaluate-rule, create-skill | **R/S** Around outcome-eval and skill-ab-eval. create-skill requires a coverage row and a four-arm A/B | — |
+| | blend-external, ingest-guide | **S** **M** blend-private and ingest-guide-batch into them | — |
+| | manage-learnings | **S** It gets the standing-rules write it lacks today; it exports a paste block now (§5.11) | 19/20 |
+| | audit-session-execution, svc-advisor, teach-project, capture-idea, refresh-competitors | **K/S** | — |
+| **Infra** | plan-blast-radius, track-topology-diff | **S/R** Triggered by the compiler's infra irreversible-path rule. Topology secrets redacted (X3) | — |
+| **Ops** | list-work-items, sync-work-items, dispatch-waves, craft-prompt, addon-gateway, discover-skills, base44-environment | **K/S.** discover-skills becomes an addon-gateway mode, with approval. base44 becomes an optional platform pack | — |
+| **Remove** | quick-fix (stub), extract-bootstrap, suno-architect, wsl2-audio | **X** from the install set, not only from the lane lists. Personal skills move to the owner's personal skill dir | dead or personal |
 
-Also covered:
-- capture-idea: **S**. Fix the trigger conflict with intent-routing and the INDEX contradiction.
-- refresh-competitors: **S**. On demand or scheduled; it fetches pricing pages and moves out of the framework lane.
+Every installable skill is either in a lane under a flag or in an on-demand registry the compiler can refuse to start. The net result is 108 → about 77 skills if every merge passes measurement, and fewer merges otherwise.
 
-**Net result:** 108 → about 77 skills if every merge passes measurement, and fewer merges otherwise. Every remaining skill has a coverage row whose status is measured or is "on demand, not in any default path".
+### 5.4 Hooks and speed, at the same quality
 
-**New components (only where a gap blocks the proof):**
-- `scripts/harden.mjs`: the execute harden pack.
-- The hidden-requirements checklist inside plan-changeset.
-- The `company-role` and `builder-advisor` merges.
-- The northstar benchmark.
-- `capability-coverage next/record`.
+Same quality means the same checks, answers and artifacts. Cut repeated work in this order:
+1. **Turns first.** A skipped skill saves a model turn, tens of seconds. Skip these, each only where a run already showed no gain:
+   - the compiled listing (§5.2 step 6) and the lean flags;
+   - the second track-visuals pass without a baseline;
+   - explore-solutions off one-way doors;
+   - logo and landing on an app screen;
+   - review stages on at-ceiling, non-zone tasks, which keep their mechanical record.
+2. **Process starts.** The rule, learning and owner injectors run inside the existing dispatcher process and share its git memo. Targets from `references/hook-budgets.json` (H3), in Node starts:
+   - PreToolUse Edit 14 → 4;
+   - PostToolUse Edit 10 → 2;
+   - Read 4.5 → 1;
+   - Stop 12 → 4.
+3. **Read, Grep and Glob exit early** when the session marker says the path was already injected.
+4. **Byte-stable prefix.** Stable text comes first (CLAUDE.md, the rules index, skill descriptions) and session text last. Nothing is appended to CLAUDE.md. Cache reads are measured on two turns in the same repo, and only the framework's own part is claimed.
+5. **A native client last.** The Go client to a warm Node handler (`docs/decisions/2026-10-10-speed-and-defaults.md`) comes only after H3 is measured.
+   - **Acceptance:** the same captured inputs go through old and new. Decisions, stdout/stderr, statuses and filesystem effects must match. This covers policy changed between requests, concurrent callers, daemon death, ambiguous timeouts, malformed payloads, symlinked worktrees and unsupported hosts.
+   - **Adoption** is decided on full-event p50/p95 and cumulative task time in a UI-sized edit session (edits × p50), not on one Edit sample.
 
-No new skills beyond the two merges.
+**Measurement hygiene.**
+- `hook-bench` sanitises `SVC_REPO_MODE`, `SVC_DISABLED_HOOKS` and `SVC_HOOK_PROFILE`, and fails on child failures, before any number is used.
+- **Fail-open counter.** Any fail-open path increments one file under `.svc`, recording the hook name and the error class. The exit code is unchanged, and no rule text is printed. The cockpit shows the count.
+- **Memory recall.** A newer correction supersedes the advice it corrects. Caches are keyed by what they prove.
+- **Tier-1 runner.**
+  - In-shell timing replaces the two clock-only Node launches per validator (878 a run).
+  - task-graph load shares repository discovery (15 git calls → 5).
+  - Reconcile invalidation is dependency-specific.
+  - Mutation candidates run in private copies in parallel.
+  - None of this touches the measured arm.
 
-### 3b. Delivery chain and stage selection (the dynamic chain the framework already had)
-Wire the existing parts. Add no parallel module (the rejected `stage-conditions` is in removals.md).
+**Not for speed:** shortening a skill whose moved template is what the step checks; dropping harden, the hidden checks or the occlusion probe; a Go port before H3 is measured. The hook-daemon permission rule stays the owner's call. It is asked once, with the measured gain.
 
-1. **Activation becomes a library (R).** `scripts/stage-activation.mjs` exports `evaluateActivation({registry, scope, profile})` behind an `__svcIsMain` guard. Its import-time `fail()`/exit path (:221-238) becomes a thrown error, so the compiler can load it. The CLI stays the same.
-2. **Conditions (S).** Add `DEFAULT_CONDITIONS` entries for `ui`, `user-flow`, `security`, `live-proof` and `compliance`, and set them in `references/stage-registry.json` where the condition is now `null`.
-   - Patterns match code and config extensions only, never docs about them.
-   - `security` matches auth, payment, secret, crypto and migration paths and the flags `auth`/`auth-sensitive`. This unifies the vocabulary and closes the SSO gap.
-   - **One commit, condition first:** add the `security` condition, point the registry stage at it, then add `security` to prototype `conditional_stages`. Landing the keep-list first would bring back the no-op the current head just removed.
-   - A tier-1 case checks two diffs. A prototype diff under `android/` or an auth path keeps `security`. A docs-only diff does not.
-3. **The compiler reads activation (R).** `compile-delivery-graph.mjs` starts from the lane's skills as today.
-   - When planned files are known, it calls `evaluateActivation`.
-   - It drops a non-chain skill only when every registry stage mapping to that skill is `na`/`deferred` (this handles the shared skills qa-companion/test-run → test-journeys and device/visuals → track-visuals).
-   - Dropped skills go to `skipped_skills` with their condition.
-   - The result is stored as `delivery_graph.stage_activation`.
-   - With no scope yet, the stage stays in.
-4. **Plan-time narrowing (S).** plan-changeset re-runs the same compile with `--existing-graph --planned-files`. `applyExistingGraph` widens its "drop unstarted research" rule to "drop unstarted non-chain tasks now inactive", recorded in `mutation_history`.
-4b. **Diff re-check, because planned files are the author's own claim (review M6; removals.md:37-44):**
-   - review-exec and land re-run `stage-activation --diff` on the actual diff.
-   - A dropped stage that now activates is re-inserted, or land fails.
-   - The security patterns also cover oauth, jwt, rbac/permission, Prisma/SQL schemas and `.github/workflows` release files.
-5. **Fixes found by simulation (direct fixes):**
-   - `planningMode` with no profile stays **contract for greenfield and underspecified product requests**. This protects the measured 14.71 vs 7.14 win.
-   - It becomes mvp for brownfield-feature, bugfix and refactor work with named files.
-   - The mvp-for-greenfield variant is measured first, on yoga-studio (review M5).
-   - Personas, e2e and journeys are ordered before land in every mode.
-   - `verify-promotion` gets `verification: live|local`: local when nothing is deployed, keeping its receipt.
-   - review-plan on trivial work runs its **mechanical pass** (`verify-plan-mechanical.sh`) and still emits its receipt, so refuse mode holds and no skip is added. The dead skip id is removed from the registry, with a removals entry.
-   - The overengineering chain score reads `stage_activation` (it is always 0 today).
-   - route-workflow step 6 and plan-changeset give the exact commands.
-6. **Ledger row 18** goes back to partial with live evidence; it returns to done only after item 7.
-7. **Proof:**
-   - `validate-dynamic-chain-scenarios.mjs`: the 9 simulated tasks plus 3 edge cases, asserting the stage set for each. Examples: the typo gets ≤ 4 stages and no UX/UI; SSO includes review-security; the todo-CLI prototype gets local verify; the backend limiter gets no UI stages.
-   - Live Haiku runs of todo-CLI and SSO through route-workflow, under $2.
+### 5.5 Evals and the improvement loop
 
-### 3c. Reviewers and agent slots (owner asks 79 and 85, both unmet)
-1. **Slots are data, not code (R).** Every agent dispatch (plan, exec, each review station, lens, judge, scout) resolves through `resolve-dispatch.mjs` using its **existing** layers only: the framework default (`resolve-dispatch.mjs:421-428`), then the owner `~/.svc/dispatch-policy.json`, then the protected `--work-overlay` (planner per WI), then the receipt-gated `--session-override` (orchestrator per stage) (:819-822).
-   - **No layer an agent can write ranks above the owner.** That is the design rejected in removals.md:10-17, and it stays rejected.
-   - The gap is coverage, not layers: skills and agents with hard-coded models or effort bypass the resolver.
-   - Proof: `validate-slot-config.mjs`, written test-first. It greps skills, agents and rules for hard-coded model or effort and finds none outside the registry. For each slot it shows that the owner file, the work overlay and the session override each change the resolved harness, model and effort without code changes. Overrides are recorded in the receipt.
-2. **Reviewer ladder (build the revised decision, `docs/decisions/2026-10-11-reviewer-ladder.md`).**
-   - **No probe and no cache as evidence** (removals.md:28-35, forgeable). The launcher tries the other family. Its signed failure receipt is the only proof that allows the fallback. A cached status may only hint at routing order.
-   - Fallback when no other family is available: the same family's top pinned model at effort ≥ high, in plan mode, with a tree-unchanged check. It is labelled `same-family`, capped at 2, and never authorises promotion alone.
-   - Opus high reviewing Sonnet or Haiku work is exactly the owner's example.
-   - Plan, exec and general review all use the same ladder.
-   - Proof: tests for each rung, written first (no-other-family, other-family-down, same-family cap), plus one live Haiku-exec / Opus-review run.
+One loop, owned by improve-framework.
+1. **Pick.** `capability-coverage next` takes the highest-traffic component that is unmeasured or no-gain. After a model release, decaying components go first (§2a).
+2. **Repair the instruments first.**
+   - The three A/B graders that accept empty substance are fixed.
+   - `skill-ab-eval` stops returning earns-keep from one failed bare run against one passing skill run. Incomplete evidence never recommends keep.
+   - Evidence labels are bound to the measured candidate and model.
+3. **Four arms** on priority skills:
+   - the native harness;
+   - native plus the minimal output contract;
+   - the thin skill;
+   - the current full skill.
+4. **Vary, contained.** probe-loop variants (rewrite, simplify, merge, remove) run only after containment:
+   - checks run inside the worker sandbox;
+   - ownership is inspected after the checks;
+   - result contents are bound;
+   - destination ancestry is validated without following escaping links;
+   - the full result is preflighted before any write.
 
-### 3d. Hooks and runtime
-- Done this PR: 9 → 4 processes on Edit (5eabc6a).
-- **Native front door (N, Go).** The Go hook client exists only in the scratchpad. Bring it in only if its benchmark in the repo shows a lower p50 per Edit than the single-process Node injector (289 ms) by more than 100 ms. Otherwise record it in removals.md as measured-no-gain.
-  - Measured with `hook-bench.mjs` before and after.
-  - The decision goes in removals or the ledger. Either way, ledger row 3 is corrected (it now overstates "built").
-- **Hook-daemon permission rule:** stays not done. It changes permission settings, which is the owner's call. I will ask once with the measured gain.
-- **5.5-era caching order (owner ask 89, never addressed) (S).**
-  - Order the always-loaded content stable-first (CLAUDE.md, the rules index, skill descriptions), then per-session content (the root context hook), so the prompt cache prefix stays byte-stable.
-  - Move the SessionStart dynamic text to the end and keep it tiny.
-  - Proof:
-    - A check that the framework-controlled static prefix is byte-identical across two sessions **in the same repo**.
-    - The cache-read share is measured on two Haiku sessions with `usage.cache_read_input_tokens`.
-    - The harness controls the overall order, so only our own part is claimed.
+   A broken checker stops the experiment instead of condemning candidates.
+5. **Adopt.** `northstar decide` for the north star; `compareSamples` with its interval above 0 for single components. No point estimates. `capability-coverage record` stores the result.
+6. **Check fast.**
+   - trace-check-deps drives the existing focused mode.
+   - Selection keeps the deleted side of a rename.
+   - `references/check-deps.json` is committed.
+   - A recall check replays known breakages.
+7. **Migrate pending graphs** when a skill is merged or renamed.
+8. **Isolation.** `worktree.sh` defaults to HEAD on feature branches. In-repo evals use run-scoped git config and never write the repo's own (T11).
 
-### 3e. Evals and the self-improvement loop (asks 33, 90, 92)
-One loop, owned by `improve-framework`. `evolve-framework` merges into it, with a removals entry and a redirect stub if referenced.
-1. **Pick:** `capability-coverage.mjs next` takes the highest-traffic component that is unmeasured or no-gain.
-2. **Mode:**
-   - A clear fix is a direct rewrite, proved by tier-1.
-   - Uncertain value goes to measurement.
-3. **Measure (new flag):** `skill-ab-eval.mjs --variant <path>` against the current version and bare, on Haiku, on a **dev** northstar task slice.
-4. **Vary:** `probe-loop.mjs` runs variants in parallel: rewrite, simplify, merge, remove.
-5. **Adopt (new):** `northstar decide` uses the `compareSamples` bootstrap CI. A win requires the CI lower bound above 0, not n=3 "solves more". The winner is written. `capability-coverage.mjs record` (new) stores the measurement. A removal writes its removals.md entry.
-6. **Check fast:**
-   - `trace-check-deps` becomes the engine of the **existing** focused mode (`SVC_TIER1_MODE=focused`, `select-tier1-validators-v2.mjs`). The old engine gets a removals entry. No second selector.
-   - `references/check-deps.json` (now untracked) is committed.
-   - A recall check replays today's 7 breakages and requires each would have been selected.
-   - The full suite runs once per batch and in CI.
-7. **Parallel:** `worktree.sh` defaults to HEAD on feature branches, so agents never start from a stale base.
-8. Fix `improve-framework`'s call to the nonexistent `test-framework --replay`.
+### 5.6 Receipts become three invariants, checked at transitions
 
-Proof: one full loop iteration run live on a real target, in under 15 minutes for a clear fix.
-
-### 3f. Cockpit
-- **K:** the live cockpit (2ddd5bf).
-- **S:** add a north-star panel that reads the benchmark results JSON.
-- Remaining cockpit asks (goal cards, pitch deck, portal, voice, multi-runtime) are **deferred**. They do not move the proof, so they stay open in the ledger with that reason.
-
-### 3g. Proportionality cuts (weakening allowed when reasoned; each one is recorded)
-| Cut | Protected | Evidence | Mode |
-|---|---|---|---|
-| C1 mvp is the default for brownfield, bugfix and refactor with named files; greenfield stays contract until measured | over-planning small work | the typo got 15 stages; yoga win protected | direct for non-greenfield, measure for greenfield |
-| C2 docs-only changes run at light depth (no UX/UI/spec) | waste | simulation | direct |
-| C3 one combined review on small work with no zone | review cost | PILLARS: review stages bought nothing at the small-task ceiling | measure first: northstar task 6 and task 3, $4 |
-| C4 trimmed review-exec/review-plan prompts | tokens | pillar svc prompts cost 1.2–2.8× for no gain | measure, $3 |
-| C5 review-plan on trivial work = mechanical pass with receipt | latency | ceiling data; refuse mode kept | direct |
-| C6 doc paths are not irreversible zones | false full-depth | simulation | direct |
-
-**Not cut:**
-- Contract planning for underspecified products (14.71 vs 7.14).
-- The three invariants (plan reviewed before exec, merge only a reviewed tree, tier-1 green on that tree), enforced at transitions and in CI (§3j).
-- Full depth on zones (auth, money, data, deploys, secrets).
-- Refuse mode, redefined as "invariant 2 required in CI" (§7 R-B1).
-
-### 3i. AI harness router: a skill that grows and routes each task to the best harness, model and effort (owner ask, 10/11)
-
-**What exists.**
-- `scripts/route-model.mjs` (308 lines) already does the hard part:
-  - a ladder per task type in `references/model-intel/priors.json`;
-  - an expected-cost-per-completed-task pick: `E(i)=c(i)+(1-p(i))(penalty+E(i+1))`;
-  - Beta posteriors after a minimum number of samples;
-  - a reset when a new model id appears behind an alias;
-  - escalation by failure kind.
-- **But:**
-  - it is Claude-only;
-  - nothing calls `record` automatically: the call is documented only in a route-workflow reference, so it never learns;
-  - it isn't joined to `resolve-dispatch.mjs` or `harness-playbook.json`;
-  - its choice is never written onto the task.
-
-**Design. Extend, don't add.**
-1. **Arms become harness × model × effort.** Candidates are only the harnesses `harness-playbook.json` lists for the role (exec, review, analysis) that the owner policy allows. `resolve-dispatch` stays the authority on what is allowed; route-model picks the cheapest expected arm inside that set.
-2. **It learns automatically, at zero tokens.**
-   - The transition hook (the same one that replaces receipt bookkeeping, §3j) records each task's arm, outcome, tokens, cost and wall time.
-   - The outcome is the task's deterministic check: tests pass, the review verdict, or the harden result.
-   - Outcome-eval and northstar runs also record their arms.
-3. **It stays fresh.** `harness-drift.mjs` detects new models and harness versions. The new id starts from the prior, so cheaper rungs get retried after each release. The `research` skill refreshes priors from sourced benchmarks with an as-of date (in `SOURCES.md`).
-4. **Availability.** When quota runs out, the `run-external-review` error classification marks that harness unavailable for its reset window. The next pick moves to the next allowed harness (e.g. Codex or Grok for exec). This is the cockpit's multi-harness failover.
-5. **Written onto the task.** The pick (harness, model, effort, expected cost, estimate) goes into the task in `lane-tasks`. The cockpit shows who works on what with which model and effort.
-6. **Skill.** One thin `route-ai` skill (≤60 lines):
-   - "why this model" explanations;
-   - an owner override;
-   - `stats` for which arm wins per task type;
-   - a "teach it": the owner records a preference.
-   - It wraps the script and replaces nothing else.
-   - The hot path calls the script directly, never the skill.
-
-**Proof.**
-- **A replay test over the recorded outcomes:** the learned policy's regret is lower than a fixed policy's.
-- **Unit tests:**
-  - availability failover;
-  - the prior reset on a new model id;
-  - owner-policy bounds are never exceeded.
-- **Live:** 10 small Haiku/Sonnet tasks. The router learns to pick the cheaper arm where pass rates are equal, with the cost saving measured.
-
-### 3j. Receipts: rebuilt as automatic checks at transitions, three invariants, ~0 tokens (owner ask, 10/11)
 **What the audit found:**
-- **Size:** about 8,000 lines over 29 files, with 61 tier-1 validators pinning it.
-- **Self-attestation:** 487 `record-phase` commands across 80 skills only record a path string; nothing checks that the evidence exists.
-- **Model-written JSON:** exec-record, audit-implementation and verify-promotion are model-written JSON with only presence checks.
-- **Cost:** about 10–20k output tokens per chain (estimated), about 14 git spawns per emit, and a hook that re-reads 1.3 MB of lane-tasks on every Edit.
+- **Size:** about 8,000 lines over 29 files, pinned by 61 tier-1 validators.
+- **Self-attestation:** 487 `record-phase` commands that check nothing.
+- **Model-written JSON:** exec-record, audit and verify are model-written JSON with presence checks only.
 - **History:**
-  - 78 of 156 commits had no receipts, so a backfill project was needed.
-  - A validator passed everything for months.
-  - A 1-file quick-fix receipt was promoted onto a 26-file commit.
-  - At least 4 logged bypasses (hooksPath=/dev/null and others).
-  - At least 4 false blocks: a false 166-row debt, a stale cache, a false phase red, probe output.
-  - About 20 work items were spent on the system itself.
-  - **0 documented product defects caught by receipts.** The *reviews* caught defects; receipts recorded them.
-- **Enforcement:** in practice, nothing. Hook mode defaults to advisory, notes are often not fetched (this clone holds 0), and CI has no receipt check.
+  - at least 4 logged bypasses and at least 4 false blocks;
+  - about 20 work items spent on the system itself;
+  - **0 documented product defects caught by receipts.** The reviews caught defects; receipts recorded them.
 
-**Keep exactly three invariants. Each is checked by a script at the moment it matters:**
-1. **The plan was reviewed before execution.** `task-graph set-status <first exec task> in_progress` refuses unless the WI has a launcher-issued review-plan verdict: the mechanical pass on trivial work, an independent review on zones and production.
-2. **Merge only a reviewed tree.** A passing review-exec verdict from the launcher (or the ladder, §3c), whose reviewed tree equals the PR head tree.
-3. **Tier-1 is green on that tree.** This is CI already.
+**Three invariants:**
+1. **The plan was reviewed before execution.**
+2. **Merge only a reviewed tree.**
+3. **Tier-1 is green on that tree.**
 
-**Mechanism: one script, `stage-close`, about 150 lines.**
-- **Trigger:** `task-graph set-status done` and `set-status in_progress` call it. No model is involved.
-- **What it records:**
-  - git facts: tree, diff hash and files, derived from git rather than written by the model;
-  - the stage's machine artifact, if it has one: the launcher verdict hash or the tier-1 log;
-  - one line in `.svc/transitions.jsonl` keyed `{wi, stage, tree}`.
-- **What it checks:** the predecessor's record. It fails *at that transition*, so problems are caught on time, not at push.
-- **Router and cockpit:** it also writes the outcome, cost and time to the router (§3i) and the cockpit (§3k).
-- **Durable proof:**
-  - The launcher writes its verdict as **one** note kind on the reviewed commit, and `stage-close` pushes it.
-  - A **CI job** (new, in `ssve-checks.yml`) fetches that note and checks invariant 2 against the PR head tree.
-  - When a GitHub token is available, the launcher also posts a commit status `ssve/review`, so branch protection can require it.
-  - Squash merge keeps the tree, so the check survives.
+**Mechanism: `stage-close`, about 150 lines,** called by `task-graph set-status`.
+- **It records:**
+  - git facts derived from git, not written by the model: the tree, the diff hash and the files;
+  - the plan digest, the scope and policy version, the attempt and predecessor identity, and the trusted issuer;
+  - the stage's machine artifact.
+- **It checks** the predecessor's record and fails at that transition.
+- **It feeds** outcomes to the router (§5.10) and the cockpit.
 
-**Delete:** each removal gets a removals.md entry with this evidence and a reintroduction pattern.
-- Phase receipts: 487 commands, the autoemit hook, the phase enforcement, `phase-receipts.md`, and the phase checks in `completed-task-integrity`.
-- Model-written receipt JSON: plan-manifest as a receipt (the plan stays as the plan), exec-record, audit-implementation, verify-promotion.
-- `emit-receipt.mjs`: both the double validation and the 14-spawn note path.
-- Post-commit promote, the mirror, aliases and staging.
-- The low/full tiers, skill-coverage, and the reconcile range scans.
-- Retroactive attestation becomes a frozen, read-only history.
-- `chain-policy` merges into the one hook mode.
-- The story-receipts doc load.
-- About 45 of the 61 validators. The other ~16 are rewritten around the three invariants.
-- CLAUDE.md's chain section is rewritten to match.
+**Durable proof:**
+- **Verdict ref.** The launcher writes one verdict at `refs/svc/review/<tree-sha>`. A failed push fails loudly.
+- **Fallback transport.** Step 0 proves the push path accepts non-branch refs. If it does not, the verdict goes as a JSON file in a PR comment.
+- **CI check.** A CI job checks the merge candidate's tree and base against the reviewed tree. Squash keeps the tree only when the base has not moved.
+- **Commit status.** When a GitHub token is available, the launcher posts `ssve/review`.
+- **Provenance.** Local CI checks the binding and the shape, not the author. Real provenance needs a review job that runs trusted base code with an owner-held secret. Fork PRs get no secret. Until that exists, the check is labelled "binding only".
 
-**Weakening, grounded:**
-- What is removed has 0 documented catches and at least 8 false blocks or bypasses per real catch.
-- Everything that did catch something (the reviews) stays, and becomes harder to bypass: CI plus a commit status instead of local advisory hooks.
+**Migration:**
+- **Refuse mode** means "CI invariant 2 is required and the invariant-1 transition check blocks".
+- **Consumers re-keyed in the same change:**
+  - `run-external-review.mjs:946-962`;
+  - `scripts/lib/pr-review-receipt.mjs`;
+  - `merge-pr-with-review-receipt.mjs`;
+  - `lib/plan-manifest-contract.mjs:57-66`;
+  - `prepare-plan-handoff.mjs:54-69`;
+  - stage-segment.
 
-**Proof:**
-- **Negative tests, written first:**
-  - exec before the plan review is refused at the transition;
-  - a PR whose head tree differs from the reviewed tree fails CI;
-  - a self-written verdict without launcher evidence fails;
-  - a quick-fix record applied to a different tree fails.
-- **The PR #127 workflow** still lands through the new CI check.
-- **Measured,** on the Haiku fresh-project run before and after:
-  - receipt tokens per chain;
-  - process spawns per Edit;
-  - wall time.
+  The `svc-workflow-guard.mjs` merge gate also matches the MCP merge.
+- **Bypasses closed.**
+  - The lane-tasks validator hook and CI also run invariant 1.
+  - `assertExecuteChangesetReceipts` and `assertCanonicalReceiptCompletion` are rewired.
+  - `skill_receipt.loaded_at` stays for the cockpit.
+- **Consumers.**
+  - `svc init-ci` ships a reusable workflow.
+  - An enforce-mode consumer keeps its enforcement until its replacement workflow, required check and secret exist.
+  - `check-chain-receipts --read-only` stays.
+- **The exempt class** is computed from the diff, never declared.
+- **The compiler schedules** review-plan and review-exec, not the receipt hook.
 
-  The target is about 0 receipt tokens, with no hook re-reading lane-tasks per Edit.
-
-**Order:**
-- **Wave 1 F:** `stage-close`, the CI job and the negative tests, run side by side with the old system.
-- **Wave 2:** after one green PR through the new path, delete the old system in one serial batch. This also replaces the X2 phase-receipt "pointer" step: those blocks are deleted, not pointed at.
-
-### 3k. Cockpit: one entry point that steers everything (owner ask, 10/11)
-**Today.**
-- Three UIs: `live.html` is read-only; `cockpit.html`'s steer box is never read; the Orchestrator OS pane steers only workers.
-- Two unjoined data models: lane-tasks and `orch/status.json`.
-- Three skills send questions to a box nobody reads.
-
-**Design.**
-- **One model: `scripts/cockpit-state.mjs` becomes the single read model.** It joins:
-  - projects from `~/.svc/projects.json` via `cross-project-state.mjs`;
-  - goals, milestones and "needs you" from `orch/goals.mjs set-summary`;
-  - phases and tasks from `.svc/lane-tasks-*.json`;
-  - harness, model, effort, estimate and cost per task, written by the router (§3i) and the transition hook (§3j);
-  - workers from `orch/collect.mjs`;
-  - capacity from `parallelism.mjs`.
-- **What the view shows:**
-  - **Plan deviation:** estimate vs elapsed time and cost; a task re-run more than once; a stage inserted or dropped against the plan.
-  - **Why blocked:** classified from `blocked_reason` plus the transition-hook verdict.
-- **One UI.** `templates/cockpit/live.html`, served by `cockpit-serve.mjs` (with live push) and rendered by the shared `overview.mjs` (no LLM calls):
-  - a box per project showing its goal and status;
-  - expanding a box shows the workflow diagram: goal → phases/milestones → tasks, with who works on each, plus the queue, what remains, what's needed from the owner, why it's blocked, and any deviation.
-- **Steering that arrives.**
-  - `cockpit-serve` gets one authenticated POST `/api/steer`. It uses a localhost-only token from `~/.svc` and goes through `orch/dispatch.mjs steer`.
-  - It targets either a worker or the project's orchestrator session (via `sessions.mjs` / SendMessage).
-  - An "ask" box answers questions from the read model with a cheap model (Haiku, chosen by the router). It never mutates anything.
-  - The three skills that told agents to use the old box now use `cockpit ask-owner`, which writes a "needs you" item the view shows.
-  - Voice is deferred, with the reason recorded in the ledger.
-- **Removals, each with a removals.md entry:**
-  - `cockpit.html` and `cockpit-protocol.md`'s unimplemented loop;
-  - `orch/serve.mjs` (replaced by the one UI);
-  - `render-status.mjs`;
-  - the deprecated `fanout.sh` and `dispatch-worker.sh` (`orch/dispatch.mjs` replaces them).
-- **Multi-harness.** Failover comes from the router (§3i). Workers run on codex, cursor/Grok, claude or agy through `orch/dispatch.mjs`.
+**Delete after Gate C (§6), each with a removals.md entry:**
+- phase receipts, with their hook and checks;
+- model-written receipt JSON;
+- the `emit-receipt.mjs` note path;
+- post-commit promote, the mirror and aliases;
+- the low/full tiers and the range scans;
+- `chain-policy`, merged into the one hook mode;
+- about 45 of the 61 validators, with the rest rewritten around the invariants;
+- the CLAUDE.md chain section, rewritten.
 
 **Proof.**
-- `validate-cockpit-live.mjs` is extended so a fixture with 2 projects renders boxes, the expanded diagram, needs-you items and a deviation.
-- A steer POST without the token gets 403. With the token, the message reaches a fake worker and a fake orchestrator.
-- Ask answers come only from the read model.
-- Live: steer a running Haiku worker from the page.
+- **Negative tests, written first:**
+  - exec before the plan review;
+  - head tree differs from the reviewed tree;
+  - a self-issued verdict;
+  - a changed plan;
+  - the wrong WI;
+  - a quick-fix record on another tree.
+- **A fresh consumer** with no legacy notes completes prepare → review → execute → review.
+- **An enforce consumer** without the replacement CI keeps its enforcement.
 
-### 3l. Founder layer: marketing context, formulas, design system, Claude Design (owner ask, 10/11)
-**Today.**
-- Founder skills write good artifacts, but delivery barely reads them: `plan-changeset`, `write-spec` and `execute-changeset` never read marketing context.
-- Formulas are prose. Readiness contradicts itself (moat ×20 vs ×10). CAC is defined wrongly (cloud cost ÷ MAU).
-- Tokens live in 3 homes and 2 formats; motion in 4 homes.
-- The registry's `pricing` and `ab-testing` stages point to skills that don't exist.
-- The marketing activation reads the framework's own capabilities file.
+### 5.7 Cockpit
 
-**Design.**
-1. **One founder context file: `docs/specs/founder-context.md`.** Fixed sections: ICP/personas, positioning, claims with evidence, voice, pricing tiers and gating, north-star metric and funnel targets, and pointers to the design system and tokens.
-   - `analyze-marketing`, `monetization-architecture`, `design-logo` and `grow-social` write their own sections.
-   - The legacy `.agents/` write is dropped.
+**Read model.** `cockpit-state.mjs` is the single read model. It joins:
+- projects;
+- goals and "needs you";
+- lane-tasks phases;
+- the router's harness, model, effort and cost per task;
+- workers;
+- capacity.
+
+**What a person sees.**
+- **One sentence when nothing is asked:** "Booking screen is in progress. Nothing needed from you." The chat reply and the card use the same sentence, written by the read model.
+- **A feed only where it is needed:** one line per actionable change (needs you, blocked, stalled, over the estimate, goal finished). Five lines are visible.
+- **The card is the high-level view:** goal, one status word, and one fact. The diagram, workers, cost and deviation are one click in.
+- **Updates are deltas:** "2 finished, 1 needs you". A stage finishing is a row in the open card, not a toast.
+
+**Security, now.**
+- The token covers the existing GET routes and the event stream, not only a future POST.
+- It comes from the fragment the terminal prints.
+- A wrong token gets the same response as an unknown path.
+
+**Steering.**
+- One POST `/api/steer` with:
+  - a Host allowlist;
+  - an exact Origin match;
+  - a JSON content type;
+  - a constant-time compare;
+  - `expected_attempt`/`expected_session`.
+- Steers are prompts carrying the worker's permissions. Orchestrator steering goes through a queue file that a hook injects at the next turn.
+
+**Also on the card.** The fail-open count, which bots are on, and whether company briefing is on for each.
+
+**Removals:**
+- `cockpit.html`;
+- `orch/serve.mjs`;
+- `render-status.mjs`;
+- `fanout.sh`;
+- `dispatch-worker.sh`.
+
+**Proof.** `validate-cockpit-live.mjs` fixtures:
+- one running project renders one sentence and no toast;
+- a blocked project renders one question;
+- five projects render five cards and a feed of only the ones that need a person;
+- GET and POST without the token get the unknown-path response.
+
+### 5.8 Founder layer
+
+1. **`docs/specs/founder-context.md`**, in the product repo, with one owner skill per fact. Its sections:
+   - ICP;
+   - positioning;
+   - claims with evidence;
+   - voice;
+   - pricing;
+   - funnel targets;
+   - pointers to the design system.
 2. **Delivery reads it.**
    - plan-changeset and write-spec take it as input.
-   - The plan brief gets a **Founder Trace** (persona, claim touched, pricing tier, tokens used). `validate-plan-contract.mjs` requires it on user-facing work.
-   - Activation gets conditions `claims-marketing` and `priced-surface` that read the **product's** founder context.
-   - The registry's `pricing` owner becomes `monetization-architecture`. The `ab-testing` stage is served by the formulas below.
-3. **Formulas you can run: `scripts/founder-metrics.mjs`.**
-   - LTV (ARPU × gross margin ÷ churn), CAC (S&M ÷ new customers), payback, LTV:CAC, burn multiple, runway and default-alive, NRR/GRR, quick ratio, funnel chain, K-factor, A/B sample size, bottom-up TAM/SAM/SOM, Van Westendorp price range.
-   - The existing readiness, opportunity and BPS scores are made consistent: CAC and moat fixed, each weight labelled as an assumption.
-   - Inputs come from `company-state/metrics.jsonl`, each with its source and an A–D evidence grade.
-   - One tier-1 test per formula against published reference values.
-   - The skills call the script instead of doing the maths in prose.
+   - A Founder Trace is required on user-facing work when the file exists.
+   - The activation conditions `claims-marketing` and `priced-surface` read the product's own file.
+3. **Formulas you can run.** `scripts/founder-metrics.mjs` covers:
+   - LTV;
+   - CAC;
+   - payback;
+   - LTV:CAC;
+   - runway and default-alive;
+   - the funnel chain;
+   - A/B sample size.
+
+   Inputs come from `company-state/metrics.jsonl`, each with an evidence grade. The finops "CAC" is renamed cost-to-serve. Each formula is tested against a sourced worked example. The #129 engine reads these outputs; there is no second formula set (§8).
 4. **One token spine.**
-   - DTCG `docs/specs/ui/tokens.json` is canonical. Motion lives in it as `motion.duration.*` and `motion.easing.*`. Logo colours merge into it.
-   - `design-tokens.mjs` converts to and from Claude Design's list format.
-   - `lint-w3c-tokens.mjs` and a fixed motion validator (multi-file, token-based) run in harden for UI work.
+   - DTCG `docs/specs/ui/tokens.json` is canonical.
+   - Motion round-trips through the token file.
+   - The storyboard continues to `produce-ad-video` only under the ad flag.
 5. **Claude Design.**
-   - Rename the framework's `design-sync` skill to `design-bridge`, so it can't shadow a built-in `/design-sync`.
-   - On Claude: pull tokens through the built-in when it's present, run a contrast check, then lint. The Claude Design canvas is the visual handoff for landing-page and storyboards.
-   - **"Claude Motion" is not in the repo.** I verify against current Claude docs whether such a surface exists before wiring it. If it doesn't, motion stays tokens plus framer-motion, recorded in the ledger.
+   - The framework's `design-sync` becomes `design-bridge`, in the serial integrator batch, so it cannot shadow the built-in.
+   - It is the visual step only under `claude_design` (§5.2).
+   - Other harnesses use design-ui files only. The canvas is never called on them, and the skill is never renamed there.
+6. **Document correctness.**
+   - The AC digest must see later user stories. This is fixed before the done-definition is measured (§6, P1.3).
+   - Semantic document changes are never classified as cosmetic.
+   - "Implemented" is not "available" in marketing claims.
 
-**Proof.**
-- Formula tests.
-- A plan-contract test: user-facing work without a Founder Trace fails.
-- Activation scenarios: a pricing-page change inserts monetization-architecture.
-- The northstar yoga task scores claims and pricing consistency through the judge.
+### 5.9 Harness knowledge store
 
-### 3h. Owner asks without a component yet (tracked, not silently dropped)
-Each stays in the ledger with a status and reason:
-- Private repo per eval run: blocked by GitHub 403. The remedy is to grant the Claude GitHub App "Administration: write" on the shipwithstef account, or for the owner to create the repos. I will tell the owner.
-- Learning quiz results: commit them to the quest results JSON and PILLARS (direct).
-- Finops, game economy and artwork checks: these become S/P probes in the northstar game task.
-- Managed Agents workflows, meta-harness, fleet 14→1, conversion loop, paid upgrades, 016U3 alignment, harness-agnostic boxes, constrained vs free path: deferred until the north-star proof passes. The ledger says so explicitly.
+- **Store.** `references/model-intel/`:
+  - `models.json` is extended to every family the playbook launches.
+  - A new `harnesses.json` holds, per harness:
+    - the version probe;
+    - argv templates per role (exec, review, analysis);
+    - capability flags (hooks, skills dir, rule injection, subagents, sandbox modes, Design built-in);
+    - the governance fields (§5.12);
+    - quirks.
+  - Every fact is `{value, as_of, source}`.
+- **Generated, not hand-edited.** These are derived from the store:
+  - `model-registry.json`;
+  - `priors.json` model aliases;
+  - `harness-playbook.json`;
+  - `harness-baseline.json`;
+  - `provision/hosts` fragments;
+  - the dispatch argv.
 
-## 4. Order and parallelism (revised: prove, then build; owner review options 1 + 2, with the gates of option 4)
+  `model-intel derive --check` fails when a derived file was edited by hand.
+- **First step, read-only.** `model-intel check` joins the seven sources and reports where they disagree (T5–T7). It ships before any consolidation.
+- **Drift.**
+  - `harness-drift` covers every installed harness, and the playbook flag verify runs in the same pass.
+  - Machine-local observations, with `as_of`, are written under `~/.svc/`.
+  - A scheduled daily job runs drift, flag verify and a vendor changelog check, then opens a PR with the store diff for the owner.
+  - SessionStart runs only the cached version check.
+- **Freshness.**
+  - Model ids and prices: 30 days.
+  - argv and flags: re-verified on every harness version change.
+  - Quirks: 90 days.
+  - A stale fact makes its arm "unverified". The owner may still pin it; exploration never picks it.
+- **Validator.** It extends `validate-slot-config`: no model id outside the store and its derived files.
+  - A migration list starts with the 61 files in T8 and may only shrink.
+  - An allowlist covers pricing tables and provider docs.
+  - Retired ids are removed, or allowlisted with a reason.
 
-**Program 1: the proof.** The smallest organism that can clear the bar.
+### 5.10 Router and slots
 
-1. **P1.0 Plan edits:** the bar, the baseline order and the single budget. Done in this revision.
-2. **P1.1 Frozen baseline (Gate A).**
-   - Score solo vs the install at `dc358c0` on Haiku. Slots are pinned, the arm is advisory, and there are no compiler edits.
-   - Graders, weights and hashes are pre-registered first.
-   - Publish H, E, S, P and J per task, plus the three cost numbers.
-3. **P1.2 Branch on the baseline:**
-   - If the headline is under 1.1× or cost is over 3×, the only allowed next edits are the token cut (X6 on the chain cores) and `harden.mjs`.
-   - If H is below solo on a task, stop and fix the done-definition first.
-   - If E or S is 0 for both arms, build `harden.mjs` first.
-4. **P1.3 The Program 1 organism.** Each piece is measured as its own treatment:
-   - one ≤60-line route-workflow;
-   - one done-means checklist in plan-changeset (the yoga win, made explicit);
-   - one `harden.mjs`, selected by file type;
-   - one owner-rule memory file (the 19/20 win);
-   - the §3b activation wiring, condition first, plus its scenario test.
-5. **P1.4 After-number** on dev tasks, then on held-out tasks.
-6. **P1.5 Loop iterations** on dev tasks only, aimed at the biggest gap.
+- **One authority.**
+  - `resolve-dispatch` returns the allowed set and the owner's tuple, through its existing layers: framework default, owner file, work overlay, session override. No layer an agent can write ranks above the owner.
+  - `route-model` picks inside the allowed set and writes one reason onto the task.
+  - With no owner `route_candidates` list, the owner's tuple is used unchanged.
+- **Arms** are harness × model × effort, limited to what the store marks verified and the policy allows.
+- **The default arm is the control.** It is what the harness does with no framework: Claude Code's configured default, or the model and effort in the Codex config. It is always a candidate.
+- **Leaving the default.** The router leaves the default only when one of these holds:
+  - the alternative's posterior pass rate is at least the default's minus 0.05, and its expected cost per solved task is lower;
+  - its pass rate is higher, within the cost cap.
+- **Exploration.** At most 10% of non-zone tasks, never on irreversible zones. Every task gets a bounded attempt envelope: maximum attempts and maximum USD.
+- **Learning.**
+  - `stage-close` records the arm, the outcome (tests, review verdict, harden), tokens, USD and wall time.
+  - Records are deduplicated by id.
+  - A correction removes the stale metric.
+- **Availability** is classified on both the review and exec sides. It only orders candidates and is never used in review gating.
+- **Cross-harness measurement.** The first non-Claude eval transport is codex, with argv from the store. Arms are named `harness:model:effort`.
+- **Reviewer ladder.**
+  - The launcher tries the other family. Its signed failure receipt is the only evidence that allows the fallback; no probe or cache counts as evidence.
+  - The fallback is the same family's top pinned model at effort ≥ high, in plan mode, with a tree-unchanged check. It is labelled `same-family`, capped at 2, and never authorises promotion alone.
+- **Skill.** `route-ai`, ≤60 lines, wraps the script for "why this model", owner overrides and `stats`. The hot path calls the script.
+- **Proof.**
+  - Replay regret below the default policy's on recorded outcomes.
+  - Unit tests: owner bounds are never exceeded; the prior resets on a new id; failover works; an unverified arm is never explored.
+  - Live: 20 small tasks across two harnesses. The router equals or beats the default on cost per solved task.
 
-**Program 2: the full organism.** It runs after the first scored framework run, and each item is gated.
+### 5.11 Founder domain expertise (K)
 
-1. **Gate B:** the skill merges and rewrites run only if Program 1 shows the gap is in skill text, not in missing probes.
-2. **Gate C:** the receipt rebuild (§3j) runs side by side until the baseline numbers exist. Invariant 2 never requires a paid external review inside the Haiku arm.
-3. **Waves, in this order:**
-   1. X1 resolver, X3 safety bugs, X4 phantom references, X5 consumer leftovers.
-   2. §3c slots and ladder, then §3i router.
-   3. §3j receipts: the deletion is a serial batch.
-   4. X2/X6 skill rows, after the receipt deletion, because they touch the same files.
-   5. §3k cockpit.
-   6. §3l founder layer.
-4. **The hooks decision:** the Go front door, then caching order.
-5. **Ownership and the serial integrator** follow the wave 1 split in §7: disjoint scopes, plus one batch for the five source-of-truth files.
-6. **Opus confirmation run** (owner yes). Then each ledger row is updated with its evidence.
+- The plan, exec and lens agents declare `domain: product`. It resolves to the project's domain bank, standing rules and founder context, topic-matched and capped in bytes.
+- `expertise.mjs` learns a product bank path inside the product repo.
+- A fact is refreshed when a task cites it. A stale fact carries its stale label into the prompt.
+- **Standing rules.** manage-learnings writes accepted owner rules, which it does not do today. Two variants are measured on K at equal cost, and the better one is adopted:
+  - a capped `## Standing rules` section in the product's `CLAUDE.md` (the 19/20 mechanism);
+  - a topic-injected file.
+- The #129 decision ledger is the record of owner decisions that K tasks can test (§8).
+- **Proof.**
+  - K on dev and on the reserve.
+  - A fixture that cites a stale fact shows the stale label.
+  - Preload bytes are measured per agent.
 
-### Build transport (owner ask: build with a swarm, then review)
-- **The work goes to the cheapest model that can do it.** Every worker runs in its own worktree from HEAD, owns a disjoint set of files, and has a deterministic check as its gate.
-  - **Haiku swarm, about 12–16 workers.** Mechanical, fully specified edits:
-    - X1 path rewrite;
-    - X3 safety bugs;
-    - X4 phantom references;
-    - X5 consumer leftovers;
-    - X2 boilerplate pointers;
-    - the "fix chain fields" rows.
-    - Each worker gets about 5–8 skills, an exact before/after rule, and the validator to run.
-  - **Sonnet workers, about 5.** Logic with tests:
-    - the dynamic chain (3b);
-    - slots and the ladder (3c);
-    - loop tooling (3e);
-    - `harden.mjs`;
-    - the northstar graders.
-    - Each is written test-first.
-  - **Opus, me:**
-    - writes each worker's spec;
-    - rewrites the chain cores (X6, plan-changeset, review-exec, route-workflow), because they hold unique techniques that must not be lost;
-    - reviews every worker diff before integration;
-    - runs the full suite;
-    - does the final adversarial review through the ladder.
-- **Merges and removals of skills are serialized in one Sonnet worker.** They touch the five source-of-truth files (manifest, README, EXTERNAL_ADDONS, REPO_MODES, route-workflow), so parallel workers would conflict.
-- **Gates:**
-  - A worker diff fails integration when its validator fails, it touches files outside its scope, or a removals check fails.
-  - A Haiku diff that fails twice goes to Sonnet.
-- **Expected wall time:**
-  - Wave 1 about 30–45 minutes; wave 2 about 45 minutes.
-  - Integration and full suite: about 25 minutes, or less with `--changed`.
-  - CI about 7 minutes per push.
-  - Haiku baseline about 30–60 minutes.
-  - The remaining bottleneck is evals and CI, not writing code.
-- **Cost:** the Haiku swarm about $3–6, Sonnet workers about $10–20, evals under $15. The Opus confirmation run is separate and needs the owner's yes.
+### 5.12 Company governance and always-on agents
 
-## 5. Verification
-- Tier-1: new validators (dynamic-chain scenarios, slot config, ladder rungs, check-selection recall, caching prefix) plus the full suite. `framework-coherence.mjs` 0 findings; lint passes. CI green on each pushed head, with no push while CI runs.
-- Live:
-  - Haiku todo-CLI and SSO through the installed framework (stage sets match the scenario test).
-  - The ladder with only the Claude family.
-  - The northstar baseline.
-- Every removal has a removals.md entry whose reintroduction check passes.
-- The owner-requirements ledger is updated row by row with evidence links. No row says done without a run.
+- **Governance fields on every harness record:**
+  - `company_briefing`: `off` or `bounded`;
+  - `ledger`: `never`;
+  - `outward_actions`: `deny`, `approval` or `allow`.
 
-## 6. Independent review (Opus, high effort): disposition
-All 23 findings were accepted and folded in above:
-- **Blockers:**
-  - B1: same-model pinning.
-  - B2: pre-registration and held-out tasks.
-  - B3: slots use the existing protected layers and the ladder uses no probe as evidence.
-  - B4: baseline before rewrites.
-- **Majors:**
-  - M1/M2: corrected counts; codemod with a `${SVC_ROOT:-.}` fallback.
-  - M3: review-gate is measure-first, with its merge-receipt alias and pinned files listed.
-  - M4/C5: the mechanical pass keeps the receipt.
-  - M5: greenfield stays contract.
-  - M6: diff re-check at review and land.
-  - M7: harden is a thin profile-aware wrapper.
-  - M8: the existing focused selector, no second one.
-  - M9: new flags are labelled new; bootstrap-CI decision.
-  - M10: pass-bar aggregation and budget per phase.
-  - M11: sandbox chain policy reported.
-  - M12: ownership split plus a serial integrator.
-- **Minors:**
-  - ledger rows 64+;
-  - capture-idea and refresh-competitors covered;
-  - 14 roles and about 77 skills;
-  - same-repo cache proof;
-  - `ARM_LIMITS` aligned;
-  - stage-activation throws instead of exiting;
-  - the registry `lane_skills` edit on merge;
-  - existing eval tasks reused.
+  Dispatch refuses a host that lacks them. A sandbox-bypass flag is passed only when `outward_actions` is `allow` for a role that is not company work.
+- **Always-on agents** get their own record:
+  - `kind: always-on`;
+  - `product`;
+  - `role`;
+  - `company_briefing`;
+  - `outward_actions`, default `approval`.
 
-## 7. Second independent review (Opus, high effort) of §3i–§3l: binding amendments
-All 16 findings were accepted. Where an amendment conflicts with a section above, the amendment wins.
+  The agent returns finished work and the decisions it could not make. COS writes the decision card after a person approves. A product with no record is not a company worker. CLI hosts stay process launchers.
+- **First slice.**
+  - A scoped briefing, status, recall and pending-proposal surface over the existing company state.
+  - One real connection per always-on product, tested for identity, freshness, interruption and resume.
+  - The vendor pages establish connection surfaces, not provisioning APIs.
+- **Briefing.**
+  - Counts and pending asks come from `dashboard --json`, with no filesystem path and no ledger body.
+  - Nothing is cut on a byte boundary.
+  - The person gets one sentence.
+- **Queue.**
+  - Three asks are shown; a fourth is stored and not shown.
+  - `append-decision` requires `recall` for that role since the last outcome.
+  - Bypasses are logged on the card.
+  - Role names are canonical, and recall reads both old names.
+  - Scaffold refuses to write inside a git work tree where `company-state/` is not ignored.
+- **Repairs:**
+  - approved cards fail the product bridge today;
+  - multi-bot submission needs atomic ids and idempotency;
+  - a quiet COS run is a success.
 
-**Receipts (§3j).**
-- **R-B1 Refuse mode.** It now means "CI invariant 2 is required, and the invariant-1 transition check blocks". The mechanical review-plan pass writes a `stage-close` record. §3g's "Not cut: the receipt chain" now reads "Not cut: the three invariants".
-- **R-B2 Wave 1 F scope.** Wave 1 F also re-keys three places to the `stage-close` record and the new verdict ref:
-  - `run-external-review.mjs:946-962` (the exec-record lookup and the `plan_manifest_sha256` binding);
-  - `scripts/lib/pr-review-receipt.mjs`;
-  - `merge-pr-with-review-receipt.mjs`.
+### 5.13 Repairs found by review
 
-  The `svc-workflow-guard.mjs:870-937` merge gate also matches the MCP merge (`merge_pull_request`). Negative tests are added for each.
-- **R-B3 Honest provenance.** Local CI checks the tree binding and the verdict's shape, not who wrote it. For real provenance, the independent review runs **inside CI**: a `pull_request` job with an owner-held reviewer secret writes the verdict where agents cannot. Until the owner adds that secret, the check is labelled "binding only".
-- **R-B4 Transport.**
-  - Each verdict lives at its own ref, `refs/svc/review/<tree-sha>`, so there are no shared-ref races.
-  - A failed verdict push fails loudly.
-  - CI re-runs through `actions_run_trigger`.
-  - CI compares against `pull_request.head.sha`'s tree.
-  - Step 0 of F proves that the cloud git proxy accepts pushes of non-`refs/heads` refs. If it doesn't, the verdict goes as a JSON file in a PR comment, read by CI.
-  - Making "SSVE Required" a required check in branch protection is an **owner action**, listed in the asks.
-- **R-M3 Bypasses closed.**
-  - The invariant-1 check also runs in the lane-tasks validator hook and in CI, so editing lane-tasks directly can't bypass it.
-  - The status name is `completed`.
-  - `assertExecuteChangesetReceipts` and `assertCanonicalReceiptCompletion` (`task-graph.mjs:1102`) are rewired.
-  - The load-time `skill_receipt.loaded_at` stays, because the cockpit estimates use it.
-- **R-M4 Consumer projects.**
-  - Ship a reusable workflow template through `svc init-ci`.
-  - Old consumer hooks become stubs that exit 0 with a pointer.
-  - `check-chain-receipts --read-only` stays for repos that already have notes.
-- **R-M5 Exempt class.** CI works it out from the diff itself, never from a declaration, so docs-only PRs need no paid review.
-- **R-minor CI and docs.**
-  - `oss-ci-workflow.test.mjs:151` is updated and the new job feeds `required`.
-  - The CLAUDE.md rewrite fixes the pre-push "whole range" drift.
-  - The receipt deletion runs after the step-5 baseline, as its own serial batch, separate from the X2/X6 edits to the same files.
+**Before measurement (Program 0):**
+- probe-loop containment (§5.5 step 4);
+- reopened stages keep obsolete edges (§5.2 step 8);
+- a completed effect disappears from recovery when its lease expires right after;
+- crash recovery must use the durable verdict, not retry arguments;
+- incomplete A/B evidence recommends keep;
+- the AC digest misses later user stories;
+- prerequisites after promotion (T3).
 
-**Router (§3i).**
-- **R-M1 Owner list.** There is a new owner-protected `route_candidates.<role>`, read through `readProtectedJson`. With no list, the owner's resolved tuple is used unchanged, so the router never ranks above the owner.
-  - Exec harnesses come from the playbook only: claude, grok and opencode today (Kimi is out of scope).
-  - `priors.json` model names move to registry aliases, or the file is allowlisted by `validate-slot-config`.
-- **R-M2 Availability is a hint.**
-  - The availability cache only orders the candidates. It is never used in review gating.
-  - Failure classification is added on the exec side in `orch/dispatch.mjs`.
+**In Program 2, wave 1** (check status first, then fix or close with evidence):
+- withdrawn or reassigned research edges are rebuilt;
+- deterministic ranking never vetoes an eligible owner choice;
+- outcome correction removes stale metrics;
+- Kimi's post-compaction text matches runnable-task selection;
+- rollback is allowed after outcome observation begins;
+- the review-cache protection is kept;
+- bounded plans satisfy the lane validator's required handoff;
+- the compiler honours the CLI delivery profile.
 
-**Cockpit (§3k).**
-- **R-M6 Steer endpoint:**
-  - a Host header allowlist (127.0.0.1/localhost:port), also for the existing GET routes;
-  - an exact Origin match;
-  - JSON content type only;
-  - the token in the URL fragment printed to the terminal or in a SameSite=Strict HttpOnly cookie, never served by a GET;
-  - a comparison that takes the same time whatever the input;
-  - `expected_attempt`/`expected_session` required.
-- **Steers are treated as prompts** carrying the worker's permissions. Orchestrator steering goes through a queue file that a hook injects at the next turn. No SendMessage from Node.
+## 6. Order: the only order
 
-**Founder layer (§3l).**
-- The finops "CAC" is renamed (cost to serve per user). It is a name clash, not a maths bug.
-- The formulas are trimmed to LTV, CAC, payback, LTV:CAC, runway/default-alive, funnel and A/B sample size. Van Westendorp, K, NRR and TAM are deferred.
-- The A/B calculator is tested against published values; the others against sourced worked examples.
-- Founder Trace is required only when `founder-context.md` exists.
-- The `design-sync` → `design-bridge` rename goes in the serial integrator batch (a built-in DesignSync exists).
+**Program 0: make the measurement able to measure.** No change to the framework arm.
+- **P0.1 Runner repairs:** everything under "Fair arms" and "Run shape" in §4, plus `northstar plan` and `northstar decide` with their fixtures.
+- **P0.2 Instruments:** the §5.5 step 2 repairs, probe-loop containment, and the §5.13 Program 0 list.
+- **P0.3 Pre-registration:**
+  - the reserve tasks are written blind;
+  - graders, the matrix, the bar, `ARM_LIMITS` and the hashes are committed;
+  - an independent review of all of it.
+- **P0.4 The fail-open counter.**
+- **Exit:** a balanced dry-run manifest, green fixtures, and a reviewed pre-registration.
 
-**Scheduling.**
-- §3i: router, wave 1 B, after the resolver.
-- §3j: F, wave 1, running alongside the old system; deletion after the baseline.
-- §3k: cockpit, wave 2.
-- §3l: activation and registry parts in A; formulas, tokens and the founder context in wave 2.
-- The change-absorption test (§1b) is in wave 1 B.
+**Program 1: the proof.**
+1. **P1.1 Frozen baseline (Gate A).** Solo versus `git archive dc358c0` on Haiku, all 9 tasks. The reserve results are sealed.
+2. **P1.2 Branch on the baseline:**
+   - If Δ ≤ 0 or cost is over 3×, the next edits are only the token cut (X6 on the chain cores) and `harden.mjs`.
+   - If H is below solo on a task, fix the done-definition first.
+   - If E or S is near 0 for both arms, build `harden.mjs` first.
+3. **P1.3 The Program 1 organism.** Each piece is a cumulative treatment, measured on the dev slice:
+   - a. the ≤60-line route-workflow and the compiled listing;
+   - b. the done-means checklist in plan-changeset, after the AC digest fix;
+   - c. `harden.mjs`, selected by file type;
+   - d. the standing-rules write;
+   - e. the §5.2 wiring: the lanes-as-data no-op switch, condition-first commits, ordering and security;
+   - f. the K preload for delivery agents.
+4. **P1.4 After-number** on dev and on the reserve. The reserve is opened once.
+5. **P1.5 Loop:** at most 3 iterations, on dev only.
+6. **P1.6 Opus confirmation (owner yes).** The full bar, on Opus.
+   - If it fails, Program 2 does not start.
+   - Decaying components whose effect vanished on Opus are retired by §2a instead.
 
-## 8. Owner review on `dc358c0` (review 5482766246): disposition
-All findings are accepted and edited in above:
-- **Bar:** E/S/P geometric mean, H and the typo task as constraints, three cost numbers, zone review as its own column, router and ladder out of the measured arm.
-- **Baseline:** frozen at `dc358c0` before any wiring; wave 1's wiring is the first treatment.
-- **Graders:** frozen from a spec that does not cite pilot numbers.
-- **Budget:** one table.
-- **X1:** a resolver instead of a codemod.
-- **Security keep-list:** in the same commit as its condition, with a tier-1 case.
-- **Order:** §4 renumbered as Program 1 (proof) then Program 2 (full organism), with Gates A–C.
-- **Code:** the open `regrade --margin` note is fixed in this commit. A regrade keeps the report's margin unless `--margin` is given, with a tier-1 case.
+Program 1 passes only when P1.4 (or the last P1.5 iteration) and P1.6 both pass.
+
+**Track F: safety fixes, now, in parallel.**
+- X3;
+- the cockpit read token.
+
+Neither touches a northstar task path.
+
+**Track R: routing and knowledge, in parallel.** It never un-pins a slot in the measured arm and never deletes anything.
+- **R1** `model-intel check`, drift across all installed harnesses joined with flag verify, and the daily schedule.
+- **R2** `stage-close` recording outcomes to the router, side by side with the old receipts.
+- **R3** The change-absorption test, written; it fails until R4 and P1.3e land.
+- **R4** dispatch argv from the store; the codex eval transport.
+- **R5** The router's default-arm control, its deviation rule, and the replay regret test.
+
+**Program 2: only after Program 1 passes on Haiku and on Opus.**
+- **Gate B:** skill merges and rewrites run only if Program 1 shows the gap is in skill text, not in missing probes.
+- **Gate C:** receipt deletion runs after Program 1 passes, one green PR through the new path, and the consumer compatibility tests.
+- **Waves, in this order:**
+  1. X1 launcher, X4, X5, the §5.13 Program 2 list, store consolidation (`derive`), and the §5.12 governance fields.
+  2. Slots and the ladder.
+  3. Receipt deletion, as a serial batch.
+  4. X2/X6 skill rows.
+  5. Cockpit.
+  6. Founder layer and company governance.
+- **Hooks:** the §5.4 order.
+- **Each batch** is re-measured on the dev slice. A batch that lowers Δ is reverted.
+- **Ownership:** disjoint scopes, plus one serial integrator for the five source-of-truth files and every rename.
+
+**Build transport.**
+- **Program 1: no swarm.** Its edits are few and serial, and each one is measured.
+  - Opus writes the chain cores.
+  - Sonnet writes tested logic: runner repairs, `harden.mjs`, `northstar decide`.
+- **Program 2:**
+  - a Haiku swarm for mechanical rows (X2 pointers, X4, X5, chain-field rows, launcher migration batches);
+  - Sonnet for logic with tests;
+  - one base sha for every worktree;
+  - a Haiku diff that fails twice goes to Sonnet;
+  - merges and renames are serialized.
+- **Time and cost** come only from the budget table and `ARM_LIMITS`. There are no other estimates.
+
+**The only budget.** Every paid run uses `--max-usd`.
+
+| Step | Runs | Cap | Owner yes |
+|---|---|---|---|
+| P0 fixtures and dry runs | fake runner | $0 | no |
+| P1.1 baseline, Haiku | 9 tasks × 2 arms × 3 = 54 | $35 | no |
+| P1.3 treatments | 6 × 12 (dev slice, framework arm) | $8 each, $48 | no |
+| P1.4 after-number, Haiku | 54 | $35 | no |
+| P1.5 loop | at most 3 × 12 | $8 each, $24 | no |
+| P1.6 Opus confirmation | 54 | forecast printed first | **yes** |
+| Track R live router | 20 tasks | $10 | no |
+| Decay ablation per model release | 12 per component group, at most 4 groups | $8 per group | yes above $32 |
+| P2 batch re-measure | 12 | $8, at most 10 batches | no |
+
+Haiku total before Opus: $152 at most. The authoring sessions that write Program 1's edits are not metered by `--max-usd`.
+
+## 7. Pre-mortem: it is January 2027 and this plan failed
+
+| # | How it failed | Evidence today | Guard | Kill criterion |
+|---|---|---|---|---|
+| 1 | The bar never measured the framework | Solo inherits the real home; graders not frozen; ratio undefined at solo 0 | Program 0; fair-arms rules | Any row with real-home access or a null sandbox voids its run |
+| 2 | Won on Haiku, vanished on Opus | Opus already does more of what E and S add | P1.6 before any deletion | Opus fails the bar → Program 2 does not start |
+| 3 | Won on seen tasks only | Tasks 2 and 5 informed the diagnosis | Reserve written blind, opened once | Reserve fails → no headline claim |
+| 4 | Static rot: every model or harness change needed code | T1, T6 | §5.1 absorption test; store | Absorption test red → the wave stops |
+| 5 | The router never beat the default | n=0 everywhere (T5); no non-Claude transport (T10) | Default arm as control; R2 recording | After 50 recorded tasks per type, regret not below default → the router stays advisory |
+| 6 | Harness knowledge rotted | T7; newest knowledge stamp 87 days old | Store with `as_of`; daily drift | A slot on an unverified arm dispatches only by explicit owner pin, with a visible warning |
+| 7 | Receipts deleted before the replacement proved itself | 0 catches, but also the only local brake | Gate C | Any negative test red → no deletion |
+| 8 | Budget overrun | Revision 2 had three budgets and no total | One table, loop ≤3, ≤10 batches | A step with no row does not run |
+| 9 | A stale section built a cancelled design | Revision 2's transport block kept the codemod | One order; stale-string check (§9) | Stale string found → the revision is not pushed |
+| 10 | Founder knowledge never reached delivery | T9 | §5.11 wiring; K scored | K not above solo after wiring → stop expanding the founder layer |
+| 11 | The chain got longer, not shorter | T2: 15 stages for a typo | Lean flags; one scheduler | Typo over 4 stages, or a dropped skill started by `next` → tier-1 red |
+| 12 | Hooks failed open and nobody knew | No counter today | §5.4 counter | Non-zero counter → the run is not clean |
+| 13 | Money paths shipped without security review | T4 | §5.2 step 3 | The payments scenario test is red → land fails |
+| 14 | #129 merged by conflict resolution only | T12 | §8 contract | The two reproduced defects are open → no merge |
+| 15 | The plan outgrew the owner's attention | 40+ review threads; 3 revisions in a day | One order; owner yes only at Opus and decay over cap | Program 1 not started within 7 days of approval → re-scope to P1.1 alone |
+| 16 | A branch switch on the machine changed what the eval loaded | T11 | `git archive`, private homes | A run whose installed root is not its archive is void |
+
+**Whole-plan kill.** If Δ's lower bound is still ≤ 0 on dev and on the reserve after 3 loop iterations, Program 2 stops. The negative result goes into PILLARS and the ledger. The framework ships as the durable components that did measure (standing rules and the done-definition), and the rest goes on demand.
+
+## 8. #129 integration contract
+
+#129 adds the decision engine (Monte Carlo with a Gaussian copula, EVPPI), the decision ledger, experiment comparison and Lane 13 for non-code work.
+
+1. **Order.** #129 merges after #127, by a merge of #127 into its branch, not a rebase. The 5 conflicts resolve toward #127's slimmed files:
+   - `.svc/manifest-digest.json`;
+   - `FRAMEWORK-STATE.md`;
+   - `references/skill-routing-index.json`;
+   - `skills/route-workflow/SKILL.md`;
+   - `skills/strategic-decision/SKILL.md`.
+
+   Lane 13 goes into data (manifest and registry), not route-workflow prose.
+2. **Lane kind.** #127's coherence utility injects the code-delivery chain into every lane. It reads a lane kind and leaves the non-code lane alone.
+3. **Fix before merge.** Each has a test:
+   - **Hindsight replay.** Hindsight replays a content-addressed snapshot of the model stored with the prediction, not the file now on disk. The test changes the model file after recording.
+   - **Discrete quantiles.** `rangeOf` and `quantile` sort discrete values with their weights before accumulating. The test lists values out of order and requires p10 ≤ p50 ≤ p90.
+4. **One statistics helper.** `experiment-compare` and `northstar decide` share `compareSamples`. There is no second bootstrap.
+5. **Shared inputs.** Founder formulas (§5.8) produce the engine's variables from `company-state/metrics.jsonl`. There is no second formula set.
+6. **Slimming keeps the engine.** strategic-decision's lite mode calls the engine. Slimming the skill must not remove that call.
+7. **Decisions as knowledge.** The ledger is the record of owner decisions that K tasks can test (§5.11).
+
+PR #128's head is an ancestor of #127, and #127 carries its fixes, so #128 can close.
+
+## 9. Verification
+
+- **Tier-1:**
+  - the absorption test;
+  - dynamic-chain scenarios;
+  - registry owners;
+  - delivery-graph ordering;
+  - `model-intel derive --check`;
+  - slot config;
+  - ladder rungs;
+  - check-selection recall;
+  - prefix stability;
+  - `northstar decide` fixtures;
+  - cockpit density fixtures;
+  - a `framework-coherence.mjs` run with 0 findings and a passing lint.
+- **CI** is green on each pushed head, with no push while CI runs.
+- **Live:**
+  - todo-CLI and SSO;
+  - the ladder with only the Claude family;
+  - the baseline;
+  - the router across two harnesses.
+- **Removals:** every removal has a removals.md entry whose reintroduction check passes.
+- **Ledger:** the owner-requirements ledger is updated row by row with evidence links. No row says done without a run.
+- **Plan hygiene, before any revision is pushed:**
+  - a stale-string check finds no cancelled design in the body;
+  - every Appendix A quote is found verbatim in the body;
+  - a privacy check finds no machine path or account name.
+
+## 10. Owner asks without a component (tracked, not dropped)
+
+- **Private repo per eval run:** blocked by GitHub 403. The remedy is for the repo owner to grant the GitHub App administration write access, or to create the repos.
+- **Learning quiz results:** commit them to the quest results and PILLARS.
+- **Finops, game economy and artwork checks:** these become S and P probes in the game task.
+- **Deferred until the proof passes:**
+  - Managed Agents workflows;
+  - meta-harness;
+  - fleet 14→1;
+  - the conversion loop;
+  - paid upgrades;
+  - harness-agnostic boxes;
+  - constrained versus free path.
+- **Owner actions:**
+  - make "SSVE Required" a required check;
+  - add the reviewer secret;
+  - decide the hook-daemon permission rule.
+
+## Appendix A. Dispositions, keyed by review or comment ID
+
+Every finding below is accepted unless the row says otherwise. Each row quotes the body sentence that implements it. Comment IDs are as they stand on the PRs after the owner's account re-posted the external review comments. The original posting time is recorded in each comment.
+
+**Owner review 5482766246** (inline 4241067286, 4241067288, 4241067292, 4241067294, 4241067297)
+
+| ID | Finding | Implemented by |
+|---|---|---|
+| 4241067286 | A six-task geometric mean cannot see the win | "**Pass:** R ≥ 2.0 (or R not defined), Δ ≥ 0.20, and Δ's lower bound above 0." |
+| 4241067288 | Budgets disagree; swarm spend missing | "**The only budget.** Every paid run uses `--max-usd`." |
+| 4241067292 | The baseline is not a before | "Solo versus `git archive dc358c0` on Haiku, all 9 tasks." |
+| 4241067294 | X1 codemod breaks the dynamic rule | "The form names a script, not a layout, so a later layout change is one launcher change." Superseded in part by 6108295301 §3: a hook-only rewrite is not portable |
+| 4241067297 | Security keep-list before its condition | "The prototype keep-list gets `security` in the same commit as the condition." |
+
+**Owner review 5482788622** (inline 4241088665, 4241088668, 4241088671, 4241088678, 4241088680, 4241088683)
+
+| ID | Finding | Implemented by |
+|---|---|---|
+| 4241088665 | Ratio undefined at solo 0; helper is a difference | "If solo scores 0 on every cell, R is reported as "not defined: solo 0 everywhere", never as infinity." |
+| 4241088668 | Typo cost cap vetoes a real win | "Its cost is reported, not capped" |
+| 4241088671 | The install cannot produce this baseline | "**Solo gets a private HOME with no skills and no ancestor `CLAUDE.md`.**" |
+| 4241088678 | §7 outranks the new order | "§4 is the only bar. §6 is the only order and the only budget." |
+| 4241088680 | Opus confirmation after deletions; Two-Box key | "If it fails, Program 2 does not start." and "A Two-Box executor key is bound to those bytes." |
+| 4241088683 | Transport block builds the cancelled design | "**Program 1: no swarm.**" |
+| body | Bash rewrite on the hottest hook | "it never ships on a failed parse." |
+| body | Loop cap; evidence limits | "The loop gets at most 3 iterations on dev before the reserve is opened, once." and "The other skills are unmeasured, not known no-gain." |
+
+**Owner review 5482798288** (inline 4241098827, 4241098829, 4241098833, 4241098835, 4241098838)
+
+| ID | Finding | Implemented by |
+|---|---|---|
+| 4241098827 | The app-screen path is a marketing path | "**Marketing page:** the app-screen flow, then landing-page, with benchmark-landing as its gate." |
+| 4241098829 | A condition named `ui` attaches to nothing; phantom `perf` | "design-ux and design-ui point at `ui`." and "`perf` owns the web-probes performance numbers" |
+| 4241098833 | P ignores recorded performance and occlusion | "plus `mobile-occlusion.mjs` with a logged-in session where the control needs one" |
+| 4241098835 | One Edit sample; probe time missing | "browser-probe seconds" and "in a UI-sized edit session (edits × p50)" |
+| 4241098838 | Live browse pulled onto the default path | "The live browse stays opt-in" |
+| body | Line 80 formula; X6 cap | "The weighted formula from revision 2 is deleted." and "for design-ux, design-ui and track-visuals" |
+
+**Owner review 5482805428** (inline 4241106101, 4241106103, 4241106107, 4241106110)
+
+| ID | Finding | Implemented by |
+|---|---|---|
+| 4241106101 | Claude pick never moves UI to Design; motion does not round-trip | "It is the visual step only under `claude_design` (§5.2)." and "Motion round-trips through the token file." |
+| 4241106103 | One-way-door rule is prose; 3/5 gate still in skill | "The 3-paradigm / 5-approach gate is deleted in the same change" |
+| 4241106107 | Personas and vision still run by `next` | "No `next` pointer may override a flag." |
+| 4241106110 | Absorption test proves models, not skills | "Edit a delivery profile. The compiled skill list changes, with no SKILL.md edit and no manifest edit." |
+| body | `--parallel 4` | "`--parallel 4` is stated on every run." |
+
+**Owner review 5482813786 (twenty paths).** Accepted, with one correction from T1: the compiled path comes from a JS constant in the compiler. It does not come from the manifest lane lists. `next` is the second scheduler.
+
+| Path | Implemented by |
+|---|---|
+| 1–4, 10–13 | "route-workflow or diagnose-bug writes a lean record on the task." |
+| 5, 16 | "**The compiler schedules** review-plan and review-exec, not the receipt hook." |
+| 6 | "**K bytes** (X7)." |
+| 7 | "one test-journeys stage" |
+| 8, 14 | "A payments bugfix with no flag gets review-security (T4)." |
+| 9 | "live only when a deploy target is in the task record" |
+| 15 | "Read, Grep and Glob exit early" |
+| 17 | "the governance fields (§5.12)" |
+| 18 | "Edit a delivery profile." |
+| 19 | "**Manifest first.**" |
+| 20 | "**X** from the install set, not only from the lane lists." |
+
+**5482822752** (inline 4241122846, 4241122849): "The UX experience document and the solution templates stay where skill slimming moved them"
+
+**5482842504** (inline 4241141780, 4241141787, 4241141794)
+
+| Item | Implemented by |
+|---|---|
+| One scheduler (4241141780) | "When a skill finishes, it starts the next compiled task, not its `next` field." |
+| Checkpoints are data | "Checkpoints read the profile: production stops; eval logs and continues." |
+| Six stages without an owner (4241141787) | "Every stage key has an owner skill that exists, or it leaves the registry in the same change." |
+| Learnings must not grow CLAUDE.md (4241141794) | "Two variants are measured on K at equal cost, and the better one is adopted" |
+| Build the home once | "**The framework home is built once per sha and cloned into each job.**" |
+
+**5482855196** (inline 4241152067, 4241152069): "The rule, learning and owner injectors run inside the existing dispatcher process and share its git memo." and "Nothing is appended to CLAUDE.md."
+
+**Scope notes 5482864982–5482865399, 5482870221, 5482891154, 5482909037, 5482932554**
+
+| ID (inline) | Implemented by |
+|---|---|
+| 5482864982 (4241160229) | "A crashed, timed-out, capped or skipped run scores 0 on every component, and its spend stays in the cost." |
+| 5482865077 (4241160313) | "the host skill listing for the session is the compiled list plus on-demand skills" and "**A row whose `builder_sandbox` is null is rejected, for every arm.**" |
+| 5482865197 (4241160385) | "It is withdrawn as evidence." |
+| 5482865328 (4241160519) | "The token covers the existing GET routes and the event stream" |
+| 5482865399 (4241160594) | "Any fail-open path increments one file under `.svc`" |
+| 5482870221 (4241164228) | "**One sentence when nothing is asked:**" |
+| 5482891154 (4241180447, 4241180451) | "Dispatch refuses a host that lacks them." |
+| 5482909037 (4241193834, 4241193841) | "**Always-on agents** get their own record:" |
+| 5482932554 (4241213418) | "Three asks are shown; a fourth is stored and not shown." |
+
+**External review comments on #127** (re-posted under the owner's account; each records its original time)
+
+| ID | Finding | Implemented by |
+|---|---|---|
+| 6108294804 | Probe workers; bounded plans; risk relabels; host precedence; hook-bench inputs; #129 lane kind | "probe-loop containment (§5.5 step 4)", "A completed task whose obligation changed reopens.", "`hook-bench` sanitises", "It reads a lane kind and leaves the non-code lane alone." Repairs it verified as done are not repeated |
+| 6108295065 | Probe checks outside the sandbox; symlinked apply; reopened stages' edges | "checks run inside the worker sandbox", "destination ancestry is validated without following escaping links", "rebuilds the dependency edges" |
+| 6108295301 §1 | Holdouts were seen; statistic; total USD; isolation; balanced manifest | "Tasks 2 and 5 informed the diagnosis", "Cost is actual total USD from usage", "**Manifest first.**" |
+| 6108295301 §2 | Containment before the loop | "probe-loop variants (rewrite, simplify, merge, remove) run only after containment" |
+| 6108295301 §3 | X1 hook rewrite is not portable | "Skills move from `node scripts/<name>` to `svc-run <name>` lane by lane" |
+| 6108295301 §4 | Receipt migration and provenance | "the plan digest, the scope and policy version, the attempt and predecessor identity, and the trusted issuer" and "Squash keeps the tree only when the base has not moved." |
+| 6108295301 §5–§8 | Activation obligations; harness adapters; trustworthy telemetry; cockpit and founder downstream | "the compiler adds the obligation", "argv templates per role", "Records are deduplicated by id.", "**Program 2: only after Program 1 passes on Haiku and on Opus.**" |
+| 6108295531 | A/B graders accept empty answers; point estimates; labels; four arms; missing context; model-specific calibration | "The three A/B graders that accept empty substance are fixed.", "**Four arms** on priority skills:", "K (§4) measures them.", "with the new model" |
+| 6108295729 | AC digest; semantic changes; product documents; implemented versus available; one owner per fact | "The AC digest must see later user stories.", "with one owner skill per fact" |
+| 6108295955 | Prerequisites after promotion; base44; author family; speed table | "Personas, e2e and journeys come before land in every mode (T3).", "Today it passes graphs with prerequisites after promotion.", "**X8 Author family from identity, not a default.**", "In-shell timing replaces the two clock-only Node launches per validator (878 a run)." |
+| 6108296140 | Memory recall; process reuse first; native acceptance | "A newer correction supersedes the advice it corrects.", "the same captured inputs go through old and new." |
+| 6108296334 | Always-on products; approved cards fail the bridge; atomic ids; quiet runs | "The vendor pages establish connection surfaces, not provisioning APIs.", "approved cards fail the product bridge today" |
+| 6108296509 | 14 stateful journeys | "a completed effect disappears from recovery when its lease expires right after", "Selection keeps the deleted side of a rename.", "A broken checker stops the experiment instead of condemning candidates.", "**Migrate pending graphs** when a skill is merged or renamed.", "Every task gets a bounded attempt envelope" |
+
+**In-session reviews (no GitHub ID).** Revision 1 review: B1–B4, M1–M12 and minors. Revision 2 review: R-B1–R-B4, R-M1–R-M6 and minors. All remain in force:
+- **B1:** "**Same model everywhere.**"
+- **B2:** "The reserve is written in a fresh session"
+- **B3:** "no probe or cache counts as evidence"
+- **B4 and owner review:** "Solo versus `git archive dc358c0`"
+- **M5:** "Contract planning stays the default for greenfield"
+- **M6:** "A dropped stage that now activates is reinserted, or land fails."
+- **M8:** "trace-check-deps drives the existing focused mode."
+- **R-B1:** "**Refuse mode** means"
+- **R-B2:** "`run-external-review.mjs:946-962`"
+- **R-B3:** "Until that exists, the check is labelled "binding only"."
+- **R-B4:** "The launcher writes one verdict at `refs/svc/review/<tree-sha>`."
+- **R-M1:** "With no owner `route_candidates` list, the owner's tuple is used unchanged."
+- **R-M2:** "It only orders candidates and is never used in review gating."
+- **R-M6:** "a constant-time compare"
+
+## Appendix B. Traversal commands (run at `7b48cc4`)
+
+Run from a checkout or `git archive` of `7b48cc4`. `C` is shorthand for `node scripts/compile-delivery-graph.mjs --wi WI-T`.
+
+| # | Command | Read |
+|---|---|---|
+| T1 | `C --intent "fix typo in README" --lane brownfield-feature --delivery-profile prototype --change-type docs --planned-files README.md --risk-flags docs-only`. Run it, then delete `prototype` from `references/delivery-profiles.json`, remove lane skills from `skills-manifest.json`, add `skip_skills`, and run it again. `grep -n LANE_BASE_SKILLS scripts/compile-delivery-graph.mjs` | identical `tasks[].metadata.skill` both times |
+| T2 | the T1 command with `--delivery-profile production`, and with `prototype` | 15 tasks; 9 tasks starting with analyze-domain |
+| T3 | `C --intent "yoga studio booking app" --lane greenfield --delivery-profile production --change-type feature --planned-files src/app/page.tsx --risk-flags user-facing,browser-visible` | 22 tasks; write-e2e and test-journeys after verify-promotion |
+| T4 | `C --intent "fix stripe webhook double charge" --lane bugfix --delivery-profile mvp --change-type bugfix --planned-files src/payments/webhook.ts`, then with `--risk-flags auth` and `--risk-flags auth-sensitive` | `planning.irreversible_zones`, `conditional_mandatory_skills`, and audit-implementation's `required_process_steps` |
+| T5 | `node scripts/route-model.mjs stats`; `node scripts/route-model.mjs check`; `node scripts/resolve-dispatch.mjs model --label EXEC --orchestrator claude` | n=0 on every arm; the two picks |
+| T6 | `grep -n "cli must be" scripts/orch/dispatch.mjs`; call `workerCommand` with `cli` set to a fixture harness | the thrown error |
+| T7 | `node scripts/harness-drift.mjs`; `node scripts/harness-playbook.mjs verify` | hosts covered; broken flags |
+| T8 | `grep -rEo` over skills, agents, rules, hooks and scripts for `claude-(opus\|sonnet\|haiku\|fable)-…`, `gpt-…`, `grok-…`, `gemini-…`, `mimo-v…`, test files excluded | 170 strings, 61 files |
+| T9 | `node scripts/expertise.mjs preload --agent svc-stage-exec`; `node scripts/expertise.mjs refresh-scan` (in a scratch copy: it writes `.svc/knowledge-refresh-triggers.jsonl`) | the exit message; 13 of 13 stale |
+| T10 | `grep -n TRANSPORTS scripts/lib/harness-transports.mjs` | `{ claude }` |
+| T11 | `git merge-tree --write-tree` of #127 and #129 without a run-scoped merge driver | the crash |
+| T12 | `rangeOf({dist:"discrete", values:[100,1,10], weights:[0.2,0.4,0.4]})` from #129's `decision-engine.mjs` | p10 100, p50 1, p90 10 |
