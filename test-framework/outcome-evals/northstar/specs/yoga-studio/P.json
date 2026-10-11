@@ -1,0 +1,79 @@
+{
+ "component": "P",
+ "task": "yoga-studio",
+ "start": "node server.mjs",
+ "ready": "/",
+ "checks": [
+  {
+   "type": "readme",
+   "require": [
+    "test",
+    "start"
+   ],
+   "commands": {
+    "test": [
+     "npm test",
+     "node --test"
+    ],
+    "start": [
+     "npm start",
+     "node server.mjs"
+    ]
+   }
+  },
+  {
+   "type": "clean_run",
+   "ready": "/",
+   "commands": {
+    "install": [
+     "npm install",
+     "npm ci"
+    ],
+    "test": [
+     "npm test",
+     "node --test"
+    ],
+    "start": [
+     "node server.mjs",
+     "npm start"
+    ]
+   }
+  },
+  {
+   "type": "mutation",
+   "mutants": 12,
+   "min": 0.6
+  },
+  {
+   "type": "web",
+   "play_s": 3,
+   "thresholds": {
+    "a11y_serious_critical": 0,
+    "contrast": 0,
+    "console_errors": 0,
+    "tab_reach": 0.9,
+    "phone_overflow": false,
+    "tap_targets_44": 0.1,
+    "body_font_px": 16,
+    "ready_ms": 3000,
+    "js_kb": 500,
+    "frame_p95_ms": 50
+   },
+   "ready": {
+    "selector": "button, a[href]"
+   }
+  },
+  {
+   "type": "occlusion",
+   "pages": [
+    "/"
+   ],
+   "login": "auto",
+   "viewport": {
+    "width": 390,
+    "height": 844
+   },
+   "safeAreaBottom": 34
+  }
+ ]
+}

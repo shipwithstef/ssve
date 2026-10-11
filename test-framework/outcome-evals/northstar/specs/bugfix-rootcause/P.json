@@ -1,0 +1,55 @@
+{
+ "component": "P",
+ "task": "bugfix-rootcause",
+ "checks": [
+  {
+   "type": "readme",
+   "min_chars": 120,
+   "require": [
+    "test"
+   ],
+   "commands": {
+    "test": [
+     "node --test",
+     "npm test"
+    ]
+   }
+  },
+  {
+   "type": "clean_run",
+   "commands": {
+    "install": [
+     "npm install"
+    ],
+    "test": [
+     "node --test",
+     "npm test"
+    ]
+   }
+  },
+  {
+   "type": "mutation",
+   "mutants": 12,
+   "min": 0.6,
+   "needs_new_tests": true
+  },
+  {
+   "type": "new_tests",
+   "baseline": "repo",
+   "min_new": 1
+  },
+  {
+   "type": "tests_cover",
+   "name": "tests_name_the_symptom",
+   "pattern": "midnight|morning|sydney|time ?zone|studio day|dst|daylight|offset|utc|local",
+   "min_cases": 1
+  },
+  {
+   "type": "tests_fail_on_baseline",
+   "baseline": "repo",
+   "replace": [
+    "src"
+   ]
+  }
+ ]
+}
