@@ -89,13 +89,33 @@ test("directive 5 and the games-repo step copy only K real-art builds", () => {
   assert.doesNotMatch(games, /9 ai-quest builds and every/);
 });
 
-test("edited regions carry no machine path and no new account name", () => {
+test("edited regions carry no machine path and no account name", () => {
   for (const block of [directives, games]) {
     assert.doesNotMatch(block, /\/home\/|\/Users\/|\\\\|@[a-z0-9.-]+\.[a-z]{2,}/i);
     assert.doesNotMatch(block, /outcome-eval-artifacts|reserve-sealed|northstar-reserve|northstar-results/);
   }
-  assert.match(games, /shipwithstef\/hearthlight/);
-  assert.doesNotMatch(directives, /shipwithstef/);
+  // §0: a public plan names no account. An owner/repo slug is an account name.
+  // Angle-bracket paths such as rpg/<title>/ are layout, not an account.
+  assert.doesNotMatch(games, /[A-Za-z0-9_.-]{2,}\/[A-Za-z0-9_.-]{2,}/);
+  assert.match(games, /empty private games repo/);
+  assert.match(games, /does not name the account or the repo/);
+});
+
+test("regression: games-repo target stays anonymous and this file does not require an account", () => {
+  const creation = games.split("\n").find((line) => line.includes("empty private games repo"));
+  assert.ok(creation);
+  assert.doesNotMatch(creation, /`[^`]*\/[^`]*`/);
+  assert.doesNotMatch(creation, /[A-Za-z0-9_.-]{2,}\/[A-Za-z0-9_.-]{2,}/);
+  const src = fs.readFileSync(fileURLToPath(import.meta.url), "utf8");
+  // Round-1 required an owner/repo slug on the games block and named the account
+  // in an assertion. origin/main in directive 3 is harness fidelity, not an account.
+  for (const line of src.split("\n")) {
+    if (!/assert\.(?:doesNotMatch|match)\(/.test(line)) continue;
+    if (/\bgames\b/.test(line)) {
+      assert.doesNotMatch(line, /[A-Za-z0-9_.-]{2,}\\\/[A-Za-z0-9_.-]{2,}/);
+    }
+    assert.doesNotMatch(line, /\/[a-z][a-z0-9]{7,38}\//);
+  }
 });
 
 test("stale-string check: the new order does not revive the cancelled copy-all or Program 1 swarm", () => {

@@ -1106,7 +1106,7 @@ Rev 3 (owner, f05c82f) is the base. Each item below was checked at `7b48cc4`. Fo
 - Budget: P1.5 ≥ $18 and Program 2 batches ≥ $6 (the $0.50 floor). The preflight refuses a run below the floor.
 
 **Owner side requests:**
-- **Games repo.** After approval, once the owner creates an empty private repo `shipwithstef/hearthlight` (repo creation from this session is blocked by a GitHub 403). Copy only builds that pass the K real-art checks. Never copy a primitive-shape build. Do not archive old builds.
+- **Games repo.** After approval, once the owner creates an empty private games repo (repo creation from this session is blocked by a GitHub 403; the public plan does not name the account or the repo). Copy only builds that pass the K real-art checks. Never copy a primitive-shape build. Do not archive old builds.
   1. `add_repo`.
   2. Copy a build into `rpg/<title>/` or `quest/<title>/` only when it passes the K real-art checks. Never copy a primitive-shape build. Hearthlight and Ardwyn are included only when they pass. Do not archive old builds.
   3. Strip `__hidden.test.mjs`, eval notes, `node_modules` and any secrets from each copied build.
