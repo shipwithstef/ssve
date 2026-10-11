@@ -1,3 +1,4 @@
+// @organism-suite
 // Unit tests for the northstar E and P graders: scoring, spec parsing, the component
 // dispatcher, the case runner, report checks, and one reference-versus-stub proof.
 import test from "node:test";
