@@ -1879,7 +1879,8 @@
       "source": "scripts/build-spec-index.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-spec-index-hermetic.sh"
+        "test-framework/evals/tier-1/validate-spec-index-hermetic.sh",
+        "test-framework/tests/fail-open-counter.test.mjs"
       ]
     },
     {
@@ -2018,7 +2019,8 @@
       "source": "scripts/cockpit-state.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-cockpit-live.mjs"
+        "test-framework/evals/tier-1/validate-cockpit-live.mjs",
+        "test-framework/tests/fail-open-counter.test.mjs"
       ]
     },
     {
@@ -2245,7 +2247,8 @@
       "source": "scripts/hook-bench.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-cockpit-and-hook-bench.mjs"
+        "test-framework/evals/tier-1/validate-cockpit-and-hook-bench.mjs",
+        "test-framework/tests/fail-open-counter.test.mjs"
       ]
     },
     {
