@@ -116,7 +116,7 @@ record `P4-PriorBaselineSelection` with a first-baseline note and still write
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
 
 - Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume — Claude mirrors with `TaskList` / `TaskUpdate`; Kimi observes via `/task` + `TaskList`/`TaskOutput`; Codex and other hosts without native task-mutation APIs mirror only the active step in `update_plan`.
 - Mark this skill's task `completed` in lane-tasks.json after writing the snapshot.

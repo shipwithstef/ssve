@@ -9,7 +9,7 @@
     {
       "skill": "ad-video-script",
       "path": "skills/ad-video-script/SKILL.md",
-      "content_hash": "1609263d179ba1ca30a3742fdf35707fc2db03a79a28a4692f1b3bde81800bfb",
+      "content_hash": "bead4a2cf1398a5d7bc6512975c483f7cc50f31922915a983db1df5ce8fe98cc",
       "description": "Writes performance ad-video scripts plus a render-ready beat sheet (about 10s beats with frame and motion prompts) for produce-ad-video. Use for \"ad video script\", \"video ad\", \"UGC script\", \"60 second ad\". Not for editing an existing cut; use produce-ad-video.",
       "aliases": [],
       "positive_triggers": [],
@@ -117,7 +117,7 @@
     {
       "skill": "assess-market-readiness",
       "path": "skills/assess-market-readiness/SKILL.md",
-      "content_hash": "ed85d242161ed07162354a2c27023807d362b55373d335a9e7077dbb9d9cee08",
+      "content_hash": "5dec6050521b26ca709e14843a8ff8cc31c9efc1fda5a249c201d720424c9823",
       "description": "Scores whether the product is ready for its next milestone (launch, hackathon, VC pitch, PMF) from project artifacts: 0-100 score, blocking gaps and a GTM-vs-features route. Use for \"is this ready?\", \"should I launch?\", \"market fit check\".",
       "aliases": [],
       "positive_triggers": [],
@@ -135,7 +135,7 @@
     {
       "skill": "audit-ac",
       "path": "skills/audit-ac/SKILL.md",
-      "content_hash": "46a444a7c47db7b640756638b380c8380191413b2155acf9de9f3f9b0b4e8a88",
+      "content_hash": "215d859ae840cbbfd4be2d9c44c1de288a0c28cf9beb95f8371f770b464a6168",
       "description": "Audits feature specs so every User Story has complete, testable acceptance criteria, rewriting vague ones and adding missing ones, for one feature or all. Use for \"audit- ac\", \"check the ACs for <feature>\", \"are the ACs complete\", \"prep <feature> for QA\".",
       "aliases": [],
       "positive_triggers": [],
@@ -153,7 +153,7 @@
     {
       "skill": "audit-coverage",
       "path": "skills/audit-coverage/SKILL.md",
-      "content_hash": "424dbe80d159d8f4f7d66e8b9fcef93cd6884022191756863e05346adbfa27eb",
+      "content_hash": "49226a2bd346d62de8d01815f939b2d0e8a6ae78c5d681b282629591dba5bc2c",
       "description": "Audits a project against the svc canonical artifact catalog, classifying each artifact CANONICAL, FOREIGN or MISSING into docs/specs/coverage-audit.md with next-skill picks. Use for \"audit coverage\", \"what svc artifacts are missing\", \"check brownfield alignment\". Logs only, no fixes.",
       "aliases": [],
       "positive_triggers": [],
@@ -261,7 +261,7 @@
     {
       "skill": "blend-external",
       "path": "skills/blend-external/SKILL.md",
-      "content_hash": "180e79775ac6f088f4a82ee688204f5c2a5e6e2f68ccedb1230e64b0c32bb5a6",
+      "content_hash": "b47402b771b8a8c1659c3c981f13ec46ed69dc180fb5e127e40079c8e8867c9a",
       "description": "Imports useful patterns from an external repo into svc with attribution and blend history; also re-blends and reviews past blends. Use for \"blend from <repo>\", \"what can we take from X\", \"re-blend\", \"review past blends\". For private sources use blend- private.",
       "aliases": [],
       "positive_triggers": [],
@@ -315,7 +315,7 @@
     {
       "skill": "build-personas",
       "path": "skills/build-personas/SKILL.md",
-      "content_hash": "ad6d5bfc4d4899484def0cd8292154b6769379507af1413d3e9ca98f3e7dc30c",
+      "content_hash": "e8a78c9b5adeff68be2f449661c20f298d7c37454ca3d4eaf3de135368a45cb1",
       "description": "Builds and maintains user personas in docs/specs/personas/ from vision, specs, domain and competitor data; modes for build, audit, add, expand, interview and gap discovery. Use for \"build personas\", \"who are our users\", \"persona gaps\", or when personas are empty.",
       "aliases": [],
       "positive_triggers": [],
@@ -333,7 +333,7 @@
     {
       "skill": "capability-concierge",
       "path": "skills/capability-concierge/SKILL.md",
-      "content_hash": "a8da40c0613dfaa3bf9719e7c1af78cbf0c3b10f6b838ec79e9033306e774bf8",
+      "content_hash": "a403b314824b358bdacb0197108487dd01a6e962984f75fe325877ba2d97cf00",
       "description": "Ranks what to do next across your projects and paid/free resources (ship current project, idle resources, side-earning), citing registry and snapshot rows. Use for \"what's my best move\", \"what am I under-using\", \"route my resources\". Not for picking an svc lane.",
       "aliases": [],
       "positive_triggers": [],
@@ -351,7 +351,7 @@
     {
       "skill": "capability-registry",
       "path": "skills/capability-registry/SKILL.md",
-      "content_hash": "844cf8b72d662c2683351fdf5c33c57968aca45ce5d294cf00856443fce9fde7",
+      "content_hash": "8e1f2890c913745887cde70fe06cd2d6082fc11b25e5bf1f2f6db7a072ddce90",
       "description": "Manages your inventory of paid and free AI/dev resources (subscriptions, quotas, reset cadence, host mapping) in ~/.svc/capabilities/registry.json. Use for \"add a resource to my registry\", \"list my capabilities\", \"what AI tools do I have\".",
       "aliases": [],
       "positive_triggers": [],
@@ -369,7 +369,7 @@
     {
       "skill": "capture-idea",
       "path": "skills/capture-idea/SKILL.md",
-      "content_hash": "f5477e89235b1bbcd687a706c5cded45a960ad153c794f10846c0fce9a9f38f6",
+      "content_hash": "a41347d0bd2e1c2df5d6e15c349bb0da45e2aa73e29ebf6f8982a1a505e57d85",
       "description": "Quickly captures a loose idea as a canonical repo work item without validation or PRD ceremony; From-Proposal mode turns a proposal into WIs. Use for \"store this idea\", \"put this in the backlog\", \"remember this for later\", \"I want to build this now\".",
       "aliases": [],
       "positive_triggers": [],
@@ -387,7 +387,7 @@
     {
       "skill": "catalog-domain-capabilities",
       "path": "skills/catalog-domain-capabilities/SKILL.md",
-      "content_hash": "a62f3932f968959ecf5cbdc1419440a639e945859e1678d1cb206112f5439ca9",
+      "content_hash": "2786e994d08a58e69de42510c9260e252a83bff075642067803092d1e4ae53eb",
       "description": "Builds a queryable Domain Capability Matrix: what the industry does, how fast features become table stakes, mapped Capability to Journey to Spec for gap analysis. Use for \"capability gap analysis\", \"are we missing industry-standard features\", \"what should our product do\".",
       "aliases": [],
       "positive_triggers": [],
@@ -531,7 +531,7 @@
     {
       "skill": "define-code-style",
       "path": "skills/define-code-style/SKILL.md",
-      "content_hash": "77a558a9c486c1e1a2de937632ae67b21d2465b6851fb6a152557b8a0151f356",
+      "content_hash": "65365c22f06591a64df157334d439b2a3f80fd4edaa562322fd4d8b56a678608",
       "description": "Create or audit the project style contract (docs/specs/style-contract.md): naming, structure, conventions. Use for \"code style\", \"naming conventions\", \"style contract\", \"style audit\", \"check code consistency\".",
       "aliases": [],
       "positive_triggers": [],
@@ -549,7 +549,7 @@
     {
       "skill": "design-logo",
       "path": "skills/design-logo/SKILL.md",
-      "content_hash": "8cada72d8eb1c49a83d60f3cdda8d509d2c2ad60fbdd8ce0715dd6a8e98a542c",
+      "content_hash": "3887b7079f7e83b6a01f1ab61af2c1a365bf4abafb34f3b85846265fe5ab831f",
       "description": "Design or redesign a logo, wordmark or favicon as a scalable SVG pack with iterative refinement and in-app-context checks. Use for \"design a logo\", \"make a logo\", \"redesign the logo\", \"logo is bad\", \"favicon\", \"wordmark\".",
       "aliases": [],
       "positive_triggers": [],
@@ -699,7 +699,7 @@
     {
       "skill": "discover-skills",
       "path": "skills/discover-skills/SKILL.md",
-      "content_hash": "e58dc4ebe54b79c845ef9e68597e527f4a2a95920027a8aa220d57f844a762f7",
+      "content_hash": "e3e2d666166197b343c658700c1b9f24a94398e57ea085ef32ab6a81169f7d46",
       "description": "Find and install external agent skills from the open skill ecosystem when there is a capability gap. Use for \"find a skill for X\", \"is there a skill that can\", \"what skills exist for\".",
       "aliases": [],
       "positive_triggers": [],
@@ -717,7 +717,7 @@
     {
       "skill": "discuss-phase",
       "path": "skills/discuss-phase/SKILL.md",
-      "content_hash": "74a76cba1d6057c74525124109c583cc8282cd93e4c7192ccbd2016b6b713d06",
+      "content_hash": "96af3a99b85fbc40f514324c25d86ecd4ccf0522ddd986274b176f1abc32ea34",
       "description": "Resolve unresolved gray areas between validation and implementation into a durable discussion record (decisions, blockers, deferrals, next step). Use for \"discuss the gray areas\", \"open questions before we build\". Not for bugs (diagnose-bug).",
       "aliases": [],
       "positive_triggers": [],
@@ -753,7 +753,7 @@
     {
       "skill": "evaluate-rule",
       "path": "skills/evaluate-rule/SKILL.md",
-      "content_hash": "e8c6d14e9c14863a48c98ce87ef9fc43221ff7662bd6969a49ce53259d958720",
+      "content_hash": "5ee337dc24bdf66d52972736e6b7ead965ae6e0d77d087f08b593f4ce5f5303b",
       "description": "Decide whether a candidate rule earns its per-turn token cost or just restates default model behaviour. Use for \"evaluate this rule\", \"is this rule worth it\", \"audit rules/\", and before registering any rule in rulesRegistry.",
       "aliases": [],
       "positive_triggers": [],
@@ -771,7 +771,7 @@
     {
       "skill": "evolve-framework",
       "path": "skills/evolve-framework/SKILL.md",
-      "content_hash": "44f4e2ad3e96df6bffa5b5219269f7c4b15048d30b971d2af322e09cda911489",
+      "content_hash": "fddc33b65ae6bcfb5a66d84d9612214a06c55e45a8ecf01add993b011a31a722",
       "description": "Find improvement opportunities in the svc framework itself and write gap proposals. Use for \"evolve the framework\", \"what should we fix next\", \"find gaps\", \"framework audit\". To implement fixes use improve-framework.",
       "aliases": [],
       "positive_triggers": [],
@@ -843,7 +843,7 @@
     {
       "skill": "extract-bootstrap",
       "path": "skills/extract-bootstrap/SKILL.md",
-      "content_hash": "ae8fc57fab417783300c741d0ae327a5aa47a50a70eb04dda94b24d1c2738648",
+      "content_hash": "15cf6d4bc5f3b1e81cb4eca45c051fadafbd3a290ce064a21446d94d46e44729",
       "description": "Extract production-proven patterns from a real repo into a reusable bootstrap template. Use for \"extract patterns from\", \"make a template from\", \"create bootstrap from\" this repo.",
       "aliases": [],
       "positive_triggers": [],
@@ -879,7 +879,7 @@
     {
       "skill": "find-opportunity",
       "path": "skills/find-opportunity/SKILL.md",
-      "content_hash": "9e4a6e7785f49b16a1d2a1f2974bd56aabb9bc5cbbd71f5d9f3411cd5a8bd2ae",
+      "content_hash": "93508297fbac71338e55076cdca7db8330d2b369797c0f5eed4d6e630ab48e1b",
       "description": "Find and rank the fastest paths to online revenue matched to the builder's skills and distribution. Use for \"what should I build\", \"fastest path to revenue\", \"find me a project\", \"I need money\", or after a NO-SHIP verdict.",
       "aliases": [],
       "positive_triggers": [],
@@ -897,7 +897,7 @@
     {
       "skill": "generate-visuals",
       "path": "skills/generate-visuals/SKILL.md",
-      "content_hash": "18d9dfe48fc60a2fc2f3ee90a0e1d8f7da33b830f8cb2109d87ae2e95c740694",
+      "content_hash": "c6875d66339ddeed2960e026741ffa8a4b1d99aebb0fdd9acf51c7ccc3c5631b",
       "description": "Route an image or visual asset brief across available image-generation providers and return ranked candidates with provenance. Use for \"make a hero image\", \"generate a UI mockup\", \"branded illustrations\", \"I need imagery\".",
       "aliases": [],
       "positive_triggers": [],
@@ -981,7 +981,7 @@
     {
       "skill": "honest-diagnosis",
       "path": "skills/honest-diagnosis/SKILL.md",
-      "content_hash": "56f54ee52e004c3d8e7b94fc88ef53f8737d4074996b3ec0d92ef94ca99f1fdd",
+      "content_hash": "1797f41e30656f49e895c9a956f6f6ff6bb77b777bc8caba2c619b65dfd7df5b",
       "description": "Evidence-graded answer to why the builder is not shipping revenue products, naming concrete blockers from the capability registry and decision logs. Use for \"why am I not shipping\", \"honest diagnosis\", \"what's my real blocker\".",
       "aliases": [],
       "positive_triggers": [],
@@ -1053,7 +1053,7 @@
     {
       "skill": "ingest-guide-batch",
       "path": "skills/ingest-guide-batch/SKILL.md",
-      "content_hash": "9d5aa4ea22f9741fadbf610bc51b8714dbb37afd93dbb714190ed16913793450",
+      "content_hash": "5ead1d7a4f4aa8d1f7384ed1a97c4689856f14bd178dd99bc358426475be393a",
       "description": "Triage a directory of saved guides in parallel by running ingest-guide on each and producing one digest of discard/store/promote decisions. Use when: batch ingest, fan out guides, process N guides in parallel, bulk ingestion.",
       "aliases": [],
       "positive_triggers": [],
@@ -1089,7 +1089,7 @@
     {
       "skill": "landing-page",
       "path": "skills/landing-page/SKILL.md",
-      "content_hash": "43f01c72fa68e20e6884d9e24804dc856f2f068d274c809d531eeb773270ba77",
+      "content_hash": "86deb08c4972018b6d07944781f9ebe9af0c8f0425b8783a8e3e6ae7d0d9d009",
       "description": "Build or redesign a marketing page (home, feature, pricing) from marketing context, references and copy into an implementation-ready brief, gated on the rendered result. Use when: build a landing, ship the home page, redesign hero, marketing page, fix the landing.",
       "aliases": [],
       "positive_triggers": [],
@@ -1107,7 +1107,7 @@
     {
       "skill": "launch-knowledge",
       "path": "skills/launch-knowledge/SKILL.md",
-      "content_hash": "d4b777c5b7344215d7554bfab801406be29e5589860bc03c4094726fdd73372c",
+      "content_hash": "4f46b9574c4a75469323b49f6df6d727d210dfd2f2956763656fccc741800143",
       "description": "Founder launch knowledge: legal entities by jurisdiction (BG, EE, US-DE), startup credits, hosting bundles, first-100-customers playbooks, tuned to the builder profile. Use when: should I incorporate, register a company, startup credits, Stripe Atlas, Delaware LLC, свободна професия, БУЛСТАТ, how do I launch.",
       "aliases": [],
       "positive_triggers": [],
@@ -1125,7 +1125,7 @@
     {
       "skill": "list-work-items",
       "path": "skills/list-work-items/SKILL.md",
-      "content_hash": "e4b03d930bd5804f9405cf7460c0fd2e243bd225be8b46da0f9d726eaf7ac030",
+      "content_hash": "21902b5650103fbd58438decbea2c47243faf6c7d04d31f032f3a7a2f0f4acdb",
       "description": "List the local svc backlog ordered by dependency and priority, with why each item matters. Use when: show the backlog, what to build next, list work items. Local backlog only, not a milestone roadmap and no GitHub sync.",
       "aliases": [],
       "positive_triggers": [],
@@ -1176,7 +1176,7 @@
     {
       "skill": "manage-learnings",
       "path": "skills/manage-learnings/SKILL.md",
-      "content_hash": "c6fe0d44650d7ae7779193f1f6a9f0c44ca0bdd9ab1247b75b38bd75f2d96752",
+      "content_hash": "e61c6034a264c55fb37a817d67e3833d3f2f3a4fcf0b6db801de7e834a9dbc82",
       "description": "Review, search, prune, promote and export learnings captured across sessions. Use when: what did we learn, show learnings, search learnings for <topic>, prune stale learnings, promote auto-captured learnings.",
       "aliases": [],
       "positive_triggers": [],
@@ -1266,7 +1266,7 @@
     {
       "skill": "plan-blast-radius",
       "path": "skills/plan-blast-radius/SKILL.md",
-      "content_hash": "e586fb14df960b359497edc26466d3607d45e3d7815855f73eb638eb49f523e1",
+      "content_hash": "53ed397f2edc5b9e389da674147d16f5cea93513d207bbddc58f8d2b8a9ba01e",
       "description": "Classify terraform plan or helm diff changes by destruction risk into SEV-1..SEV-4; SEV-1/2 force a human checkpoint. Use when: blast radius, what could break, is this safe to apply, before applying any infra change.",
       "aliases": [],
       "positive_triggers": [],
@@ -1284,7 +1284,7 @@
     {
       "skill": "plan-capabilities",
       "path": "skills/plan-capabilities/SKILL.md",
-      "content_hash": "ae5d215fe275c3e3109246766045137e0232886664cecf7838cc7e3d9cc6599c",
+      "content_hash": "0630ceebb5096b0daa04ee93e5b1ee53b0640bbdc8f5b01c5a6ee34663472ae3",
       "description": "Classify the project type and plan its capabilities: MCPs, installable skills, research sources, maintenance cadence, framework gaps. Use when: starting a project or new domain, what tools do I need, what MCPs should I add, capability plan.",
       "aliases": [],
       "positive_triggers": [],
@@ -1320,7 +1320,7 @@
     {
       "skill": "platform-operating-architect",
       "path": "skills/platform-operating-architect/SKILL.md",
-      "content_hash": "6df7f21d23043aaf565d7e1e5337d47abc58549fd5471d7b7da2ad8d5857e763",
+      "content_hash": "15c7674c2f0d2d12b8f852d02a6be3295f46e99ea0825af861ddf27016b673f4",
       "description": "Work out how a project runs on a hosted platform (Base44, Vercel, Replit, Bolt, Firebase, Supabase) and set the safe operating model: env split, platform-native vs code, integration wrapping. Use when a repo is platform-heavy or asks local/dev/staging/prod.",
       "aliases": [],
       "positive_triggers": [],
@@ -1446,7 +1446,7 @@
     {
       "skill": "recall-stack-knowledge",
       "path": "skills/recall-stack-knowledge/SKILL.md",
-      "content_hash": "a681c5c5bca370f90cfcf2c15e5442ab280e8776e82ae54f109806a7e854cd42",
+      "content_hash": "15f0f1921d0f8629199168f1237417be1710368afebf1cf6b96f70f208191209",
       "description": "Load the minimal stack-specific knowledge slice (domains, specs, learnings, decisions) for a known stack or provider before work starts, and flag gaps. Use when: what do I need to know before touching this stack.",
       "aliases": [],
       "positive_triggers": [],
@@ -1551,7 +1551,7 @@
     {
       "skill": "review-exec",
       "path": "skills/review-exec/SKILL.md",
-      "content_hash": "3bfce0b4343d1cbc28a747f912a07fc424896208bd8678783c424ae2d9779e5d",
+      "content_hash": "273b9aa3d7f377949e352e4ce9c98452df3bd5c54fbd5b28f2163d30eeeabe0b",
       "description": "Required review gate on an executed diff before landing: self-review plus an independent different-family review via review-cross-model, recorded as a receipt. Use after execute-changeset and before land-changeset.",
       "aliases": [],
       "positive_triggers": [],
@@ -1654,7 +1654,7 @@
     {
       "skill": "roadmap-evaluation",
       "path": "skills/roadmap-evaluation/SKILL.md",
-      "content_hash": "e66a4c2fc803ac04ec317716f094639ad2efc947636ada0a9438b9750aca7fa9",
+      "content_hash": "443d6c0e260ed504b8cdf62e8ea971f9e2642c0cc319c0c4020d6e94faa76a60",
       "description": "Turn project state, work items, vision and builder profile into a prioritized, costed milestone roadmap with time to first paying customer. Use for 'show me the roadmap', 'prioritize my backlog', 'how long until revenue', 'can I afford this'.",
       "aliases": [],
       "positive_triggers": [],
@@ -1739,7 +1739,7 @@
     {
       "skill": "strategic-decision",
       "path": "skills/strategic-decision/SKILL.md",
-      "content_hash": "cbe8b242a95d2057cbab177c12dffdee334afbc042371e3461979ed93b779492",
+      "content_hash": "33f15834ff17c8a4eae9e26cd96671a7e54ce5bd349ece4e04da3040593c2f78",
       "description": "N-way strategic trade study: build vs buy, vendor, framework, database, hosting, AI model, payment provider, pricing or pivot. Use for 'which X should I use', 'compare providers', 'pick a vendor'. Not within-feature architecture (use design-tech).",
       "aliases": [
         "trade study",
@@ -1792,7 +1792,7 @@
     {
       "skill": "svc-advisor",
       "path": "skills/svc-advisor/SKILL.md",
-      "content_hash": "db74aa8092d1dd2b8229e7e909abcb1df7b94ca161c735c52676ad39edcb7393",
+      "content_hash": "2010f14d1d8885ea70d3415f55dbdb2eb0f803ed46a71ca540a5872dae8da786",
       "description": "Answer questions about the svc framework from its stored knowledge base instead of improvising. Use for 'is svc good at X', 'how does svc handle Y', 'is there a skill for X', 'compare svc to gstack/superpowers', or any framework capability question.",
       "aliases": [],
       "positive_triggers": [],
@@ -1864,7 +1864,7 @@
     {
       "skill": "teach-project",
       "path": "skills/teach-project/SKILL.md",
-      "content_hash": "1490fef558736b2738ad69369b01e6096e2025a6322e3e3657591bd12f62d33a",
+      "content_hash": "4790f80fdbdc2c5ce19d24cd78bd5700fd9f03acea63337df153fe5c65d3775b",
       "description": "Teach the builder what was built and how to run it, from this repo's files; quizzes knowledge gaps and updates the builder profile. Domain mode teaches the field alongside a build, from its terms to its code. Use for 'teach me my project', 'owner guide', 'onboard me', 'quiz me', 'teach me this domain', 'explain as it builds'.",
       "aliases": [],
       "positive_triggers": [],
@@ -1918,7 +1918,7 @@
     {
       "skill": "track-topology-diff",
       "path": "skills/track-topology-diff/SKILL.md",
-      "content_hash": "1bf0588a09c02253cae4c0cf92174a1f23d7cb630b37066604a9754bac1052f6",
+      "content_hash": "2105d59cfd3de33561e62fa9f34a5ff8265c3d756afd7f33ad00855ed1c408b6",
       "description": "Snapshot infra state after an apply (terraform state, kubectl resources) and diff against the prior baseline, flagging drift not in IaC. Use for 'topology drift', 'state diff', 'what changed in the cluster', or after verify-promotion in infra lanes.",
       "aliases": [],
       "positive_triggers": [],
@@ -2081,7 +2081,7 @@
     {
       "skill": "wsl2-audio",
       "path": "skills/wsl2-audio/SKILL.md",
-      "content_hash": "9c7b2c2642a626ef30d199cb6b3b03b0fdaf6a62973ab4e8df92b76c79f5f1b1",
+      "content_hash": "ade5957de4c6ff27e945789e393ecc9e6e21644f663b79e3037c3db4bab3265a",
       "description": "Set up, diagnose and fix audio input and output in WSL2, including Claude Code voice mode, WSLg, PulseAudio and ALSA. Use when sound, mic or voice mode does not work on WSL2.",
       "aliases": [],
       "positive_triggers": [],

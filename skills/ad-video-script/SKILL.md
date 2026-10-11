@@ -146,10 +146,9 @@ The beat sheet is consumed by the **`produce-ad-video`** skill (WI-402 / `ad-vid
 
 `ad-video-script` is a utility/sidecar skill (no fixed lane position — `chain.lanes: {}`). It is invoked on demand by the `ad-strategist` agent, by `route-workflow` for ad-video / performance-creative WIs, or standalone.
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
+- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume; on Codex, mirror only the active step in `update_plan`.
+- Routing, parent-only host mirroring, completion/skip/next-task loading: `references/task-graph-chaining-protocol.md`.
 - Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror; record phases P1–P6 via `record-phase`
 
 **Next:** hand the beat-sheet path to **`produce-ad-video`**. `--progressive`: none (sidecar). `--skip`: skip when a current beat sheet for the same (product, scenario, placement) already exists and the product has not changed.

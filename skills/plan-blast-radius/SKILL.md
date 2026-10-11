@@ -115,7 +115,7 @@ task's blocked state or the explicit approval artifact that unblocked it.
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
+### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
 
 - Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume — Claude mirrors with `TaskList` / `TaskUpdate`; Kimi observes via `/task` + `TaskList`/`TaskOutput`; Codex and other hosts without native task-mutation APIs mirror only the active step in `update_plan`.
 - After classification, if verdict is "HUMAN CHECKPOINT REQUIRED" set the NEXT task to `blocked` with reason "awaiting human SEV-1/2 approval"; require explicit user reply to unblock.

@@ -80,3 +80,20 @@ three receipts schema-validate → pre-push envelope byte-identical. WI-376's
 evidence (audit found a hole review-exec missed) is preserved because the wave
 keeps every lens. The merge is mechanical, so the wave cannot quietly drop or
 down-rank a finding. LOW risk.
+
+## One discovery batch — follow-up rules (shared)
+Shared by `review-plan`, `review-exec` and `review-cross-model`; each skill keeps
+its own reviewer-topology and round-cap text inline.
+
+Do not run a second full discovery pass after seeing the first reviewer output.
+Deduplicate findings into one numbered list, verify factual claims against source
+and tests, then implement the accepted fixes in one batch.
+
+Follow-ups may inspect only an original finding, its actual patch, and regressions
+caused by that patch. Every follow-up request names the parent finding IDs and the
+patch delta. Use focused deterministic checks first; a model recheck is conditional
+on unresolved judgment, not a mandatory extra round. Include sufficient dependency
+context to judge the patch, but explicitly prohibit rediscovery over unchanged code.
+An unrelated new idea goes to a separate post-delivery refinement list; it does not
+restart this gate. A newly proven imminent security/data-loss defect is escalated
+with concrete evidence, not used to authorize another broad review loop.

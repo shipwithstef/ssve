@@ -203,18 +203,9 @@ Run one full review of the frozen branch. If the owner topology requires two
 reviewers, launch them in parallel on the same snapshot: both cover the complete
 branch, with different emphasis (correctness/data/authority versus
 integration/failure paths/operability). Collect both results before changing code.
-Do not run a second full discovery pass after seeing the first reviewer output.
-Deduplicate findings into one numbered list, verify factual claims against source
-and tests, then implement the accepted fixes in one batch.
-
-Follow-ups may inspect only an original finding, its actual patch, and regressions
-caused by that patch. Every follow-up request names the parent finding IDs and the
-patch delta. Use focused deterministic checks first; a model recheck is conditional
-on unresolved judgment, not a mandatory extra round. Include sufficient dependency
-context to judge the patch, but explicitly prohibit rediscovery over unchanged code.
-An unrelated new idea goes to a separate post-delivery refinement list; it does not
-restart this gate. A newly proven imminent security/data-loss defect is escalated
-with concrete evidence, not used to authorize another broad review loop.
+No second full discovery pass: dedupe into one numbered list, verify claims, fix
+in one batch; follow-ups inspect only a named finding, its patch and patch-caused
+regressions (rules: `references/parallel-review-station.md` § One discovery batch).
 
 The three-round limit is a ceiling on necessary corrective exchanges, never a target
 and never permission for three full reviews. Preserve the original finding census,
