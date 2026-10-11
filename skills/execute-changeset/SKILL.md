@@ -124,6 +124,8 @@ Build from the brief, not a changeset. The loop:
    - run `scripts/chaos-probe.mjs` against the brief's steady state;
    - run `scripts/quality-probes.mjs` and strengthen the rule tests until the mutation score is at least 0.6 (the RPG pilot's bounded build shipped 0.27 without this floor);
    - for a web app, `node scripts/web-probes.mjs --dir .` reports zero accessibility violations and console errors, readable text, 44 px tap targets, click response under 100 ms, security headers and throttling, and no trust in client-sent ids (the RPG pilot's bounded builds were the leanest and most accessible but left hardening undone); then a screenshot pass for a deliberate art direction;
+   - drive the main journey through the real interface as a user would (a browser script that clicks and types, not calls into the code); in the AI-quest pilot every bounded build passed its rule tests yet broke a click path;
+   - for anything with state, walk it: random walks and one wrong move at each step of the main journey must never reach a state the user cannot recover from (five of six solo and bounded quest builds had such dead ends);
    - the build's own tests must pass (`node --test` or the project's runner exits 0); a failing own test is a failing check, never shipped (three of six pilot builds shipped one);
    - before handing to review, delete scratch and QA files nothing references.
 

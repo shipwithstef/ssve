@@ -3,7 +3,7 @@
  * outcome-eval.mjs — measure whether the framework's method changes outcomes, per model.
  *
  *   node scripts/outcome-eval.mjs run [--model haiku] [--judge sonnet|none] [--reps 3] [--arms plain,blueprint]
- *                                     [--tasks a,b] [--parallel 4] [--out <results.json>]
+ *                                     [--tasks a,b] [--parallel 4] [--max-usd 40] [--out <results.json>]
  *    node scripts/outcome-eval.mjs check            # graders pass their reference, fail planted bugs
  *   node scripts/outcome-eval.mjs regrade <results.json>  # re-score kept artifacts after a grader fix
  *
@@ -84,7 +84,7 @@ export const ARMS = {
     "3. Skeleton: a runnable shell, the contract and the checks. Commit as soon as it runs.",
     `4. Settle each open question by trying variants against its check: write a spec JSON and run \`node ${ROOT}/scripts/probe-loop.mjs run --spec <spec.json> --out <result.json>\` (fields: question, base, prompt, owned, check, variants, model haiku), then \`node ${ROOT}/scripts/probe-loop.mjs apply --result <result.json> --to .\`. Record the winner and what the others taught you in the decision log.`,
     "5. Fill the rest in small steps, committing after each passing check.",
-    `6. Harden: write chaos.json (start, ready, steady check, endpoints) and run \`node ${ROOT}/scripts/chaos-probe.mjs --dir . --spec chaos.json\`; fix what fails. Then run \`node ${ROOT}/scripts/quality-probes.mjs . --mutants 20\` and strengthen the tests of the game rules until mutation.score is at least 0.6 (tests that catch real defects, not more tests). Your own tests must pass (\`node --test\` exits 0): a failing test of yours is a failing check, fixed before you stop. For a web app, run \`node ${ROOT}/scripts/web-probes.mjs --dir .\` and fix what it reports: zero accessibility violations and console errors, body text at least 16 px, tap targets at least 44 px on a phone, a visible response to every click within 100 ms, security headers (CSP, nosniff, framing), a flood of requests throttled, and the server never trusting an id the client sends. Then look at screenshots of every screen and give it a deliberate art direction: a palette and shapes that belong to this world, not defaults. Delete scratch files nothing uses.`,
+    `6. Harden: write chaos.json (start, ready, steady check, endpoints) and run \`node ${ROOT}/scripts/chaos-probe.mjs --dir . --spec chaos.json\`; fix what fails. Then run \`node ${ROOT}/scripts/quality-probes.mjs . --mutants 20\` and strengthen the tests of the game rules until mutation.score is at least 0.6 (tests that catch real defects, not more tests). Play the main journey through the real interface as a user would (a browser script that clicks and types, not calls into the code), and for anything with state, walk it: random walks and one wrong move at each step must never leave the user stuck. Your own tests must pass (\`node --test\` exits 0): a failing test of yours is a failing check, fixed before you stop. For a web app, run \`node ${ROOT}/scripts/web-probes.mjs --dir .\` and fix what it reports: zero accessibility violations and console errors, body text at least 16 px, tap targets at least 44 px on a phone, a visible response to every click within 100 ms, security headers (CSP, nosniff, framing), a flood of requests throttled, and the server never trusting an id the client sends. Then look at screenshots of every screen and give it a deliberate art direction: a palette and shapes that belong to this world, not defaults. Delete scratch files nothing uses.`,
     "7. Stop when every done-when check passes, including one per named deliverable and your own tests. Do not add systems the build does not use.",
   ].join("\n"),
   blueprint: [
@@ -249,6 +249,27 @@ export async function pool(items, n, fn) {
   return out;
 }
 
+// A spending cap for a whole run. Each job is offered an equal share of what is not yet
+// spent or promised to a job in flight; the builder's share goes to the CLI as
+// --max-budget-usd, with JUDGE_SHARE kept for the judge. That flag is soft (measured
+// 2026-10-11: a $0.003 cap ran all 21 turns and spent $0.0097, flagged only at the end), so
+// actual spend is charged when a job settles: an overspend shrinks every later share, and no
+// job starts once the money is gone. The total can still exceed the cap by what the jobs in
+// flight overspend. A job whose share is below the floor is skipped and recorded.
+export const JUDGE_SHARE = 0.15;
+export class Budget {
+  constructor(capUsd, jobs, floorUsd = 0.5) { this.cap = capUsd; this.left = jobs; this.floor = floorUsd; this.spent = 0; this.promised = 0; }
+  claim() {
+    if (this.cap == null) { this.left--; return { usd: null }; }
+    const share = (this.cap - this.spent - this.promised) / Math.max(1, this.left);
+    this.left--;
+    if (share < this.floor) return null;
+    this.promised += share;
+    return { usd: share, builder: +(share * (1 - JUDGE_SHARE)).toFixed(2), judge: +(share * JUDGE_SHARE).toFixed(2) };
+  }
+  settle(claim, actualUsd) { if (claim?.usd != null) this.promised -= claim.usd; this.spent += actualUsd || 0; }
+}
+
 // Seeded statistics so recorded evidence re-derives to the same numbers every time.
 function rng(seed = 20261010) {
   return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -306,13 +327,13 @@ export function parseJudge(text) {
 
 // Blind rubric judging for tasks without a full contract (judge.md). The judge sees the
 // product, never the arm or the instruction that produced it.
-export async function judge(dir, task, model) {
+export async function judge(dir, task, model, maxUsd = null) {
   const rubric = path.join(TASKS, task, "judge.md");
   if (!model || !fs.existsSync(rubric)) return {};
   fs.rmSync(path.join(dir, "__hidden.test.mjs"), { force: true });
   for (const f of ["BRIEF.md", "RULES.md"]) if (fs.existsSync(path.join(dir, f))) fs.renameSync(path.join(dir, f), path.join(dir, `NOTES-${f}`));
   const jm = taskConfig(task).judge_model || model;
-  const r = await runAgent(dir, fs.readFileSync(rubric, "utf8"), jm, 1800000, "Read,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*)", 80);
+  const r = await runAgent(dir, fs.readFileSync(rubric, "utf8"), jm, 1800000, "Read,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*)", 80, null, maxUsd ? ["--max-budget-usd", String(maxUsd)] : []);
   const verdict = parseJudge(r.text);
   return verdict ? { judge_model: jm, judge_total: verdict.total, judge_scores: verdict.scores, judge_verified_journeys: verdict.verified_journeys ?? null, judge_money_pump: verdict.money_pump_found ?? null, judge_notes: verdict.notes || "", judge_cost_usd: r.cost_usd } : { judge_model: jm, judge_error: r.error || "no JSON verdict" };
 }
@@ -447,7 +468,7 @@ async function main(argv) {
     process.stdout.write(JSON.stringify(out, null, 2) + "\n");
     return 0;
   }
-  if (argv[0] !== "run") { process.stderr.write("usage: outcome-eval.mjs run [--model haiku] [--reps 3] [--arms plain,blueprint] [--tasks ...] [--parallel 4] [--out file] | check\n"); return 2; }
+  if (argv[0] !== "run") { process.stderr.write("usage: outcome-eval.mjs run [--model haiku] [--reps 3] [--arms plain,blueprint] [--tasks ...] [--parallel 4] [--max-usd 40] [--out file] | check\n"); return 2; }
   const model = opt("--model", "haiku"), reps = Number(opt("--reps", 3));
   const judgeModel = opt("--judge", "sonnet") === "none" ? null : opt("--judge", "sonnet");
   const arms = opt("--arms", "plain,blueprint").split(",");
@@ -458,8 +479,13 @@ async function main(argv) {
   fs.mkdirSync(keepRoot, { recursive: true });
   const jobs = [];
   for (const task of tasks) for (const arm of arms) for (let r = 0; r < reps; r++) jobs.push({ task, arm, rep: r });
-  process.stderr.write(`running ${jobs.length} jobs on ${model}\n`);
+  const maxUsd = opt("--max-usd", null) == null ? null : Number(opt("--max-usd"));
+  if (maxUsd != null && !(maxUsd > 0)) { process.stderr.write("--max-usd must be a positive number of dollars\n"); return 2; }
+  const budget = new Budget(maxUsd, jobs.length);
+  process.stderr.write(`running ${jobs.length} jobs on ${model}${maxUsd != null ? ` within $${maxUsd}` : ""}\n`);
   const rows = await pool(jobs, Number(opt("--parallel", 4)), async (job) => {
+    const claim = budget.claim();
+    if (!claim) { process.stderr.write(`${job.task}/${job.arm}#${job.rep}: skipped, budget spent\n`); return { ...job, error: "skipped: budget", spent_before_usd: +budget.spent.toFixed(2) }; }
     const dir = prepare(job.task);
     const t = Date.now();
     const cfg = taskConfig(job.task);
@@ -472,16 +498,18 @@ async function main(argv) {
     const sha = crypto.createHash("sha256").update(isPillarArm(job.arm) ? prompts.join("\n\0\n") : prompts[0]).digest("hex").slice(0, 12);
     const wrap = builderWrap(dir);
     for (const prompt of prompts) {
-      const step = await runAgent(dir, prompt, model, cfg.timeout_ms, isPillarArm(job.arm) ? cfg.tools : armTools(cfg.tools, job.arm), cfg.max_turns, effort, [], wrap);
+      const stepCap = claim.builder != null ? Math.max(0.01, +(claim.builder - (agent.cost_usd || 0)).toFixed(2)) : null;
+      const step = await runAgent(dir, prompt, model, cfg.timeout_ms, isPillarArm(job.arm) ? cfg.tools : armTools(cfg.tools, job.arm), cfg.max_turns, effort, stepCap != null ? ["--max-budget-usd", String(stepCap)] : [], wrap);
       replies.push(String(step.text || "").slice(-400));
       if (step.error) { agent = { ...agent, error: `step ${agent.steps + 1}: ${step.error}` }; break; }
       agent = { ...step, cost_usd: (agent.cost_usd || 0) + (step.cost_usd || 0), turns: (agent.turns || 0) + (step.turns || 0), duration_ms: (agent.duration_ms || 0) + (step.duration_ms || 0), steps: agent.steps + 1 };
     }
     // The end of each step's final reply, so a run that wrote nothing still says why.
-    const row = { ...job, builder_sandbox: wrap?.name ?? null, model, ...(effort ? { effort } : {}), pillar: cfg.pillar, prompt_sha: sha, started_at: new Date(t).toISOString(), wall_ms: Date.now() - t, ...agent, step_replies: replies };
+    const row = { ...job, ...(claim.usd != null ? { budget_usd: +claim.usd.toFixed(2) } : {}), builder_sandbox: wrap?.name ?? null, model, ...(effort ? { effort } : {}), pillar: cfg.pillar, prompt_sha: sha, started_at: new Date(t).toISOString(), wall_ms: Date.now() - t, ...agent, step_replies: replies };
     // A run that ended (even at its turn limit) is graded: hitting the limit is a failure to
     // count, not an error to hide. Only a crash or timeout with no result is an error.
-    if (!agent.error) Object.assign(row, grade(dir, job.task), await judge(dir, job.task, judgeModel));
+    if (!agent.error) Object.assign(row, grade(dir, job.task), await judge(dir, job.task, judgeModel, claim.usd != null ? Math.max(0.05, +(claim.usd - (agent.cost_usd || 0)).toFixed(2)) : null));
+    budget.settle(claim, (row.cost_usd || 0) + (row.judge_cost_usd || 0));
     delete row.text;
     // Keep what was built (minus dependencies) so a grader fix can re-score it for free.
     const keep = path.join(keepRoot, `${job.task}-${job.arm}-${job.rep}`);
