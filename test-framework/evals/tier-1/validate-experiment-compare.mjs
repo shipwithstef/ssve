@@ -66,5 +66,7 @@ test("a leader ranked only by its prior is never shipped; trial estimates stay f
   const far = compare({ variants: [{ name: "A", trials: 40, successes: 3 }, { name: "B", trials: 38, successes: 1 }], threshold: 1e-18 });
   assert.ok(Number.isSafeInteger(far.more_trials_per_variant) && far.more_trials_per_variant <= 1e9);
   assert.equal(JSON.parse(JSON.stringify(far)).more_trials_per_variant, far.more_trials_per_variant, "no Infinity/null in JSON");
+  const ok2 = [{ name: "a", trials: 50, successes: 5 }, { name: "b", trials: 50, successes: 4 }];
+  for (const bad of [{ prior: [1, Infinity] }, { threshold: Infinity }, { threshold: NaN }]) assert.throws(() => compare({ variants: ok2, ...bad }), (e) => e.code === 2);
   for (const samples of [0, 10.5, -1]) assert.throws(() => compare({ variants: [{ name: "a", trials: 50, successes: 5 }, { name: "b", trials: 50, successes: 4 }], samples }), (e) => e.code === 2);
 });

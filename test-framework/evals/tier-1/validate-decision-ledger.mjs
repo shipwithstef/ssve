@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { calibration, review, predictionRow, readLedger } from "../../../scripts/decision-ledger.mjs";
+import { calibration, review, predictionRow, readLedger, resolveProfile } from "../../../scripts/decision-ledger.mjs";
 import { evaluate, rangeOf, SCHEMA } from "../../../scripts/decision-engine.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -87,12 +87,15 @@ test("review pins observations over profile overrides and drops their correlatio
   assert.equal(r.hindsight.winner, "hold");
 });
 
-test("review says the model file is missing instead of 'no observations'", (t) => {
+test("review replays the recorded snapshot; only a legacy row without one reports a missing file", (t) => {
   const w = workspace(t);
   assert.equal(w.run("record", "--model", "m.json", "--id", "d1").status, 0);
   assert.equal(w.run("observe", "--id", "d1", "--var", "x=0.2").status, 0);
   fs.rmSync(path.join(w.dir, "m.json"));
-  assert.match(w.run("review", "--id", "d1").stdout, /model file not found at/);
+  assert.match(w.run("review", "--id", "d1").stdout, /chose \S+; (still the right choice|with what is known now)/);
+  const legacy = { ...predictionRow(model, evaluate(model), { id: "old", modelPath: "gone.json" }) }; delete legacy.model_snapshot;
+  const r = review([legacy, { type: "observation", id: "old", variables: { x: 0.2 } }], "old", { root: w.dir });
+  assert.ok(r.model_missing && !r.hindsight);
 });
 
 test("the reality/estimate ratio averages only the observations that entered it", () => {
@@ -102,4 +105,36 @@ test("the reality/estimate ratio averages only the observations that entered it"
   assert.equal(calibration(rows).variables.find((v) => v.variable === "x").observed_over_estimate, 4);
   const onlyNonPositive = [predictionRow(model, res, { id: "n1" }), { type: "observation", id: "n1", variables: { x: 0 } }];
   assert.equal(calibration(onlyNonPositive).variables[0].observed_over_estimate, null);
+});
+
+test("review replays the recorded snapshot even after the model file is edited", (t) => {
+  const w = workspace(t);
+  assert.equal(w.run("record", "--model", "m.json", "--id", "d1").status, 0);
+  assert.equal(w.run("observe", "--id", "d1", "--var", "x=0.2").status, 0);
+  const edited = { ...model, options: [{ id: "risky", value: "100" }, { id: "safe", value: "sure" }] };
+  fs.writeFileSync(path.join(w.dir, "m.json"), JSON.stringify(edited));
+  const r = review(w.rows(), "d1", { root: w.dir });
+  assert.equal(r.model_changed_since_record, true);
+  assert.equal(r.hindsight.still_right, false, "the edit must not rewrite history");
+  assert.match(w.run("review", "--id", "d1").stdout, /model file changed since record; replayed the recorded snapshot/);
+});
+
+test("an imported result fixes the profile and must belong to the model", () => {
+  const m = { ...model, profiles: { tight: { variables: { sure: { dist: "const", value: 0.9 } } } } };
+  const res = evaluate(m, { profile: "tight" });
+  assert.equal(resolveProfile(m, res, undefined), "tight");
+  assert.equal(predictionRow(m, res).profile, "tight");
+  assert.throws(() => resolveProfile(m, res, "other"), (e) => e.code === 2 && /disagrees/.test(e.message));
+  assert.throws(() => resolveProfile({ ...m, question: "another" }, res), (e) => e.code === 2);
+  assert.throws(() => resolveProfile({ ...m, options: [...m.options, { id: "third", value: "0" }] }, res), (e) => e.code === 2);
+});
+
+test("hindsight conditions correlated variables on the observation", () => {
+  const m = { schema: SCHEMA, question: "risk or safe", samples: 20000, seed: 5,
+    variables: { x: { dist: "normal", mean: 0, sd: 1 }, y: { dist: "normal", mean: 0, sd: 1 } },
+    correlations: [{ a: "x", b: "y", rho: 0.9 }], options: [{ id: "risk", value: "y" }, { id: "safe", value: 0.5 }] };
+  const res = evaluate(m); assert.equal(res.winner.id, "safe");
+  const r = review([predictionRow(m, res, { id: "k" }), { type: "observation", id: "k", variables: { x: 2 } }], "k");
+  // E[y | x = 2] = 0.9 * 2 = 1.8 > 0.5
+  assert.equal(r.hindsight.winner, "risk"); assert.deepEqual(r.hindsight.conditioned_on, ["x"]);
 });

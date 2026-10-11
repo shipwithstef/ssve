@@ -49,10 +49,10 @@ export function compare({ variants, threshold = 0.001, prior = [1, 1], value_per
   const names = new Set();
   for (const v of variants) {
     if (!v.name || names.has(v.name)) throw usage(`variant names must be unique and non-empty (${v.name})`); names.add(v.name);
-    if (!Number.isInteger(v.trials) || !Number.isInteger(v.successes) || v.trials < 0 || v.successes < 0 || v.successes > v.trials) throw usage(`variant ${v.name}: need integers 0 <= successes <= trials`);
+    if (!v || !Number.isInteger(v.trials) || !Number.isInteger(v.successes) || v.trials < 0 || v.successes < 0 || v.successes > v.trials) throw usage(`variant ${v.name}: need integers 0 <= successes <= trials`);
   }
-  if (!(prior[0] > 0 && prior[1] > 0)) throw usage("prior must be two positive numbers");
-  if (!(threshold > 0)) throw usage("threshold must be > 0");
+  if (!Array.isArray(prior) || prior.length !== 2 || !prior.every((x) => Number.isFinite(x) && x > 0)) throw usage("prior must be two finite positive numbers");
+  if (!(Number.isFinite(threshold) && threshold > 0)) throw usage("threshold must be a finite number > 0");
   const rng = mulberry32(seed); const k = variants.length;
   const draws = variants.map(() => new Float64Array(samples));
   for (let s = 0; s < samples; s++) for (let i = 0; i < k; i++) {

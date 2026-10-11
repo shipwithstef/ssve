@@ -195,3 +195,28 @@ test("validate rejects an inconsistent correlation set and duplicate pairs", () 
   const dup = validateModel({ ...base, correlations: [{ a: "a", b: "b", rho: 0.2 }, { a: "b", b: "a", rho: 0.9 }] }).join("\n");
   assert.ok(dup.includes("declared more than once"), dup);
 });
+
+test("information value counts options a question can make safe (no false 'clear')", () => {
+  const r = evaluate({ schema: SCHEMA, question: "launch?", variables: { x: { dist: "uniform", low: 0, high: 1, question: "Is x below 0.5?" } },
+    options: [{ id: "launch", value: "100", gates: [{ expr: "x < 0.5", tolerance: 0.05 }] }, { id: "hold", value: "0" }] });
+  assert.equal(r.winner.id, "hold"); assert.equal(r.verdict, "ask-first");
+  assert.equal(r.next_question.variable, "x"); assert.ok(Math.abs(r.evpi - 50) < 2, `evpi ${r.evpi}`);
+});
+
+test("discrete values are ordered whatever the declaration order, so correlation keeps its sign", async () => {
+  const { rangeOf } = await import("../../../scripts/decision-engine.mjs");
+  const g = rangeOf({ dist: "discrete", values: [10, 0], weights: [1, 1] });
+  assert.ok(g.p10 <= g.p50 && g.p50 <= g.p90 && g.p10 === 0 && g.p90 === 10);
+  const r = evaluate({ schema: SCHEMA, question: "q", samples: 20000, variables: { a: { dist: "discrete", values: [10, 0], weights: [1, 1] }, b: { dist: "normal", mean: 0, sd: 1 } },
+    correlations: [{ a: "a", b: "b", rho: 0.9 }], options: [{ id: "p", value: "a * b" }, { id: "q", value: "0" }] });
+  assert.ok(r.options.find((o) => o.id === "p").mean > 2, "positive rho must give positive a*b");
+});
+
+test("observed values condition correlated variables and override constants", () => {
+  const m = { schema: SCHEMA, question: "q", samples: 20000, variables: { x: { dist: "normal", mean: 0, sd: 1 }, y: { dist: "normal", mean: 0, sd: 1 }, k: { dist: "const", value: 0 } },
+    correlations: [{ a: "x", b: "y", rho: 0.9 }], options: [{ id: "risk", value: "y + k" }, { id: "safe", value: "0.5" }] };
+  const r = evaluate(m, { observed: { x: 2, k: 1 } });
+  assert.ok(Math.abs(r.options.find((o) => o.id === "risk").mean - 2.8) < 0.05);
+  assert.deepEqual(r.conditioned_on, { x: 2, k: 1 });
+  assert.throws(() => evaluate(m, { observed: { nope: 1 } }), (e) => e.code === 2);
+});

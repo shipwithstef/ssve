@@ -11,8 +11,9 @@
  *            variable's declared range) next to the model it came from
  *   observe  add what actually happened: the outcome metric and/or the real
  *            values of variables, as they become known
- *   review   re-run the stored model with observed values pinned: was the
- *            choice still right with what we know now? (hindsight regret)
+ *   review   replay the model snapshot stored at record time, conditioned on
+ *            the observed values (correlated variables move with them): was
+ *            the choice still right with what we know now? (hindsight regret)
  *   calibration
  *            how often reality landed inside the declared 80% ranges, per
  *            variable and for outcomes, and which direction estimates miss —
@@ -29,7 +30,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { evaluate, rangeOf, applyProfile } from "./decision-engine.mjs";
+import { evaluate, rangeOf } from "./decision-engine.mjs";
 import { appendJsonlLine } from "./state-io.mjs";
 
 const DEFAULT_LEDGER = ".svc/decision-ledger.jsonl";
@@ -44,12 +45,26 @@ export function readLedger(file) {
 
 const digest = (obj) => crypto.createHash("sha256").update(JSON.stringify(obj)).digest("hex").slice(0, 16);
 
+/** A result imported with --result must come from this model, and it fixes the profile. */
+export function resolveProfile(model, result, profile) {
+  if (result.question !== model.question) throw usage("result was computed from a different model (question differs)");
+  const ids = (o) => [...o].sort().join(",");
+  if (ids(result.options.map((o) => o.id)) !== ids(model.options.map((o) => o.id))) throw usage("result was computed from a different model (options differ)");
+  const fromResult = result.profile ?? null;
+  if (profile && fromResult !== profile) throw usage(`--profile ${profile} disagrees with the result's profile (${fromResult ?? "base model"})`);
+  if (fromResult && !model.profiles?.[fromResult]) throw usage(`result profile '${fromResult}' is not declared in the model`);
+  return fromResult;
+}
+
 export function predictionRow(model, result, { id, modelPath, profile } = {}) {
+  profile = profile ?? result.profile ?? null;
   const vars = { ...model.variables, ...((profile && model.profiles?.[profile]?.variables) || {}) };
   const w = result.options.find((o) => o.id === result.winner?.id);
   return {
     type: "prediction", id: id || `${new Date().toISOString().slice(0, 10)}-${digest(model).slice(0, 8)}`, ts: new Date().toISOString(),
     question: model.question, model_path: modelPath || null, model_digest: digest(model), profile: profile || null,
+    // the exact model and evaluation settings, so review replays what was decided, not today's file
+    model_snapshot: model, samples: result.samples ?? null, seed: result.seed ?? null,
     metric: result.objective.metric, unit: result.objective.unit, direction: result.objective.direction,
     verdict: result.verdict, winner: result.winner?.id ?? null,
     predicted: w ? { mean: w.mean, p10: w.p10, p50: w.p50, p90: w.p90 } : null,
@@ -62,7 +77,7 @@ export function predictionRow(model, result, { id, modelPath, profile } = {}) {
 function observationsFor(rows, id) { return rows.filter((r) => r.type === "observation" && r.id === id); }
 function latestVars(obs) { const v = {}; for (const o of obs) Object.assign(v, o.variables || {}); return v; }
 
-/** Re-run the stored model with every observed variable pinned to its observed value. */
+/** Replay the recorded model, conditioned on every observed variable. */
 export function review(rows, id, { root = process.cwd() } = {}) {
   const pred = rows.find((r) => r.type === "prediction" && r.id === id);
   if (!pred) throw usage(`no prediction with id '${id}'`);
@@ -72,22 +87,22 @@ export function review(rows, id, { root = process.cwd() } = {}) {
     metric_in_predicted_range: metric === null || !pred.predicted ? null : metric >= pred.predicted.p10 && metric <= pred.predicted.p90,
     triggers_fired: (pred.revisit || []).filter((t) => known[t.variable] !== undefined &&
       ((t.below === pred.winner && known[t.variable] > t.at) || (t.above === pred.winner && known[t.variable] < t.at))).map((t) => t.variable) };
-  if (pred.model_path && Object.keys(known).length) {
-    const file = path.resolve(root, pred.model_path);
-    if (!fs.existsSync(file)) out.model_missing = file;
-    else {
-      const model = JSON.parse(fs.readFileSync(file, "utf8"));
-      if (digest(model) !== pred.model_digest) out.model_changed_since_record = true;
-      // Profile first, then pin observations on top, so a profile override can
-      // never overwrite what was actually observed. Pinned variables are
-      // constants, so their correlations no longer apply.
-      const base = applyProfile(model, pred.profile || undefined);
-      const pinned = { ...base, variables: { ...base.variables }, profiles: undefined };
-      for (const [k, v] of Object.entries(known)) if (pinned.variables[k]) pinned.variables[k] = { dist: "const", value: v };
-      pinned.correlations = (base.correlations || []).filter((c) => !(c.a in known) && !(c.b in known));
-      const r = evaluate(pinned);
-      out.hindsight = { winner: r.winner?.id ?? null, verdict: r.verdict, still_right: r.winner?.id === pred.winner, next_question: r.next_question?.variable ?? null };
-    }
+  const file = pred.model_path ? path.resolve(root, pred.model_path) : null;
+  let model = pred.model_snapshot || null;
+  if (file && fs.existsSync(file)) {
+    const current = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (digest(current) !== pred.model_digest) out.model_changed_since_record = true;
+    // rows recorded before snapshots existed can only replay the file, and say so
+    if (!model) { model = current; if (out.model_changed_since_record) out.replayed_changed_model = true; }
+  }
+  if (!model && file) out.model_missing = file;
+  if (model && Object.keys(known).length) {
+    // Profile first, then condition on observations, so a profile override can
+    // never overwrite what was observed; correlated variables are drawn from
+    // their conditional distribution given the observations.
+    const observed = Object.fromEntries(Object.entries(known).filter(([k]) => model.variables?.[k]));
+    const r = evaluate(model, { profile: pred.profile || undefined, observed, ...(pred.samples ? { samples: pred.samples } : {}), ...(pred.seed !== null && pred.seed !== undefined ? { seed: pred.seed } : {}) });
+    out.hindsight = { winner: r.winner?.id ?? null, verdict: r.verdict, still_right: r.winner?.id === pred.winner, next_question: r.next_question?.variable ?? null, conditioned_on: Object.keys(observed) };
   }
   return out;
 }
@@ -138,7 +153,8 @@ if (path.resolve(process.argv[1] || "") === fileURLToPath(import.meta.url)) {
       if (!o.model) throw usage("record needs --model");
       const model = JSON.parse(fs.readFileSync(o.model, "utf8"));
       const result = o.result ? JSON.parse(fs.readFileSync(o.result, "utf8")) : evaluate(model, { profile: o.profile });
-      const row = predictionRow(model, result, { id: o.id, modelPath: path.relative(process.cwd(), path.resolve(o.model)), profile: o.profile });
+      const profile = o.result ? resolveProfile(model, result, o.profile) : o.profile;
+      const row = predictionRow(model, result, { id: o.id, modelPath: path.relative(process.cwd(), path.resolve(o.model)), profile });
       if (rows.some((r) => r.type === "prediction" && r.id === row.id)) throw usage(`prediction '${row.id}' already recorded`);
       appendJsonlLine(o.ledger, row); console.log(`recorded ${row.id}: ${row.winner} (${row.verdict})`);
     } else if (o.cmd === "observe") {
@@ -152,6 +168,7 @@ if (path.resolve(process.argv[1] || "") === fileURLToPath(import.meta.url)) {
       const r = review(rows, o.id);
       if (o.json) console.log(JSON.stringify(r, null, 2));
       else console.log(`${r.question}\nchose ${r.chose}; ${r.hindsight ? (r.hindsight.still_right ? "still the right choice" : `with what is known now, ${r.hindsight.winner} would win`) : r.model_missing ? `model file not found at ${r.model_missing} (run review from the directory it was recorded in)` : "no observed variables to re-run with"}` +
+        `${r.model_changed_since_record ? (r.replayed_changed_model ? "; WARNING: the model file changed since record and no snapshot was stored, so this replays the changed model" : "; note: the model file changed since record; replayed the recorded snapshot") : ""}` +
         `${r.triggers_fired.length ? `; revisit triggers fired: ${r.triggers_fired.join(", ")}` : ""}${r.metric_in_predicted_range === false ? "; outcome landed outside the predicted p10–p90" : ""}`);
     } else {
       const c = calibration(rows);

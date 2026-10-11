@@ -49,6 +49,42 @@ export function phi(z) {
   return z >= 0 ? (1 + y) / 2 : (1 - y) / 2;
 }
 const Z90 = 1.2815515655446004; // Φ⁻¹(0.9)
+/** Inverse standard normal CDF (Acklam, |rel err| < 1.2e-9). */
+export function phiInv(p) {
+  const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
+  const b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+  const c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+  const d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+  const lo = 0.02425;
+  if (p < lo) { const q = Math.sqrt(-2 * Math.log(p)); return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+  if (p > 1 - lo) { const q = Math.sqrt(-2 * Math.log(1 - p)); return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+  const q = p - 0.5, r = q * q;
+  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+}
+/** Discrete values sorted ascending with their weights, so the inverse CDF is monotone
+ *  whatever the declaration order (and a positive correlation stays positive). */
+const sortedCache = new WeakMap();
+function sortedDiscrete(d) {
+  let s = sortedCache.get(d);
+  if (!s) { const pairs = d.values.map((v, i) => [v, d.weights[i]]).sort((x, y) => x[0] - y[0]); s = { values: pairs.map((p) => p[0]), weights: pairs.map((p) => p[1]) }; sortedCache.set(d, s); }
+  return s;
+}
+/** CDF of a declared distribution at x: the inverse of `quantile`, used to condition on an observation. */
+function cdf(d, x) {
+  switch (d.dist) {
+    case "uniform": return d.high === d.low ? 0.5 : (x - d.low) / (d.high - d.low);
+    case "triangular": { const { low: a, mode: c, high: b } = d; if (b === a) return 0.5; if (x <= a) return 0; if (x >= b) return 1;
+      return x <= c ? ((x - a) ** 2) / ((b - a) * (c - a) || 1) : 1 - ((b - x) ** 2) / ((b - a) * (b - c) || 1); }
+    case "normal": return d.sd === 0 ? 0.5 : phi((x - d.mean) / d.sd);
+    case "lognormal": { if (x <= 0) return 0; const mu = (Math.log(d.p10) + Math.log(d.p90)) / 2; const sigma = (Math.log(d.p90) - Math.log(d.p10)) / (2 * Z90); return phi((Math.log(x) - mu) / sigma); }
+    case "discrete": { // midpoint of the probability mass at or around x
+      const { values, weights } = sortedDiscrete(d); const tot = weights.reduce((s, w) => s + w, 0); let below = 0, at = 0;
+      values.forEach((v, i) => { if (v < x) below += weights[i]; else if (v === x) at += weights[i]; });
+      return (below + at / 2) / tot;
+    }
+  }
+  return 0.5;
+}
 
 /** Inverse CDF for each distribution; u ∈ (0,1), z is the matching standard normal. */
 function quantile(d, u, z) {
@@ -65,9 +101,9 @@ function quantile(d, u, z) {
       return Math.exp(mu + sigma * z);
     }
     case "discrete": {
-      const tot = d.weights.reduce((s, w) => s + w, 0); let acc = 0;
-      for (let i = 0; i < d.values.length; i++) { acc += d.weights[i] / tot; if (u <= acc) return d.values[i]; }
-      return d.values[d.values.length - 1];
+      const { values, weights } = sortedDiscrete(d); const tot = weights.reduce((s, w) => s + w, 0); let acc = 0;
+      for (let i = 0; i < values.length; i++) { acc += weights[i] / tot; if (u <= acc) return values[i]; }
+      return values[values.length - 1];
     }
   }
   throw new Error(`unknown dist ${d.dist}`);
@@ -75,7 +111,7 @@ function quantile(d, u, z) {
 /** p10 / p50 / p90 of a declared distribution (used for calibration against observations). */
 export function rangeOf(d) {
   const q = (u, z) => quantile(d, u, z);
-  if (d.dist === "discrete") { const v = [...d.values].sort((a, b) => a - b); return { p10: q(0.1, -Z90), p50: q(0.5, 0), p90: q(0.9, Z90), min: v[0], max: v[v.length - 1] }; }
+  if (d.dist === "discrete") { const v = sortedDiscrete(d).values; return { p10: q(0.1, -Z90), p50: q(0.5, 0), p90: q(0.9, Z90), min: v[0], max: v[v.length - 1] }; }
   return { p10: q(0.1, -Z90), p50: q(0.5, 0), p90: q(0.9, Z90) };
 }
 function baseValue(d) {
@@ -185,27 +221,41 @@ export function applyProfile(model, profileName) {
   return { ...model, variables: { ...model.variables, ...(prof.variables || {}) } };
 }
 
-/** Draw `n` correlated samples: returns { names, cols: {name: Float64Array} }. */
-function sample(model, n, seed) {
+/** Draw `n` correlated samples: returns { names, random, cols: {name: Float64Array} }.
+ *  `observed` ({name: value}) conditions the draw on known values: each observed
+ *  variable is fixed, and the variables correlated with it are drawn from their
+ *  conditional distribution under the Gaussian copula (not left at their prior). */
+function sample(model, n, seed, observed = {}) {
   const names = Object.keys(model.variables);
-  const random = names.filter((k) => model.variables[k].dist !== "const");
-  const ix = new Map(random.map((k, i) => [k, i]));
-  const C = random.map((_, i) => random.map((__, j) => (i === j ? 1 : 0)));
-  for (const c of model.correlations || []) {
-    if (!ix.has(c.a) || !ix.has(c.b)) continue;
-    C[ix.get(c.a)][ix.get(c.b)] = c.rho; C[ix.get(c.b)][ix.get(c.a)] = c.rho;
+  const all = names.filter((k) => model.variables[k].dist !== "const");
+  const obsK = all.filter((k) => k in observed); const random = all.filter((k) => !(k in observed));
+  const corr = (a, b) => { if (a === b) return 1; const c = (model.correlations || []).find((x) => (x.a === a && x.b === b) || (x.a === b && x.b === a)); return c ? c.rho : 0; };
+  // z of each observation; clamp so an observation outside the declared range stays finite
+  const zO = obsK.map((k) => phiInv(Math.min(1 - 1e-9, Math.max(1e-9, cdf(model.variables[k], observed[k])))));
+  let mu = random.map(() => 0); let S = random.map((a) => random.map((b) => corr(a, b)));
+  if (obsK.length) {
+    // conditional normal: mu = C_RO C_OO^-1 z_O, S = C_RR - C_RO C_OO^-1 C_OR (solved via Cholesky of C_OO)
+    const LO = cholesky(obsK.map((a) => obsK.map((b) => corr(a, b))));
+    const solve = (v) => { const m = v.length, y = new Array(m), x = new Array(m);
+      for (let i = 0; i < m; i++) { let s = v[i]; for (let k = 0; k < i; k++) s -= LO[i][k] * y[k]; y[i] = s / LO[i][i]; }
+      for (let i = m - 1; i >= 0; i--) { let s = y[i]; for (let k = i + 1; k < m; k++) s -= LO[k][i] * x[k]; x[i] = s / LO[i][i]; } return x; };
+    const W = random.map((r) => solve(obsK.map((o) => corr(r, o)))); // rows of C_RO C_OO^-1
+    mu = W.map((w) => w.reduce((s, wi, j) => s + wi * zO[j], 0));
+    S = random.map((a, i) => random.map((b, j) => corr(a, b) - W[i].reduce((s, wi, k) => s + wi * corr(obsK[k], b), 0)));
+    for (let i = 0; i < random.length; i++) S[i][i] = Math.max(S[i][i], 1e-10); // a perfectly explained variable keeps a tiny jitter
   }
-  const L = random.length ? cholesky(C) : [];
+  const L = random.length ? cholesky(S) : [];
   const rng = mulberry32(seed);
   const cols = Object.fromEntries(names.map((k) => [k, new Float64Array(n)]));
   const g = new Array(random.length);
   for (let s = 0; s < n; s++) {
     for (let i = 0; i < random.length; i += 2) { const [a, b] = normalPair(rng); g[i] = a; if (i + 1 < random.length) g[i + 1] = b; }
     for (let i = 0; i < random.length; i++) {
-      let z = 0; for (let k = 0; k <= i; k++) z += L[i][k] * g[k];
+      let z = mu[i]; for (let k = 0; k <= i; k++) z += L[i][k] * g[k];
       const d = model.variables[random[i]]; cols[random[i]][s] = quantile(d, phi(z), z);
     }
     for (const k of names) if (model.variables[k].dist === "const") cols[k][s] = model.variables[k].value;
+    for (const k of Object.keys(observed)) cols[k][s] = observed[k]; // observed beats a declared or profile constant
   }
   return { names, random, cols };
 }
@@ -217,7 +267,12 @@ export function evaluate(rawModel, opts = {}) {
   const n = opts.samples ?? model.samples ?? 20000;
   const seed = opts.seed ?? model.seed ?? 1;
   if (!Number.isInteger(n) || n < 200 || n > 2_000_000) { const e = new Error("samples must be an integer in [200, 2000000]"); e.code = 2; throw e; }
-  const { names, random, cols } = sample(model, n, seed);
+  const observed = opts.observed || {};
+  for (const [k, v] of Object.entries(observed)) {
+    if (!model.variables[k]) throw Object.assign(new Error(`observed '${k}' is not a declared variable`), { code: 2 });
+    if (!num(v)) throw Object.assign(new Error(`observed '${k}' must be a finite number`), { code: 2 });
+  }
+  const { names, random, cols } = sample(model, n, seed, observed);
   const scope = new Set(names);
   const derived = Object.entries(model.derived || {}).map(([k, ex]) => { const c = compile(ex, scope); scope.add(k); return [k, c.fn]; });
   const opt = model.options.map((o) => {
@@ -278,6 +333,7 @@ export function evaluate(rawModel, opts = {}) {
   const alive = rows.map((r, i) => (r.eliminated ? -1 : i)).filter((i) => i >= 0);
   const dir = (model.objective && model.objective.direction) === "min" ? -1 : 1;
   const out = { schema: "svc-decision-result/1", question: model.question, profile: opts.profile || null, samples: n, seed,
+    ...(Object.keys(observed).length ? { conditioned_on: observed } : {}),
     objective: { metric: model.objective?.metric || "value", unit: model.objective?.unit || null, direction: dir === 1 ? "max" : "min" } };
   if (alive.length === 0) {
     return { ...out, verdict: "no-survivor", winner: null, options: rows.map(fmtRow), next_question: null,
@@ -289,13 +345,17 @@ export function evaluate(rawModel, opts = {}) {
   const means = alive.map((oi) => dir * rows[oi].mean);
   const wIdx = alive[means.indexOf(Math.max(...means))];
   const regret = new Map(alive.map((oi) => [oi, 0]));
+  const everyIdx = rows.map((_, i) => i);
   for (let s = 0; s < n; s++) {
     // an option that fails a gate in this world cannot be its best option
     const viable = alive.filter((oi) => !failed[oi][s]); const pool = viable.length ? viable : alive;
     let bu = -Infinity; for (const oi of pool) bu = Math.max(bu, U(oi, s));
     // exact ties share the win instead of crediting the first-listed option
     const tied = pool.filter((oi) => U(oi, s) === bu); for (const oi of tied) wins.set(oi, wins.get(oi) + 1 / tied.length);
-    evpiAcc += bu - U(wIdx, s);
+    // Perfect information also reveals whether an option eliminated on the prior
+    // is safe in this world, so EVPI ranges over every option viable here.
+    let bi = bu; for (const oi of everyIdx) if (!failed[oi][s]) bi = Math.max(bi, U(oi, s));
+    evpiAcc += bi - U(wIdx, s);
     for (const oi of alive) regret.set(oi, regret.get(oi) + (bu - U(oi, s)));
   }
   for (const oi of alive) { rows[oi].p_best = wins.get(oi) / n; rows[oi].expected_regret = regret.get(oi) / n; }
@@ -308,11 +368,18 @@ export function evaluate(rawModel, opts = {}) {
   // The binned estimator is biased upward: it takes a max over noisy bin means,
   // so even a variable no option depends on scores > 0. Measure that noise floor
   // by binning a random permutation (information-free) and subtract it.
+  // Within a bin, an option eliminated on the prior is a candidate again when the
+  // answer makes it safe: its failure rate in the bin is within its tightest tolerance.
+  const minTol = rows.map((r) => Math.min(...r.gates.map((g) => g.tolerance), Infinity));
+  const candidates = (order, lo, hi) => everyIdx.filter((oi) => {
+    if (alive.includes(oi)) return true;
+    let f = 0; for (let j = lo; j < hi; j++) f += failed[oi][order[j]]; return f / (hi - lo) <= minTol[oi];
+  });
   const binGain = (order) => {
     let acc = 0;
     for (let b = 0; b < bins; b++) {
       const lo = Math.floor((b * n) / bins), hi = Math.floor(((b + 1) * n) / bins); if (hi <= lo) continue;
-      let bestU = -Infinity; for (const oi of alive) { let s2 = 0; for (let j = lo; j < hi; j++) s2 += U(oi, order[j]); bestU = Math.max(bestU, s2 / (hi - lo)); }
+      let bestU = -Infinity; for (const oi of candidates(order, lo, hi)) { let s2 = 0; for (let j = lo; j < hi; j++) s2 += U(oi, order[j]); bestU = Math.max(bestU, s2 / (hi - lo)); }
       let wU = 0; for (let j = lo; j < hi; j++) wU += U(wIdx, order[j]); acc += bestU * (hi - lo) - wU;
     }
     return acc / n;
@@ -327,7 +394,7 @@ export function evaluate(rawModel, opts = {}) {
     for (let b = 0; b < bins; b++) {
       const lo = Math.floor((b * n) / bins), hi = Math.floor(((b + 1) * n) / bins); if (hi <= lo) continue;
       let bestU = -Infinity, bestO = -1;
-      for (const oi of alive) { let s2 = 0; for (let j = lo; j < hi; j++) s2 += U(oi, order[j]); const m = s2 / (hi - lo); if (m > bestU) { bestU = m; bestO = oi; } }
+      for (const oi of candidates(order, lo, hi)) { let s2 = 0; for (let j = lo; j < hi; j++) s2 += U(oi, order[j]); const m = s2 / (hi - lo); if (m > bestU) { bestU = m; bestO = oi; } }
       let wU = 0; for (let j = lo; j < hi; j++) wU += U(wIdx, order[j]); wU /= hi - lo;
       acc += (bestU - wU) * (hi - lo);
       flips.push({ from: cols[k][order[lo]], to: cols[k][order[hi - 1]], best: bestO });

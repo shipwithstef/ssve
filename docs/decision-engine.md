@@ -29,7 +29,7 @@ Those failures don't look like failures. The output reads well and the numbers a
 
 **Questions come from value of information.** No rule says "ask one question" or "ask five". The engine asks a question only when an answer could change the decision by more than the threshold (default 1% of the stake). It also says so plainly when nothing left is worth asking (`clear`). That is how "ask the right question, then answer so the outcome is obvious" becomes computation instead of judgement.
 
-**It learns from outcomes.** People's 80% ranges are usually too narrow. The ledger records every prediction, takes real observations, re-runs the stored model with observed values pinned (was the choice still right?), and reports per-variable calibration and the direction of misses. That record is the domain expertise this repo can accumulate: priors corrected by its own outcomes.
+**It learns from outcomes.** People's 80% ranges are usually too narrow. The ledger records every prediction, takes real observations, replays the model snapshot stored at record time, conditioned on the observed values so correlated variables move with them (was the choice still right?), and reports per-variable calibration and the direction of misses. That record is the domain expertise this repo can accumulate: priors corrected by its own outcomes.
 
 ## Use
 
@@ -37,9 +37,9 @@ Those failures don't look like failures. The output reads well and the numbers a
 node scripts/decision-engine.mjs validate MODEL.json
 node scripts/decision-engine.mjs evaluate MODEL.json              # markdown: verdict, options, VOI, profiles, triggers
 node scripts/decision-engine.mjs evaluate MODEL.json --json       # machine result (svc-decision-result/1)
-node scripts/decision-ledger.mjs record  --model MODEL.json --id <slug>
+node scripts/decision-ledger.mjs record  --model MODEL.json --id <slug>   # with --result R.json the profile comes from the result
 node scripts/decision-ledger.mjs observe --id <slug> --metric 1500 --var ads_cpc=0.7
-node scripts/decision-ledger.mjs review  --id <slug>               # hindsight with observed values pinned
+node scripts/decision-ledger.mjs review  --id <slug>               # hindsight: recorded snapshot, conditioned on observations
 node scripts/decision-ledger.mjs calibration                       # are our ranges honest?
 node scripts/experiment-compare.mjs --variant theirs:40:3 --variant mine:38:1   # decide an A/B from counts
 ```
@@ -59,6 +59,7 @@ Worked example: `examples/decisions/launch-channel.model.json`, a non-coding dec
   - In any sample where an option fails a gate, that option cannot win P(best) and scores as the worst viable value. Options that tie share the win.
   - A non-finite value (for example a division by zero) is treated as an implicit gate, "value is finite", with tolerance `objective.nonfinite_tolerance` (default 0.05).
   - A gate expression that evaluates to NaN is a model error (exit 2), not a pass.
+- **`discrete`** values may be listed in any order; the engine sorts them (with their weights) before computing quantiles or correlation.
 - **`correlations`**: rank dependence via a Gaussian copula. A pair declared twice, or an inconsistent set (not positive definite), is rejected.
 - **`profiles`**: variable overrides. Each profile is evaluated, and the output says where the winner flips.
 
@@ -66,7 +67,7 @@ Worked example: `examples/decisions/launch-channel.model.json`, a non-coding dec
 
 | verdict | rule |
 |---|---|
-| `ask-first` | some askable variable's EVPPI exceeds the threshold; the output names it as `next_question` |
+| `ask-first` | some askable variable's EVPPI exceeds the threshold; the output names it as `next_question`. Information value includes options eliminated on the prior that an answer could make safe, so a gated option a question can unlock is never reported as `clear`. |
 | `clear` | total EVPI ≤ threshold: perfect information on everything would not be worth asking for |
 | `decide-and-monitor` | EVPI > threshold but no single question pays; break-evens become revisit triggers |
 | `no-survivor` | every option fails a HARD gate beyond its tolerance |
