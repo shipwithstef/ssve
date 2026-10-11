@@ -2258,6 +2258,15 @@
       "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
     },
     {
+      "id": "engine:scripts/learning-eval.mjs",
+      "kind": "engine",
+      "source": "scripts/learning-eval.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-learning-eval.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/learning-lifecycle.mjs",
       "kind": "engine",
       "source": "scripts/learning-lifecycle.mjs",
