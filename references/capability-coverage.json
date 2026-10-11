@@ -2384,6 +2384,15 @@
       ]
     },
     {
+      "id": "engine:scripts/model-intel.mjs",
+      "kind": "engine",
+      "source": "scripts/model-intel.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/model-intel-check.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/no-loss-verify.mjs",
       "kind": "engine",
       "source": "scripts/no-loss-verify.mjs",
