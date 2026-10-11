@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { checkModelIntel, compareSources, isProbeArgv, reportedModelIds, reportedAliases } from "../../scripts/model-intel.mjs";
+import { checkModelIntel, compareSources, isProbeArgv, referencedModelIds, reportedModelIds, reportedAliases } from "../../scripts/model-intel.mjs";
 
 const SCRIPT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../../scripts/model-intel.mjs");
 const SCHEDULE = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../../docs/ops/model-intel-check-schedule.md");
@@ -263,7 +263,9 @@ test("seven sources: haiku alias disagreement is reported and nothing is written
   assert.equal(haiku.sources["references/model-registry.json"], "claude-haiku-4-5-20251001");
   assert.ok(joined.disagreements.some((d) => d.kind === "baseline" && d.host === "codex" && d.status === "unverified"));
   assert.ok(joined.disagreements.some((d) => d.kind === "model" && d.id === "grok-4.7"));
+  assert.equal(joined.disagreements.some((d) => d.kind === "model" && d.id === "mimo-code"), false);
   assert.ok(joined.disagreements.some((d) => d.kind === "dispatch" && d.host === "kimi"));
+  assert.equal(joined.disagreements.some((d) => d.kind === "dispatch" && (d.host === "gemini" || d.host === "mimo-code")), false);
   assert.ok(joined.facts.prior_aliases.includes("haiku"));
   assert.ok(joined.facts.provision_hosts.includes("grok"));
   assert.deepEqual(joined.facts.dispatch_clis, ["agy", "claude", "codex", "cursor"]);
@@ -391,6 +393,78 @@ test("nonzero probe exits and signals are failures even when the text matches", 
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
+  }
+});
+
+test("model ids come only from model fields and model arguments", () => {
+  const sample = [
+    '{ "host": "mimo-code", "plugin": "gemini-hooks", "model_flag": "-m",',
+    '  "launch_command": "mimocode --host mimo-code --model gpt-arg-9",',
+    '  "settings": { "model": "claude-field-9" } }',
+  ].join("\n");
+  assert.deepEqual(referencedModelIds(sample).sort(), ["claude-field-9", "gpt-arg-9"]);
+  const dispatch = [
+    "if (cli === 'codex') return ['codex'];",
+    "if (model === 'grok-4.7') resolved = `${model}-${effort}`;",
+    "return ['codex', '-m', 'gpt-short-9', '--host', 'mimo-code'];",
+    "return ['cursor-agent', '--model', resolved, '--host', 'mimo-code'];",
+    "const label = \"mimo-code\";",
+  ].join("\n");
+  assert.deepEqual(referencedModelIds(dispatch).sort(), ["gpt-short-9", "grok-4.7"]);
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "model-intel-ids-"));
+  try {
+    fs.mkdirSync(path.join(dir, "references", "model-intel"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "references", "model-intel", "models.json"), JSON.stringify({
+      models: { haiku: { id: "claude-haiku-5-5", price_out: 1 } },
+    }));
+    fs.writeFileSync(path.join(dir, "references", "model-registry.json"), JSON.stringify({
+      harnesses: { claude: { models: { haiku: { id: "claude-haiku-5-5" } } } },
+    }));
+    fs.mkdirSync(path.join(dir, "provision", "hosts"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "provision", "hosts", "mimo-code.json"), `${sample}\n`);
+    fs.mkdirSync(path.join(dir, "scripts", "orch"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "scripts", "orch", "dispatch.mjs"), `${dispatch}\n`);
+    const ids = compareSources(dir).disagreements.filter((d) => d.kind === "model").map((d) => d.id).sort();
+    assert.deepEqual(ids, ["claude-field-9", "gpt-arg-9", "gpt-short-9", "grok-4.7"]);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("dispatch comparison skips hosts with empty roles and no headless invocation", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "model-intel-dispatch-"));
+  try {
+    fs.mkdirSync(path.join(dir, "references"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "references", "harness-playbook.json"), JSON.stringify({
+      hosts: {
+        gemini: {
+          binary: "gemini",
+          provision_host: "gemini",
+          roles: {},
+          no_headless_reason: "svc runs no headless Gemini CLI call",
+        },
+        "mimo-code": {
+          binary: "mimocode",
+          provision_host: "mimo-code",
+          roles: {},
+          no_headless_reason: "svc runs no headless MiMo Code call",
+        },
+        kimi: { binary: "kimi", provision_host: "kimi", roles: { review: ["--print"] } },
+        noted: {
+          binary: "noted",
+          provision_host: "noted",
+          roles: { review: ["--print"] },
+          no_headless_reason: "stale note does not erase a real role",
+        },
+      },
+    }));
+    fs.mkdirSync(path.join(dir, "scripts", "orch"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "scripts", "orch", "dispatch.mjs"), "if (cli === 'codex') return ['codex'];\n");
+    const hosts = compareSources(dir).disagreements.filter((d) => d.kind === "dispatch").map((d) => d.host).sort();
+    assert.deepEqual(hosts, ["kimi", "noted"]);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 

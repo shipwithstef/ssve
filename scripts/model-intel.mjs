@@ -43,9 +43,11 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const HELP_FLAG = /^(?:--help|-h|--version|-V|-v)$/;
 const SUBCOMMAND = /^[a-z][a-z0-9_-]{0,40}$/;
-const MODEL_LIT = /['"]((?:grok|claude|gpt|gemini|mimo|kimi)-[A-Za-z0-9.]+(?:-[A-Za-z0-9.]+)*)['"]/g;
-const MODEL_FLAG = /--model(?:\s+|=)([A-Za-z0-9][A-Za-z0-9._-]*)/g;
 const CLI_EQ = /cli === ['"]([a-z0-9_-]+)['"]/g;
+const MODEL_FIELD = /["'](model|model_id|modelId|default_model|requested_model|resolved_model)["']\s*:\s*["']([^"']+)["']/g;
+const MODEL_FLAG = /--model(?:\s+|=)([A-Za-z0-9][A-Za-z0-9._:-]*)/g;
+const MODEL_ARGV = /["'](?:--model|-m)["']\s*,\s*["']([^"']+)["'](?!\s*:)/g;
+const MODEL_BOUND = /\bmodel\s*===\s*["']([^"']+)["']/g;
 
 export const SEVEN_SOURCES = [
   ["model-registry", "references/model-registry.json"],
@@ -126,11 +128,33 @@ function priorAliases(priors) {
   return [...out].sort();
 }
 
-function quotedModelIds(text) {
+function addModelId(ids, raw) {
+  const id = String(raw || "").trim();
+  if (!id || id.startsWith("{") || id.startsWith("$") || id.startsWith("-")) return;
+  ids.add(id);
+}
+
+/** Model ids from model fields and model arguments only. Host names and other quoted strings are not ids. */
+function collectModelIds(ids, re, text, group) {
+  re.lastIndex = 0;
+  for (const m of text.matchAll(re)) addModelId(ids, m[group]);
+}
+
+export function referencedModelIds(text) {
   const ids = new Set();
-  for (const m of String(text).matchAll(MODEL_LIT)) ids.add(m[1]);
-  for (const m of String(text).matchAll(MODEL_FLAG)) ids.add(m[1]);
+  const src = String(text);
+  collectModelIds(ids, MODEL_FIELD, src, 2);
+  collectModelIds(ids, MODEL_FLAG, src, 1);
+  collectModelIds(ids, MODEL_ARGV, src, 1);
+  collectModelIds(ids, MODEL_BOUND, src, 1);
   return [...ids];
+}
+
+/** A headless role is a non-empty argv list. Empty roles (and a no-headless declaration) stay out of dispatch comparison. */
+function hasHeadlessRoles(spec) {
+  const roles = spec?.roles;
+  if (!roles || typeof roles !== "object" || Array.isArray(roles)) return false;
+  return Object.values(roles).some((argv) => Array.isArray(argv) && argv.length > 0);
 }
 
 function dispatchClis(text) {
@@ -223,7 +247,7 @@ export function compareSources(root) {
     byId.provision.compared = true;
     for (const host of provisionHosts) {
       const rel = `provision/hosts/${host}.json`;
-      for (const id of quotedModelIds(fs.readFileSync(path.join(dir, `${host}.json`), "utf8"))) {
+      for (const id of referencedModelIds(fs.readFileSync(path.join(dir, `${host}.json`), "utf8"))) {
         if (!referenced.has(id)) referenced.set(id, []);
         referenced.get(id).push(rel);
       }
@@ -253,13 +277,14 @@ export function compareSources(root) {
 
   if (dispatchText != null) {
     facts.dispatch_clis = dispatchClis(dispatchText);
-    for (const id of quotedModelIds(dispatchText)) {
+    for (const id of referencedModelIds(dispatchText)) {
       if (!referenced.has(id)) referenced.set(id, []);
       referenced.get(id).push("scripts/orch/dispatch.mjs");
     }
     if (playbook) {
       const allowed = new Set(facts.dispatch_clis);
       for (const host of Object.keys(playHosts).sort()) {
+        if (!hasHeadlessRoles(playHosts[host])) continue;
         if (allowed.has(host)) continue;
         disagreements.push({
           kind: "dispatch",
