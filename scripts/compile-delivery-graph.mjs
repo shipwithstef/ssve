@@ -71,6 +71,25 @@ function isDocsOnly(changeType, riskFlags) {
   return changeType === "docs" || riskFlags.includes("docs-only");
 }
 
+// A documentation claim is valid only when the planned files agree. Security-sensitive
+// code, or any non-doc file paired with a security flag, used to require review-security
+// (auth-sensitive). Suppressing that is a contradictory declaration, not a docs change.
+function contradictoryDocsClassification({ changeType, riskFlags, plannedFiles }) {
+  if (!isDocsOnly(changeType, riskFlags)) return null;
+  const codeFiles = plannedFiles.filter((file) => !isDocPath(file));
+  const security = DELIVERY_CHAIN.conditions?.security || {};
+  const patterns = Object.values(security.zone_classes || {}).flat();
+  const securityFiles = codeFiles.filter((file) => matchesAny(file, patterns));
+  const securityFlag = (security.flags || []).some((flag) => riskFlags.includes(flag));
+  if (securityFiles.length) {
+    return `contradictory documentation classification: planned files include security-sensitive code: ${securityFiles.join(", ")}`;
+  }
+  if (securityFlag && codeFiles.length) {
+    return `contradictory documentation classification: a security flag is set alongside non-doc planned files: ${codeFiles.join(", ")}`;
+  }
+  return null;
+}
+
 function matchesAny(file, patterns = []) {
   return patterns.some((pattern) => new RegExp(pattern, "i").test(String(file)));
 }
@@ -78,6 +97,8 @@ function matchesAny(file, patterns = []) {
 // Conditions are decided before any stage is kept. Code and config only:
 // a docs path never activates ui, security, or the other code conditions.
 export function evaluateDeliveryConditions({ changeType, riskFlags = [], plannedFiles = [] }) {
+  const contradiction = contradictoryDocsClassification({ changeType, riskFlags, plannedFiles });
+  if (contradiction) throw new Error(contradiction);
   const docsOnly = isDocsOnly(changeType, riskFlags);
   const codeFiles = plannedFiles.filter((file) => !isDocPath(file));
   const fileHit = (patterns) => codeFiles.some((file) => matchesAny(file, patterns));
@@ -351,6 +372,15 @@ function normalizeDeliveryTier(input, { requiredSkills, skipped, evidenceFamilie
   };
 }
 
+// Stage activation and the docs-only tail apply to inserted skills too. A docs claim
+// must not grow track-visuals or design-tech from browser-visible / backend-function.
+function conditionalSurvives(item, conditions) {
+  const condition = DELIVERY_CHAIN.stages?.[item.skill]?.activation_condition;
+  if (condition && conditions[condition] !== true) return false;
+  if (conditions.docs_only && !INVARIANT_TAIL.has(item.skill)) return false;
+  return true;
+}
+
 function skippedSkills({ changeType, riskFlags }) {
   if (changeType !== "docs" && !riskFlags.includes("docs-only")) return [];
   return [
@@ -604,6 +634,9 @@ function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrat
       status: prev?.status || task.status,
       metadata: { ...structuredClone(prev?.metadata || {}), ...task.metadata },
     };
+    // Process obligations are whatever this compilation requires. A dropped
+    // journey or visual step must not survive from the previous graph.
+    if (!task.metadata?.required_process_steps) delete clone.metadata.required_process_steps;
     if (task.metadata?.solution_confidence_mode) {
       for (const flag of ["solution_confidence_waits_for_approval", "solution_confidence_intake_stop"]) {
         if (!task.metadata[flag]) {
@@ -632,12 +665,20 @@ function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrat
     if (matched.has(prev.id)) continue;
     // Retain completed evidence and unrelated work. Unstarted research that is
     // no longer needed is archived separately, never marked completed.
-    if ((prev.metadata?.skill || prev.skill) === "research" && prev.status !== "completed") continue;
+    const skill = prev.metadata?.skill || prev.skill;
+    if (skill === "research" && prev.status !== "completed") continue;
     // E2E and journey tasks from an older graph are now process steps of
     // execute-changeset. Their runnable tasks go; what they recorded is kept as history
     // only, because a task-level status is not a digest-bound process receipt.
-    if (EXECUTION_PREREQUISITES.includes(prev.metadata?.skill || prev.skill)) {
+    if (EXECUTION_PREREQUISITES.includes(skill)) {
       notes.migrated.push({ task: structuredClone(prev), disposition: "folded into an execute-changeset process step; historical evidence only, not executable" });
+      continue;
+    }
+    // Lane and conditional tasks the compiler no longer emits are archived.
+    // Completed research and unrelated work stay on the graph.
+    if (skill !== "research" && /: delivery graph required step$/.test(String(prev.subject || ""))) {
+      notes.archived ||= [];
+      notes.archived.push({ task: structuredClone(prev), disposition: "compiler task deactivated; archived, not executable" });
       continue;
     }
     out.push(structuredClone(prev));
@@ -645,6 +686,23 @@ function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrat
   const ids = new Set(out.map(task => task.id));
   const retired = new Set(existing.filter(task => !ids.has(task.id)).map(task => task.id));
   for (const task of out) task.blocked_by = (task.blocked_by || []).filter(id => !retired.has(id));
+  // Dropped compiler tasks take their edges with them. Surviving pending tasks wait
+  // on the obligations this compilation computed, plus research and unrelated work.
+  if (notes.archived?.length) {
+    const archivedIds = new Set(notes.archived.map((row) => row.task.id));
+    for (const { clone } of pairs) {
+      if (!ids.has(clone.id) || clone.status === "completed") continue;
+      const required = (notes.required.get(clone.id) || []).filter((id) => ids.has(id) && id !== clone.id);
+      const extra = (clone.blocked_by || []).filter((id) => {
+        if (!ids.has(id) || archivedIds.has(id) || required.includes(id)) return false;
+        const target = out.find((task) => task.id === id);
+        if (!target) return false;
+        if ((target.metadata?.skill || target.skill) === "research") return true;
+        return !/: delivery graph required step$/.test(String(target.subject || ""));
+      });
+      clone.blocked_by = [...new Set([...required, ...extra])];
+    }
+  }
   reopenForNewProcessSteps(out, pairs, notes);
   return out;
 }
@@ -868,7 +926,8 @@ export function compileDeliveryGraph(input) {
       });
     }
   }
-  const conditionals = conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence, researchInsertions, conditions, deliveryProfile: planning.profile });
+  const conditionals = conditionalInsertions({ changeType, riskFlags, platformContracts, solutionConfidence, researchInsertions, conditions, deliveryProfile: planning.profile })
+    .filter((item) => conditionalSurvives(item, conditions));
   const requiredSkills = unique([...laneSkills, ...conditionals.map((item) => item.skill)]);
   const requiredSteps = buildTaskSteps(laneSkills, conditionals);
   orderPrerequisites(requiredSteps);
@@ -921,7 +980,7 @@ export function compileDeliveryGraph(input) {
     closeout_classification_required: true,
   };
 
-  const notes = { reopened: [], migrated: [], required: new Map() };
+  const notes = { reopened: [], migrated: [], required: new Map(), archived: [] };
   const remap = { ...(existingGraph?.delivery_graph?.research?.requester_remap || {}) };
   const tasks = attachResearchRequestors(applyExistingGraph(taskList(requiredSteps, solutionConfidence), existingGraph, notes), questions, (() => {
     for (const row of notes.migrated) remap[String(row.task.id)] = "execute-changeset";
@@ -930,6 +989,12 @@ export function compileDeliveryGraph(input) {
   assertAcyclic(tasks);
   if (Object.keys(remap).length) deliveryGraph.research.requester_remap = remap;
   deliveryGraph.migrated_prerequisites = [...(existingGraph?.delivery_graph?.migrated_prerequisites || []), ...notes.migrated];
+  const priorArchived = existingGraph?.delivery_graph?.archived_compiler_tasks || [];
+  const seenArchived = new Set(priorArchived.map((row) => row?.task?.id));
+  deliveryGraph.archived_compiler_tasks = [
+    ...priorArchived,
+    ...notes.archived.filter((row) => !seenArchived.has(row.task.id)),
+  ];
   if (notes.reopened.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "reopen_for_process_steps", reason: "A prerequisite moved upstream or gained a required process step; execution and downstream stages reopened until it is done and its evidence exists (per-task reasons below).", tasks: notes.reopened });
   const reopened = applyPlanningDepth(tasks, planning);
   if (reopened.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "reopen_for_depth", reason: "Planning depth increased; lighter completed stages reopened.", tasks: reopened });
@@ -938,8 +1003,9 @@ export function compileDeliveryGraph(input) {
   const edgeChanges = rebuildReopenedEdges(tasks, notes.required);
   if (edgeChanges.length) deliveryGraph.mutation_history.push({ ts: new Date().toISOString(), source: "route-workflow", action: "rebuild_reopened_edges", reason: "Reopened stages re-pointed at the edges their current obligations require.", edges: edgeChanges });
   assertAcyclic(tasks);
+  const archivedIds = new Set(notes.archived.map((row) => row.task.id));
   const superseded = [...(existingGraph?.delivery_graph?.research?.superseded_tasks || []),
-    ...existingTasks.filter(task => !tasks.some(current => current.id === task.id)).map(task => ({
+    ...existingTasks.filter(task => !tasks.some(current => current.id === task.id) && !archivedIds.has(task.id)).map(task => ({
       task: structuredClone(task), disposition: "research no longer required; no completion receipt issued",
     }))];
   deliveryGraph.research.superseded_tasks = [...new Map(superseded.map(row => [JSON.stringify(row), row])).values()];

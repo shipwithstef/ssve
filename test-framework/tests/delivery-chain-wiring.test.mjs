@@ -1,3 +1,4 @@
+// @organism-suite
 // P1.3e — lanes as data, condition-first stages, ordering, security.
 // Commands are the T2, T3 and T4 rows in docs/analysis/2026-10-11-organism-plan.md.
 import test from "node:test";
@@ -6,6 +7,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { compileDeliveryGraph } from "../../scripts/compile-delivery-graph.mjs";
+import { checkLaneLayers } from "../../scripts/framework-coherence.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const COMPILER = path.join(ROOT, "scripts/compile-delivery-graph.mjs");
@@ -164,4 +167,144 @@ test("prototype keeps security on an auth path and drops it for a docs-only diff
   assert.equal(appearances(docs, "review-security"), 0);
   assert.equal(docs.delivery_graph.activation.security, false);
   assert.deepEqual(skills(docs).filter((s) => !TAIL.includes(s)), []);
+});
+
+test("security activation covers ledger, schema, release workflows, and data-migration flags", () => {
+  const cases = [
+    ["--planned-files", "src/ledger/entries.ts"],
+    ["--planned-files", "db/schema.sql"],
+    ["--planned-files", ".github/workflows/release.yml"],
+    ["--planned-files", "src/game.js", "--risk-flags", "data-migration"],
+    ["--planned-files", "src/game.js", "--risk-flags", "data-deletion"],
+    ["--planned-files", "src/game.js", "--risk-flags", "destructive-migration"],
+  ];
+  for (const extra of cases) {
+    const g = compile([
+      "--intent", "touch a protected path",
+      "--lane", "bugfix",
+      "--delivery-profile", "mvp",
+      "--change-type", "bugfix",
+      ...extra,
+    ]);
+    assert.equal(g.delivery_graph.activation.security, true, extra.join(" "));
+    assert.equal(appearances(g, "review-security"), 1, extra.join(" "));
+    assert.equal(beforeLand(g, "review-security"), true, extra.join(" "));
+  }
+});
+
+test("docs classification is rejected when planned files contain payment code", () => {
+  const payment = {
+    wi: "WI-T",
+    user_intent: "fix stripe webhook double charge",
+    lane: "bugfix",
+    delivery_profile: "mvp",
+    planned_files: ["src/payments/webhook.ts"],
+  };
+  assert.throws(
+    () => compileDeliveryGraph({ ...payment, change_type: "docs", risk_flags: ["auth-sensitive", "docs-only"] }),
+    /contradictory documentation classification/,
+  );
+  assert.throws(
+    () => compileDeliveryGraph({ ...payment, change_type: "docs", risk_flags: [] }),
+    /contradictory documentation classification/,
+  );
+  assert.throws(
+    () => compileDeliveryGraph({ ...payment, change_type: "bugfix", risk_flags: ["docs-only", "auth-sensitive"] }),
+    /contradictory documentation classification/,
+  );
+  const screen = compile([
+    "--intent", "docs pass over a screen file",
+    "--lane", "brownfield-feature",
+    "--delivery-profile", "production",
+    "--change-type", "docs",
+    "--planned-files", "src/app/page.tsx",
+    "--risk-flags", "docs-only",
+  ]);
+  assert.equal(screen.delivery_graph.activation.security, false);
+  assert.equal(appearances(screen, "review-security"), 0);
+});
+
+test("feature to docs recompilation archives dropped lane tasks and rebuilds obligations", () => {
+  const feature = compileDeliveryGraph({
+    wi: "WI-T",
+    user_intent: "add a booking screen",
+    lane: "brownfield-feature",
+    delivery_profile: "production",
+    change_type: "feature",
+    planned_files: ["src/app/page.tsx"],
+    risk_flags: ["user-facing", "browser-visible"],
+  });
+  assert.ok(feature.tasks.some((t) => t.metadata.skill === "write-journeys"));
+  assert.ok(feature.tasks.some((t) => t.metadata.skill === "design-tech"));
+  const docs = compileDeliveryGraph({
+    wi: "WI-T",
+    user_intent: "fix typo in README",
+    lane: "brownfield-feature",
+    delivery_profile: "production",
+    change_type: "docs",
+    planned_files: ["README.md"],
+    risk_flags: ["docs-only"],
+    existing_graph: feature,
+  });
+  const order = skills(docs);
+  assert.deepEqual(order, TAIL);
+  assert.equal(order.at(-1), "verify-promotion");
+  for (const dropped of ["write-journeys", "design-tech", "design-ux", "design-ui"]) {
+    assert.equal(order.includes(dropped), false, dropped);
+    assert.ok(docs.delivery_graph.archived_compiler_tasks.some((row) => row.task.metadata.skill === dropped), dropped);
+  }
+  const live = new Set(docs.tasks.map((t) => t.id));
+  for (const task of docs.tasks) {
+    for (const id of task.blocked_by) assert.equal(live.has(id), true, task.metadata.skill);
+  }
+  const bySkill = Object.fromEntries(docs.tasks.map((t) => [t.metadata.skill, t]));
+  assert.deepEqual(bySkill["review-plan"].blocked_by, [bySkill["plan-changeset"].id]);
+  const steps = (bySkill["execute-changeset"].metadata.required_process_steps || []).map((s) => s.skill);
+  assert.equal(steps.includes("test-journeys"), false);
+  assert.equal(steps.includes("write-e2e"), false);
+  assert.equal(steps.includes("track-visuals"), false);
+  const again = compileDeliveryGraph({
+    wi: "WI-T",
+    user_intent: "fix typo in README",
+    lane: "brownfield-feature",
+    delivery_profile: "production",
+    change_type: "docs",
+    planned_files: ["README.md"],
+    risk_flags: ["docs-only"],
+    existing_graph: docs,
+  });
+  assert.equal(again.delivery_graph.archived_compiler_tasks.length, docs.delivery_graph.archived_compiler_tasks.length);
+  assert.equal(again.tasks.some((t) => t.metadata.skill === "write-journeys"), false);
+});
+
+test("docs-only conditional insertions do not schedule track-visuals or design-tech", () => {
+  const docs = compile([
+    "--intent", "fix typo in README",
+    "--lane", "brownfield-feature",
+    "--delivery-profile", "production",
+    "--change-type", "docs",
+    "--planned-files", "README.md",
+    "--risk-flags", "docs-only,browser-visible,backend-function",
+  ]);
+  assert.equal(appearances(docs, "track-visuals"), 0);
+  assert.equal(appearances(docs, "design-tech"), 0);
+  assert.deepEqual(skills(docs), TAIL);
+  const code = compile([
+    "--intent", "add an api handler",
+    "--lane", "bugfix",
+    "--delivery-profile", "production",
+    "--change-type", "bugfix",
+    "--planned-files", "src/api/handler.ts",
+    "--risk-flags", "browser-visible,backend-function",
+  ]);
+  assert.ok(appearances(code, "track-visuals") >= 1);
+  assert.equal(skills(code).includes("design-tech"), true);
+});
+
+test("checkLaneLayers reads delivery lane data, so a missing refactor design-tech is visible", () => {
+  const manifest = JSON.parse(readFileSync(path.join(ROOT, "skills-manifest.json"), "utf8"));
+  assert.equal(checkLaneLayers(manifest).some((f) => /refactor: required step design-tech/.test(f.msg)), false);
+  const broken = structuredClone(manifest);
+  broken.laneDefinitions.refactor.skills = broken.laneDefinitions.refactor.skills.filter((s) => s !== "design-tech");
+  assert.ok(checkLaneLayers(broken).some((f) => /refactor: required step design-tech/.test(f.msg)));
 });

@@ -58,12 +58,13 @@
     },
     "security": {
       "match": "code-and-config-only",
-      "flags": ["auth", "auth-sensitive", "security-sensitive", "payments", "money", "secrets"],
+      "flags": ["auth", "auth-sensitive", "security-sensitive", "payments", "money", "secrets", "data-migration", "data-deletion", "destructive-migration"],
       "zone_classes": {
         "auth": ["(^|/)(auth|login|session|oauth|jwt|rbac)(/|\\.|-|_|$)"],
-        "payments": ["(^|/)(payments?|billing|checkout|stripe|wallet)(/|\\.|-|_|$)"],
+        "payments": ["(^|/)(payments?|billing|checkout|stripe|wallet|ledger)(/|\\.|-|_|$)"],
         "secrets": ["(^|/)secrets?(/|\\.|-|_|$)", "(^|/)\\.env"],
-        "migrations": ["(^|/)migrations?(/|\\.|-|_|$)"]
+        "migrations": ["(^|/)migrations?(/|\\.|-|_|$)", "(^|/)schema\\.(sql|prisma|graphql)$"],
+        "release": ["(^|/)\\.github/workflows/[^/]*release[^/]*\\.(yml|yaml)$"]
       }
     },
     "live-proof": {

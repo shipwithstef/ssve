@@ -158,9 +158,9 @@ export function fixChains(m = manifest()) {
 
 export function checkLaneLayers(m = manifest()) {
   const findings = [];
-  const src = read("scripts/compile-delivery-graph.mjs");
-  const base = /const LANE_BASE_SKILLS = (\{[\s\S]*?\n\});/.exec(src)?.[1];
-  const compiled = base ? Function(`return (${base});`)() : {};
+  // Lane lists live in references/delivery-lanes.json. Parsing a JS object
+  // literal out of the compiler misses the data switch and reports nothing.
+  const compiled = JSON.parse(read("references/delivery-lanes.json")).lanes || {};
   for (const [lane, required] of Object.entries(compiled)) {
     const full = effectiveLanes(m)[lane];
     if (!full) { findings.push({ check: "lane-layers", file: "scripts/compile-delivery-graph.mjs", msg: `compiler lane ${lane} is not in laneDefinitions` }); continue; }
