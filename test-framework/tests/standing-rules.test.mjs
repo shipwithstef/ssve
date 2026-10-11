@@ -339,6 +339,34 @@ test("the home directory .svc is not the owning project", () => {
   });
 });
 
+test("add rejects the home directory and the temp root when they are supplied directly", () => {
+  fixture((root) => {
+    const home = path.join(root, "home");
+    const temp = path.join(root, "temp");
+    fs.mkdirSync(path.join(home, ".svc"), { recursive: true });
+    fs.mkdirSync(path.join(temp, ".git"), { recursive: true });
+    fs.writeFileSync(path.join(home, ".svc", "standing-rules.md"), "- home rule\n");
+    const env = { ...process.env, HOME: home, TMPDIR: temp };
+
+    const homeAdd = run(["add", "--root", home, "--text", RULE], { env });
+    assert.equal(homeAdd.status, 2, homeAdd.stderr);
+    assert.match(homeAdd.stderr, /not project roots/);
+    assert.equal(fs.readFileSync(path.join(home, ".svc", "standing-rules.md"), "utf8"), "- home rule\n");
+
+    const tempAdd = run(["add", "--root", temp, "--text", RULE], { env });
+    assert.equal(tempAdd.status, 2, tempAdd.stderr);
+    assert.match(tempAdd.stderr, /not project roots/);
+    assert.equal(fs.existsSync(path.join(temp, ".svc")), false);
+
+    const project = path.join(home, "project");
+    fs.mkdirSync(project);
+    const nested = run(["add", "--root", project, "--text", RULE], { env });
+    assert.equal(nested.status, 0, nested.stderr);
+    assert.match(fs.readFileSync(path.join(project, ".svc", "standing-rules.md"), "utf8"), new RegExp(RULE));
+    assert.equal(fs.readFileSync(path.join(home, ".svc", "standing-rules.md"), "utf8"), "- home rule\n");
+  });
+});
+
 test("an unmarked temp subdirectory does not climb into the temp root", () => {
   fixture((root) => {
     const sub = path.join(root, "sub");

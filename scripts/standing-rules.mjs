@@ -80,6 +80,14 @@ export function resolveRoot(root) {
     if (parent === dir || stopsWalk(dir, home)) break;
     dir = parent;
   }
+  // The walk stops at an excluded root. Returning that path would let add
+  // create .svc/standing-rules.md in the home directory or the temp root.
+  if (stopsWalk(projectRoot, home)) {
+    throw Object.assign(
+      new Error("home directory and the temp root are not project roots"),
+      { code: "ROOT" },
+    );
+  }
   return projectRoot;
 }
 
