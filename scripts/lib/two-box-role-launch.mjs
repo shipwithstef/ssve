@@ -9,6 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { validate } from "./json-schema-validator.mjs";
 import { assertEffectiveIsolation } from "./isolated-plan-analysis.mjs";
+import { CLAUDE_TRANSPORT, CODEX_TRANSPORT, assertClaudeIsolation, decodeClaudeResult } from "./claude-plan-transport.mjs";
 import {
   DEFAULT_LIMITS,
   IsolationUnsupported,
@@ -96,8 +97,9 @@ function rejectInjected(opts, modeName, known) {
 function requireRoleTuple(role, tuple) {
   if (!PLANNING_ROLES.includes(role)) throw new Error(`unknown planning call: ${role}`);
   if (!isPlainObject(tuple)) throw new IsolationUnsupported("tuple required");
-  if (tuple.host !== "codex") throw new IsolationUnsupported(`unsupported planning transport: ${tuple.host}`);
-  if (tuple.family !== "openai") throw new IsolationUnsupported(`unsupported planning family: ${tuple.family}`);
+  if (tuple.host !== "codex" && tuple.host !== "claude") throw new IsolationUnsupported(`unsupported planning transport: ${tuple.host}`);
+  const family = tuple.host === "claude" ? "anthropic" : "openai";
+  if (tuple.family !== family) throw new IsolationUnsupported(`unsupported planning family: ${tuple.family} for host ${tuple.host}`);
   if (typeof tuple.model !== "string" || !tuple.model.trim()) throw new IsolationUnsupported("tuple.model required");
   if (typeof tuple.effort !== "string" || !tuple.effort.trim()) throw new IsolationUnsupported("tuple.effort required");
 }
@@ -405,6 +407,20 @@ export function parseCodexJsonl(text, schemaOrRole) {
   return applySchema(schemaOrRole, decodeCodexJsonl(text).value);
 }
 
+/** Parse a retained or fresh transport stdout for the requesting host and validate against the role schema. */
+export function parsePlanningStdout(host, text, schemaOrRole) {
+  if (host === "claude") {
+    if (typeof schemaOrRole === "function") throw new Error("tool callback rejected");
+    if (typeof schemaOrRole !== "string" && !isPlainObject(schemaOrRole)) throw new Error("role string or schema object required");
+    return applySchema(schemaOrRole, decodeClaudeResult(text).value);
+  }
+  return parseCodexJsonl(text, schemaOrRole);
+}
+
+function decodePlanning(host, text) {
+  return host === "claude" ? decodeClaudeResult(text) : decodeCodexJsonl(text);
+}
+
 function isoOffline(offline) {
   const out = {};
   for (const key of ISO_OFFLINE) {
@@ -420,19 +436,29 @@ export function preflightRole({ role, tuple, payload, schema, sourceBindings, mo
   rejectInjected(opts, modeName, PRE_KEYS);
   requireRoleTuple(role, tuple);
   if (!sourceBindings?.consumerRoot) throw new IsolationUnsupported("consumerRoot required");
-  const catalog = isOfflineMode(modeName) ? {path:null,sha256:null,fetched_at:null,client_version:null,slug:tuple.model,effort:tuple.effort,identity:"OFFLINE",evidence:"synthetic_fixture"} : localCatalogSupport(tuple);
+  const catalog = (isOfflineMode(modeName) || tuple.host === "claude") ? {path:null,sha256:null,fetched_at:null,client_version:null,slug:tuple.model,effort:tuple.effort,identity:isOfflineMode(modeName)?"OFFLINE":"claude_requested_not_catalogued",evidence:isOfflineMode(modeName)?"synthetic_fixture":"claude_no_local_catalog"} : localCatalogSupport(tuple);
   const prompt = buildRolePrompt({ role, payload });
   const roleSchema = outputSchemaForCall(role);
   if (schema && canonicalJson(schema) !== canonicalJson(roleSchema)) throw new IsolationUnsupported("role schema must match the canonical role contract");
-  const iso = assertEffectiveIsolation({
-    role,
-    tuple,
-    prompt,
-    schema: roleSchema,
-    consumerRoot: sourceBindings.consumerRoot,
-    mode: modeName,
-    ...(isOfflineMode(modeName) ? { offline: isoOffline(offline) } : {}),
-  });
+  const iso = tuple.host === "claude"
+    ? assertClaudeIsolation({
+      role,
+      tuple,
+      prompt,
+      schema: roleSchema,
+      consumerRoot: sourceBindings.consumerRoot,
+      mode: modeName,
+      ...(isOfflineMode(modeName) ? { offline: isoOffline(offline) } : {}),
+    })
+    : assertEffectiveIsolation({
+      role,
+      tuple,
+      prompt,
+      schema: roleSchema,
+      consumerRoot: sourceBindings.consumerRoot,
+      mode: modeName,
+      ...(isOfflineMode(modeName) ? { offline: isoOffline(offline) } : {}),
+    });
   catalog.version_compare = {
     catalog_client_version: catalog.client_version,
     proof_version_raw: iso.proof?.version?.raw ?? null,
@@ -624,7 +650,7 @@ async function runLive(pre, limits, signal, sourceBindings) {
   }
 }
 
-function runOffline(offline, role) {
+function runOffline(offline, role, host = "codex") {
   if (offline.spawn?.error && !(offline.stdout || offline.output)) {
     const run = { rawStdout: "", rawStderr: "", exit_code: null, signal: null, spawnCode: offline.spawn.error.code || offline.spawn.code };
     launchFail("spawn", run, 1);
@@ -642,7 +668,7 @@ function runOffline(offline, role) {
   }
   const rawStdout = asText(offline.stdout ?? offline.output);
   const rawStderr = asText(offline.stderr);
-  const decoded = decodeCodexJsonl(rawStdout);
+  const decoded = decodePlanning(host, rawStdout);
   return {
     output: applySchema(role, decoded.value),
     rawStdout,
@@ -683,7 +709,7 @@ export async function launchRole({
     }
     if (isOfflineMode(modeName)) {
       if (pre.proof?.effective?.usable_live) throw new IsolationUnsupported("OFFLINE proof cannot be usable_live");
-      const result = runOffline(offline, role);
+      const result = runOffline(offline, role, tuple.host);
       if (Buffer.byteLength(result.rawStdout) + Buffer.byteLength(result.rawStderr) > boundLimits.cap) launchFail("overflow", result, 1);
       if (result.exit_code !== 0) launchFail("exit", result, 1);
       return {
@@ -692,7 +718,7 @@ export async function launchRole({
         rawStderr: result.rawStderr,
         evidence_class: "OFFLINE",
         requested: { host: tuple.host, family: tuple.family, model: tuple.model, effort: tuple.effort },
-        invocation: { host: "codex", binary: pre.proof.binary.path, exec_args: pre.execArgs, cwd: pre.cwd },
+        invocation: { host: tuple.host, transport: tuple.host === "claude" ? CLAUDE_TRANSPORT : CODEX_TRANSPORT, binary: pre.proof.binary.path, exec_args: pre.execArgs, cwd: pre.cwd },
         observed: result.observed,
         exit_code: result.exit_code,
         proof: { ...pre.proof, effective: { ...pre.proof.effective, usable_live: false, status: "isolated_offline" } },
@@ -708,7 +734,7 @@ export async function launchRole({
     const rawStdout = Buffer.from(run.rawStdout);
     const rawStderr = Buffer.from(run.rawStderr);
     let decoded;
-    try { decoded = decodeCodexJsonl(rawStdout); }
+    try { decoded = decodePlanning(tuple.host, rawStdout); }
     catch (error) {
       error.rawStdout = rawStdout;
       error.rawStderr = rawStderr;
@@ -723,7 +749,7 @@ export async function launchRole({
       rawStderr,
       evidence_class: "LIVE",
       requested: { host: tuple.host, family: tuple.family, model: tuple.model, effort: tuple.effort },
-      invocation: { host: "codex", binary: pre.proof.binary.path, exec_args: pre.execArgs, cwd: pre.cwd },
+      invocation: { host: tuple.host, transport: tuple.host === "claude" ? CLAUDE_TRANSPORT : CODEX_TRANSPORT, binary: pre.proof.binary.path, exec_args: pre.execArgs, cwd: pre.cwd },
       observed: decoded.observed,
       exit_code: run.exit_code,
       proof: pre.proof,

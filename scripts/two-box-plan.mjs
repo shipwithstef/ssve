@@ -34,7 +34,8 @@ import {
 import { diagnosePromptContamination, isolationProofContractDigest } from "./lib/isolated-plan-analysis.mjs";
 import { assertRetainedStageProof } from "./lib/control-plan-validate.mjs";
 import { assignDualPass, assignmentCoverage, constraintSources, preflightDeclaredScoutExposure, freezeScoutExposure, frozenScoutExposure } from "./lib/two-box-scout-assign.mjs";
-import { buildRolePrompt, renderRolePrompt, assertCompleteRequestBudget, launchRole, preflightRole, parseCodexJsonl, PLANNING_REQUEST_MAX_BYTES } from "./lib/two-box-role-launch.mjs";
+import { buildRolePrompt, renderRolePrompt, assertCompleteRequestBudget, launchRole, preflightRole, parsePlanningStdout, PLANNING_REQUEST_MAX_BYTES } from "./lib/two-box-role-launch.mjs";
+import { planningHostFamily, planningTransportOf, primeClaudeProbe, transportAvailability } from "./lib/claude-plan-transport.mjs";
 import { redactSecrets } from "./lib/secret-redaction.mjs";
 import { realpathSync as __svcRealpath } from "node:fs";
 import { fileURLToPath as __svcToPath } from "node:url";
@@ -133,6 +134,68 @@ function containRel(root, rel) {
     assertNoSymlink(acc);
   }
   return rel;
+}
+
+export class AssessorUnavailable extends IsolationUnsupported {
+  constructor(message) {
+    super(message);
+    this.name = "AssessorUnavailable";
+  }
+}
+
+const SUPPORTED_PLANNING_HOSTS = ["claude", "codex"];
+
+/**
+ * Transport and family rules for the six planning calls, enforced whatever the policy says.
+ * Same-family roles (Open, Contract, scouts, revision) may run on any supported isolated
+ * transport. The assessor judges the two plans, so it must be of a different model family
+ * than the orchestrator and than the authors of both plans; there is no same-family fallback.
+ */
+export function assertPlanningTransports(tuples) {
+  for (const role of PLANNING_ROLES) {
+    const t = tuples[role]?.tuple;
+    if (!t || !SUPPORTED_PLANNING_HOSTS.includes(t.host)) {
+      throw new IsolationUnsupported(`unsupported planning transport: ${t?.host} (role ${role}); supported: ${SUPPORTED_PLANNING_HOSTS.join(", ")}`);
+    }
+    if (t.family !== planningHostFamily(t.host)) {
+      throw new IsolationUnsupported(`role ${role}: family ${t.family} does not match host ${t.host} (${planningHostFamily(t.host)})`);
+    }
+  }
+  const assessor = tuples.assessor.tuple;
+  const orchestratorFamily = planningHostFamily(tuples.assessor.tuple.orchestrator ?? tuples.open_box.tuple.orchestrator);
+  const authorFamilies = new Set(["open_box", "contract_box", "contract_revise"].map((r) => tuples[r].tuple.family));
+  const clash = authorFamilies.has(assessor.family) ? "a plan author" : (orchestratorFamily && assessor.family === orchestratorFamily ? "the orchestrator" : null);
+  if (clash) {
+    const need = assessor.family === "anthropic" ? "codex (family openai)" : "claude (family anthropic)";
+    throw new IsolationUnsupported(
+      `the assessor must be cross-family but its family ${assessor.family} (host ${assessor.host}) matches ${clash}. `
+      + `Run the assessor on ${need}: set modes.<mode>.roles.assessor in the dispatch policy to a tuple of a different model family than the plan tuples (the default policy already does this). Same-family assessors are refused.`,
+    );
+  }
+}
+
+/** Live pre-spend check: every host CLI the plan needs is present; the assessor gets an actionable error. */
+export function assertPlanningTransportsAvailable(tuples, pathEnv = process.env.PATH || "") {
+  const assessorHost = tuples.assessor.tuple.host;
+  const status = transportAvailability(assessorHost, pathEnv);
+  if (!status.ok) {
+    throw new AssessorUnavailable(
+      `cannot issue a plan-manifest: the cross-family assessor needs the ${assessorHost} CLI (${tuples.assessor.tuple.family}) but it is unavailable: ${status.reason}. `
+      + `Install the ${assessorHost} CLI and sign in (${assessorHost === "codex" ? "`codex login`" : "`claude`, then `/login`"}), then re-run this command. Issuance fails closed here; it never falls back to a same-family assessor.`,
+    );
+  }
+  for (const role of PLANNING_ROLES) {
+    const host = tuples[role].tuple.host;
+    const other = transportAvailability(host, pathEnv);
+    if (!other.ok) throw new IsolationUnsupported(`planning role ${role} needs the ${host} CLI: ${other.reason}`);
+  }
+}
+
+export function planningTransportSummary(tuples) {
+  return Object.fromEntries(PLANNING_ROLES.map((role) => {
+    const t = tuples[role].tuple;
+    return [role, { transport: planningTransportOf(t.host), host: t.host, family: t.family, model: t.model, effort: t.effort }];
+  }));
 }
 
 function publicTuple(resolved) {
@@ -240,6 +303,9 @@ function dispatchOpts(dispatch, wi, consumerRoot) {
   for (const [from, to] of DISPATCH_PASS) {
     if (dispatch[from] != null) opts[to] = dispatch[from];
   }
+  // Same default every svc command line uses (`${SVC_HOST:-claude}`): a Claude Code
+  // orchestrator needs no extra flag, another host sets SVC_HOST or dispatch.orchestrator.
+  if (opts.orchestrator == null && !process.env.SVC_HOST) opts.orchestrator = "claude";
   return opts;
 }
 
@@ -385,7 +451,7 @@ function verifyEnvelope(ref, { consumerRoot, wi, role, input, policyDigest, sour
   validateRoleOutput(role, envelope.output, context);
   if (role === "scout_forward" || role === "scout_reverse") assignmentCoverage({assignment:input.assignment.value,parsed:envelope.output});
   if (evidenceClass === "LIVE" || stdout.bytes.length) {
-    if(canonicalJson(parseCodexJsonl(stdout.bytes,role)) !== canonicalJson(envelope.output)) return null;
+    if(canonicalJson(parsePlanningStdout(envelope.launch.requested?.host,stdout.bytes,role)) !== canonicalJson(envelope.output)) return null;
   }
   if(envelope.launch.prompt_digest !== sha256Utf8(renderRolePrompt({role,payload:input}))) return null;
   if(envelope.launch.exit_code !== 0 || envelope.input_digest !== sha256Utf8(canonicalJson(input))) return null;
@@ -888,6 +954,7 @@ async function runSix(ctx) {
     return {
       status: "completed",
       new_provider_calls: newProviderCalls,
+      planning_transports: planningTransportSummary(tuples),
       evidence_class: "OFFLINE",
       eligibility,
       control_plan_ref,
@@ -924,6 +991,7 @@ async function runSix(ctx) {
   return {
     status: "completed",
     new_provider_calls: newProviderCalls,
+    planning_transports: planningTransportSummary(tuples),
     evidence_class: "LIVE",
     eligibility,
     control_plan_ref,
@@ -996,8 +1064,8 @@ export async function runTwoBox(opts = {}) {
   const policyHash = canonicalPolicyHash(tuples.open_box.effective_policy_sha256);
   for (const role of PLANNING_ROLES) {
     if (canonicalPolicyHash(tuples[role].effective_policy_sha256) !== policyHash) throw new Error("role policy digests diverged");
-    if (tuples[role].tuple.host !== "codex") throw new IsolationUnsupported(`unsupported planning transport: ${tuples[role].tuple.host}`);
   }
+  assertPlanningTransports(tuples);
   const bindings = {
     wi,
     original_requirements_ref: persisted.original_requirements_ref,
@@ -1021,6 +1089,7 @@ export async function runTwoBox(opts = {}) {
     return {
       status: "prepared",
       evidence_class: "PREPARE",
+      planning_transports: planningTransportSummary(tuples),
       eligibility,
       control_plan_ref: null,
       control_plan: null,
@@ -1038,6 +1107,12 @@ export async function runTwoBox(opts = {}) {
       stages: {},
       resume: { ...resume, eligible: true },
     };
+  }
+  if (mode === "live") {
+    // Fail closed before any model spend: every host CLI is present, and the Claude canary
+    // probe (when a Claude transport is used) has run on the binary that will be launched.
+    assertPlanningTransportsAvailable(tuples);
+    if (PLANNING_ROLES.some((role) => tuples[role].tuple.host === "claude")) await primeClaudeProbe();
   }
   return await withRunClaim(runPath, () => runSix({
     mode, offline, consumerRoot, wi, requirements, snapshot, bindings, tuples,

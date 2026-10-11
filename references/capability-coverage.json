@@ -3495,6 +3495,16 @@
       ]
     },
     {
+      "id": "engine:scripts/lib/claude-plan-transport.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/claude-plan-transport.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/two-box-claude-transport.test.mjs",
+        "test-framework/tests/two-box-plan.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/lib/completed-task-integrity.mjs",
       "kind": "engine",
       "source": "scripts/lib/completed-task-integrity.mjs",
@@ -3513,7 +3523,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
-        "test-framework/tests/two-box-plan.test.mjs"
+        "test-framework/tests/two-box-claude-transport.test.mjs"
       ]
     },
     {
@@ -3921,7 +3931,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
-        "test-framework/tests/two-box-executor-scorer.test.mjs"
+        "test-framework/tests/two-box-claude-transport.test.mjs"
       ]
     },
     {
@@ -3932,7 +3942,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
-        "test-framework/tests/two-box-plan.test.mjs"
+        "test-framework/tests/two-box-claude-transport.test.mjs"
       ]
     },
     {
