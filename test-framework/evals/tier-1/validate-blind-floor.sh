@@ -23,7 +23,7 @@ for dir in "$FX"/*/; do
   exp_verdict="$(node -e "console.log(require('$dir/expect.json').floor_verdict)")"
   adopt="$(node -e "console.log(require('$dir/expect.json').adopt_blind===true?'1':'')")"
 
-  args=(--blind "$dir/B.json" --merged "$dir/F.json")
+  args=(--blind "$dir/B.json" --merged "$dir/F.json" --orchestrator-family anthropic)
   [ -f "$dir/verdicts.json" ] && args+=(--verdicts "$dir/verdicts.json")
   [ -n "$adopt" ] && args+=(--adopt-blind)
 
@@ -43,7 +43,7 @@ done
 # Anti-self-grade BEHAVIORAL assertion (AC3): the check consumes certifications from the
 # judge verdicts file but its OWN output must never carry certified_strict_improvement
 # (svc never self-certifies; the field lives only in the cross-family judge's verdicts).
-asg_out="$(node "$CHECK" --blind "$FX/refine/B.json" --merged "$FX/refine/F.json" --verdicts "$FX/refine/verdicts.json" 2>/dev/null)"
+asg_out="$(node "$CHECK" --blind "$FX/refine/B.json" --merged "$FX/refine/F.json" --verdicts "$FX/refine/verdicts.json" --orchestrator-family anthropic 2>/dev/null)"
 if echo "$asg_out" | grep -q "certified_strict_improvement"; then
   echo "FAIL: blind-floor-check.mjs OUTPUT carries certified_strict_improvement (anti-self-grade violation)"; fails=$((fails+1))
 else

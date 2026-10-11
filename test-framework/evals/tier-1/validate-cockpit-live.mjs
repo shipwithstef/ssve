@@ -59,9 +59,10 @@ test("the server pushes the new state when a graph changes", async () => {
   await new Promise((ok) => c.server.on("listening", ok));
   const base = `http://127.0.0.1:${c.server.address().port}`;
   try {
-    const first = await (await fetch(base + "/api/state")).json();
+    const auth = { headers: { authorization: `Bearer ${c.token}` } };
+    const first = await (await fetch(base + "/api/state", auth)).json();
     assert.equal(first.totals.goals, 3);
-    const res = await fetch(base + "/api/events");
+    const res = await fetch(base + "/api/events", auth);
     const reader = res.body.getReader();
     const events = [];
     const read = (async () => { let buf = ""; for (;;) { const { value, done } = await reader.read(); if (done) return; buf += new TextDecoder().decode(value); let i; while ((i = buf.indexOf("\n\n")) >= 0) { events.push(JSON.parse(buf.slice(6, i))); buf = buf.slice(i + 2); } } })();

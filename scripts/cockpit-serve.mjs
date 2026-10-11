@@ -8,7 +8,21 @@
  * updates the moment any orchestrator writes its task graph: the server watches each
  * repository's .svc folder and pushes the new state over server-sent events. Nothing to
  * install, no account, no build step; it only listens on 127.0.0.1.
+ *
+ * Read access is gated by a random per-start token (32 bytes, base64url). The terminal
+ * prints it in the URL fragment (http://127.0.0.1:<port>/#t=<token>); a fragment is never
+ * sent to the server, so it stays out of logs and Referer. The page reads it from
+ * location.hash and sends it on every data request:
+ *   - fetch: `Authorization: Bearer <token>` on every GET route;
+ *   - EventSource cannot set headers, so /api/events (only) also accepts `?t=<token>`.
+ *     A query parameter was chosen over a cookie because cookies are not port-scoped: any
+ *     other local server on 127.0.0.1 would receive it (and could set one), and an
+ *     ambient cookie adds CSRF surface. The query token reaches no log (this server logs
+ *     nothing), and the page sends `Referrer-Policy: no-referrer` and strips the hash.
+ * A missing or wrong token gets byte-for-byte the response an unknown path gets. The HTML
+ * shell holds no data and needs no token.
  */
+import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -18,7 +32,19 @@ import { buildState } from "./cockpit-state.mjs";
 
 const PAGE = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "templates", "cockpit", "live.html");
 
-export function startCockpit({ repos = ["."], port = 4317, host = "127.0.0.1" } = {}) {
+export function newToken() { return crypto.randomBytes(32).toString("base64url"); }
+
+// Constant-time: lengths are compared first (timingSafeEqual throws on unequal lengths);
+// the length of the real token is not a secret.
+export function tokenMatches(given, expected) {
+  if (typeof given !== "string") return false;
+  const a = Buffer.from(given), b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+function notFound(res) { res.writeHead(404); res.end("not found"); }
+
+export function startCockpit({ repos = ["."], port = 4317, host = "127.0.0.1", token = newToken() } = {}) {
   const clients = new Set();
   let last = "";
   const snapshot = () => JSON.stringify(buildState(repos));
@@ -37,7 +63,10 @@ export function startCockpit({ repos = ["."], port = 4317, host = "127.0.0.1" } 
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, `http://${host}`);
-    if (url.pathname === "/") { res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); return res.end(fs.readFileSync(PAGE)); }
+    if (url.pathname === "/") { res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer" }); return res.end(fs.readFileSync(PAGE)); }
+    const bearer = /^Bearer (.+)$/.exec(req.headers.authorization || "");
+    const given = bearer ? bearer[1] : (url.pathname === "/api/events" ? url.searchParams.get("t") : null);
+    if (!tokenMatches(given, token)) return notFound(res);
     if (url.pathname === "/api/state") { last = snapshot(); res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" }); return res.end(last); }
     if (url.pathname === "/api/events") {
       res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-store", connection: "keep-alive" });
@@ -46,10 +75,11 @@ export function startCockpit({ repos = ["."], port = 4317, host = "127.0.0.1" } 
       req.on("close", () => clients.delete(res));
       return;
     }
-    res.writeHead(404); res.end("not found");
+    notFound(res);
   });
   server.listen(port, host);
-  return { server, url: `http://${host}:${port}/`, close: () => { clearInterval(tick); clearTimeout(timer); watchers.forEach((w) => w.close()); for (const c of clients) c.end(); server.close(); } };
+  // The token rides in the fragment only: it is never sent to the server.
+  return { server, token, get url() { return `http://${host}:${server.address()?.port ?? port}/#t=${token}`; }, close: () => { clearInterval(tick); clearTimeout(timer); watchers.forEach((w) => w.close()); for (const c of clients) c.end(); server.close(); } };
 }
 
 if (isMain(import.meta.url)) {

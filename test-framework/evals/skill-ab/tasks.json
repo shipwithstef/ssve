@@ -1,5 +1,5 @@
 {
-  "_comment": "Fixed A/B task set for scripts/skill-ab-eval.mjs. Graders check what the skill claims to add beyond the bare model: its artifact contract (sections other svc tooling reads) and, where possible, correctness. Paid: run with EVALS=1 (default runner claude -p). Extend per skill before slimming or retiring it; a skill that ties the bare model here is a SLIM/RETIRE candidate.",
+  "_comment": "Fixed A/B task set for scripts/skill-ab-eval.mjs (two arms: bare vs the skill with its whole folder mounted). Graders check what the skill claims to add beyond the bare model: its artifact contract (sections other svc tooling reads) and, where possible, correctness. Every grader must reject empty, whitespace-only and keyword-only answers: min_words and per-heading section bodies enforce substance, and test-framework/fixtures/skill-ab/grader-fixtures.json holds the negative fixtures that prove it. Paid: run with EVALS=1 (default runner claude -p). Verdicts need >= 5 finished runs per arm and p < .05; fewer is inconclusive. Extend per skill before slimming or retiring it.",
   "timeout_seconds": 600,
   "tasks": [
     {
@@ -10,9 +10,25 @@
         "type": "regex",
         "pattern": [
           "Status:\\s*DRAFT",
-          "Acceptance Criteria",
-          "\\b(Given|When|Then)\\b"
-        ]
+          "\\bCSV\\b",
+          "\\binvoices?\\b",
+          "\\bGiven\\b[^\\n]{8,}",
+          "\\bWhen\\b[^\\n]{8,}",
+          "\\bThen\\b[^\\n]{8,}"
+        ],
+        "sections": [
+          {
+            "heading": "Acceptance Criteria",
+            "min_words": 20
+          }
+        ],
+        "min_words": 60,
+        "forbid": [
+          "lorem ipsum",
+          "\\[\\s*(insert|todo|tbd|fill)[^\\]]*\\]",
+          "\\bTBD\\b"
+        ],
+        "_note": "Contract keywords alone (Status/Acceptance Criteria/Given) no longer pass: the AC section needs a body, the spec must be about CSV invoice export, and placeholders are rejected."
       }
     },
     {
@@ -26,9 +42,33 @@
           "^#+.*Root Cause",
           "^#+.*Pattern Scan",
           "^#+.*Pillar",
-          "(Math\\.ceil|ceil(ing)?\\b)"
+          "Math\\.ceil",
+          "floor"
         ],
-        "_note": "diagnose-bug's own brief contract (P2 Reproduction, P3 Root Cause, pattern scan, Pillar Revisit Audit / Coverage Matrix) plus the correct fix direction. Corrected 2026-10-10: the first grader used headings from an unrelated table in the skill."
+        "sections": [
+          {
+            "heading": "Reproduction",
+            "min_words": 6
+          },
+          {
+            "heading": "Root Cause",
+            "min_words": 10
+          },
+          {
+            "heading": "Pattern Scan",
+            "min_words": 6
+          },
+          {
+            "heading": "Pillar",
+            "min_words": 6
+          }
+        ],
+        "min_words": 50,
+        "forbid": [
+          "\\bTBD\\b",
+          "\\bTODO\\b"
+        ],
+        "_note": "diagnose-bug's own brief contract (P2 Reproduction, P3 Root Cause, pattern scan, Pillar Revisit Audit) with a body under each heading, plus the correct fix direction (ceil). Root Cause must also name floor, the actual defect. Headings alone or filler do not pass."
       }
     },
     {
@@ -38,10 +78,16 @@
       "grader": {
         "type": "regex",
         "pattern": [
-          "recommend",
-          "confidence",
-          "SQLite"
-        ]
+          "recommend\\w*[^\\n]{0,80}SQLite",
+          "confidence\\W{0,4}(\\d|high|medium|low)",
+          "Postgres",
+          "(sync|migrat|concurren|server)"
+        ],
+        "min_words": 30,
+        "forbid": [
+          "\\bTBD\\b"
+        ],
+        "_note": "A decision needs the recommended option, a stated confidence, the alternative it was weighed against and a reason tied to the question (sync, migration, concurrency, server). Three keywords alone do not pass."
       }
     }
   ]
