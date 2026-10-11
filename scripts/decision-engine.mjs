@@ -131,11 +131,20 @@ export function validateModel(m) {
     if (ids.has(o.id)) errs.push(`duplicate option id '${o.id}'`); ids.add(o.id);
     if (o.value === undefined) errs.push(`option '${o.id}': value expression is required`);
   }
+  const seenPairs = new Set();
   for (const c of m.correlations || []) {
+    const key = [c.a, c.b].sort().join("~");
+    if (seenPairs.has(key)) errs.push(`correlation ${c.a}~${c.b}: pair declared more than once`); seenPairs.add(key);
     if (!vars[c.a] || !vars[c.b]) errs.push(`correlation ${c.a}~${c.b}: both must be declared variables`);
     else if (vars[c.a].dist === "const" || vars[c.b].dist === "const") errs.push(`correlation ${c.a}~${c.b}: const variables cannot be correlated`);
     if (!num(c.rho) || c.rho <= -1 || c.rho >= 1) errs.push(`correlation ${c.a}~${c.b}: rho must be in (-1, 1)`);
     if (c.a === c.b) errs.push(`correlation ${c.a}~${c.b}: a variable cannot correlate with itself`);
+  }
+  if (!errs.length && (m.correlations || []).length) {
+    const names = Object.keys(vars).filter((k) => vars[k].dist !== "const"); const ix = new Map(names.map((k, i) => [k, i]));
+    const C = names.map((_, i) => names.map((__, j) => (i === j ? 1 : 0)));
+    for (const c of m.correlations) { C[ix.get(c.a)][ix.get(c.b)] = c.rho; C[ix.get(c.b)][ix.get(c.a)] = c.rho; }
+    try { cholesky(C); } catch (e) { errs.push(`correlations: ${e.message}`); }
   }
   for (const [p, prof] of Object.entries(m.profiles || {})) for (const [k, d] of Object.entries((prof && prof.variables) || {})) {
     if (!vars[k]) errs.push(`profile '${p}' overrides undeclared variable '${k}'`);
@@ -217,6 +226,8 @@ export function evaluate(rawModel, opts = {}) {
   });
   const values = opt.map(() => new Float64Array(n));
   const gateFail = opt.map((x) => x.gates.map(() => 0));
+  const failed = opt.map(() => new Uint8Array(n));
+  const nonFinite = opt.map(() => 0);
   const env = {};
   for (let s = 0; s < n; s++) {
     for (const k of names) env[k] = cols[k][s];
@@ -224,10 +235,33 @@ export function evaluate(rawModel, opts = {}) {
     opt.forEach((x, oi) => {
       const e = x.o.params ? { ...env, ...x.o.params } : env;
       const v = x.value(e);
-      if (!Number.isFinite(v)) throw new Error(`option '${x.o.id}' value is not finite at sample ${s} (check divisions/logs)`);
-      values[oi][s] = v;
-      x.gates.forEach((gt, gi) => { if (!gt.fn(e)) gateFail[oi][gi]++; });
+      let fail = false;
+      // A non-finite value (log of a negative, 0/0) is an infeasible sample, not a crash.
+      if (Number.isFinite(v)) values[oi][s] = v; else { values[oi][s] = NaN; nonFinite[oi]++; fail = true; }
+      x.gates.forEach((gt, gi) => {
+        const r = gt.fn(e);
+        // A gate that evaluates to NaN is a broken expression; silently counting it
+        // as a failure would eliminate options for the wrong reason.
+        if (Number.isNaN(r)) throw Object.assign(new Error(`option '${x.o.id}' gate '${gt.g.label || gt.g.expr}' is NaN at sample ${s}; fix the expression`), { code: 2 });
+        if (!r) { gateFail[oi][gi]++; fail = true; }
+      });
+      failed[oi][s] = fail ? 1 : 0;
     });
+  }
+  // A sample where an option violates a HARD gate (or has no finite value) is a
+  // world where that option is not viable: it must not win that world or lift
+  // its mean. It takes the worst viable outcome of that world (all options
+  // infeasible: the worst finite value, else 0).
+  const dirSign = (model.objective && model.objective.direction) === "min" ? -1 : 1;
+  for (let s = 0; s < n; s++) {
+    let worst = Infinity, worstAny = Infinity;
+    for (let oi = 0; oi < opt.length; oi++) {
+      const u = dirSign * values[oi][s]; if (!Number.isFinite(u)) continue;
+      if (u < worstAny) worstAny = u;
+      if (!failed[oi][s] && u < worst) worst = u;
+    }
+    if (worst === Infinity) worst = worstAny === Infinity ? 0 : worstAny;
+    for (let oi = 0; oi < opt.length; oi++) if (failed[oi][s]) values[oi][s] = dirSign * Math.min(worst, Number.isFinite(dirSign * values[oi][s]) ? dirSign * values[oi][s] : worst);
   }
   // gates → elimination
   const rows = opt.map((x, oi) => {
@@ -235,6 +269,8 @@ export function evaluate(rawModel, opts = {}) {
       const pFail = gateFail[oi][gi] / n; const tol = gt.g.tolerance ?? 0.05;
       return { label: gt.g.label || gt.g.expr, family: gt.g.family || null, p_fail: round(pFail), tolerance: tol, eliminates: pFail > tol };
     });
+    if (nonFinite[oi]) { const pf = nonFinite[oi] / n; const tol = model.objective?.nonfinite_tolerance ?? 0.05;
+      gates.push({ label: "value is finite", family: "Model", p_fail: round(pf), tolerance: tol, eliminates: pf > tol }); }
     const sorted = Float64Array.from(values[oi]).sort();
     return { id: x.o.id, label: x.o.label || x.o.id, gates, eliminated: gates.some((g) => g.eliminates),
       mean: mean(values[oi]), p10: pct(sorted, 0.1), p50: pct(sorted, 0.5), p90: pct(sorted, 0.9) };
@@ -249,17 +285,19 @@ export function evaluate(rawModel, opts = {}) {
   }
   // utility = direction-adjusted value (higher is better)
   const U = (oi, s) => dir * values[oi][s];
-  const best = new Uint32Array(n); let evpiAcc = 0;
+  let evpiAcc = 0; const wins = new Map(alive.map((oi) => [oi, 0]));
   const means = alive.map((oi) => dir * rows[oi].mean);
   const wIdx = alive[means.indexOf(Math.max(...means))];
   const regret = new Map(alive.map((oi) => [oi, 0]));
   for (let s = 0; s < n; s++) {
-    let bo = alive[0], bu = U(alive[0], s);
-    for (const oi of alive) { const u = U(oi, s); if (u > bu) { bu = u; bo = oi; } }
-    best[s] = bo; evpiAcc += bu - U(wIdx, s);
+    // an option that fails a gate in this world cannot be its best option
+    const viable = alive.filter((oi) => !failed[oi][s]); const pool = viable.length ? viable : alive;
+    let bu = -Infinity; for (const oi of pool) bu = Math.max(bu, U(oi, s));
+    // exact ties share the win instead of crediting the first-listed option
+    const tied = pool.filter((oi) => U(oi, s) === bu); for (const oi of tied) wins.set(oi, wins.get(oi) + 1 / tied.length);
+    evpiAcc += bu - U(wIdx, s);
     for (const oi of alive) regret.set(oi, regret.get(oi) + (bu - U(oi, s)));
   }
-  const wins = new Map(alive.map((oi) => [oi, 0])); for (let s = 0; s < n; s++) wins.set(best[s], wins.get(best[s]) + 1);
   for (const oi of alive) { rows[oi].p_best = wins.get(oi) / n; rows[oi].expected_regret = regret.get(oi) / n; }
   const evpi = evpiAcc / n;
   const ranked = [...alive].sort((a, b) => dir * rows[b].mean - dir * rows[a].mean);

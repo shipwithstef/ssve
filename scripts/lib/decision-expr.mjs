@@ -28,7 +28,7 @@ function tokenize(src) {
     if (/\s/.test(c)) { i++; continue; }
     const num = /^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/.exec(src.slice(i));
     if (num) { out.push({ t: "num", v: Number(num[0]) }); i += num[0].length; continue; }
-    const id = /^[A-Za-z_][A-Za-z0-9_.]*/.exec(src.slice(i));
+    const id = /^[A-Za-z_][A-Za-z0-9_]*/.exec(src.slice(i)); // same grammar as variable names (no dots)
     if (id) { out.push({ t: "id", v: id[0] }); i += id[0].length; continue; }
     const op = /^(?:<=|>=|==|!=|&&|\|\||[-+*/%^()<>!?:,])/.exec(src.slice(i));
     if (op) { out.push({ t: "op", v: op[0] }); i += op[0].length; continue; }

@@ -102,13 +102,14 @@ export function calibration(rows) {
     if (metric !== undefined && p.predicted) { outN++; if (metric >= p.predicted.p10 && metric <= p.predicted.p90) outHit++; }
     for (const [k, v] of Object.entries(known)) {
       const r = p.variables?.[k]; if (!r) continue;
-      const e = (perVar[k] ||= { n: 0, hits: 0, logRatio: 0, above: 0, below: 0 });
+      const e = (perVar[k] ||= { n: 0, hits: 0, logRatio: 0, ratioN: 0, above: 0, below: 0 });
       e.n++; if (v >= r.p10 && v <= r.p90) e.hits++; else if (v > r.p90) e.above++; else e.below++;
-      if (v > 0 && r.p50 > 0) e.logRatio += Math.log(v / r.p50);
+      // the ratio is only defined for positive values; average over the ones that entered it
+      if (v > 0 && r.p50 > 0) { e.logRatio += Math.log(v / r.p50); e.ratioN++; }
     }
   }
   const variables = Object.entries(perVar).map(([k, e]) => ({ variable: k, observations: e.n, hit_rate: e.hits / e.n,
-    observed_over_estimate: Number(Math.exp(e.logRatio / e.n).toPrecision(3)), misses_above: e.above, misses_below: e.below,
+    observed_over_estimate: e.ratioN ? Number(Math.exp(e.logRatio / e.ratioN).toPrecision(3)) : null, misses_above: e.above, misses_below: e.below,
     advice: e.n < 3 ? "too few observations" : e.hits / e.n < 0.6 ? (e.above > e.below ? "ranges too low and too narrow: shift up and widen" : e.below > e.above ? "ranges too high and too narrow: shift down and widen" : "ranges too narrow: widen") : e.hits / e.n > 0.95 && e.n >= 10 ? "ranges may be wider than needed" : "calibrated" }))
     .sort((a, b) => a.hit_rate - b.hit_rate || b.observations - a.observations);
   return { predictions: preds.length, outcomes_observed: outN, outcome_hit_rate: outN ? outHit / outN : null, target_hit_rate: 0.8, variables };
@@ -157,7 +158,7 @@ if (path.resolve(process.argv[1] || "") === fileURLToPath(import.meta.url)) {
       if (o.json) console.log(JSON.stringify(c, null, 2));
       else {
         console.log(`${c.predictions} predictions, ${c.outcomes_observed} outcomes observed${c.outcome_hit_rate === null ? "" : `, ${Math.round(c.outcome_hit_rate * 100)}% inside predicted p10–p90 (target 80%)`}`);
-        for (const v of c.variables) console.log(`  ${v.variable}: ${v.observations} obs, ${Math.round(v.hit_rate * 100)}% inside declared range, reality/estimate ×${v.observed_over_estimate} → ${v.advice}`);
+        for (const v of c.variables) console.log(`  ${v.variable}: ${v.observations} obs, ${Math.round(v.hit_rate * 100)}% inside declared range, reality/estimate ${v.observed_over_estimate === null ? "n/a (no positive observations)" : `×${v.observed_over_estimate}`} → ${v.advice}`);
       }
     }
   } catch (e) { console.error(`decision-ledger: ${e.message}`); process.exit(e.code === 2 ? 2 : 1); }

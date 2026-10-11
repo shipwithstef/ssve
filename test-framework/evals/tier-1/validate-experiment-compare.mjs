@@ -57,3 +57,14 @@ test("CLI reads an experiment file", () => {
     assert.equal(r.status, 0, r.stderr); assert.equal(JSON.parse(r.stdout).verdict, "ship");
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
+
+test("a leader ranked only by its prior is never shipped; trial estimates stay finite", () => {
+  const r = compare({ variants: [{ name: "small", trials: 10, successes: 0 }, { name: "big", trials: 10000, successes: 0 }] });
+  assert.equal(r.verdict, "keep-running"); assert.match(r.summary, /leads only on its prior/);
+  const thin = compare({ variants: [{ name: "a", trials: 5, successes: 3 }, { name: "b", trials: 5000, successes: 50 }], threshold: 0.5 });
+  assert.equal(thin.verdict, "keep-running", "below min_trials even a loose threshold does not ship");
+  const far = compare({ variants: [{ name: "A", trials: 40, successes: 3 }, { name: "B", trials: 38, successes: 1 }], threshold: 1e-18 });
+  assert.ok(Number.isSafeInteger(far.more_trials_per_variant) && far.more_trials_per_variant <= 1e9);
+  assert.equal(JSON.parse(JSON.stringify(far)).more_trials_per_variant, far.more_trials_per_variant, "no Infinity/null in JSON");
+  for (const samples of [0, 10.5, -1]) assert.throws(() => compare({ variants: [{ name: "a", trials: 50, successes: 5 }, { name: "b", trials: 50, successes: 4 }], samples }), (e) => e.code === 2);
+});

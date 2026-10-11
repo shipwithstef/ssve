@@ -103,7 +103,8 @@ test("expression language: precedence, functions, and no escape hatch", () => {
   assert.equal(compile("max(a, b) - min(a, b) + clamp(10, 0, 5)", s).fn(env), 6);
   assert.equal(compile("a < b && b <= 3 ? 1 : 0", s).fn(env), 1);
   assert.equal(compile("if(a > b, 1, 2)", s).fn(env), 2);
-  assert.throws(() => compile("process.exit(1)", s), /unknown function/);
+  assert.throws(() => compile("process.exit(1)", s), /unexpected character '\.'/);
+  assert.throws(() => compile("user.churn", new Set(["user"])), /unexpected character/, "identifiers follow variable-name grammar (no dots)");
   assert.throws(() => compile("constructor", s), /unknown identifier/);
   assert.throws(() => compile("a +", s), /unexpected end/);
   assert.throws(() => compile("a ; b", s), /unexpected character/);
@@ -160,4 +161,37 @@ test("profile overrides are validated like base variables", () => {
 
 test("Object prototype members are not functions", () => {
   for (const f of ["toString", "valueOf", "constructor", "hasOwnProperty"]) assert.throws(() => compile(`${f}(1)`, new Set()), /unknown function/);
+});
+
+test("a HARD-gate failure cannot win that world or lift the mean (worst viable outcome substitutes)", () => {
+  const m = { schema: SCHEMA, question: "fat tail inside the tolerance", samples: 40000, seed: 9,
+    variables: { u: { dist: "uniform", low: 0, high: 1 } },
+    options: [{ id: "fat", value: "u < 0.04 ? 1000 : 0", gates: [{ label: "solvent", expr: "u >= 0.04", tolerance: 0.05 }] }, { id: "sure", value: 10 }] };
+  const r = evaluate(m);
+  const fat = r.options.find((o) => o.id === "fat");
+  assert.equal(fat.eliminated, false, "4% failure is inside the 5% tolerance");
+  assert.equal(r.winner.id, "sure"); assert.ok(fat.mean < 1, `fat mean ${fat.mean} must not be lifted by infeasible worlds`);
+  assert.ok(fat.p_best < 0.001);
+});
+
+test("exact ties share P(best); non-finite values are infeasible samples, not crashes; NaN gates are errors", () => {
+  const tie = evaluate({ schema: SCHEMA, question: "tie", samples: 1000, variables: { x: { dist: "uniform", low: 0, high: 1 } },
+    options: [{ id: "a", value: 1 }, { id: "b", value: 1 }] });
+  for (const o of tie.options) assert.equal(o.p_best, 0.5);
+  const lg = evaluate({ schema: SCHEMA, question: "log of a normal", samples: 4000, seed: 2,
+    variables: { x: { dist: "normal", mean: 0, sd: 1 } }, options: [{ id: "a", value: "log(x)" }, { id: "b", value: 0 }] });
+  const a = lg.options.find((o) => o.id === "a");
+  assert.equal(a.eliminated, true); assert.ok(a.gates.some((g) => g.label === "value is finite" && g.p_fail > 0.4));
+  assert.throws(() => evaluate({ schema: SCHEMA, question: "nan gate", samples: 500,
+    variables: { x: { dist: "uniform", low: 0, high: 1 } },
+    options: [{ id: "a", value: "x", gates: [{ label: "broken", expr: "0 / 0" }] }, { id: "b", value: 0 }] }), /gate 'broken' is NaN/);
+});
+
+test("validate rejects an inconsistent correlation set and duplicate pairs", () => {
+  const base = { schema: SCHEMA, question: "corr", variables: { a: { dist: "normal", mean: 0, sd: 1 }, b: { dist: "normal", mean: 0, sd: 1 }, c: { dist: "normal", mean: 0, sd: 1 } },
+    options: [{ id: "x", value: "a" }, { id: "y", value: 0 }] };
+  const npd = validateModel({ ...base, correlations: [{ a: "a", b: "b", rho: 0.95 }, { a: "a", b: "c", rho: 0.95 }, { a: "b", b: "c", rho: -0.95 }] }).join("\n");
+  assert.ok(npd.includes("not positive definite"), npd);
+  const dup = validateModel({ ...base, correlations: [{ a: "a", b: "b", rho: 0.2 }, { a: "b", b: "a", rho: 0.9 }] }).join("\n");
+  assert.ok(dup.includes("declared more than once"), dup);
 });

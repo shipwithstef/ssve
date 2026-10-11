@@ -94,3 +94,12 @@ test("review says the model file is missing instead of 'no observations'", (t) =
   fs.rmSync(path.join(w.dir, "m.json"));
   assert.match(w.run("review", "--id", "d1").stdout, /model file not found at/);
 });
+
+test("the reality/estimate ratio averages only the observations that entered it", () => {
+  const res = evaluate(model);
+  const rows = [predictionRow(model, res, { id: "z1" }), predictionRow(model, res, { id: "z2" }), predictionRow(model, res, { id: "z3" })];
+  rows.push({ type: "observation", id: "z1", variables: { x: 2 } }, { type: "observation", id: "z2", variables: { x: 0 } }); // p50 0.5: x=2 is 4x
+  assert.equal(calibration(rows).variables.find((v) => v.variable === "x").observed_over_estimate, 4);
+  const onlyNonPositive = [predictionRow(model, res, { id: "n1" }), { type: "observation", id: "n1", variables: { x: 0 } }];
+  assert.equal(calibration(onlyNonPositive).variables[0].observed_over_estimate, null);
+});

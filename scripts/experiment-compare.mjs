@@ -17,7 +17,8 @@
  *
  * Usage:
  *   node scripts/experiment-compare.mjs --variant name:trials:successes [--variant ...]
- *        [--value-per-success N] [--threshold 0.001] [--prior a,b] [--seed S] [--json]
+ *        [--value-per-success N] [--threshold 0.001] [--prior a,b] [--seed S]
+ *        [--samples N] [--min-trials 30] [--json]
  *   node scripts/experiment-compare.mjs --file EXPERIMENT.json [--json]
  *     EXPERIMENT.json: { "variants":[{"name":"A","trials":1200,"successes":31}], "threshold":0.001,
  *                        "value_per_success": 29, "prior":[1,1] }
@@ -41,7 +42,9 @@ function gamma(k, rng) {
 }
 const beta = (a, b, rng) => { const x = gamma(a, rng); return x / (x + gamma(b, rng)); };
 
-export function compare({ variants, threshold = 0.001, prior = [1, 1], value_per_success = null, samples = 40000, seed = 1 }) {
+export function compare({ variants, threshold = 0.001, prior = [1, 1], value_per_success = null, samples = 40000, seed = 1, min_trials = 30 }) {
+  if (!Number.isInteger(samples) || samples < 1000 || samples > 2000000) throw usage("samples must be an integer in [1000, 2000000]");
+  if (!Number.isInteger(min_trials) || min_trials < 1) throw usage("min_trials must be a positive integer");
   if (!Array.isArray(variants) || variants.length < 2) throw usage("need at least 2 variants");
   const names = new Set();
   for (const v of variants) {
@@ -70,13 +73,20 @@ export function compare({ variants, threshold = 0.001, prior = [1, 1], value_per
     return r;
   }).sort((a, b) => a.expected_loss - b.expected_loss);
   const lead = rows[0];
-  const verdict = lead.expected_loss <= threshold ? "ship" : "keep-running";
+  // Evidence floor: a leader with no successes, or too few trials, is ranked by
+  // its prior, not by data (0/10 "beats" 0/10000 under Beta(1,1)). Never ship it.
+  const thin = lead.successes === 0 || lead.trials < min_trials;
+  const verdict = lead.expected_loss <= threshold && !thin ? "ship" : "keep-running";
   // expected loss shrinks roughly with 1/sqrt(n): scale the current per-variant trials
   const n = Math.max(1, Math.min(...variants.map((v) => v.trials)));
-  const more = verdict === "ship" ? 0 : Math.ceil(n * ((lead.expected_loss / threshold) ** 2 - 1));
+  const MAX_MORE = 1e9;
+  const rawMore = verdict === "ship" ? 0 : Math.max(thin ? min_trials - lead.trials : 0, Math.ceil(n * ((lead.expected_loss / threshold) ** 2 - 1)));
+  const more = Number.isFinite(rawMore) ? Math.min(MAX_MORE, Math.max(0, rawMore)) : MAX_MORE;
   const pct = (x) => `${(100 * x).toFixed(2)}%`;
   const summary = verdict === "ship"
     ? `Ship ${lead.name}: P(best) ${Math.round(lead.p_best * 100)}%, expected loss if wrong ${pct(lead.expected_loss)} of rate (threshold ${pct(threshold)}).`
+    : thin && lead.expected_loss <= threshold
+    ? `Not decidable yet: ${lead.name} leads only on its prior (${lead.successes}/${lead.trials}; need at least one success and ${min_trials} trials before shipping). Run more trials.`
     : `Not decidable yet: ${lead.name} leads with P(best) ${Math.round(lead.p_best * 100)}% but shipping it now risks ${pct(lead.expected_loss)} of rate (threshold ${pct(threshold)}). Roughly ${more} more trials per variant needed${more > 20 * n ? " — likely too many; the variants are probably equivalent, so decide on cost or taste" : ""}.`;
   return { schema: "svc-experiment-result/1", verdict, leader: lead.name, threshold, prior, samples, seed, more_trials_per_variant: more, variants: rows, summary };
 }
@@ -94,6 +104,8 @@ function parse(argv) {
     else if (a === "--threshold") o.threshold = Number(v);
     else if (a === "--value-per-success") o.value_per_success = Number(v);
     else if (a === "--seed") o.seed = Number(v);
+    else if (a === "--samples") o.samples = Number(v);
+    else if (a === "--min-trials") o.min_trials = Number(v);
     else if (a === "--prior") { const p = v.split(",").map(Number); if (p.length !== 2 || p.some((x) => !Number.isFinite(x))) throw usage("--prior expects a,b"); o.prior = p; }
     else throw usage(`unknown option: ${a}`);
   }
