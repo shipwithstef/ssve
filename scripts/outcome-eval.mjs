@@ -207,12 +207,14 @@ export function prepare(task) {
   return dir;
 }
 
-export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40, effort = null, extraArgs = []) {
+export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40, effort = null, extraArgs = [], wrap = null) {
   return new Promise((resolve) => {
     // The model guides tell you to sweep effort on your own evals rather than assume a level.
     const args = ["-p", "--model", model, "--output-format", "json", "--max-turns", String(maxTurns), ...(effort ? ["--effort", effort] : []), ...extraArgs, "--allowedTools", tools];
     // The prompt goes on stdin: --allowedTools is variadic and would swallow it.
-    const child = spawn("claude", args, { cwd: dir, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry() } });
+    // wrap: an OS sandbox prefix (probe-loop.mjs) that the claude command runs inside.
+    const [bin, argv] = wrap ? ["sh", ["-c", `${wrap.prefix} "$@"`, "sh", "claude", ...args]] : ["claude", args];
+    const child = spawn(bin, argv, { cwd: dir, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, OE_PLAYWRIGHT: playwrightEntry(), ...(wrap?.env || {}) } });
     child.stdin.end(prompt);
     let out = "";
     child.stdout.on("data", (c) => { out += c; });

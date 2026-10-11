@@ -118,7 +118,7 @@ them from source.
 Build from the brief, not a changeset. The loop:
 1. **Skeleton first:** a runnable shell, the contract file and the brief's checks. Commit as soon as it runs.
 2. **Settle open questions** with `node scripts/probe-loop.mjs run --spec <spec>`:
-   - cheap workers (haiku) try variants in parallel copies;
+   - cheap workers (haiku) try variants in parallel copies, each inside an OS sandbox (bubblewrap by default; `probe-loop.mjs sandbox-check` says whether this host can contain them, and model workers refuse to run without one);
    - the question's check scores them;
    - apply the winner with `probe-loop.mjs apply`;
    - append the result and the losers' notes to the brief's decision log.

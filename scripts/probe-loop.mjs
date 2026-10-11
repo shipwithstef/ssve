@@ -4,6 +4,7 @@
  *
  *   node scripts/probe-loop.mjs run --spec <spec.json> [--out <result.json>]
  *   node scripts/probe-loop.mjs apply --result <result.json> --to <dir>
+ *   node scripts/probe-loop.mjs sandbox-check          (can this host contain workers?)
  *
  * Each variant gets its own copy of the base directory and one worker (a cheap model by
  * default). The worker may change only the owned paths; a write anywhere else fails the
@@ -30,16 +31,19 @@
  *   worker_cmd optional shell command instead of the Claude worker (another harness, or
  *              a test double); it runs in the variant directory with PROBE_VARIANT set
  *              and HOME pointed at a private, throwaway home
- *   sandbox_cmd optional prefix that wraps worker_cmd in an OS sandbox whose writable root
- *              is the variant, e.g. "bwrap --ro-bind / / --bind \"$PROBE_DIR\" \"$PROBE_DIR\" --"
+ *   sandbox_cmd optional shell prefix for an OS sandbox of your own; it sees $PROBE_DIR (the
+ *              variant, its only writable place) and $PROBE_HOME (the private home)
  *
- * Containment. Each variant is a copy with real files (no links back to the source), a
- * new link pointing outside the copy fails the variant, and the original project is
- * fingerprinted before and after: any change aborts the run. Without sandbox_cmd this is
- * containment by permissions, not an OS sandbox: Claude workers run headless, where Edit
- * and Write stay inside the working directory, but a command they run could still write
- * elsewhere on disk. For untrusted work, give sandbox_cmd or run probe-loop in a
- * container.
+ * Containment. Model workers run only inside an OS sandbox whose writable places are the
+ * variant copy and a private home: bubblewrap by default (read-only root, private /tmp),
+ * or sandbox_cmd. Every sandbox must pass a live probe first (a write inside the variant
+ * succeeds; writes to another temp dir and to the real home fail); one that does not
+ * confine is refused. With no sandbox, model workers do not run (exit 2; install
+ * bubblewrap, and check with sandbox-check). A worker_cmd is the caller's own command: it
+ * gets the sandbox when there is one, and otherwise runs with contained: false recorded.
+ * On top of that, each variant is a copy with real files (no links back to the source),
+ * a new link pointing outside the copy fails the variant, and the original project is
+ * fingerprinted before and after: any change aborts the run.
  */
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -52,6 +56,46 @@ import { norm, unsafeScope } from "./lib/disjoint-scopes.mjs";
 import { parseTap, pool, runAgent } from "./outcome-eval.mjs";
 
 const SKIP = new Set([".git", "node_modules"]);
+
+// Single-quote a string for sh.
+const shq = (v) => `'${String(v).replace(/'/g, `'\\''`)}'`;
+
+// Read-only root, private /tmp, and only the variant and its private home writable. The
+// empty /sys/fs/cgroup lets the Claude CLI start Bash commands without touching host cgroups.
+export const BWRAP = 'bwrap --ro-bind / / --tmpfs /tmp --bind "$PROBE_DIR" "$PROBE_DIR" --bind "$PROBE_HOME" "$PROBE_HOME" --tmpfs /sys/fs/cgroup --dev /dev --proc /proc --unshare-pid --die-with-parent --';
+
+export function hasBwrap() {
+  return spawnSync("sh", ["-c", "command -v bwrap"], { encoding: "utf8" }).status === 0;
+}
+
+// Live proof that a sandbox prefix confines: inside it, a write to the variant succeeds
+// and writes to another temp dir and to the real home fail.
+export function confines(prefix) {
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), "probe-sbx-"));
+  const dir = path.join(work, "variant");
+  const home = path.join(work, "home");
+  fs.mkdirSync(dir); fs.mkdirSync(home);
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "probe-out-"));
+  const outTmp = path.join(outDir, "escape");
+  const outHome = path.join(os.homedir(), `.probe-loop-escape-${process.pid}-${Date.now()}`);
+  const inner = 'touch "$PROBE_DIR/in"; touch "$OUT_TMP" 2>/dev/null; touch "$OUT_HOME" 2>/dev/null; true';
+  const r = spawnSync("sh", ["-c", `${prefix} sh -c ${shq(inner)}`], { encoding: "utf8", timeout: 30000, env: { ...process.env, PROBE_DIR: dir, PROBE_HOME: home, OUT_TMP: outTmp, OUT_HOME: outHome } });
+  const inside = fs.existsSync(path.join(dir, "in")), escapedTmp = fs.existsSync(outTmp), escapedHome = fs.existsSync(outHome);
+  fs.rmSync(outHome, { force: true }); fs.rmSync(outDir, { recursive: true, force: true }); fs.rmSync(work, { recursive: true, force: true });
+  return { contained: inside && !escapedTmp && !escapedHome, inside, escaped_tmp: escapedTmp, escaped_home: escapedHome, stderr: (r.stderr || "").trim().slice(-300) };
+}
+
+// The sandbox for this run: sandbox_cmd if given (refused when it does not confine),
+// else bubblewrap when installed and working, else none.
+export function resolveSandbox(spec, { which = hasBwrap, probe = confines } = {}) {
+  if (spec.sandbox_cmd) {
+    const p = probe(spec.sandbox_cmd);
+    if (!p.contained) throw new Error(`sandbox_cmd does not confine writes (inside ${p.inside}, escaped tmp ${p.escaped_tmp}, escaped home ${p.escaped_home})`);
+    return { name: "custom", prefix: spec.sandbox_cmd };
+  }
+  if (which() && probe(BWRAP).contained) return { name: "bwrap", prefix: BWRAP };
+  return null;
+}
 
 // path → sha256 for every file under dir, skipping .git and node_modules.
 export function snapshot(dir) {
@@ -128,17 +172,18 @@ function workerPrompt(spec, i) {
   return `${spec.prompt}\n\nQuestion this settles: ${spec.question}\n${owned}\nThe result is judged by running: ${spec.check}${hint}\nEnd with two lines: what you did, and what you learned that the lead should know.`;
 }
 
-async function runVariant(spec, i, root, spent) {
+async function runVariant(spec, i, root, spent, sandbox) {
   const dir = path.join(root, `v${i + 1}`);
   if (spec.budget_usd != null && spent.usd >= spec.budget_usd) return { variant: i + 1, status: "skipped", reason: "budget reached" };
   copyBase(spec.base, dir);
   const before = snapshot(dir);
   const t0 = Date.now();
   let worker;
+  const home = fs.mkdtempSync(path.join(root, `home${i + 1}-`));
+  const sandboxEnv = { PROBE_DIR: dir, PROBE_HOME: home };
   if (spec.worker_cmd) {
-    const home = fs.mkdtempSync(path.join(root, `home${i + 1}-`));
-    const cmd = spec.sandbox_cmd ? `${spec.sandbox_cmd} sh -c ${JSON.stringify(spec.worker_cmd)}` : spec.worker_cmd;
-    const r = spawnSync("sh", ["-c", cmd], { cwd: dir, encoding: "utf8", timeout: (spec.timeout_s ?? 600) * 1000, env: { ...process.env, PROBE_VARIANT: String(i + 1), PROBE_DIR: dir, HOME: home } });
+    const cmd = sandbox ? `${sandbox.prefix} sh -c ${shq(spec.worker_cmd)}` : spec.worker_cmd;
+    const r = spawnSync("sh", ["-c", cmd], { cwd: dir, encoding: "utf8", timeout: (spec.timeout_s ?? 600) * 1000, env: { ...process.env, ...sandboxEnv, PROBE_VARIANT: String(i + 1), HOME: home } });
     worker = { ok: r.status === 0, cost_usd: 0, text: (r.stdout || "").slice(-400) };
   } else {
     // A worker edits a throwaway copy with no .git; the ownership fence is checked after
@@ -146,7 +191,7 @@ async function runVariant(spec, i, root, spent) {
     // hook runs. So workers start without user or project settings: no hook start-up on
     // each of their tool calls (the same isolation flags as harness-transports.mjs).
     const isolated = ["--setting-sources", "", "--strict-mcp-config", "--no-session-persistence"];
-    worker = await runAgent(dir, workerPrompt(spec, i), spec.model ?? "haiku", (spec.timeout_s ?? 600) * 1000, spec.tools, spec.max_turns ?? 25, spec.effort ?? null, isolated);
+    worker = await runAgent(dir, workerPrompt(spec, i), spec.model ?? "haiku", (spec.timeout_s ?? 600) * 1000, spec.tools, spec.max_turns ?? 25, spec.effort ?? null, isolated, { prefix: sandbox.prefix, env: sandboxEnv });
   }
   spent.usd += worker.cost_usd ?? 0;
   const changed = changedFiles(before, snapshot(dir));
@@ -154,7 +199,7 @@ async function runVariant(spec, i, root, spent) {
   // The starting hash of every changed file, so apply() can refuse to overwrite a file
   // that changed in the target after the probe started.
   const baseline = Object.fromEntries(changed.map((f) => [f, before[f] ?? null]));
-  const base = { variant: i + 1, dir, changed, baseline, cost_usd: worker.cost_usd ?? null, worker_ms: Date.now() - t0, note: (worker.text || "").trim().split("\n").slice(-2).join(" ").slice(0, 400) };
+  const base = { variant: i + 1, dir, contained: Boolean(sandbox), sandbox: sandbox?.name ?? null, changed, baseline, cost_usd: worker.cost_usd ?? null, worker_ms: Date.now() - t0, note: (worker.text || "").trim().split("\n").slice(-2).join(" ").slice(0, 400) };
   if (!worker.ok && changed.length === 0) return { ...base, status: "worker_error", score: 0, reason: worker.error || worker.stop || "worker failed" };
   if (outside.length) return { ...base, status: "out_of_bounds", score: 0, outside };
   const r = spawnSync("sh", ["-c", spec.check], { cwd: dir, encoding: "utf8", timeout: (spec.check_timeout_s ?? 300) * 1000 });
@@ -162,9 +207,12 @@ async function runVariant(spec, i, root, spent) {
   return { ...base, status: r.status === 0 ? "pass" : "fail", score: score(r.status, out), check_tail: `${out}\n${r.stderr || ""}`.trim().slice(-600) };
 }
 
-export async function run(spec, { lanes } = {}) {
+// options.sandbox (programmatic only, for tests): a resolved sandbox, or null for none.
+export async function run(spec, { lanes, sandbox } = {}) {
   spec = { variants: 4, owned: [], ...spec, base: path.resolve(spec.base) };
   for (const k of ["question", "base", "prompt", "check"]) if (!spec[k]) throw new Error(`spec.${k} is required`);
+  if (sandbox === undefined) sandbox = resolveSandbox(spec);
+  if (!sandbox && !spec.worker_cmd) throw new Error("model workers run only inside a sandbox: install bubblewrap (apt install bubblewrap) or give sandbox_cmd; check this host with probe-loop.mjs sandbox-check");
   const cap = lanes ?? maxParallel({ plan: process.env.SVC_PLAN, override: process.env.SVC_MAX_PARALLEL });
   const n = Math.max(1, Math.min(spec.variants, cap.max_parallel));
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "probe-"));
@@ -173,14 +221,14 @@ export async function run(spec, { lanes } = {}) {
   // Workers must never touch the original project. Its fingerprint is taken before and
   // after; any difference aborts the run rather than reporting variants as clean.
   const original = snapshot(spec.base);
-  const variants = await pool(Array.from({ length: spec.variants }, (_, i) => i), n, (i) => runVariant(spec, i, root, spent));
+  const variants = await pool(Array.from({ length: spec.variants }, (_, i) => i), n, (i) => runVariant(spec, i, root, spent, sandbox));
   const touched = changedFiles(original, snapshot(spec.base));
   if (touched.length) throw new Error(`a worker changed the original project: ${touched.join(", ")}`);
   const ranking = rank(variants);
   const winner = variants.find((v) => v.variant === ranking[0] && v.status === "pass") || null;
   return {
     question: spec.question, check: spec.check, owned: spec.owned, model: spec.worker_cmd ? "worker_cmd" : spec.model ?? "haiku",
-    lanes: n, lanes_why: cap.why, wall_ms: Date.now() - t0, cost_usd: Math.round(spent.usd * 10000) / 10000,
+    sandbox: sandbox?.name ?? null, contained: Boolean(sandbox), lanes: n, lanes_why: cap.why, wall_ms: Date.now() - t0, cost_usd: Math.round(spent.usd * 10000) / 10000,
     passed: variants.filter((v) => v.status === "pass").length, variants, ranking, winner: winner?.variant ?? null, work_dir: root,
   };
 }
@@ -234,7 +282,14 @@ async function main(argv) {
     process.stdout.write(apply(result, arg(argv, "--to")).join("\n") + "\n");
     return 0;
   }
-  process.stderr.write("usage: probe-loop.mjs run --spec <json> [--out <json>] | apply --result <json> --to <dir>\n");
+  if (cmd === "sandbox-check") {
+    const bwrap = hasBwrap();
+    const probe = bwrap ? confines(BWRAP) : null;
+    process.stdout.write(JSON.stringify({ bwrap_found: bwrap, contained: Boolean(probe?.contained), probe }, null, 2) + "\n");
+    if (!probe?.contained) process.stderr.write("probe-loop: this host cannot contain model workers; install bubblewrap (apt install bubblewrap) with unprivileged user namespaces enabled, or pass sandbox_cmd\n");
+    return probe?.contained ? 0 : 1;
+  }
+  process.stderr.write("usage: probe-loop.mjs run --spec <json> [--out <json>] | apply --result <json> --to <dir> | sandbox-check\n");
   return 2;
 }
 

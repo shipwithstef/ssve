@@ -385,3 +385,19 @@ Production stays on the full changeset, because the promotion rule needs no judg
 - environments, feature flags and launch posts, which Opus alone also misses in nearly every run.
 
 Pilot spend across the three rounds, builds plus judge: $57.49 of the $60 cap.
+
+## Probe-loop containment, 2026-10-11
+
+Owner decision on the PR #127 review: model workers run only inside an OS sandbox.
+
+How it works:
+- `scripts/probe-loop.mjs` uses bubblewrap by default: a read-only root, a private `/tmp` and `/sys/fs/cgroup`, and only the variant copy and a private home writable. A caller can supply its own `sandbox_cmd` instead.
+- Every sandbox must pass a live probe before use: a write inside the variant succeeds, and writes to another temp dir and to the real home fail.
+- With no sandbox that passes, model workers refuse to run, and `probe-loop.mjs sandbox-check` reports why.
+
+Measured on this host:
+- `sandbox-check` passes.
+- A live run of 2 Haiku variants passed, with every variant `contained: true`, for $0.008.
+- Workers ran `node` inside the sandbox. A requested write to `/root` did not happen.
+
+Pilot rounds 1–3 ran before this change, without the sandbox.
