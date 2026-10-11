@@ -29,6 +29,8 @@
  *   2 — Hard block (stderr carries the reason; action aborted)
  */
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1199,4 +1201,4 @@ async function main() {
   }
 }
 
-main().catch(() => process.exit(0));
+main().catch((error) => { failOpen("svc-workflow-guard", error); process.exit(0); });

@@ -8,6 +8,8 @@ import { spawn } from "node:child_process";
 import { lexSimpleCommand } from "./codex/lib/argv-lex.mjs";
 import { resolveHookMode, hookPolicyWarning, repoOptOut } from "./lib/hook-policy.mjs";
 import { diagnosticReason, steeringReason } from "./lib/advisory-diagnostic.mjs";
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 
 const MAX_INPUT = 8 * 1024 * 1024;
 const MAX_OUTPUT = 1024 * 1024;
@@ -232,9 +234,13 @@ async function main() {
   // Per-repo switch (scripts/svc-repo.mjs off); an owner "enforce" always wins.
   if (repoOptOut(process.env, process.env.HOME || os.homedir(), mode)) { process.stdout.write("{}\n"); return; }
   const marker = process.argv.slice(2, process.argv.indexOf("--spec")).join(" ") || "svc-hook";
+  // Every advisory-mode path below that swallows an error and lets the call continue is
+  // counted (hook name + error class only). Enforce mode fails closed, so it is not counted.
+  let countCwd;
+  const open = (error) => { if (mode.mode !== "enforce") failOpen(marker, error, countCwd ? { cwd: countCwd } : undefined); };
   let spec;
   try { spec = decodeSpec(process.argv[process.argv.indexOf("--spec") + 1]); }
-  catch (error) { process.stderr.write(warning(marker, error.message) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
+  catch (error) { open(error); process.stderr.write(warning(marker, error.message) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
   if (mode.mode === "advisory") {
     const deferred = deferredAdvisoryCommand(spec);
     if (deferred) { process.stderr.write(warning(marker, deferred) + "\n"); return; }
@@ -242,9 +248,10 @@ async function main() {
   const deadline = Date.now() + spec.timeoutMs;
   let input;
   try { input = await readInputBounded(deadline); }
-  catch (error) { process.stderr.write(warning(marker, `cannot read hook payload: ${error.message}`) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
+  catch (error) { open(error); process.stderr.write(warning(marker, `cannot read hook payload: ${error.message}`) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
   let original;
   try { original = JSON.parse(input.toString("utf8")); } catch {}
+  if (typeof original?.cwd === "string" && original.cwd) countCwd = original.cwd;
   const pretool = /^(?:PreToolUse|BeforeTool|preToolUse|beforeShellExecution)$/i.test(spec.event);
   const toolEvent = pretool || /^(?:PostToolUse|AfterTool|postToolUse|afterShellExecution)$/i.test(spec.event);
   const hasTool = original?.tool_name || original?.toolName || original?.command;
@@ -283,7 +290,7 @@ async function main() {
   const diagnostic = reason => diagnosticReason(reason, original, repository);
   let result;
   try { result = await runChild(spec, input, deadline); }
-  catch (error) { process.stderr.write(warning(marker, error.message) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
+  catch (error) { open(error); process.stderr.write(warning(marker, error.message) + "\n"); process.exitCode = mode.mode === "enforce" ? 2 : 0; return; }
   if (result.interrupted) {
     process.exitCode = { SIGHUP: 129, SIGINT: 130, SIGTERM: 143 }[result.interrupted] || 2;
     return;
@@ -301,6 +308,10 @@ async function main() {
   }
   if (result.timedOut || result.oversized || result.spawnError || result.code !== 0) {
     const cause = result.timedOut ? "timed out" : result.oversized ? "output limit exceeded" : result.spawnError ? result.spawnError.message : `exited ${result.code}`;
+    // Exit 2 is a deliberate deny turned advisory; anything else is the child failing.
+    if (result.timedOut || result.oversized || result.spawnError || result.code !== 2) {
+      open(result.timedOut ? { name: "Timeout" } : result.oversized ? { name: "OutputLimit" } : result.spawnError || { name: `Exit${result.code}` });
+    }
     if (!visible(diagnostic(result.stderr.toString("utf8") || cause))) return;
     process.stderr.write(warning(marker, steering(cause)) + "\n");
     if (result.stdout.length) {
@@ -361,5 +372,10 @@ async function main() {
 let invokedAsMain = false;
 try { invokedAsMain = Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)); } catch {}
 if (invokedAsMain) {
-  main().catch((error) => { process.stderr.write(warning("svc-hook", error.message) + "\n"); process.exitCode = resolveHookMode().mode === "enforce" ? 2 : 0; });
+  main().catch((error) => {
+    const enforce = resolveHookMode().mode === "enforce";
+    if (!enforce) failOpen("svc-hook-boundary", error);
+    process.stderr.write(warning("svc-hook", error.message) + "\n");
+    process.exitCode = enforce ? 2 : 0;
+  });
 }

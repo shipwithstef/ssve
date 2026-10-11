@@ -5,6 +5,8 @@
  * context and bindIfNeeded. Never blocks. Never launches PLAN/EXEC children.
  * Cursor uses the adapter, not this process.
  */
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import { readFileSync, appendFileSync } from "node:fs";
 import { frameworkRoot, frameworkRootContext } from "../scripts/lib/framework-root.mjs";
 import {
@@ -55,7 +57,7 @@ if (startEvent === "SessionStart") {
       const lines = [rootContext ? `export SVC_ROOT=${JSON.stringify(root)}` : "", /^[A-Za-z0-9._:-]{1,200}$/.test(sid) ? `export SVC_SESSION_ID=${JSON.stringify(sid)}` : ""].filter(Boolean);
       if (lines.length) appendFileSync(process.env.CLAUDE_ENV_FILE, lines.join("\n") + "\n");
     }
-  } catch { rootContext = null; }
+  } catch (error) { failOpen("svc-origin-orchestrator-prompt", error); rootContext = null; }
 }
 
 const text = promptText(payload);
@@ -70,7 +72,8 @@ const cwd = payload.cwd || process.cwd();
 let intent = null;
 try {
   intent = resolveOriginIntent(text, cwd);
-} catch {
+} catch (error) {
+  failOpen("svc-origin-orchestrator-prompt", error);
   empty();
 }
 if (!intent) empty();
@@ -102,7 +105,8 @@ try {
     process.stdout.write(`${additionalContextEnvelope(event, stay)}\n`);
     process.exit(0);
   }
-} catch {
+} catch (error) {
+  failOpen("svc-origin-orchestrator-prompt", error);
   // never block prompt submit
 }
 

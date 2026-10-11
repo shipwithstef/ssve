@@ -8,6 +8,8 @@
 // generation. Missing/replayed/expired/mismatched receipts are silent no-ops;
 // failed or denied calls extend nothing. This hook can never authorize — it
 // only continues authority PreToolUse already established.
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("../lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -140,9 +142,10 @@ async function main() {
       return;
     }
     emit({});
-  } catch {
+  } catch (error) {
+    failOpen("svc-codex-posttool-heartbeat", error);
     emit({ systemMessage: "svc post-tool: heartbeat skipped" });
   }
 }
 
-main().catch(() => emit({}));
+main().catch((error) => { failOpen("svc-codex-posttool-heartbeat", error); emit({}); });

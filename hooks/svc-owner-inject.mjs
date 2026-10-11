@@ -20,6 +20,8 @@
 // Authored under explicit user authorization (2026-06-08) to add a new
 // hooks/svc-* file past the config-protection guard, for WI-392.
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import { join } from "node:path";   // node builtin — safe at module top level
 import path from "node:path";
 import fs from "node:fs";
@@ -80,7 +82,8 @@ export async function ownerContext(call) {
     try { writeJsonAtomic(memoPath, memo, { timeoutMs: MEMO_LOCK_MS }); } catch { return ""; }
 
     return renderInjection(fresh).slice(0, CAP);
-  } catch {
+  } catch (error) {
+    failOpen("svc-owner-inject", error);
     return "";                                       // any error → fail open
   }
 }
@@ -91,7 +94,7 @@ function invokedDirectly() {
 }
 
 if (invokedDirectly()) {
-  process.on("uncaughtException", () => process.exit(0));   // belt + suspenders
+  process.on("uncaughtException", (error) => { failOpen("svc-owner-inject", error); process.exit(0); });   // belt + suspenders
   (async () => {
     const { readHookPayload } = await import("./lib/hook-payload.mjs");
     const call = readHookPayload();
@@ -99,5 +102,5 @@ if (invokedDirectly()) {
     if (!ctx) return;
     const event = (call.raw && (call.raw.hook_event_name || call.raw.hookEventName)) || "PreToolUse";
     process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext: ctx } }));
-  })().catch(() => process.exit(0));
+  })().catch((error) => { failOpen("svc-owner-inject", error); process.exit(0); });
 }

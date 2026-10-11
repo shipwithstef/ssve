@@ -22,6 +22,8 @@
  * Fail-open: ANY error → exit 0 with no output (never blocks tooling).
  */
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import { firstSessionFinding, findingSession } from "./lib/session-findings.mjs";
 import { isShellTool } from "./lib/shell-tools.mjs";
 import { evaluatePreToolObservation } from "./lib/pretool-decision-engine.mjs";
@@ -210,15 +212,15 @@ async function main() {
   const parts = [];
   // G6 EXEC-003: fail-open is the contract — a broken registry/manifest must
   // never block tooling, nor suppress the other injectors.
-  if (!rulesOff) try { parts.push(ruleContext(call)); } catch { /* fail open */ }
+  if (!rulesOff) try { parts.push(ruleContext(call)); } catch (error) { failOpen("svc-rule-injector", error); /* fail open */ }
   // Learnings and owner routing are pre-action reminders on Edit/Write/Bash only.
   if (action) {
-    if (!disabled.has("svc-learning-inject")) parts.push(await import("./svc-learning-inject.mjs").then((m) => m.learningContext(call), () => ""));
-    if (!disabled.has("svc-owner-inject")) parts.push(await import("./svc-owner-inject.mjs").then((m) => m.ownerContext(call), () => ""));
+    if (!disabled.has("svc-learning-inject")) parts.push(await import("./svc-learning-inject.mjs").then((m) => m.learningContext(call), (error) => { failOpen("svc-rule-injector", error); return ""; }));
+    if (!disabled.has("svc-owner-inject")) parts.push(await import("./svc-owner-inject.mjs").then((m) => m.ownerContext(call), (error) => { failOpen("svc-rule-injector", error); return ""; }));
   }
   const ctx = parts.filter(Boolean).join("\n").slice(0, CAP);
   if (!ctx) return;
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: event || "PreToolUse", additionalContext: ctx } }));
 }
 
-main().then(() => process.exit(0), () => process.exit(0));
+main().then(() => process.exit(0), (error) => { failOpen("svc-rule-injector", error); process.exit(0); });

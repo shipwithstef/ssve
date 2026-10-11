@@ -11,6 +11,8 @@
  *         WI-SPINE-001 deliverable 3
  */
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
@@ -42,7 +44,8 @@ function findRepoRoot(start) {
   let payload;
   try {
     payload = JSON.parse(raw);
-  } catch {
+  } catch (error) {
+    failOpen("svc-spec-index-update", error);
     process.exit(0);
   }
 
@@ -81,4 +84,4 @@ function findRepoRoot(start) {
   });
 
   process.exit(0);
-})().catch(() => process.exit(0));
+})().catch((error) => { failOpen("svc-spec-index-update", error); process.exit(0); });

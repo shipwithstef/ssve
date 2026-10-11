@@ -2,6 +2,8 @@
 // Auto-capture high-signal learning candidates to a gitignored audit log.
 // Observe-only hook: never blocks, never writes tracked learning files.
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -139,6 +141,7 @@ function main() {
       process.stderr.write(`[svc-auto-capture-learnings] ${warnings.join("; ")}\n`);
     }
   } catch (error) {
+    failOpen("svc-auto-capture-learnings", error);
     if (verbose) process.stderr.write(`[svc-auto-capture-learnings] skipped: ${error.message}\n`);
   }
 }

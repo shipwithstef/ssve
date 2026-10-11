@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -62,7 +64,8 @@ if (!content) process.exit(0);
 let registry;
 try {
   registry = loadRegistry(defaultRegistryPath(repoRoot));
-} catch {
+} catch (error) {
+  failOpen("svc-inertia-check", error);
   process.exit(0);
 }
 

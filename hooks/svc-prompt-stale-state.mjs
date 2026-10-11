@@ -4,6 +4,8 @@
 // Never blocks.
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import { writeActiveIntentState } from "./lib/active-intent.mjs";
 
 let inputRaw = "";
@@ -36,7 +38,8 @@ try {
       `[svc-active-intent] recorded explicit continuation for ${result.wi || "requested WI"}.\n`
     );
   }
-} catch {
+} catch (error) {
+  failOpen("svc-prompt-stale-state", error);
   // never block
 }
 
@@ -98,7 +101,8 @@ try {
       `[svc-prompt-progress-audit] WARN: stalled in-progress task(s) older than ${warnMinutes}m without waiting for Stop: ${stalled.join(", ")}. Update the lane-task graph, record a phase/skill receipt, or mark the blocker explicitly.\n`
     );
   }
-} catch {
+} catch (error) {
+  failOpen("svc-prompt-stale-state", error);
   // never block
 }
 process.exit(0);

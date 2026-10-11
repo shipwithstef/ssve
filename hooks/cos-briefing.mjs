@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -124,7 +126,8 @@ try {
     output,
   });
   emit(output);
-} catch {
+} catch (error) {
+  failOpen("cos-briefing", error);
   emit("");
   process.exit(0);
 }

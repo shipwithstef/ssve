@@ -18,6 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { isMain } from "./lib/is-main.mjs";
 import { maxParallel } from "./lib/parallelism.mjs";
+import { readFailOpen } from "./lib/fail-open-counter.mjs";
 
 const STATUS = { completed: "done", done: "done", skipped: "skipped", in_progress: "active", active: "active", pending: "pending", planned: "pending", blocked: "blocked" };
 const norm = (s) => STATUS[String(s || "pending").toLowerCase()] || "pending";
@@ -93,12 +94,15 @@ export function buildState(repos, { plan = process.env.SVC_PLAN, override = proc
   const inUse = goals.reduce((n, g) => n + g.agents, 0);
   const open = goals.filter((g) => g.status !== "done");
   const agentMinutes = open.reduce((n, g) => n + (g.estimate?.minutes || 0), 0);
+  // Per project: how often a hook swallowed an error and let the action continue.
+  const projects = repos.map((r) => { const c = readFailOpen(r); return { name: path.basename(path.resolve(r)), fail_open: c.total, fail_open_by_hook: c.by_hook }; });
   return {
     generated_at: now.toISOString(),
-    orchestrator: { repos: repos.map((r) => path.basename(path.resolve(r))), capacity: { slots: cap.max_parallel, why: cap.why, in_use: inUse, free: Math.max(0, cap.max_parallel - inUse) } },
+    orchestrator: { repos: repos.map((r) => path.basename(path.resolve(r))), projects, capacity: { slots: cap.max_parallel, why: cap.why, in_use: inUse, free: Math.max(0, cap.max_parallel - inUse) } },
     totals: {
       goals: goals.length, active: goals.filter((g) => g.status === "active").length, blocked: goals.filter((g) => g.status === "blocked").length, stalled: goals.filter((g) => g.status === "stalled").length,
       done: goals.filter((g) => g.status === "done").length, open: open.length,
+      fail_open: projects.reduce((n, p) => n + p.fail_open, 0),
       remaining_agent_hours: +(agentMinutes / 60).toFixed(1),
       // Wall-clock at full use of the free slots, in 8-hour working days.
       days_at_capacity: cap.max_parallel ? +(agentMinutes / 60 / cap.max_parallel / 8).toFixed(1) : null,

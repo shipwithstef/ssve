@@ -36,6 +36,8 @@
  * Bypass stale check only: SVC_CONTRACT_MAX_AGE_HOURS=0
  */
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import { evaluatePreToolObservation } from "./lib/pretool-decision-engine.mjs";
 import { findingSession } from "./lib/session-findings.mjs";
 import fs from "node:fs";
@@ -304,4 +306,4 @@ async function main() {
   process.exit(0);
 }
 
-main().catch(() => process.exit(0));
+main().catch((error) => { failOpen("svc-session-contract-freshness", error); process.exit(0); });

@@ -13,6 +13,8 @@
 // path contains "/.worktrees/".
 // WI-186: made the healthcheck host-aware; it now resolves skills/config paths
 // from provision/hosts/<host>.json instead of checking Claude only.
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, lstatSync, realpathSync, statSync, mkdirSync, chmodSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
@@ -196,6 +198,7 @@ function claimSameSession(host, sessionId, home, env = process.env) {
     return "run";
   } catch (err) {
     if (err && err.code === "EEXIST") return "skip";
+    failOpen("svc-session-start-healthcheck", err);
     return "run";
   }
 }
@@ -476,7 +479,7 @@ function healEnforcementSource(repoRoot, host) {
     if (status && status !== "ok" && status !== "noop") {
       process.stderr.write(`[svc-session-start:${host}] WI-487 bounded repair status='${status}' (non-blocking; see ~/.svc/install-migrations attempts ledger)\n`);
     }
-  } catch { /* never block */ }
+  } catch (error) { failOpen("svc-session-start-healthcheck", error); /* never block */ }
 }
 
 try {
@@ -575,6 +578,7 @@ try {
     }
   }
 } catch (e) {
+  failOpen("svc-session-start-healthcheck", e);
   // never block
   try {
     process.stderr.write(`[svc-session-start] self-heal: unexpected error: ${e?.message || e}\n`);

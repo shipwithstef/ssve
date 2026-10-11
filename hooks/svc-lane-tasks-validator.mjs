@@ -8,6 +8,8 @@
  *   - exit 1 (visible to the agent in the next turn)
  */
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -164,6 +166,7 @@ try {
     }
   }
 } catch (e) {
+  failOpen("svc-lane-tasks-validator", e);
   // Don't block on the diff check itself failing in unusual environments —
   // the schema check above already enforces structural integrity.
   console.error(

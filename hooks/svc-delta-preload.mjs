@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// Optional: a bundle without the counter simply does not count.
+const { failOpen } = await import("./lib/fail-open.mjs").catch(() => ({ failOpen() {} }));
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -50,7 +52,8 @@ try {
     return bytes.length <= MAX_LINE_BYTES ? line : `${bytes.subarray(0, MAX_LINE_BYTES - 3).toString("utf8")}...`;
   });
   emit(output.join("\n"));
-} catch {
+} catch (error) {
+  failOpen("svc-delta-preload", error);
   emit("");
   process.exit(0);
 }
