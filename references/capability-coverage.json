@@ -3743,6 +3743,15 @@
       ]
     },
     {
+      "id": "engine:scripts/lib/review-relay.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/review-relay.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/review-relay.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/lib/reviewer-evidence.mjs",
       "kind": "engine",
       "source": "scripts/lib/reviewer-evidence.mjs",

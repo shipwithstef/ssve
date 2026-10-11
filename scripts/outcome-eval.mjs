@@ -35,6 +35,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
 import { dirSha } from "./lib/dir-sha.mjs";
+import { startRelay, writeRelayShim, findOnPath } from "./lib/review-relay.mjs";
 import { ARM_TOOLS, armTools } from "./lib/arm-tools.mjs";
 import { reserveFrozenCheck } from "./lib/reserve-frozen.mjs";
 import { writeJsonAtomic } from "./state-io.mjs";
@@ -343,10 +344,14 @@ export function foreignCliMasks(pathEnv = process.env.PATH, { hidden = () => fal
   return out;
 }
 const SHIM_DIR = path.posix.join(SANDBOX_HOME, ".oe-shims");
-function writeForeignShims(home) {
+// relay: the framework arm's `codex` is the client of the runner's review relay (lib/review-relay.mjs)
+// instead of a blocked shim; every other foreign CLI stays blocked. Cross-family review is a
+// framework requirement, so the arm that has a reviewer to call gets exactly that one door.
+function writeForeignShims(home, { relay = false } = {}) {
   const d = path.join(home, ".oe-shims");
   fs.mkdirSync(d, { recursive: true });
   for (const n of FOREIGN_CLIS) fs.writeFileSync(path.join(d, n), `#!/bin/sh\necho "${n}: blocked in the eval sandbox (claude is the only agent CLI)" >&2\nexit 127\n`, { mode: 0o755 });
+  if (relay) writeRelayShim(home);
 }
 
 // Playwright's global install and browser cache, read-only, so UI graders still work in a
@@ -443,7 +448,7 @@ export function sandboxMasks({ dir, framework = null, extraMaskRoots = [], expos
 //   build       the agent (credentials bound, claude on PATH)
 //   grade       hidden tests run against builder code: private empty home, no credentials
 //   components  component graders: as grade, with the northstar graders and the one task visible
-export function builderWrap(dir, { jobHome = null, framework = null, model = null, extraMaskRoots = [], exposeRoot = false, credentials = undefined, hookMode = null, workRoot = path.dirname(dir), hideRoots = [], role = "build", task = null, northstar = NORTHSTAR } = {}) {
+export function builderWrap(dir, { jobHome = null, framework = null, model = null, extraMaskRoots = [], exposeRoot = false, credentials = undefined, hookMode = null, workRoot = path.dirname(dir), hideRoots = [], role = "build", task = null, northstar = NORTHSTAR, reviewRelay = false } = {}) {
   if (!hasBwrap()) throw new Error("no builder sandbox: bubblewrap (bwrap) is not available");
   const needsCreds = role === "build";
   if (needsCreds && credentials === undefined) credentials = realCredentialsFile();
@@ -458,7 +463,7 @@ export function builderWrap(dir, { jobHome = null, framework = null, model = nul
     fs.rmSync(placeholder, { force: true });
     fs.writeFileSync(placeholder, "", { mode: 0o600 });
   }
-  writeForeignShims(home);
+  writeForeignShims(home, { relay: Boolean(reviewRelay && framework && role === "build") });
   if (framework) {
     const bad = verifyInstalledRoot(home, framework.src);
     if (bad.length) throw new Error(`installed root is not its archive: ${bad.slice(0, 3).join("; ")}`);
@@ -481,7 +486,31 @@ export function builderWrap(dir, { jobHome = null, framework = null, model = nul
   if (pw.browsers) env.PLAYWRIGHT_BROWSERS_PATH = pw.browsers;
   if (model) { env.CLAUDE_CODE_SUBAGENT_MODEL = model; env.ANTHROPIC_SMALL_FAST_MODEL = model; }
   if (framework) { env.SVC_HOOK_MODE = hookMode || "advisory"; if (framework.checkpoint_mode === "eval-profile") env.SVC_DELIVERY_PROFILE = "eval"; }
-  return { name: "bwrap", argv, env, job_home: home, role, foreign_cli: "blocked", ...(framework ? { framework_home: home, slot_pin: framework.slot_pin } : {}) };
+  return { name: "bwrap", argv, env, job_home: home, role, foreign_cli: reviewRelay && framework && role === "build" ? "blocked-except-codex-relay" : "blocked", ...(framework ? { framework_home: home, slot_pin: framework.slot_pin } : {}) };
+}
+
+// The command the relay runs the real codex under, so a reviewer (whose prompt the builder
+// writes) reads no more of the host than the builder could: the answer trees, kept artifacts,
+// the live repository, the real credentials and every other job's directory are empty or
+// absent; the build dir and the job home come back read-only; only CODEX_HOME (auth, sessions)
+// and the call's scratch directory are writable. A deny-list for the home directory: codex's
+// own binary and auth live there, so it cannot be hidden as a whole. OE_RELAY_NO_CONFINE=1
+// runs codex unwrapped (for a host where codex cannot start under a second bubblewrap).
+export function reviewerConfinement({ dir, jobHome, workRoot = path.dirname(dir), hideRoots = [], framework = null, extraMaskRoots = [], realHome = os.homedir(), codexHome = process.env.CODEX_HOME || path.join(os.homedir(), ".codex"), repoRoot = ROOT, northstar = NORTHSTAR }) {
+  const masks = sandboxMasks({ dir, framework, extraMaskRoots, exposeRoot: false, role: "build", northstar, keepRo: [], realHome: "/nonexistent-oe-home", repoRoot, kept: path.join(realHome, ".svc", "outcome-eval-artifacts") }).maskRoots;
+  const homeDeny = [".svc", ".claude", ".ssh", ".aws", ".gnupg", ".config/gh", ".git-credentials", ".netrc", ".npmrc"].map((x) => path.join(realHome, x)).filter((x) => fs.existsSync(x));
+  const dirs = uniq([...masks, ...homeDeny.filter((x) => { try { return fs.statSync(x).isDirectory(); } catch { return false; } }), ...hideRoots.filter((h) => fs.existsSync(h)), ...(fs.existsSync(workRoot) ? [workRoot] : [])])
+    .filter((m) => m !== "/" && !isUnder(codexHome, m));
+  const files = homeDeny.filter((x) => { try { return fs.statSync(x).isFile(); } catch { return false; } });
+  return ({ cwd, scratch }) => {
+    const a = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent"];
+    for (const m of dirs) a.push("--tmpfs", m);
+    for (const f of files) a.push("--ro-bind", "/dev/null", f);
+    for (const k of [dir, jobHome]) a.push("--ro-bind", k, k);
+    if (fs.existsSync(codexHome)) a.push("--bind", codexHome, codexHome);
+    a.push("--bind", scratch, scratch, "--");
+    return a;
+  };
 }
 
 // Where an eval tree keeps its answers: the tasks (graders, references), recorded results and
@@ -643,6 +672,12 @@ export async function withFailOpenRerun(attempt, { model = null } = {}) {
   for (const k of ["wall_ms", "turns", "duration_ms", "nested_cost_usd"]) if (first[k] != null || second[k] != null) merged[k] = (first[k] || 0) + (second[k] || 0);
   if (first.model_usage || second.model_usage) merged.model_usage = mergeModelUsage(first.model_usage, second.model_usage);
   if (first.judge_cost_usd != null || second.judge_cost_usd != null) merged.judge_cost_usd = sum("judge_cost_usd");
+  // Reviewer calls of both attempts: their cost is already inside each attempt's cost_usd.
+  if (first.reviewer_calls || second.reviewer_calls) {
+    merged.reviewer_calls = [...(first.reviewer_calls || []), ...(second.reviewer_calls || [])];
+    merged.reviewer_cost_usd = first.reviewer_cost_usd == null && second.reviewer_cost_usd == null ? null : sum("reviewer_cost_usd");
+    for (const k of ["reviewer_unpriced_calls", "reviewer_wall_ms"]) merged[k] = (first[k] || 0) + (second[k] || 0);
+  }
   if (first.artifact) merged.first_attempt_artifact = first.artifact;
   if (typeof second.fail_open === "number" && second.fail_open > 0) merged.rules_not_loaded = true;
   // Disqualifying errors are not forgiven by a clean second attempt: the combined usage is
@@ -885,7 +920,8 @@ export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit
     const noteLive = () => {
       if (!watch?.budget || watch.claimUsd == null) return null;
       const part = jobLiveUsd(out, watch.home || null, watch.knownSessionIds || new Set());
-      const jobUsd = +((watch.priorUsd || 0) + (part.usd || 0)).toFixed(6);
+      // extraUsd: spend the stream cannot show, the framework arm's relayed reviewer calls.
+      const jobUsd = +((watch.priorUsd || 0) + (part.usd || 0) + (typeof watch.extraUsd === "function" ? Number(watch.extraUsd()) || 0 : 0)).toFixed(6);
       watch.budget.noteLive(liveKey, jobUsd);
       return jobUsd;
     };
@@ -1424,7 +1460,7 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
   let wrap;
   try {
     assertCleanAncestors(dir);
-    wrap = builderWrap(dir, { framework: fw, model, workRoot, hideRoots, exposeRoot: job.arm === "bounded" });
+    wrap = builderWrap(dir, { framework: fw, model, workRoot, hideRoots, exposeRoot: job.arm === "bounded", reviewRelay: Boolean(fw) && ctx.reviewRelay !== false && process.env.OE_NO_REVIEW_RELAY !== "1" });
     jobHome = wrap.job_home;
   } catch (e) { cleanup(); return { ...job, builder_sandbox: null, error: e.message }; }
   // Multi-step scenarios run each step as a fresh session in the same directory: only
@@ -1437,11 +1473,26 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
   const prompts = armPrompts(job.task, job.arm, { checkpointMode: fw?.checkpoint_mode });
   const sha = crypto.createHash("sha256").update(prompts.join("\n\0\n")).digest("hex").slice(0, 12);
   const lim = armLimits(job.arm);
+  // The framework arm's cross-family review: the real codex, run by this runner outside the
+  // sandbox, reached through the shim's socket. Its time is inside the job's wall clock and its
+  // cost is added to the job (and counted by the spend watchdog below).
+  let relay = null, relayNote = null;
+  if (wrap.foreign_cli === "blocked-except-codex-relay") {
+    try {
+      relay = await startRelay({
+        jobHome, buildDir: dir, maxCalls: ctx.reviewerMaxCalls, callTimeoutMs: ctx.reviewerCallTimeoutMs,
+        deadlineAt: Date.now() + cfg.timeout_ms * lim.time * prompts.length,
+        price: (id, u) => priceUsage(id || "unknown", u),
+        confine: process.env.OE_RELAY_NO_CONFINE === "1" ? null : reviewerConfinement({ dir, jobHome, workRoot, hideRoots, framework: fw }),
+      });
+    } catch (e) { relayNote = e.message; }
+  }
+  try {
   for (const prompt of prompts) {
     // No --max-budget-usd: the CLI shows it to the model ("USD budget: $0.71"), and runs
     // quoted it as the reason to skip the framework's stages. The run cap and a per-job
     // ceiling of 3× the claim are enforced outside the model, by the spend watchdog.
-    const watch = ctx.budget && claim?.usd != null ? { budget: ctx.budget, key: `${job.task}/${job.arm}#${job.rep}`, claimUsd: claim.usd, priorUsd: spentBefore + (agent.cost_usd || 0), knownSessionIds: outerIds, home: jobHome, intervalMs: ctx.budgetPollMs } : null;
+    const watch = ctx.budget && claim?.usd != null ? { budget: ctx.budget, key: `${job.task}/${job.arm}#${job.rep}`, claimUsd: claim.usd, priorUsd: spentBefore + (agent.cost_usd || 0), knownSessionIds: outerIds, home: jobHome, intervalMs: ctx.budgetPollMs, extraUsd: relay ? () => relay.costUsd() : null } : null;
     const step = await runAgent(dir, prompt, model, cfg.timeout_ms * lim.time, isPillarArm(job.arm) ? cfg.tools : armTools(cfg.tools, job.arm), cfg.max_turns * lim.turns, effort, [], wrap, watch);
     replies.push(String(step.text || "").slice(-400));
     usage = mergeModelUsage(usage, step.model_usage);
@@ -1451,15 +1502,17 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
     if (step.error) { agent = { ...agent, ...acct, error: `step ${agent.steps + 1}: ${step.error}`, stopped_by: step.stopped_by ?? agent.stopped_by ?? null }; break; }
     agent = { ...step, ...acct, steps: agent.steps + 1, stopped_by: agent.stopped_by ?? step.stopped_by ?? null };
   }
+  } finally { if (relay) await relay.close(); }
+  const rv = relay ? relay.summary() : null;
   delete agent.model_usage; delete agent.session_id;
   // Sessions the outer envelope does not cover (Bash-launched `claude -p`, a killed session):
   // read from the job home's transcripts, priced from the repo table, added to the cost.
   const nested = nestedUsage(jobHome, outerIds);
   usage = mergeModelUsage(usage, nested.model_usage);
   agent.outer_cost_usd = agent.cost_usd;
-  agent.cost_usd = +((agent.cost_usd || 0) + nested.usd).toFixed(6);
+  agent.cost_usd = +((agent.cost_usd || 0) + nested.usd + (rv?.reviewer_cost_usd || 0)).toFixed(6);
   // The end of each step's final reply, so a run that wrote nothing still says why.
-  const row = { ...job, ...(claim.usd != null ? { budget_usd: +claim.usd.toFixed(2) } : {}), builder_sandbox: wrap?.name ?? null, model, ...(effort ? { effort } : {}), task_sha256: taskSha256(job.task), pillar: cfg.pillar, prompt_sha: sha, started_at: new Date(t).toISOString(), wall_ms: Date.now() - t, ...agent, stopped_by: agent.stopped_by ?? null, model_usage: usage, nested_cost_usd: nested.usd, nested_sessions: nested.sessions, ...(nested.unpriced.length ? { nested_unpriced_models: nested.unpriced } : {}), foreign_cli: wrap.foreign_cli ?? null, step_replies: replies };
+  const row = { ...job, ...(claim.usd != null ? { budget_usd: +claim.usd.toFixed(2) } : {}), builder_sandbox: wrap?.name ?? null, model, ...(effort ? { effort } : {}), task_sha256: taskSha256(job.task), pillar: cfg.pillar, prompt_sha: sha, started_at: new Date(t).toISOString(), wall_ms: Date.now() - t, ...agent, stopped_by: agent.stopped_by ?? null, model_usage: usage, nested_cost_usd: nested.usd, nested_sessions: nested.sessions, ...(nested.unpriced.length ? { nested_unpriced_models: nested.unpriced } : {}), foreign_cli: wrap.foreign_cli ?? null, ...(fw ? { reviewer_relay: relay ? "codex" : (relayNote ? `unavailable: ${relayNote}` : "off"), ...(rv || {}) } : {}), step_replies: replies };
   if (fw) {
     Object.assign(row, { framework_sha: fw.sha, checkpoint_mode: fw.checkpoint_mode, slot_pin: wrap.slot_pin, ...readFailOpen(dir, fw), ...countReceipts(dir), ...chainFacts(dir, fw, fw.src, jobHome) });
   }
