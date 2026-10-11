@@ -354,8 +354,11 @@ test('R1-1: an unknown orchestrator family fails closed', () => {
   try {
     const file = policyFile(root, { labels: { PLAN: claudeTuple('p'), EXEC: claudeTuple('e') }, roles: { assessor: codexTuple('a') } });
     const tuples = withRevise(resolveAll(file, 'claude', root));
-    for (const role of Object.keys(tuples)) { tuples[role].orchestrator = 'mystery'; tuples[role].tuple.orchestrator = 'mystery'; }
-    assert.throws(() => assertPlanningTransports(tuples), /unknown orchestrator family/);
+    for (const name of ['mystery', 'toString', 'constructor', '__proto__', 'hasOwnProperty']) {
+      const t = structuredClone(tuples);
+      for (const role of Object.keys(t)) { t[role].orchestrator = name; t[role].tuple.orchestrator = name; }
+      assert.throws(() => assertPlanningTransports(t), /unknown orchestrator family/, name);
+    }
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
@@ -427,4 +430,14 @@ test('R1-3: the Claude request size is a declared conservative upper bound, not 
     assert.match(run({ ...live, token_budget: { ...live.token_budget, captured_body_bytes: 123 } }), /not a claimed capture/);
     assert.match(run({ ...live, token_budget: { ...live.token_budget, estimate_kind: 'request_bytes_only' } }), /not a claimed capture/);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('R2-1: temporary cloud credentials survive; only agent/session identity variables are stripped', () => {
+  const env = transport.claudeEnv({
+    PATH: '/bin', AWS_ACCESS_KEY_ID: 'a', AWS_SECRET_ACCESS_KEY: 's', AWS_SESSION_TOKEN: 't', AWS_PROFILE: 'p', AWS_REGION: 'r',
+    GOOGLE_APPLICATION_CREDENTIALS: '/g.json', CLAUDE_CODE_USE_BEDROCK: '1',
+    CLAUDE_CODE_SESSION_ID: 'x', CLAUDE_SESSION_ID: 'y', CLAUDECODE: '1', SVC_HOST: 'claude', CODEX_THREAD_ID: 'c',
+    CLAUDE_CODE_EXTRA_BODY: '{}', CLAUDE_CODE_PLUGIN_DIRS: '/p',
+  });
+  assert.deepEqual(Object.keys(env).sort(), ['AWS_ACCESS_KEY_ID', 'AWS_PROFILE', 'AWS_REGION', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN', 'CLAUDE_CODE_USE_BEDROCK', 'GOOGLE_APPLICATION_CREDENTIALS', 'PATH']);
 });

@@ -49,8 +49,10 @@ const ENV_ALLOW_EXACT = new Set([
   "SSL_CERT_FILE", "SSL_CERT_DIR", "NODE_EXTRA_CA_CERTS", "REQUESTS_CA_BUNDLE",
 ]);
 const ENV_ALLOW_PREFIX = ["LC_", "AWS_"];
-// Request/extension channels that would change what the model receives or loads.
-const ENV_DENY_PATTERN = /EXTRA_BODY|PLUGIN|CUSTOM_HEADERS|SYSTEM_PROMPT|SETTINGS|MCP|HOOK|SKILL|APPEND|^SVC_|^_SVC_|^CODEX_|^CURSOR_|^CLAUDECODE$|SESSION/i;
+// Agent/session identity variables are never forwarded. This is deliberately narrow: auth values
+// such as AWS_SESSION_TOKEN (temporary Bedrock credentials) must survive. Request and plugin
+// channels are excluded by the allowlist itself, not by name patterns.
+const ENV_DENY_PATTERN = /^(?:SVC_|_SVC_|CODEX_|CURSOR_|CLAUDE_CODE_SESSION|CLAUDE_SESSION|CLAUDECODE$)/;
 
 export function planningTransportOf(host) {
   if (host === "claude") return CLAUDE_TRANSPORT;

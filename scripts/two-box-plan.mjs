@@ -169,7 +169,7 @@ export function assertPlanningTransports(tuples) {
       throw new IsolationUnsupported(`role ${role}: orchestrator identity must be the single resolved orchestrator (${orchestrator}); a tuple-provided orchestrator override is refused`);
     }
   }
-  const orchestratorFamily = HOST_FAMILY[orchestrator];
+  const orchestratorFamily = typeof orchestrator === "string" && Object.hasOwn(HOST_FAMILY, orchestrator) ? HOST_FAMILY[orchestrator] : null;
   if (!orchestratorFamily) throw new IsolationUnsupported(`unknown orchestrator family for host ${orchestrator}; set SVC_HOST or dispatch.orchestrator to a known host`);
   const assessor = tuples.assessor.tuple;
   const authorFamilies = new Set(["open_box", "contract_box", "contract_revise"].map((r) => tuples[r].tuple.family));
