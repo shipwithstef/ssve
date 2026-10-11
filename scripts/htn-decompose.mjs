@@ -9,6 +9,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
 
 /** Produce the existing five-phase scaffold without filling model-owned subtasks. */
 export function decompose(goal, context) {
@@ -57,6 +58,6 @@ function main(argv) {
   if (errors.length) throw new Error("Validation errors:\n  " + errors.join("\n  "));
   console.log(JSON.stringify(plan, null, 2));
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try { main(process.argv.slice(2)); } catch (error) { console.error(`htn-decompose: ${error.message}`); process.exitCode = 1; }
 }

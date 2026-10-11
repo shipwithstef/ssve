@@ -1672,7 +1672,7 @@
     {
       "skill": "route-workflow",
       "path": "skills/route-workflow/SKILL.md",
-      "content_hash": "4f03da316abf0f6340bbbda981ae7eb94b81a9e367b3f51ab6f430ee578c8868",
+      "content_hash": "13e279712e294ae69a56175146f913c8cd26496906bcec6efda8b03606ed0330",
       "description": "Routes a work request in an svc-onboarded repo to the right lane and next svc skill from repo state and artifacts. Use for 'build this', 'fix this', 'ship this', 'I want to', 'which skill do I run', 'what lane is this'. Not needed for questions, explanations or read-only lookups.",
       "aliases": [
         "what should I do next",

@@ -2,6 +2,7 @@
 
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { isMain } from "./lib/is-main.mjs";
 
 const SEVERITIES = new Set(["CRITICAL", "HIGH", "MEDIUM", "LOW"]);
 const MODES = new Set(["shadow", "enforce"]);
@@ -133,7 +134,7 @@ function parseArgs(argv) {
   return args;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   try {
     const args = parseArgs(process.argv.slice(2));
     if (!args.registry || !args.hits) throw new Error("usage: svc-concern-compiler-v2.mjs --registry <json> --hits <json> [--mode shadow|enforce] [--waivers <json>]");

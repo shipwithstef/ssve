@@ -2242,9 +2242,9 @@
       "source": "scripts/init-project-state.mjs",
       "status": "tested",
       "evidence": [
+        "test-framework/evals/tier-1/validate-fresh-project-path.mjs",
         "test-framework/evals/tier-1/validate-kimi-host.sh",
-        "test-framework/evals/tier-1/validate-project-consumer-surface.sh",
-        "test-framework/evals/tier-1/validate-source-repo-not-worktree.sh"
+        "test-framework/evals/tier-1/validate-project-consumer-surface.sh"
       ]
     },
     {
@@ -2981,9 +2981,9 @@
       "source": "scripts/svc-reconcile.mjs",
       "status": "tested",
       "evidence": [
+        "test-framework/evals/tier-1/validate-fresh-project-path.mjs",
         "test-framework/evals/tier-1/validate-shared-chain-policy.sh",
-        "test-framework/evals/tier-1/validate-svc-reconcile-bounded.sh",
-        "test-framework/evals/tier-1/validate-svc-reconcile-consumer-routing.sh"
+        "test-framework/evals/tier-1/validate-svc-reconcile-bounded.sh"
       ]
     },
     {

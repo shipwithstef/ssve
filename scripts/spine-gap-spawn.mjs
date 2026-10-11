@@ -16,6 +16,7 @@ import {
   researchDecision,
 } from "./lib/research-decision.mjs";
 import { NO_WRITE, appendJsonlLine, readJsonAtomic, updateJsonAtomic } from "./state-io.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 const USAGE = "Usage: spine-gap-spawn.mjs <lane-tasks.json> <skill> <topic> [<wi>] [--question <JSONfile>]";
 
@@ -188,7 +189,7 @@ export function spineGapSpawn(rawArgv = argv.slice(2)) {
   return result;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   try {
     spineGapSpawn(argv.slice(2));
   } catch (error) {

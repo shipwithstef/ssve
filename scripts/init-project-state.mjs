@@ -252,4 +252,14 @@ if (fs.existsSync(gaTemplatePath)) {
   console.log("WARN: .gitattributes template missing, skipping merge-protocol provisioning.");
 }
 
+// Adoption baseline: commits made before the framework was adopted carry no receipts and
+// never will. Reconcile checks commits after this point; every later commit is checked as
+// before. Written once, never moved by a re-run.
+const checkpoint = path.join(targetSvc, "reconcile-checkpoint.json");
+const head = gitOutput(["rev-parse", "--verify", "--quiet", "HEAD^{commit}"]);
+if (head && !fs.existsSync(checkpoint)) {
+  writeJsonAtomic(checkpoint, { last_reconciled_sha: head, last_pr_watcher_run: null, adopted_at: new Date().toISOString(), baseline: "adoption" });
+  console.log(`CREATE: ${checkpoint} (adoption baseline ${head.slice(0, 12)})`);
+}
+
 console.log(`\nProject state initialized at: ${targetSvc}`);

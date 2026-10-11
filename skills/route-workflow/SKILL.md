@@ -49,6 +49,8 @@ Record explicit waits or reopened decisions with `node scripts/task-graph.mjs re
 Inspect `node scripts/mine-receipts.mjs --delivery-cycle <root-WI> --json`: overlapping intervals are unioned, related WIs remain cumulative, and completed cycles stop at actual completion. 30/120/10 minutes is a target for planning/build/finalization, never a gate bypass or permission to abandon work. Declare concrete larger release/observation needs during planning.
 
 ## Hot Path
+In a user's project, framework paths (`scripts/`, `schemas/`, `templates/`, framework `references/`) live under the framework root that session start gives (`$SVC_ROOT` in Bash), never in the project: run `node $SVC_ROOT/scripts/<name>.mjs`. If the project has no `.svc/`, run `node $SVC_ROOT/scripts/init-project-state.mjs` first.
+
 1. Read the latest `.svc/session-contract.jsonl`; do not refresh it yet.
 2. Normalize intent, then classify follow-ups before changing goals.
    If a Stop-hook completion guard, stale task graph, or old session contract conflicts with the latest user prompt or explicit correction, the latest user intent wins. Treat that guard as advisory unless the user explicitly says `continue WI-XXX` or `resume WI-XXX` for the same WI.

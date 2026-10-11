@@ -43,6 +43,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { runCheck, SUPPORTED_TYPES } from './lib/browser-checks/index.mjs';
+import { isMain } from "./lib/is-main.mjs";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 const MAX_VERDICT_BYTES = 2048;
@@ -207,7 +208,7 @@ async function mainCli() {
   process.exit(verdict.pass ? 0 : 1);
 }
 
-const isDirect = import.meta.url === `file://${process.argv[1]}`;
+const isDirect = isMain(import.meta.url);
 if (isDirect) {
   mainCli().catch(err => {
     process.stdout.write(JSON.stringify({ pass: false, error: err.message }) + '\n');

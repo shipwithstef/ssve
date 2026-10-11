@@ -14,6 +14,7 @@ import { createConsumptionLedger } from "./lib/runtime-evidence-consumption-v2.m
 import { executeReleaseEffect, runRuntimeToFreeze } from "./lib/runtime-engine-v2.mjs";
 import { BUILT_IN_EFFECT_KINDS } from "./lib/runtime-effects-v2.mjs";
 import { TASK_EVENT_TYPES, transitionTaskState } from "./lib/runtime-state-model-v2.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 const EVENT_SCHEMA = JSON.parse(fs.readFileSync(fileURLToPath(new URL("../schemas/runtime-journal-event-v2.schema.json", import.meta.url)), "utf8"));
 const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -564,7 +565,7 @@ async function main() {
   throw new Error(`unknown command ${command}`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   try {
     const result = await main();
     (result.valid ? process.stdout : process.stderr).write(`${JSON.stringify(result)}\n`);

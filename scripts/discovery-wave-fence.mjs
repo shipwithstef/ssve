@@ -30,12 +30,13 @@ export const WAVE1_SCOPES = {
 // (scripts/lib/disjoint-scopes.mjs) — one hardened, closed-loop fail-safe place
 // to audit. Re-exported here for back-compat (`disjointWaveScopes` alias).
 import { scopesIntersect, disjointScopes } from "./lib/disjoint-scopes.mjs";
+import { isMain } from "./lib/is-main.mjs";
 export { scopesIntersect };
 export const disjointWaveScopes = (scopesBySkill) => disjointScopes(scopesBySkill);
 
 function has(n) { return process.argv.includes(n); }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   const r = disjointWaveScopes(WAVE1_SCOPES);
   if (has("--json")) {
     process.stdout.write(JSON.stringify({

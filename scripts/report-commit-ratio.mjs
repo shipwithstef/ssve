@@ -3,6 +3,7 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
 const FRAMEWORK = /^(hooks\/|scripts\/|test-framework\/|skills\/|skills-manifest\.json|provision\/|rules\/|_shared\/|references\/(?!knowledge\/)|[a-z0-9-]+\/SKILL\.md|FRAMEWORK-STATE)/;
 const PRODUCT = /^(docs\/specs\/(?!work-items|reviews|audit)|references\/knowledge\/|src\/|e2e\/)/;
 
@@ -41,6 +42,6 @@ function main(argv) {
     console.log(`| ${month} | ${row.n} | ${row.fw} | ${row.prod} | ${row.mixed} | ${percent}% |`);
   }
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try { main(process.argv.slice(2)); } catch (error) { console.error(`report-commit-ratio: ${error.message}`); process.exitCode = 1; }
 }

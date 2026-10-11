@@ -868,6 +868,13 @@ for e in m.get("rulesRegistry", {}).get("entries", []):
 
 print("# SVC Rules Index (load on demand)")
 print()
+print("SSVE framework root: `%s`. In skill text, scripts/, schemas/, templates/, hooks/, "
+      "agents/, _shared/, REPO_MODES.md, skills-manifest.json, and any references/ path not "
+      "inside the loaded skill's own folder, are framework files under this root, never "
+      "project files: run them as `node %s/scripts/<name>.mjs` from the project directory. "
+      "Project state lives in the project's .svc/ (create it with `node %s/scripts/init-project-state.mjs` "
+      "when missing)." % (root, root, root))
+print()
 print("These svc rules are NOT pre-loaded. Before acting where a rule's trigger "
       "matches (file paths touched, commands run, content written; regexes) or its "
       "topic applies, read the full file at its path and follow it. If unsure, read it.")

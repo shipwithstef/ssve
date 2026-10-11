@@ -21,10 +21,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { fileURLToPath } from "node:url";
 import { appendJsonlLine } from "../state-io.mjs";
+import { isMain } from "./is-main.mjs";
 
 const DEFAULT_DEDUPE_WINDOW = 100;
-const DEFAULT_REGISTRY = "references/sdkg-registry.json";
+const DEFAULT_REGISTRY = fileURLToPath(new URL("../../references/sdkg-registry.json", import.meta.url));
 
 function hashSubject(subject) {
   return crypto.createHash("sha256").update(subject || "").digest("hex").slice(0, 16);
@@ -92,7 +94,7 @@ export function route({ taskId, subject, repoRoot = process.cwd(), registryPath,
   return { dispatched, skipped };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   let stdin = "";
   process.stdin.on("data", (chunk) => stdin += chunk);
   process.stdin.on("end", () => {

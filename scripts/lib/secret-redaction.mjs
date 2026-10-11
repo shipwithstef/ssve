@@ -1,3 +1,4 @@
+import { isMain } from "./is-main.mjs";
 // scripts/lib/secret-redaction.mjs
 //
 // Pre-disk-write secret redaction for the auto-learning pipeline.
@@ -226,7 +227,7 @@ export function countRedactions(text) {
 }
 
 // CLI smoke-test
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   const input = process.argv[2] || "";
   process.stdout.write(redactSecrets(input) + "\n");
 }

@@ -38,6 +38,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { repositoryIdentity } from "./review-evidence-store.mjs";
+import { isMain } from "./is-main.mjs";
 
 const VALID_MODES = new Set(["refuse", "warn"]);
 const AUTHORITATIVE_SOURCES = new Set(["env", "shared", "home"]);
@@ -263,7 +264,7 @@ function isMainModule() {
   try {
     return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
   } catch {
-    return path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+    return isMain(import.meta.url);
   }
 }
 

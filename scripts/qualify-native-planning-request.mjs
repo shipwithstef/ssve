@@ -11,6 +11,7 @@ import * as isolation from "./lib/isolated-plan-analysis.mjs";
 import * as capture from "./lib/native-planning-request-capture.mjs";
 import * as protocol from "./lib/two-box-protocol.mjs";
 import { getObject } from "./lib/review-evidence-store.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const EVIDENCE = path.join(ROOT, "docs/specs/evidence/framework-large-input/native-1mib-inspect.json");
@@ -80,7 +81,7 @@ export async function qualifyNative1MiB({ writeEvidence = false } = {}) {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   qualifyNative1MiB({ writeEvidence: true }).then((evidence) => {
     process.stdout.write(`${JSON.stringify(evidence, null, 2)}\n`);
   }).catch((error) => {

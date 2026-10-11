@@ -9,6 +9,7 @@ import { claimFreshness, normalizeClaimOwner, readClaimAbsolute } from "./wi-cla
 import { validateTaskGraphShape } from "./validate-task-graph-shape.mjs";
 import { WI_ID_RE, extractWiId, isValidWiId } from "./wi-id.mjs";
 import { gitRevParse } from "./git-query.mjs";
+import { isMain } from "../../scripts/lib/is-main.mjs";
 
 // Keep authority resolution self-contained because several supported host and
 // eval runtimes install this synchronous resolver as a deliberately minimal
@@ -501,7 +502,7 @@ function cliMain(argv) {
   process.stdout.write(`${JSON.stringify(authorityJson(hookPayload, process.env))}\n`);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const argv = process.argv.slice(2);
   if (argv.includes("--emit-authority-json")) {
     cliMain(argv.filter((a) => a !== "--emit-authority-json"));

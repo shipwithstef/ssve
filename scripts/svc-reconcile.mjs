@@ -173,12 +173,21 @@ function getMainBranch() {
   return git(["symbolic-ref", "--short", "refs/remotes/origin/HEAD"]).replace(/^origin\//, "") || "main";
 }
 
+// The branch to reconcile: origin/<main> when the project has a remote, else the local
+// branch, else HEAD. A project with no commits yet has nothing to reconcile.
+function reconcileRef(main) {
+  for (const ref of [`origin/${main}`, main, "HEAD"]) if (run("git", ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`]).ok) return ref;
+  return null;
+}
+
 function getCommitsSince(base, main) {
+  const ref = reconcileRef(main);
+  if (!ref) return { shas: [], result: { ok: true, classification: "success", duration_ms: 0, stdout: "" }, ref };
   const args = base
-    ? ["log", "--format=%H", `${base}..origin/${main}`]
-    : ["log", "--format=%H", `origin/${main}`, "-n", "5"];
+    ? ["log", "--format=%H", `${base}..${ref}`]
+    : ["log", "--format=%H", ref, "-n", "5"];
   const result = run("git", args);
-  return { shas: result.ok ? result.stdout.trim().split("\n").filter(Boolean) : [], result };
+  return { shas: result.ok ? result.stdout.trim().split("\n").filter(Boolean) : [], result, ref };
 }
 
 function checkReceipts(args, fallbackShas) {
@@ -195,11 +204,11 @@ function reconcileResponsibilityA(cp) {
   if (!discovered.result.ok) {
     return { unaccounted: [{ sha: "git-log", missing: [`commit discovery ${discovered.result.classification}`] }], main, receipt_check: { classification: discovered.result.classification, duration_ms: discovered.result.duration_ms, mode: "discovery-failed" } };
   }
-  if (!shas.length) return { unaccounted: [], main, receipt_check: { classification: "success", duration_ms: discovered.result.duration_ms, mode: "empty" } };
+  if (!shas.length) return { unaccounted: [], main, ref: discovered.ref, receipt_check: { classification: "success", duration_ms: discovered.result.duration_ms, mode: "empty" } };
   if (cp.last_reconciled_sha) {
-    const range = `${cp.last_reconciled_sha}..origin/${main}`;
+    const range = `${cp.last_reconciled_sha}..${discovered.ref}`;
     const { result, parsed } = checkReceipts(["--range", range, "--consumer", "reconcile"], shas);
-    return { unaccounted: missingFromReceiptResult(parsed), main, receipt_check: { classification: result.classification, duration_ms: result.duration_ms, mode: "range", range } };
+    return { unaccounted: missingFromReceiptResult(parsed), main, ref: discovered.ref, receipt_check: { classification: result.classification, duration_ms: result.duration_ms, mode: "range", range } };
   }
   const rows = [];
   let duration = 0;
@@ -210,7 +219,7 @@ function reconcileResponsibilityA(cp) {
     duration += checked.result.duration_ms;
     if (!checked.result.ok) classification = checked.result.classification;
   }
-  return { unaccounted: rows, main, receipt_check: { classification, duration_ms: duration, mode: "first-run-per-sha" } };
+  return { unaccounted: rows, main, ref: discovered.ref, receipt_check: { classification, duration_ms: duration, mode: "first-run-per-sha" } };
 }
 
 function reconcileResponsibilityB(cp) {
@@ -311,7 +320,7 @@ function main() {
     }
   }
   writeJsonAtomic(CHECKPOINT_PATH, {
-    last_reconciled_sha: respA.unaccounted.length === 0 ? (git(["rev-parse", `origin/${respA.main}`]) || cp.last_reconciled_sha) : cp.last_reconciled_sha,
+    last_reconciled_sha: respA.unaccounted.length === 0 ? (git(["rev-parse", respA.ref || `origin/${respA.main}`]) || cp.last_reconciled_sha) : cp.last_reconciled_sha,
     last_pr_watcher_run: advanceWatcher ? new Date().toISOString() : cp.last_pr_watcher_run,
   });
   console.log(JSON.stringify({ ok: true, ...legacyReportProjection(report), reconcile_metadata: {

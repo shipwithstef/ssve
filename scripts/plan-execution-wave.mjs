@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { planExecutionGraph } from "../hooks/lib/delegation-authority.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 function flags(argv) {
   const out = {};
@@ -27,6 +28,6 @@ export function run(argv = process.argv.slice(2)) {
   process.stdout.write(`${JSON.stringify({ out, waves: graph.waves.length, tasks: Object.keys(graph.tasks).length })}\n`);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try { run(); } catch (error) { process.stderr.write(`[plan-execution-wave] ${error.message}\n`); process.exit(2); }
 }

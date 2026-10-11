@@ -36,6 +36,7 @@ import { assertRetainedStageProof } from "./lib/control-plan-validate.mjs";
 import { assignDualPass, assignmentCoverage, constraintSources, preflightDeclaredScoutExposure, freezeScoutExposure, frozenScoutExposure } from "./lib/two-box-scout-assign.mjs";
 import { buildRolePrompt, renderRolePrompt, assertCompleteRequestBudget, launchRole, preflightRole, parseCodexJsonl, PLANNING_REQUEST_MAX_BYTES } from "./lib/two-box-role-launch.mjs";
 import { redactSecrets } from "./lib/secret-redaction.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 const PROBE = "CAPABILITY_PROBE_NOT_STAGE_RESULT";
 const DESCENDANTS = Object.freeze({
@@ -1134,7 +1135,7 @@ async function main(argv) {
   else process.stdout.write(text);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   main(process.argv.slice(2)).catch((error) => {
     if (error.preflight_diagnostic) {
       process.stderr.write(`${JSON.stringify({

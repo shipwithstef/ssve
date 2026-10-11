@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isMain } from "./lib/is-main.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultRoot = path.resolve(scriptDir, '..');
@@ -58,7 +59,7 @@ export function compileSkillRuntimeContracts(repoRoot = defaultRoot) {
   return { schema_version: registry.schema_version, target_skills: TARGET_SKILLS, contracts: registry.contracts, continuation_dag: registry.continuation_dag };
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const rootIndex = process.argv.indexOf('--root');
   const result = compileSkillRuntimeContracts(rootIndex >= 0 ? path.resolve(process.argv[rootIndex + 1]) : defaultRoot);
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

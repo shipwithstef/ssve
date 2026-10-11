@@ -3,6 +3,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { isMain } from "../../scripts/lib/is-main.mjs";
 
 const STATE_BASENAME = "active-intent-state.json";
 const DEFAULT_TTL_MINUTES = 1440;
@@ -513,7 +514,7 @@ async function main() {
   process.exit(2);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   main().catch((error) => {
     process.stderr.write(`active-intent: ${error.message}\n`);
     process.exit(1);

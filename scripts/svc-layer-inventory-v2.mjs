@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validate } from "./lib/json-schema-validator.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 const SCHEMA = JSON.parse(fs.readFileSync(fileURLToPath(new URL("../schemas/canonical-layer-inventory-v2.schema.json", import.meta.url)), "utf8"));
 
@@ -169,7 +170,7 @@ function parseArgs(argv) {
   return result;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   try {
     const args = parseArgs(process.argv.slice(2));
     if (!args.decisions) throw new Error("usage: svc-layer-inventory-v2.mjs --decisions <json> [--repo-root <path>] [--generation <n>]");

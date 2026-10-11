@@ -13,6 +13,7 @@ import {
   researchDecision,
   researchInputMatches,
 } from "./lib/research-decision.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 const EVIDENCE_FAMILIES = [
   "product",
@@ -745,7 +746,7 @@ export function compileDeliveryGraph(input) {
   };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   try {
     const args = parseArgs(process.argv.slice(2));
     const graph = compileDeliveryGraph(loadInput(args));

@@ -20,6 +20,7 @@ import {
 import { isAuthoritativeMutatingBinding } from "./authoritative-binding.mjs";
 import { normalizeClaimOwner, sessionShaped } from "./claim-owner.mjs";
 import { gitRevParse, gitWorktreeList } from "./git-query.mjs";
+import { isMain } from "../../scripts/lib/is-main.mjs";
 
 export { normalizeClaimOwner };
 
@@ -1591,7 +1592,7 @@ async function main() {
   if (!result.ok) process.exit(1);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   main().catch((error) => {
     console.error(error.message);
     process.exit(1);

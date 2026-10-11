@@ -30,6 +30,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
 
 function parseArgs(argv) {
   const o = {};
@@ -88,6 +89,6 @@ function main() {
   process.stdout.write(JSON.stringify(coverage(output, reqs), null, 2) + "\n");
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try { main(); } catch (error) { process.stderr.write(`prompt-element-extract: ${error.message}\n`); process.exitCode = 2; }
 }

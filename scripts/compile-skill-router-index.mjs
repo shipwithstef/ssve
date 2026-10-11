@@ -265,6 +265,7 @@ function main() {
 }
 
 import { fileURLToPath } from "node:url";
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+import { isMain } from "./lib/is-main.mjs";
+if (isMain(import.meta.url)) {
   main();
 }

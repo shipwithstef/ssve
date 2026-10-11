@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const CLASSES = new Set(["essential", "conditional", "situational"]);
 
@@ -110,7 +111,9 @@ export function validateMandatoryChainSegments(document, source = "stage registr
   }
 }
 
-export function loadStageRegistry(filePath = "references/stage-registry.json") {
+// Default from this module, not the working directory: callers run from user projects too.
+const DEFAULT_STAGE_REGISTRY = fileURLToPath(new URL("../../references/stage-registry.json", import.meta.url));
+export function loadStageRegistry(filePath = DEFAULT_STAGE_REGISTRY) {
   let text;
   try { text = readFileSync(filePath, "utf8"); }
   catch (error) { throw new Error(`stage registry not found or unreadable: ${filePath} — ${error.message}`); }

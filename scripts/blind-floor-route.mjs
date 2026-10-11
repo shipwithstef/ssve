@@ -16,6 +16,7 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { isMain } from "./lib/is-main.mjs";
 
 function parseArgs(argv) {
   const o = { root: ".", files: null, historical: false, mode: "LIVE" };
@@ -124,7 +125,7 @@ async function main() {
   process.stdout.write(JSON.stringify(result, null, 2) + "\n");
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   Promise.resolve(main()).catch((error) => {
     process.stderr.write(`${error.message || error}\n`);
     process.exit(1);

@@ -24,6 +24,7 @@ import {createHash} from "node:crypto";
 import {isDeepStrictEqual} from "node:util";
 import { fileURLToPath } from "node:url";
 import { deriveMandatoryChainSegments, loadStageRegistry } from "./lib/stage-registry.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REGISTRY_PATH = path.join(__dirname, "..", "references", "stage-registry.json");
@@ -234,7 +235,7 @@ async function mainCli() {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   mainCli().catch((e) => {
     process.stderr.write(`${String(e && e.message || e)}\n`);
     process.exit(1);

@@ -849,7 +849,7 @@ if (command === "generate") {
     die(`${receiptsPathPreflight} already exists — refusing to overwrite a possibly-curated receipts file. Pass --force to regenerate it.`);
   }
 
-  const registryPath = path.resolve("references/stage-registry.json");
+  const registryPath = path.join(SCRIPT_DIR, "..", "references", "stage-registry.json");
   let registry;
   try { registry = loadStageRegistry(registryPath); }
   catch (error) { die(error.message); }

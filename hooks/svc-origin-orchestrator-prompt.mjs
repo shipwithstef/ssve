@@ -5,7 +5,8 @@
  * context and bindIfNeeded. Never blocks. Never launches PLAN/EXEC children.
  * Cursor uses the adapter, not this process.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, appendFileSync } from "node:fs";
+import { frameworkRoot, frameworkRootContext } from "../scripts/lib/framework-root.mjs";
 import {
   resolveOriginIntent,
   originOrchestratorContext,
@@ -38,8 +39,30 @@ try { raw = readFileSync(0, "utf8"); } catch { empty(); }
 let payload = {};
 try { payload = JSON.parse(raw || "{}"); } catch { payload = {}; }
 
+// Session start, every host: say where the framework's files are, so a project session
+// runs its scripts from the install instead of concluding they are missing.
+const startEvent = String(payload.hook_event_name || payload.hookEventName || "");
+let rootContext = null;
+if (startEvent === "SessionStart") {
+  try {
+    const root = frameworkRoot();
+    rootContext = frameworkRootContext(root, payload.cwd || process.cwd());
+    // Claude Code exports CLAUDE_CODE_SESSION_ID, which a nested `claude -p` inherits from
+    // its parent; the framework's scripts read SVC_SESSION_ID first. Export this session's
+    // own id from the hook payload so worktree and claim scripts bind to the right session.
+    const sid = String(payload.session_id || payload.sessionId || "");
+    if (process.env.CLAUDE_ENV_FILE) {
+      const lines = [rootContext ? `export SVC_ROOT=${JSON.stringify(root)}` : "", /^[A-Za-z0-9._:-]{1,200}$/.test(sid) ? `export SVC_SESSION_ID=${JSON.stringify(sid)}` : ""].filter(Boolean);
+      if (lines.length) appendFileSync(process.env.CLAUDE_ENV_FILE, lines.join("\n") + "\n");
+    }
+  } catch { rootContext = null; }
+}
+
 const text = promptText(payload);
-if (!text) empty();
+if (!text) {
+  if (rootContext) { process.stdout.write(`${additionalContextEnvelope("SessionStart", rootContext)}\n`); process.exit(0); }
+  empty();
+}
 
 const host = String(payload.host || process.env.SVC_HOST || "").toLowerCase();
 const event = String(payload.hook_event_name || payload.hookEventName || "UserPromptSubmit");
@@ -83,6 +106,6 @@ try {
   // never block prompt submit
 }
 
-const ctx = originOrchestratorContext(intent, { host, bound });
+const ctx = [rootContext, originOrchestratorContext(intent, { host, bound })].filter(Boolean).join("\n\n");
 process.stdout.write(`${ctx ? additionalContextEnvelope(event, ctx) : "{}"}\n`);
 process.exit(0);

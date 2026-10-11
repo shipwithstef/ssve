@@ -43,6 +43,7 @@ import { fileURLToPath } from 'node:url';
 import { validate } from './lib/json-schema-validator.mjs';
 import { resolveDispatchRoleTuple } from './resolve-dispatch.mjs';
 import { withStateLock } from './state-io.mjs';
+import { isMain } from "./lib/is-main.mjs";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BATON_SCHEMA = JSON.parse(fs.readFileSync(path.join(ROOT, 'schemas/continuation-baton.schema.json'), 'utf8'));
@@ -681,7 +682,7 @@ function cli() {
   fail('usage: resolve-continuation.mjs create|stamp-deploy|launch|consume|reconcile|status|deny-check ...', 'continuation_input_invalid');
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try {
     cli();
   } catch (error) {

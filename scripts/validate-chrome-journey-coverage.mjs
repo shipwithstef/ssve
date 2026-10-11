@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { discoverControls, existingCoverage } from "../skills/write-journeys/scripts/auto-discover-chrome.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -102,7 +103,7 @@ function main() {
   process.exit(result.status === "fail" ? 1 : 0);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try {
     main();
   } catch (error) {

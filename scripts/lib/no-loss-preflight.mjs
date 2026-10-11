@@ -15,6 +15,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { isMain } from "./is-main.mjs";
 
 export const BASELINE_PATH = ".svc/verify-baseline.json";
 
@@ -62,7 +63,7 @@ export function preflight({ cwd = process.cwd(), requireBaseline = true } = {}) 
 }
 
 // CLI: node scripts/lib/no-loss-preflight.mjs [--no-baseline]
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   const requireBaseline = !process.argv.includes("--no-baseline");
   const r = preflight({ requireBaseline });
   if (r.ok) {

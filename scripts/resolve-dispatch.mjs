@@ -8,6 +8,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { validate } from './lib/json-schema-validator.mjs';
 import { cursorIndependentModelShape } from './lib/review-launch-preflight.mjs';
+import { isMain } from "./lib/is-main.mjs";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DISPATCH_SCHEMA = JSON.parse(fs.readFileSync(path.join(ROOT, 'schemas/dispatch-policy.schema.json'), 'utf8'));
@@ -838,7 +839,7 @@ function cli() {
   fail('usage: resolve-dispatch.mjs model|role|topology|external|policy-status ...', 'dispatch_input_invalid');
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try {
     cli();
   } catch (error) {

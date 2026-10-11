@@ -17,6 +17,7 @@ import {
   selectValidations
 } from "./svc-execution-controller-v2.mjs";
 import { compileProductionDeliveryForecast } from "./svc-runtime-v2.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 const SHA256 = /^[a-f0-9]{64}$/;
 const GIT_SHA = /^[a-f0-9]{40}$/;
@@ -425,7 +426,7 @@ export function simulateSampleShadow(fixture, options = {}) {
   };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
     const fixtureIndex = args.indexOf("--fixture");

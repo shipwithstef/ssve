@@ -22,6 +22,7 @@
 
 import { readFileSync } from "node:fs";
 import { disjointScopes } from "./lib/disjoint-scopes.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 // Pure: partition tasks into dependency-ordered waves; each wave is parallel ONLY
 // if its task file-sets are pairwise disjoint, else escalate-to-sequential.
@@ -62,7 +63,7 @@ export function partitionTaskGraph(tasks) {
 
 function argVal(name) { const i = process.argv.indexOf(name); return i === -1 ? null : process.argv[i + 1] || null; }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   const gp = argVal("--graph");
   if (!gp) { console.error("usage: partition-task-graph --graph <task-graph.json>"); process.exit(2); }
   let graph;

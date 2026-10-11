@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   acceptDelegation, issueDelegation, readDelegation, updateDelegationStatus,
 } from "../hooks/lib/delegation-authority.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 function parse(argv) {
   const command = argv.shift(); const flags = {};
@@ -128,6 +129,6 @@ export function run(argv = process.argv.slice(2)) {
   throw new Error("Usage: dispatch-execution-task.mjs <issue|accept|complete|status|revoke|fail|expire> [options]");
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try { run(); } catch (error) { process.stderr.write(`[dispatch-execution-task] ${error.message}\n`); process.exit(2); }
 }

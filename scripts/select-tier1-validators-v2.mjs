@@ -2,6 +2,7 @@
 
 import { execFileSync } from "node:child_process";
 import path from "node:path";
+import { isMain } from "./lib/is-main.mjs";
 
 const CONTRACTS = [
 {
@@ -452,7 +453,7 @@ function parseArgs(argv) {
   return args;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   try {
     const args = parseArgs(process.argv.slice(2));
     const repoRoot = path.resolve(args["repo-root"] ?? process.cwd());

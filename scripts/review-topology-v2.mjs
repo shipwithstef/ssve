@@ -10,6 +10,7 @@ import { cursorIndependentEligible, resolveDispatchExternalReviewer, resolveDisp
 
 import { validateResourcePolicy } from './lib/reviewer-resources.mjs';
 import { cursorExactRouteEvidenceValid } from './lib/review-launch-preflight.mjs';
+import { isMain } from "./lib/is-main.mjs";
 
 const DEFAULT_DISPATCH_CONFIG = path.join(os.homedir(), '.svc', 'dispatch-policy.json');
 const DEFAULT_LEGACY_CONFIG = path.join(os.homedir(), '.svc', 'reviewer-policy-v2.json');
@@ -402,7 +403,7 @@ function args(argv) {
   return { command, options };
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const { command, options } = args(process.argv.slice(2));
   if (command === 'create-policy') {
     if (!options.input || !options.out) fail('create-policy requires --input and --out');

@@ -2,6 +2,7 @@
 
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { isMain } from "./lib/is-main.mjs";
 
 const ROW = /^\| (\d{2,}) \| (.*?) \| (.*?) \| (.*?) \|$/gm;
 const SHA256 = /^[a-f0-9]{64}$/;
@@ -81,7 +82,7 @@ export function auditControlValueLedger(markdown, options = {}) {
   };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
     const proposalIndex = args.indexOf("--proposal");

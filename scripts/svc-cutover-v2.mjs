@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { isMain } from "./lib/is-main.mjs";
 
 export function decideRuntimeCutover(input) {
   const canaryInput = input.real_canary ?? { authorized: false, product: null, baseline_feature_minutes: null, direction_accepted_at: null, live_verified_at: null, active_minutes: null, achieved_speedup: null, evidence_ids: [] };
@@ -38,7 +39,7 @@ export function decideRuntimeCutover(input) {
   };
 }
 
-if (process.argv[1] === new URL(import.meta.url).pathname) {
+if (isMain(import.meta.url)) {
   const index = process.argv.indexOf('--input');
   if (index < 0) throw new Error('usage: svc-cutover-v2.mjs --input FILE');
   const result = decideRuntimeCutover(JSON.parse(fs.readFileSync(path.resolve(process.argv[index + 1]), 'utf8')));

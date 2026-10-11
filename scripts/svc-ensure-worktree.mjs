@@ -125,6 +125,16 @@ export function assertIgnored(repoRoot, worktreesRoot) {
 // precondition; it is left byte-for-byte unchanged. Only the immutable base commit
 // is validated.
 function resolveBase(repoRoot, from) {
+  // A project with no remote (a new local project) bases on its own default branch; one with
+  // a remote must have fetched it. A project with no commits has nothing to isolate yet.
+  let hasOrigin = true;
+  try { git(["remote", "get-url", "origin"], repoRoot); } catch { hasOrigin = false; }
+  if (!hasOrigin && from === "origin/main") {
+    for (const ref of ["main", "master", "HEAD"]) {
+      try { return git(["rev-parse", "--verify", `${ref}^{commit}`], repoRoot); } catch {}
+    }
+    throw new Error("NO_COMMITS: this repository has no commits yet, so there is nothing to isolate. Work in place on a new branch (git checkout -b <branch>); worktree isolation applies after the first commit.");
+  }
   try { git(["rev-parse", "--verify", "origin/main^{commit}"], repoRoot); }
   catch { throw new Error("origin/main is missing; fetch origin before ensuring a worktree"); }
   const explicitSha = SHA_RE.test(from);

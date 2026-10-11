@@ -8,6 +8,7 @@ import { matchesAny, readDelegation, validateCompletionReceiptShape, updateDeleg
 import { withStateLock } from "./state-io.mjs";
 // WI-562 IP-H1: recompute primitives unified with the parallel-wave path.
 import { git, digest, normalize } from "./lib/merge-back-core.mjs";
+import { isMain } from "./lib/is-main.mjs";
 export { git, digest, normalize };
 
 function parse(argv) { const flags = {}; for (let i = 0; i < argv.length; i += 1) { const key = argv[i]; if (!key.startsWith("--")) throw new Error(`unexpected argument: ${key}`); const next = argv[i + 1]; if (next !== undefined && !next.startsWith("--")) { flags[key] = next; i += 1; } else flags[key] = true; } return flags; }
@@ -73,6 +74,6 @@ export function run(argv = process.argv.slice(2)) {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try { run(); } catch (error) { process.stderr.write(`[validate-execution-merge-back] ${error.message}\n`); process.exit(2); }
 }

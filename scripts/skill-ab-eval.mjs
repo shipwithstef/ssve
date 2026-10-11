@@ -49,6 +49,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const DEFAULT_RUNNER = 'claude -p --output-format json --setting-sources "" --strict-mcp-config --no-session-persistence';
@@ -236,7 +237,7 @@ export function run(o) {
   return { runner: o.runner, repeat: o.repeat, margin: o.margin, tasks: summarize(runs, o.margin), runs };
 }
 
-if (path.resolve(process.argv[1] || "") === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   let o;
   try { o = parseArgs(process.argv.slice(2)); } catch (e) { console.error(`skill-ab-eval: ${e.message}`); process.exit(2); }
   if (o.help) { console.log(fs.readFileSync(fileURLToPath(import.meta.url), "utf8").match(/\/\*\*([\s\S]*?)\*\//)[1]); process.exit(0); }

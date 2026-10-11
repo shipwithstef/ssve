@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { appendJsonlLine } from "./state-io.mjs";
 import { lexSimpleCommand } from "../hooks/codex/lib/argv-lex.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 function lastContract(root) {
   if (!root || typeof root !== "string") return { state: "absent", contract: null };
@@ -204,4 +205,4 @@ export function run(argv = process.argv.slice(2)) {
     throw new Error("usage: svc-authorized-action.mjs <check|exec|record-stop> --root <repo> [--action A --environment E --purpose P] [-- command args]");
   } catch (error) { process.stderr.write(`[authorized-action] ${error.message}\n`); return 2; }
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = run();
+if (isMain(import.meta.url)) process.exitCode = run();

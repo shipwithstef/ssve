@@ -19,6 +19,7 @@ import { parseBootstrapCommand } from "./codex/lib/bootstrap-command.mjs";
 import { parseOrchestrateCommand } from "./lib/orchestrate-command.mjs";
 import { readOwnerLease } from "./codex/lib/owner-lease.mjs";
 import { isShellTool } from "./lib/shell-tools.mjs";
+import { isMain } from "../scripts/lib/is-main.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -385,7 +386,7 @@ async function main() {
   });
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const operation = process.argv.includes("--check-default-commit")
     ? async () => {
         const sessionId = String(process.env.CURSOR_CONVERSATION_ID || process.env.CURSOR_SESSION_ID || process.env.SVC_SESSION_ID || process.env.GROK_SESSION_ID || process.env.OPENCODE_SESSION_ID || process.env.CODEX_THREAD_ID ||

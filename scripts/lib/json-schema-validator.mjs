@@ -33,6 +33,7 @@
  */
 
 import fs from "node:fs";
+import { isMain } from "./is-main.mjs";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -137,7 +138,7 @@ export function validate(schema, data, path = "$") {
   return { valid: errors.length === 0, errors };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   const args = Object.fromEntries(process.argv.slice(2).map((a) => {
     const [k, v] = a.replace(/^--/, "").split("=");
     return [k, v ?? true];

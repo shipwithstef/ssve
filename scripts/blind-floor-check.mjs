@@ -34,6 +34,7 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { isMain } from "./lib/is-main.mjs";
 
 // Canonical binding a certification must be issued against (anti-stale/anti-replay):
 // a verdict is valid ONLY for the exact change it certifies, so a verdict reused from a
@@ -176,4 +177,4 @@ function main() {
 }
 
 // Run only as CLI (keep classify() importable + pure for tests).
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (isMain(import.meta.url)) main();

@@ -27,6 +27,7 @@ import path from "node:path";
 import { execSync } from "node:child_process";
 import { appendJsonlLine } from "../state-io.mjs";
 import { validate } from "./json-schema-validator.mjs";
+import { isMain } from "./is-main.mjs";
 
 const KB_FRAGMENT_CAP = 2000;
 
@@ -227,7 +228,7 @@ export function readKnowledgeBase(slugs, topic, options = {}) {
 }
 
 // CLI entry: evaluate against a fixture pair, print result, exit on verdict
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   const args = Object.fromEntries(process.argv.slice(2).map((a) => {
     const [k, v] = a.replace(/^--/, "").split("=");
     return [k, v ?? true];

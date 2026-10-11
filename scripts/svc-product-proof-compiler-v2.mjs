@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validate } from "./lib/json-schema-validator.mjs";
 import { validateGenerationBindings } from "./lib/generation-bindings-v2.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 const SCHEMA_PATH = fileURLToPath(new URL("../schemas/product-proof-graph-v2.schema.json", import.meta.url));
 const SCHEMA = JSON.parse(fs.readFileSync(SCHEMA_PATH, "utf8"));
@@ -345,7 +346,7 @@ function parseArgs(argv) {
   return result;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   try {
     const args = parseArgs(process.argv.slice(2));
     const command = args._[0];

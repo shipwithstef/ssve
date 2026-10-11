@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
 
 const HOSTS = ["antigravity", "claude", "codex", "cursor", "gemini", "grok", "kimi", "mimo-code", "opencode"];
 
@@ -154,4 +155,4 @@ export function run(argv = process.argv.slice(2)) {
   process.stdout.write(`HOST AUTHORITY PASS: ${HOSTS.length} manifests declare identity and containment support\n`); return 0;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = run();
+if (isMain(import.meta.url)) process.exitCode = run();

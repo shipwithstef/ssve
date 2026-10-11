@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import { IsolationUnsupported, sha256Bytes, sha256Utf8, canonicalJson } from "./two-box-protocol.mjs";
 import { PLANNING_REQUEST_MAX_BYTES, freezeRequestBytes, readFrozenFile, assertArgvFits } from "./frozen-request-input.mjs";
 import { redactSecrets } from "./secret-redaction.mjs";
+import { isMain } from "./is-main.mjs";
 
 const CAPTURE_KEY = "SSVE_CAPTURE_KEY";
 const PROVIDER = "ssve_cap";
@@ -733,7 +734,7 @@ async function main() {
   process.stdout.write(`${JSON.stringify(publicCapture(result))}\n`);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   main().catch((error) => {
     const message = redactSecrets(String(error.message)).slice(0, 512);
     const envelope = {

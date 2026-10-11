@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { appendJsonlLine } from "./state-io.mjs";
 import { loadLearningsDetailed } from "../hooks/lib/learning-index.mjs";
 import { verifyReviewerEvidence } from "./lib/reviewer-evidence.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 const arg = (argv, flag) => { const i = argv.indexOf(flag); return i >= 0 ? argv[i + 1] : ""; };
 function realOwnedDirectory(candidate) {
@@ -149,4 +150,4 @@ export function run(argv = process.argv.slice(2), env = process.env) {
     throw new Error("usage: learning-lifecycle.mjs <normalize|triage|capture|record|elevate|federate> --root <repo> ...");
   } catch (error) { process.stderr.write(`[learning-lifecycle] ${error.message}\n`); return 2; }
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = run();
+if (isMain(import.meta.url)) process.exitCode = run();

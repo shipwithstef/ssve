@@ -16,6 +16,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { isMain } from "./lib/is-main.mjs";
 
 const MARKER_ID = "feature-coverage-matrix";
 const escRe = (id) => id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -52,7 +53,7 @@ export function renderMatrix(graph) {
 function argVal(name) { const i = process.argv.indexOf(name); return i === -1 ? null : process.argv[i + 1] || null; }
 const has = (n) => process.argv.includes(n);
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   const gp = argVal("--graph") || ".svc/feature-graph.json";
   if (!existsSync(gp)) { console.error(`render-coverage-matrix: --graph not found: ${gp}`); process.exit(2); }
   let graph;

@@ -29,6 +29,7 @@
  */
 
 import { readFileSync } from "node:fs";
+import { isMain } from "./lib/is-main.mjs";
 
 // Severity lattice — higher wins on a file:line collision.
 const SEV_RANK = { CRITICAL: 5, HIGH: 4, MEDIUM: 3, LOW: 2, INFO: 1 };
@@ -141,4 +142,4 @@ function main() {
 }
 
 // run only as CLI (import for tests does not execute)
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (isMain(import.meta.url)) main();

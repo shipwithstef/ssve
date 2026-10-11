@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { validate } from "./lib/json-schema-validator.mjs";
 import { sameGenerationBindings, validateGenerationBindings } from "./lib/generation-bindings-v2.mjs";
 import { maxParallel as planMaxParallel } from "./lib/parallelism.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 // Wave width: an explicit --max-parallel wins; otherwise the subscription plan decides
 // (SVC_PLAN, references/plan-limits.json), and with no plan set the historical 4 stands.
@@ -1309,6 +1310,6 @@ async function main() {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   process.exitCode = await main();
 }

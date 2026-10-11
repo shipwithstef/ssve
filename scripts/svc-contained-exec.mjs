@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
 
 const HELPER_SOURCE = String.raw`
 #define _GNU_SOURCE
@@ -319,6 +320,6 @@ export function run(argv = process.argv.slice(2)) {
   return result.status ?? 126;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   try { process.exitCode = run(); } catch (error) { process.stderr.write(`[svc-contained-exec] ${error.message}\n`); process.exitCode = 2; }
 }

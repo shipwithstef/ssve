@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateGenerationBindings } from './lib/generation-bindings-v2.mjs';
 import { appendRuntimeEvent } from './svc-runtime-v2.mjs';
+import { isMain } from "./lib/is-main.mjs";
 
 function stable(value) {
   if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
@@ -103,7 +104,7 @@ export function appendMigrationAcceptedPrefix(paths, report, observedAt = new Da
   return { valid: true, errors: [], report_digest, appended };
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const args = process.argv.slice(2); const at = flag => { const index = args.indexOf(flag); return index >= 0 ? args[index + 1] : null; };
   const legacy = JSON.parse(fs.readFileSync(path.resolve(at('--legacy')), 'utf8'));
   const generations = JSON.parse(fs.readFileSync(path.resolve(at('--generations')), 'utf8'));

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { writeJsonAtomic } from "./state-io.mjs";
 import { readDelegation } from "../hooks/lib/delegation-authority.mjs";
 import { probeContainment } from "./svc-contained-exec.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 const REQUIRED_DELEGATION = [
   "delegation_id", "child_principal", "owner_generation", "worktree",
@@ -176,4 +177,4 @@ export function run(argv = process.argv.slice(2)) {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = run();
+if (isMain(import.meta.url)) process.exitCode = run();

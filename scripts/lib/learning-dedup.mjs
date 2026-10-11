@@ -14,6 +14,7 @@
 // Schema baselined 2026-05-12 by WI-343 tranche 1.
 
 import fs from "node:fs";
+import { isMain } from "./is-main.mjs";
 
 const INSIGHT_PREFIX_LEN = 80;
 
@@ -53,7 +54,7 @@ export function dedupAgainstPaths(candidate, paths) {
 }
 
 // CLI smoke-test entrypoint (node -e or direct invocation).
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
   const candidate = JSON.parse(process.argv[2] || "{}");
   const paths = process.argv.slice(3);
   const dup = dedupAgainstPaths(candidate, paths);

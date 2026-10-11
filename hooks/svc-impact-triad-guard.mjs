@@ -8,6 +8,7 @@ import { classifyFromGit } from "../scripts/classify-change-risk.mjs";
 import { WI_ID_RE } from "./lib/wi-id.mjs";
 import { resolveOperationScope } from "./lib/operation-scope.mjs";
 import { isShellTool } from "./lib/shell-tools.mjs";
+import { isMain } from "../scripts/lib/is-main.mjs";
 
 function hookAllow() { process.stdout.write("{}\n"); }
 function hookDeny(reason) {
@@ -224,4 +225,4 @@ function main() {
   if (cli) process.stdout.write(`${JSON.stringify(result)}\n`); else hookAllow();
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();
+if (isMain(import.meta.url)) main();

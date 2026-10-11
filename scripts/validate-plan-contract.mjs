@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import { RISK_FLAG_SET } from "./lib/risk-flags.mjs";
+import { isMain } from "./lib/is-main.mjs";
 
 const RISKY_RESOURCES = new Set(["money", "ledger", "subscription", "entitlement", "quota", "counter", "inventory", "identity", "notification"]);
 // WI-553 AC-553-4: an atomic-primitive allowlist. Freeform prose ("check if
@@ -388,4 +389,4 @@ export function run(argv = process.argv.slice(2)) {
     return 0;
   } catch (error) { process.stderr.write(`[plan-contract] ${error.message}\n`); return 2; }
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = run();
+if (isMain(import.meta.url)) process.exitCode = run();

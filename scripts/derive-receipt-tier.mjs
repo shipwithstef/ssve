@@ -19,6 +19,7 @@ import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./lib/is-main.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const LOC_FULL_THRESHOLD = 150;   // changed lines at/over this → full
@@ -163,7 +164,7 @@ async function reportStreak(minQualifying) {
   }, null, 2) + "\n");
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url)) {
     if (process.argv.includes("--streak")) {
     const min = Number.parseInt(argValue("--min") || "5", 10);
     await reportStreak(min);
