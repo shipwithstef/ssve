@@ -44,6 +44,14 @@ export const CTX_SENTINEL = "@@SVC_RELAY_CONTEXT_ROOT@@";
 // a planning role sees only what its prompt supplied, so its strings may carry a plan.
 export const PHASE_LIMITS = Object.freeze({ review: { maxString: 2048, maxTotal: 65536 }, plan: { maxString: 32768, maxTotal: 262144 } });
 const CAPTURE_CAP = 16 * 1024 * 1024;
+// Config the RELAY adds to every codex exec / debug prompt-input call (the caller cannot set or
+// drop it). A fresh Codex home gets Codex's own bundled skills (imagegen, openai-docs,
+// skill-creator, skill-installer) written into $CODEX_HOME/skills/.system, and the prompt then
+// advertises them in a <skills_instructions> block that names SKILL.md. The framework's planner
+// cannot disable them (it lists skills under the sandbox HOME, not the relay's CODEX_HOME) and
+// its native-profile check rightly treats a skills catalog as injected. Starting Codex without
+// its bundled skills is the clean native profile; nothing is hidden from or faked for the check.
+export const RELAY_CONFIG = Object.freeze(["-c", "skills.bundled.enabled=false"]);
 export const DEFAULT_STDOUT_CAP = 2 * 1024 * 1024;
 export const DEFAULT_LAST_MESSAGE_CAP = 512 * 1024;
 const STDERR_CAP = 256 * 1024;       // probes
@@ -505,6 +513,8 @@ export async function startRelay({ jobHome, buildDir, policies = [], codexBin = 
           args[args.indexOf(vet.last, args.indexOf("--output-last-message"))] = lastFile;
         }
         if (mappedCd) args.splice(1, 0, "-C", mappedCd);
+        if (args[0] === "exec") args.splice(1, 0, ...RELAY_CONFIG);
+        else if (args[0] === "debug") args.splice(2, 0, ...RELAY_CONFIG);
       } catch (e) { fs.rmSync(scratch, { recursive: true, force: true }); return reject(argv, e.message); }
       const prefix = confine ? confine({ cwd: mappedCd || cwd, logicalCwd, phase, scratch, neutral, codexHome, codexBin: bin, info: vet.info }) : [];
       const cmd = prefix.length ? prefix[0] : bin;

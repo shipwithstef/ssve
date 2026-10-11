@@ -15,7 +15,7 @@ import { test } from "node:test";
 import * as oe from "../../scripts/outcome-eval.mjs";
 import * as relay from "../../scripts/lib/review-relay.mjs";
 import { checkJourney } from "../../scripts/lib/journey-conformance.mjs";
-import { buildCodexExecArgs, buildPromptInspectArgv } from "../../scripts/lib/isolated-plan-analysis.mjs";
+import { buildCodexExecArgs, buildPromptInspectArgv, diagnosePromptContamination } from "../../scripts/lib/isolated-plan-analysis.mjs";
 import { renderRolePrompt } from "../../scripts/lib/two-box-role-launch.mjs";
 import { outputSchemaForCall, PLANNING_ROLES } from "../../scripts/lib/two-box-protocol.mjs";
 import { agenticReviewInstructions } from "../../scripts/run-external-review.mjs";
@@ -57,7 +57,18 @@ function fakeCodex(binDir, logFile) {
 const fs = require("fs"); const args = process.argv.slice(2);
 const cwd = () => fs.realpathSync(process.cwd());
 if (args.includes("--version") || args.includes("-V")) { console.log("codex-cli 0.0.0-fake"); process.exit(0); }
-if (args[0] === "features" || args[0] === "debug" || args.includes("--help") || args.includes("-h")) { console.log("fake-probe " + args.join(" ").slice(0, 80)); console.log("cwd=" + cwd()); process.exit(0); }
+if (args[0] === "debug" && args[1] === "prompt-input") {
+  // What real Codex prints: without skills.bundled.enabled=false it advertises its bundled skills.
+  const bundled = !args.some((x, i) => x === "skills.bundled.enabled=false" && args[i - 1] === "-c");
+  const text = (t) => ({ type: "input_text", text: t });
+  const msgs = [];
+  if (bundled) msgs.push({ type: "message", role: "developer", content: [text("<skills_instructions>\\n## Skills\\nA skill is a set of local instructions stored in a SKILL.md file.\\n- imagegen: ... (file: r0/imagegen/SKILL.md)\\n</skills_instructions>")] });
+  msgs.push({ type: "message", role: "developer", content: [text("<permissions instructions>\\nFilesystem sandboxing defines which files can be read or written.\\n</permissions instructions>")] });
+  msgs.push({ type: "message", role: "user", content: [text("<environment_context>\\n  <cwd>" + process.cwd() + "</cwd>\\n  <shell>bash</shell>\\n</environment_context>")] });
+  msgs.push({ type: "message", role: "user", content: [text(args[args.length - 1])] });
+  console.log(JSON.stringify(msgs, null, 2)); process.exit(0);
+}
+if (args[0] === "features" || args.includes("--help") || args.includes("-h")) { console.log("fake-probe " + args.join(" ").slice(0, 80)); console.log("cwd=" + cwd()); process.exit(0); }
 fs.appendFileSync(${JSON.stringify(logFile)}, args.join(" ") + "\\n");
 const at = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : null; };
 const schema = at("--output-schema"), last = at("--output-last-message");
@@ -326,7 +337,7 @@ test("relay: write flags are rejected before the real codex runs; a missing -s i
     assert.deepEqual(s.calls(), []);
     const ok = await review(s);
     assert.equal(ok.code, 0, ok.err);
-    assert.match(s.calls()[0], /^exec -s read-only --output-schema \S+ --json -/);
+    assert.match(s.calls()[0], /^exec -c skills\.bundled\.enabled=false -s read-only --output-schema \S+ --json -/);
     assert.equal(s.r.calls().filter((c) => c.rejected).length, 3);
     assert.equal(s.r.execCalls(), 1, "refused calls do not use the cap");
   } finally { await s.r.close(); }
@@ -623,6 +634,50 @@ test("F1 (round 3) the policies come from the REAL framework source: the review 
     assert.ok(relay.matchPrompt(other, prompt, "/x"), `${role}'s prompt must not pass another role's policy`);
   }
   assert.equal(oe.reviewPolicies(tmp("rr-emptysrc-")).policies.length, 0, "a source with no framework text allows nothing");
+});
+
+// ---- the native profile --------------------------------------------------------------------
+
+test("W4 the relay's `codex debug prompt-input` passes the framework's own native-profile check: no bundled-skills catalog is injected", async () => {
+  const s = await setup();
+  try {
+    const tuple = { host: "codex", model: "gpt-5.6-sol", effort: "high" };
+    const argv = buildPromptInspectArgv({ tuple, disabledSkills: [], prompt: "PROMPT" });
+    const neutral = "/tmp/ssve-openbox-preflight-w4";
+    fs.mkdirSync(neutral, { recursive: true });
+    try {
+      const res = await client(s.r.socketPath, argv, { cwd: neutral });
+      assert.equal(res.code, 0, res.err);
+      // (unconfined fake: its cwd is the host's empty directory; the logical-cwd mapping is covered by the confinement tests)
+      const seenCwd = /<cwd>([^<]*)<\/cwd>/.exec(res.out)[1];
+      assert.notEqual(seenCwd, "", "an empty working directory was used");
+      const verdict = diagnosePromptContamination(res.out, { prompt: "PROMPT", cwd: seenCwd, allowNativeDeveloper: true });
+      assert.deepEqual(verdict.reasons, []);
+      assert.equal(verdict.ok, true);
+      // the relay's own config reached codex, and the exec call carries it too
+      assert.doesNotMatch(res.out, /skills_instructions|SKILL\.md/);
+    } finally { fs.rmSync(neutral, { recursive: true, force: true }); }
+    assert.deepEqual(relay.RELAY_CONFIG, ["-c", "skills.bundled.enabled=false"]);
+    await review(s);
+    assert.match(s.calls()[0], /^exec -c skills\.bundled\.enabled=false /);
+    // the check itself is not weakened: the same output WITH the catalog (what an unconfigured codex prints) is refused
+    const bad = JSON.stringify([{ type: "message", role: "developer", content: [{ type: "input_text", text: "<skills_instructions>\n## Skills\nstored in a `SKILL.md` file\n</skills_instructions>" }] }, { type: "message", role: "user", content: [{ type: "input_text", text: "PROMPT" }] }]);
+    assert.equal(diagnosePromptContamination(bad, { prompt: "PROMPT", cwd: "/x", allowNativeDeveloper: true }).ok, false);
+  } finally { await s.r.close(); }
+});
+
+// Opt-in (a real, tiny `codex debug prompt-input`, no model turn): OE_REAL_CODEX_PROBE=1.
+test("W4 (real codex, opt-in) the confined relay's prompt-input passes the native-profile check", { skip: !bwrapOk || process.env.OE_REAL_CODEX_PROBE !== "1" }, async () => {
+  const work = tmp("rr-real-"); const dir = path.join(work, "build"); fs.mkdirSync(dir);
+  const w = oe.builderWrap(dir, { credentials: creds(), framework: frameworkFixture(), model: "haiku", workRoot: work, reviewRelay: true });
+  const r = await relay.startRelay({ jobHome: w.job_home, buildDir: dir, policies: oe.reviewPolicies(oeRoot()).policies, confine: oe.reviewerConfinement({ dir, jobHome: w.job_home, workRoot: work, framework: { src: oeRoot() } }) });
+  try {
+    const argv = buildPromptInspectArgv({ tuple: { host: "codex", model: "gpt-5.6-sol", effort: "high" }, disabledSkills: [], prompt: "PROMPT" });
+    const q = (x) => `'${x.replace(/'/g, "'\\''")}'`;
+    const res = await inSandbox(w, `mkdir -p /tmp/ssve-openbox-preflight-r && cd /tmp/ssve-openbox-preflight-r && codex ${argv.map(q).join(" ")} </dev/null`);
+    const verdict = diagnosePromptContamination(res.stdout, { prompt: "PROMPT", cwd: "/tmp/ssve-openbox-preflight-r", allowNativeDeveloper: true });
+    assert.deepEqual(verdict.reasons, [], res.stderr.slice(0, 300));
+  } finally { await r.close(); }
 });
 
 // ---- the Codex model catalog ---------------------------------------------------------------
