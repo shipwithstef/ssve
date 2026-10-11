@@ -189,7 +189,7 @@
     {
       "skill": "audit-implementation",
       "path": "skills/audit-implementation/SKILL.md",
-      "content_hash": "621c83d4b153837f91133e366c25625cb62fbe21f24750ee0929297436561bd5",
+      "content_hash": "d6ce0c2b87333f14809dfbd20b6a0d6546da5fbcebff2bd47f4af3d037852a33",
       "description": "Deep pre-landing correctness audit of worktree code against specs, ACs and journeys, with evidence-graded findings; a required receipt in the chain. Use for \"audit the implementation\", \"check correctness\", \"pre-landing audit\", \"is it ready to ship\".",
       "aliases": [],
       "positive_triggers": [],
@@ -1302,7 +1302,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "2336393e32f3bea62e9b392ac55efcd889383377db18128213d5a438cc2a3be1",
+      "content_hash": "587387b6b5509ccbf6ecc91aa4802d56af77d0117f27dc2de8a8df3ca393cc05",
       "description": "Turn a baselined feature spec with technical design into an implementation plan for branch-first execution: task graph, file set, validation plan, checkpoints, AC-to-test mapping. Use before execute-changeset.",
       "aliases": [],
       "positive_triggers": [],
