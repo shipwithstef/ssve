@@ -15,7 +15,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 // Same rule as hooks/lib/svc-state-dir.mjs (inlined so the hook stays a single
 // self-contained file): the nearest ancestor with an existing .svc/ directory,
@@ -128,14 +128,7 @@ function frameworkSession(cwd) {
   return hasSvcAncestor(cwd);
 }
 
-function main() {
-  const learnings = frameworkSession(sessionCwd()) ? loadAllLearnings() : [];
-  if (learnings.length === 0) {
-    // Codex rejects empty stdout as invalid JSON; emit an empty object instead.
-    if (isCodexHost()) process.stdout.write("{}\n");
-    process.exit(0);
-  }
-
+function formatLearnings(learnings) {
   const lines = ["[FRAMEWORK LEARNINGS — read these before starting]", ""];
   for (const l of learnings) {
     const originSuffix = l._origin ? ` [${l._origin}]` : "";
@@ -145,11 +138,40 @@ function main() {
     lines.push("");
   }
   lines.push("If any learning applies to your current task, follow it. If it prevents a mistake, its confidence can be bumped.");
-  const text = lines.join("\n");
+  return lines.join("\n");
+}
+
+// Project standing rules live in the session cwd, not in framework lore.
+// A copied hook whose sibling script is absent (fixture isolation) stays quiet.
+async function standingRulesText(cwd) {
+  const modPath = path.join(REPO_ROOT, "scripts", "standing-rules.mjs");
+  try {
+    const stat = fs.statSync(modPath);
+    if (!stat.isFile()) return "";
+    const mod = await import(pathToFileURL(modPath).href);
+    const text = mod.printForSession(cwd);
+    return typeof text === "string" ? text : "";
+  } catch {
+    return "";
+  }
+}
+
+async function main() {
+  const cwd = sessionCwd();
+  const rules = await standingRulesText(cwd);
+  const learnings = frameworkSession(cwd) ? loadAllLearnings() : [];
+  if (!rules && learnings.length === 0) {
+    // Codex rejects empty stdout as invalid JSON; emit an empty object instead.
+    if (isCodexHost()) process.stdout.write("{}\n");
+    return;
+  }
+
+  const learningsText = learnings.length ? formatLearnings(learnings) : "";
+  const text = rules && learningsText ? `${rules}\n\n${learningsText}` : (rules || learningsText);
 
   // Claude accepts plain-text SessionStart stdout as added context; Codex rejects
   // non-JSON. On Codex, wrap in the JSON SessionStart envelope; Claude output stays
-  // byte-identical (plain text) — no Claude behavior change.
+  // byte-identical (plain text) when no standing rules are recorded.
   if (isCodexHost()) {
     process.stdout.write(`${JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: text } })}\n`);
   } else {
