@@ -1,20 +1,31 @@
 #!/usr/bin/env node
 /**
- * model-intel.mjs — read-only drift check for installed harness CLIs.
+ * model-intel.mjs — read-only drift check for the seven model/harness sources
+ * and for installed harness CLIs.
  *
  *   node scripts/model-intel.mjs check [--root DIR]
  *
- * check compares references/model-intel/models.json and the harness registry
- * (references/harness-playbook.json + references/harness-baseline.json) with
- * what each installed harness CLI prints. Detection is PATH lookup via
- * `--version` and the playbook `--help` probe only. It never passes a model
- * id, a prompt, or any other argv, and it never writes the store, un-pins a
- * slot, or deletes anything.
+ * The seven sources (plan §5.9, read, never written):
+ *   references/model-registry.json
+ *   references/model-intel/models.json
+ *   references/model-intel/priors.json
+ *   references/harness-playbook.json
+ *   references/harness-baseline.json
+ *   provision/hosts/*.json
+ *   scripts/orch/dispatch.mjs
  *
- * Drift (exit 1) is any of: installed version != tuned_version, a playbook
- * probe flag missing from --help, a CLI-reported model id absent from
- * models.json, or a CLI-reported alias whose id differs from the pinned id.
- * Harnesses that are not on PATH are reported and are not drift.
+ * check joins those sources and reports disagreements. It also compares the
+ * playbook and each harness baseline with what that harness CLI prints.
+ * Detection is PATH lookup via `--version` and the playbook `--help` probe
+ * only. It never passes a model id, a prompt, or any other argv, and it never
+ * writes a source, un-pins a slot, or deletes anything.
+ *
+ * Drift (exit 1) is any of: a cross-source disagreement, a playbook host with
+ * no tuned_version (baseline unverified), installed version != tuned_version,
+ * a probe that exits nonzero or on a signal, a playbook probe flag missing
+ * from --help, a CLI-reported model id absent from models.json, or a
+ * CLI-reported alias whose id differs from the pinned id. Harnesses that are
+ * not on PATH are reported and that absence alone is not drift.
  *
  * The JSON report is the only stdout. A daily schedule is documented, not
  * installed: docs/ops/model-intel-check-schedule.md.
@@ -32,6 +43,19 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const HELP_FLAG = /^(?:--help|-h|--version|-V|-v)$/;
 const SUBCOMMAND = /^[a-z][a-z0-9_-]{0,40}$/;
+const MODEL_LIT = /['"]((?:grok|claude|gpt|gemini|mimo|kimi)-[A-Za-z0-9.]+(?:-[A-Za-z0-9.]+)*)['"]/g;
+const MODEL_FLAG = /--model(?:\s+|=)([A-Za-z0-9][A-Za-z0-9._-]*)/g;
+const CLI_EQ = /cli === ['"]([a-z0-9_-]+)['"]/g;
+
+export const SEVEN_SOURCES = [
+  ["model-registry", "references/model-registry.json"],
+  ["models", "references/model-intel/models.json"],
+  ["priors", "references/model-intel/priors.json"],
+  ["playbook", "references/harness-playbook.json"],
+  ["baseline", "references/harness-baseline.json"],
+  ["provision", "provision/hosts"],
+  ["dispatch", "scripts/orch/dispatch.mjs"],
+];
 
 /** True only for --help / --version probes (optional leading subcommand). */
 export function isProbeArgv(args) {
@@ -64,6 +88,205 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
+function sourcePresent(root, id, rel) {
+  const abs = path.join(root, rel);
+  if (!fs.existsSync(abs)) return false;
+  const st = fs.statSync(abs);
+  return id === "provision" ? st.isDirectory() : st.isFile();
+}
+
+function storeAliases(modelsDoc) {
+  const map = new Map();
+  for (const [alias, spec] of Object.entries(modelsDoc?.models || {})) {
+    if (spec && typeof spec.id === "string" && spec.id) map.set(alias, spec.id);
+  }
+  return map;
+}
+
+function registryAliases(registry) {
+  const map = new Map();
+  for (const spec of Object.values(registry?.harnesses || {})) {
+    for (const [alias, model] of Object.entries(spec?.models || {})) {
+      if (!model || typeof model.id !== "string" || !model.id) continue;
+      const prev = map.get(alias);
+      if (prev && prev !== model.id) map.set(alias, `${prev}|${model.id}`);
+      else if (!prev) map.set(alias, model.id);
+    }
+  }
+  return map;
+}
+
+function priorAliases(priors) {
+  const out = new Set();
+  for (const task of Object.values(priors?.task_types || {})) {
+    for (const rung of task?.ladder || []) {
+      if (Array.isArray(rung) && typeof rung[0] === "string" && rung[0]) out.add(rung[0]);
+    }
+  }
+  return [...out].sort();
+}
+
+function quotedModelIds(text) {
+  const ids = new Set();
+  for (const m of String(text).matchAll(MODEL_LIT)) ids.add(m[1]);
+  for (const m of String(text).matchAll(MODEL_FLAG)) ids.add(m[1]);
+  return [...ids];
+}
+
+function dispatchClis(text) {
+  return [...new Set([...String(text).matchAll(CLI_EQ)].map((m) => m[1]))].sort();
+}
+
+function tunedOf(base) {
+  return typeof base?.tuned_version === "string" && base.tuned_version.trim() ? base.tuned_version.trim() : null;
+}
+
+/**
+ * Join the seven sources. Missing files are listed and not invented.
+ * Present files are parsed and compared. Nothing is written.
+ * @param {string} root
+ */
+export function compareSources(root) {
+  const sources = SEVEN_SOURCES.map(([id, rel]) => ({ id, path: rel, present: sourcePresent(root, id, rel), compared: false }));
+  const byId = Object.fromEntries(sources.map((s) => [s.id, s]));
+  const disagreements = [];
+  const facts = { model_aliases: [], registry_aliases: [], prior_aliases: [], provision_hosts: [], dispatch_clis: [] };
+
+  const models = byId.models.present ? readJson(path.join(root, byId.models.path)) : null;
+  const registry = byId["model-registry"].present ? readJson(path.join(root, byId["model-registry"].path)) : null;
+  const priors = byId.priors.present ? readJson(path.join(root, byId.priors.path)) : null;
+  const playbook = byId.playbook.present ? readJson(path.join(root, byId.playbook.path)) : null;
+  const baseline = byId.baseline.present ? readJson(path.join(root, byId.baseline.path)) : null;
+  const dispatchText = byId.dispatch.present ? fs.readFileSync(path.join(root, byId.dispatch.path), "utf8") : null;
+
+  if (models) byId.models.compared = true;
+  if (registry) byId["model-registry"].compared = true;
+  if (priors) byId.priors.compared = true;
+  if (playbook) byId.playbook.compared = true;
+  if (baseline) byId.baseline.compared = true;
+  if (dispatchText != null) byId.dispatch.compared = true;
+
+  const store = models ? storeAliases(models) : new Map();
+  const reg = registry ? registryAliases(registry) : new Map();
+  facts.model_aliases = [...store.keys()].sort();
+  facts.registry_aliases = [...reg.keys()].sort();
+  const knownIds = new Set([...store.values(), ...reg.values()]);
+
+  if (models && registry) {
+    for (const alias of [...new Set([...store.keys(), ...reg.keys()])].sort()) {
+      if (!store.has(alias) || !reg.has(alias)) continue;
+      if (store.get(alias) === reg.get(alias)) continue;
+      disagreements.push({
+        kind: "alias",
+        alias,
+        sources: {
+          "references/model-intel/models.json": store.get(alias),
+          "references/model-registry.json": reg.get(alias),
+        },
+      });
+    }
+  }
+
+  if (priors && models) {
+    facts.prior_aliases = priorAliases(priors);
+    for (const alias of facts.prior_aliases) {
+      if (store.has(alias)) continue;
+      disagreements.push({
+        kind: "prior",
+        alias,
+        detail: "priors ladder alias is not in models.json",
+        sources: ["references/model-intel/priors.json", "references/model-intel/models.json"],
+      });
+    }
+  }
+
+  const playHosts = playbook?.hosts || {};
+  const baseHosts = baseline?.hosts || {};
+  if (playbook) {
+    for (const host of Object.keys(playHosts).sort()) {
+      if (tunedOf(baseHosts[host])) continue;
+      disagreements.push({
+        kind: "baseline",
+        host,
+        status: "unverified",
+        sources: ["references/harness-playbook.json", "references/harness-baseline.json"],
+      });
+    }
+  }
+
+  let provisionHosts = [];
+  const referenced = new Map();
+  if (byId.provision.present) {
+    const dir = path.join(root, byId.provision.path);
+    provisionHosts = fs.readdirSync(dir).filter((n) => n.endsWith(".json")).map((n) => n.slice(0, -5)).sort();
+    facts.provision_hosts = provisionHosts;
+    byId.provision.compared = true;
+    for (const host of provisionHosts) {
+      const rel = `provision/hosts/${host}.json`;
+      for (const id of quotedModelIds(fs.readFileSync(path.join(dir, `${host}.json`), "utf8"))) {
+        if (!referenced.has(id)) referenced.set(id, []);
+        referenced.get(id).push(rel);
+      }
+    }
+    if (playbook) {
+      const linked = new Set(Object.values(playHosts).map((h) => h?.provision_host).filter(Boolean));
+      for (const host of provisionHosts) {
+        if (linked.has(host)) continue;
+        disagreements.push({
+          kind: "host",
+          host,
+          detail: "provision host has no harness-playbook provision_host",
+          sources: ["provision/hosts", "references/harness-playbook.json"],
+        });
+      }
+      for (const host of [...linked].sort()) {
+        if (provisionHosts.includes(host)) continue;
+        disagreements.push({
+          kind: "host",
+          host,
+          detail: "playbook provision_host has no provision file",
+          sources: ["references/harness-playbook.json", "provision/hosts"],
+        });
+      }
+    }
+  }
+
+  if (dispatchText != null) {
+    facts.dispatch_clis = dispatchClis(dispatchText);
+    for (const id of quotedModelIds(dispatchText)) {
+      if (!referenced.has(id)) referenced.set(id, []);
+      referenced.get(id).push("scripts/orch/dispatch.mjs");
+    }
+    if (playbook) {
+      const allowed = new Set(facts.dispatch_clis);
+      for (const host of Object.keys(playHosts).sort()) {
+        if (allowed.has(host)) continue;
+        disagreements.push({
+          kind: "dispatch",
+          host,
+          detail: "playbook host is not in the dispatch allowlist",
+          sources: ["references/harness-playbook.json", "scripts/orch/dispatch.mjs"],
+        });
+      }
+    }
+  }
+
+  if (models && registry) {
+    for (const id of [...referenced.keys()].sort()) {
+      if (knownIds.has(id)) continue;
+      disagreements.push({
+        kind: "model",
+        id,
+        detail: "referenced by a source but absent from models.json and model-registry.json",
+        referenced_by: [...new Set(referenced.get(id))].sort(),
+      });
+    }
+  }
+
+  disagreements.sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  return { sources, disagreements, facts };
+}
+
 function storePins(modelsDoc) {
   const ids = new Set();
   const aliases = {};
@@ -79,8 +302,10 @@ function storePins(modelsDoc) {
 function runProbe(spawn, bin, args, env) {
   const r = spawn(bin, args, { encoding: "utf8", timeout: 8000, env, windowsHide: true });
   if (r?.error && r.error.code === "ENOENT") return { installed: false };
-  if (r?.error) return { installed: true, error: r.error.code || "probe_failed", text: "" };
-  return { installed: true, status: r?.status ?? null, text: `${r?.stdout || ""}\n${r?.stderr || ""}` };
+  if (r?.error) return { installed: true, error: r.error.code || "probe_failed", status: r.status ?? null, signal: r.signal ?? null, text: "" };
+  if (r?.signal) return { installed: true, error: `signal:${r.signal}`, status: r.status ?? null, signal: r.signal, text: "" };
+  if (r?.status !== 0) return { installed: true, error: `exit:${r?.status ?? "null"}`, status: r?.status ?? null, signal: null, text: "" };
+  return { installed: true, status: 0, signal: null, text: `${r?.stdout || ""}\n${r?.stderr || ""}` };
 }
 
 function versionOf(text) {
@@ -95,6 +320,14 @@ function hostRecord(playbook, baseline) {
     const binary = spec.binary || (Array.isArray(base.version_cmd) ? base.version_cmd[0] : null);
     return { host, spec, base, binary };
   });
+}
+
+function baselineRowStatus(row) {
+  if (row.baseline_status === "unverified") return "unverified";
+  if (!row.installed) return "not_installed";
+  if (row.probe_drift) return "probe_failed";
+  if (row.version_drift) return "drift";
+  return "ok";
 }
 
 /**
@@ -114,13 +347,14 @@ export function checkModelIntel(opts = {}) {
   const findings = [];
 
   for (const { host, spec, base, binary } of hostRecord(playbook, baseline)) {
-    const tuned = typeof base.tuned_version === "string" ? base.tuned_version : null;
+    const tuned = tunedOf(base);
     const row = {
       host,
       binary: binary || null,
       installed: false,
       version: null,
       tuned_version: tuned,
+      baseline_status: tuned ? "present" : "unverified",
       version_drift: false,
       missing_flags: [],
       flag_drift: false,
@@ -143,11 +377,12 @@ export function checkModelIntel(opts = {}) {
     if (versionProbe.error) {
       row.probe_drift = true;
       findings.push({ host, kind: "probe", detail: versionProbe.error });
-    }
-    row.version = versionOf(versionProbe.text || "");
-    if (tuned && cmpVersion(row.version || "0", tuned) !== 0) {
-      row.version_drift = true;
-      findings.push({ host, kind: "version", installed: row.version, tuned });
+    } else {
+      row.version = versionOf(versionProbe.text || "");
+      if (tuned && cmpVersion(row.version || "0", tuned) !== 0) {
+        row.version_drift = true;
+        findings.push({ host, kind: "version", installed: row.version, tuned });
+      }
     }
 
     const helpArgv = spec.probe?.help;
@@ -172,11 +407,11 @@ export function checkModelIntel(opts = {}) {
       }
     }
 
-    const reportedText = `${versionProbe.text || ""}\n${helpText}`;
-    row.reported_models = reportedModelIds(reportedText);
+    const versionText = versionProbe.error ? "" : (versionProbe.text || "");
+    row.reported_models = reportedModelIds(`${versionText}\n${helpText}`);
     row.unknown_models = row.reported_models.filter((id) => !pins.ids.has(id));
     if (row.unknown_models.length) findings.push({ host, kind: "model", unknown: row.unknown_models });
-    for (const { alias, id } of reportedAliases(reportedText)) {
+    for (const { alias, id } of reportedAliases(`${versionText}\n${helpText}`)) {
       if (!(alias in pins.aliases)) continue;
       if (pins.aliases[alias] !== id) {
         row.alias_drift.push({ alias, reported: id, pinned: pins.aliases[alias] });
@@ -185,6 +420,12 @@ export function checkModelIntel(opts = {}) {
     }
     row.model_drift = row.unknown_models.length > 0 || row.alias_drift.length > 0;
     harnesses.push(row);
+  }
+
+  const joined = compareSources(root);
+  for (const d of joined.disagreements) {
+    if (d.kind === "baseline") findings.push({ host: d.host, kind: "baseline", status: "unverified" });
+    else findings.push(d);
   }
 
   const drift = findings.length > 0;
@@ -197,6 +438,13 @@ export function checkModelIntel(opts = {}) {
       drift,
       models: "references/model-intel/models.json",
       registry: ["references/harness-playbook.json", "references/harness-baseline.json"],
+      sources: joined.sources,
+      baselines: harnesses.map((h) => ({
+        host: h.host,
+        tuned_version: h.tuned_version,
+        installed_version: h.version,
+        status: baselineRowStatus(h),
+      })),
       harnesses,
       findings,
     },

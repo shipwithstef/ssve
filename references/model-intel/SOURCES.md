@@ -36,7 +36,7 @@ A source's opinion only moves a prior in proportion to how well its past claims 
 ## Refresh cadence
 
 - **On every model release:** update `models.json` facts from the official docs, add the new model's rungs where the evidence supports it, and run `node scripts/route-model.mjs check`. `check` fails when `models.json` is older than `max_age_days`.
-- **Daily (documented, not installed):** `node scripts/model-intel.mjs check` compares `models.json` and the harness registry with each installed harness CLI (`--version` and `--help` only) and exits 1 on drift. Cron, systemd, and launchd snippets live in `docs/ops/model-intel-check-schedule.md`. The check never un-pins a slot and never deletes store files.
+- **Daily (documented, not installed):** `node scripts/model-intel.mjs check` joins the seven sources (`model-registry.json`, `models.json`, `priors.json`, `harness-playbook.json`, `harness-baseline.json`, `provision/hosts/*.json`, `scripts/orch/dispatch.mjs`) and each installed harness CLI (`--version` and `--help` only). It exits 1 on disagreement, on a missing per-harness baseline, or on probe/version/flag drift. A probe that exits nonzero or on a signal is a failure. Cron, systemd, and launchd snippets live in `docs/ops/model-intel-check-schedule.md`. The check never writes those sources, never un-pins a slot, and never deletes store files.
 - **Weekly (scheduled routine):** collect new benchmark results and reviewer posts into `signals.jsonl` with URLs. No prior changes without cited signals.
 - **Monthly:** compare priors with `route-model stats`. Where outcomes contradict a prior, change the prior in a reviewed PR that cites the outcome counts.
 

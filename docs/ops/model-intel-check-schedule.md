@@ -2,7 +2,7 @@
 
 Documented only. Nothing in this file is installed, enabled, or started by the framework.
 
-`node scripts/model-intel.mjs check` is read-only. It detects installed harness CLIs with `--version` and `--help` only, joins that output with flag verify, and exits 1 when it finds drift. It never un-pins a slot and never deletes store files. Replace `<svc-repo>` with the checkout you want checked. Do not point it at a home directory or a secret store.
+`node scripts/model-intel.mjs check` is read-only. It joins the seven model and harness sources, detects installed harness CLIs with `--version` and `--help` only, joins that output with each harness baseline and flag verify, and exits 1 when it finds drift. A missing baseline is unverified. A probe that exits nonzero or on a signal is a failure. It never writes those sources, never un-pins a slot, and never deletes store files. Replace `<svc-repo>` with the checkout you want checked. Do not point it at a home directory or a secret store.
 
 The snippets below run the check once a day. They do not open a pull request and they do not fetch a vendor changelog.
 

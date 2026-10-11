@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { checkModelIntel, isProbeArgv, reportedModelIds, reportedAliases } from "../../scripts/model-intel.mjs";
+import { checkModelIntel, compareSources, isProbeArgv, reportedModelIds, reportedAliases } from "../../scripts/model-intel.mjs";
 
 const SCRIPT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../../scripts/model-intel.mjs");
 const SCHEDULE = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../../docs/ops/model-intel-check-schedule.md");
@@ -149,6 +149,7 @@ test("stub CLIs on a temp PATH: drift JSON, exit 1, pins unchanged, no model arg
     assert.equal(byHost.alpha.model_drift, false);
     assert.equal(byHost.beta.installed, false);
     assert.equal(byHost.beta.version_drift, false);
+    assert.equal(byHost.beta.baseline_status, "unverified");
     assert.equal(byHost.gamma.version_drift, true);
     assert.equal(byHost.gamma.version, "2.0.0");
     assert.deepEqual(byHost.delta.missing_flags, ["--model"]);
@@ -160,6 +161,7 @@ test("stub CLIs on a temp PATH: drift JSON, exit 1, pins unchanged, no model arg
 
     const kinds = report.findings.map((f) => `${f.host}:${f.kind}`).sort();
     assert.deepEqual(kinds, [
+      "beta:baseline",
       "delta:flag",
       "epsilon:alias",
       "epsilon:model",
@@ -235,6 +237,161 @@ test("CLI exit 1 on drift and exit 2 on bad usage", () => {
 test("check never writes the store", () => {
   const src = fs.readFileSync(SCRIPT, "utf8");
   assert.equal(/\b(writeFile|unlink|rmSync|renameSync|appendFile|truncate|mkdirSync)\b/.test(src), false);
+});
+
+test("seven sources: haiku alias disagreement is reported and nothing is written", () => {
+  const repo = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../..");
+  const watched = [
+    "references/model-registry.json",
+    "references/model-intel/models.json",
+    "references/model-intel/priors.json",
+    "references/harness-playbook.json",
+    "references/harness-baseline.json",
+    "scripts/orch/dispatch.mjs",
+  ];
+  const before = watched.map((rel) => fs.readFileSync(path.join(repo, rel)));
+  const provDir = path.join(repo, "provision/hosts");
+  const provBefore = fs.readdirSync(provDir).sort().map((n) => fs.readFileSync(path.join(provDir, n)));
+
+  const joined = compareSources(repo);
+  assert.equal(joined.sources.length, 7);
+  assert.deepEqual(joined.sources.map((s) => s.present), [true, true, true, true, true, true, true]);
+  assert.deepEqual(joined.sources.map((s) => s.compared), [true, true, true, true, true, true, true]);
+  const haiku = joined.disagreements.find((d) => d.kind === "alias" && d.alias === "haiku");
+  assert.ok(haiku, "haiku alias disagreement missing");
+  assert.equal(haiku.sources["references/model-intel/models.json"], "claude-haiku-5-5");
+  assert.equal(haiku.sources["references/model-registry.json"], "claude-haiku-4-5-20251001");
+  assert.ok(joined.disagreements.some((d) => d.kind === "baseline" && d.host === "codex" && d.status === "unverified"));
+  assert.ok(joined.disagreements.some((d) => d.kind === "model" && d.id === "grok-4.7"));
+  assert.ok(joined.disagreements.some((d) => d.kind === "dispatch" && d.host === "kimi"));
+  assert.ok(joined.facts.prior_aliases.includes("haiku"));
+  assert.ok(joined.facts.provision_hosts.includes("grok"));
+  assert.deepEqual(joined.facts.dispatch_clis, ["agy", "claude", "codex", "cursor"]);
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "model-intel-src-"));
+  try {
+    fs.mkdirSync(path.join(dir, "references", "model-intel"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "references", "model-intel", "models.json"), JSON.stringify({
+      models: { pico: { id: "pico-1", price_out: 1 } },
+    }));
+    fs.writeFileSync(path.join(dir, "references", "model-registry.json"), JSON.stringify({
+      harnesses: { claude: { models: { pico: { id: "pico-2" } } } },
+    }));
+    fs.writeFileSync(path.join(dir, "references", "model-intel", "priors.json"), JSON.stringify({
+      task_types: { mechanical: { ladder: [["pico", "low"], ["missing-alias", "low"]] } },
+    }));
+    fs.writeFileSync(path.join(dir, "references", "harness-playbook.json"), JSON.stringify({
+      hosts: { alpha: host("alpha", ["--print"], ["--help"]) },
+    }));
+    fs.writeFileSync(path.join(dir, "references", "harness-baseline.json"), JSON.stringify({
+      hosts: { alpha: { tuned_version: "1.0.0" } },
+    }));
+    fs.mkdirSync(path.join(dir, "provision", "hosts"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "provision", "hosts", "orphan.json"), "{}\n");
+    fs.mkdirSync(path.join(dir, "scripts", "orch"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "scripts", "orch", "dispatch.mjs"), "if (cli === 'codex') return ['codex'];\n");
+    const snap = snapshot(dir);
+    const { code, report } = checkModelIntel({
+      root: dir,
+      env: {},
+      spawn: () => ({ error: Object.assign(new Error("no"), { code: "ENOENT" }) }),
+    });
+    assert.equal(code, 1);
+    assert.equal(report.ok, false);
+    assert.equal(snapshot(dir), snap);
+    assert.equal(report.sources.length, 7);
+    assert.ok(report.findings.some((f) => f.kind === "alias" && f.alias === "pico"
+      && f.sources["references/model-intel/models.json"] === "pico-1"
+      && f.sources["references/model-registry.json"] === "pico-2"));
+    assert.ok(report.findings.some((f) => f.kind === "prior" && f.alias === "missing-alias"));
+    assert.ok(report.findings.some((f) => f.kind === "host" && f.host === "orphan"));
+    assert.ok(report.findings.some((f) => f.kind === "dispatch" && f.host === "alpha"));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  watched.forEach((rel, i) => assert.deepEqual(fs.readFileSync(path.join(repo, rel)), before[i]));
+  const provAfter = fs.readdirSync(provDir).sort().map((n) => fs.readFileSync(path.join(provDir, n)));
+  assert.deepEqual(provAfter, provBefore);
+});
+
+test("missing baseline is unverified; a per-harness baseline still catches version drift", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "model-intel-base-"));
+  try {
+    fs.mkdirSync(path.join(dir, "references", "model-intel"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "references", "model-intel", "models.json"), JSON.stringify(MODELS));
+    fs.writeFileSync(path.join(dir, "references", "harness-playbook.json"), JSON.stringify({
+      hosts: {
+        codex: host("codex", ["--print"], ["--help"]),
+        gemini: host("gemini", ["--print"], ["--help"]),
+      },
+    }));
+    fs.writeFileSync(path.join(dir, "references", "harness-baseline.json"), JSON.stringify({
+      hosts: { claude: { tuned_version: "2.1.296" }, gemini: { tuned_version: "1.0.0" } },
+    }));
+    const spawn = (bin, args) => {
+      if (bin !== "codex" && bin !== "gemini") return { error: Object.assign(new Error("no"), { code: "ENOENT" }) };
+      if (args.includes("--version")) return { status: 0, stdout: `${bin} 999.0.0\n`, stderr: "" };
+      if (args.includes("--help")) return { status: 0, stdout: "--print\n", stderr: "" };
+      return { status: 9, stdout: "should-not-run\n", stderr: "" };
+    };
+    const { code, report } = checkModelIntel({ root: dir, env: {}, spawn });
+    assert.equal(code, 1);
+    assert.equal(report.ok, false);
+    const byHost = Object.fromEntries(report.harnesses.map((h) => [h.host, h]));
+    assert.equal(byHost.codex.installed, true);
+    assert.equal(byHost.codex.version, "999.0.0");
+    assert.equal(byHost.codex.version_drift, false);
+    assert.equal(byHost.codex.baseline_status, "unverified");
+    assert.equal(byHost.gemini.version, "999.0.0");
+    assert.equal(byHost.gemini.version_drift, true);
+    assert.equal(byHost.gemini.baseline_status, "present");
+    const bases = Object.fromEntries(report.baselines.map((b) => [b.host, b.status]));
+    assert.equal(bases.codex, "unverified");
+    assert.equal(bases.gemini, "drift");
+    assert.ok(report.findings.some((f) => f.host === "codex" && f.kind === "baseline" && f.status === "unverified"));
+    assert.ok(report.findings.some((f) => f.host === "gemini" && f.kind === "version" && f.installed === "999.0.0"));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("nonzero probe exits and signals are failures even when the text matches", () => {
+  function tree(dir) {
+    fs.mkdirSync(path.join(dir, "references", "model-intel"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "references", "model-intel", "models.json"), JSON.stringify(MODELS));
+    fs.writeFileSync(path.join(dir, "references", "harness-playbook.json"), JSON.stringify({
+      hosts: { alpha: host("alpha", ["--print", "--model"], ["--help"]) },
+    }));
+    fs.writeFileSync(path.join(dir, "references", "harness-baseline.json"), JSON.stringify({
+      hosts: { alpha: { tuned_version: "1.0.0" } },
+    }));
+  }
+  const matching = "alpha 1.0.0\nmodels: claude-haiku-5-5\nalias: haiku=claude-haiku-5-5\n";
+  for (const [label, versionResult, detail] of [
+    ["exit", { status: 9, stdout: matching, stderr: "" }, "exit:9"],
+    ["signal", { status: null, signal: "SIGTERM", stdout: matching, stderr: "" }, "signal:SIGTERM"],
+  ]) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), `model-intel-${label}-`));
+    try {
+      tree(dir);
+      const spawn = (bin, args) => {
+        if (args.includes("--version")) return versionResult;
+        if (args.includes("--help")) return { status: 0, stdout: "--print --model\n", stderr: "" };
+        return { status: 9, stdout: "", stderr: "" };
+      };
+      const { code, report } = checkModelIntel({ root: dir, env: {}, spawn });
+      assert.equal(code, 1, label);
+      assert.equal(report.ok, false, label);
+      assert.equal(report.harnesses[0].version_drift, false, label);
+      assert.equal(report.harnesses[0].model_drift, false, label);
+      assert.equal(report.harnesses[0].flag_drift, false, label);
+      assert.ok(report.findings.some((f) => f.host === "alpha" && f.kind === "probe" && f.detail === detail), label);
+      assert.equal(report.findings.some((f) => f.kind === "baseline"), false, label);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
 });
 
 test("daily schedule is documented and not an installed unit", () => {
