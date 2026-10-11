@@ -1,0 +1,16 @@
+{
+  "component": "P",
+  "task": "security-payments",
+  "report": "SECURITY.json",
+  "checks": [
+    { "type": "report_parses" },
+    { "type": "report_actionable", "min_chars": 40 },
+    { "type": "report_severity", "expect": [
+      { "file": "checkout.mjs", "line": 7, "words": "amount|price|client|tamper|trust", "min_severity": "HIGH" },
+      { "file": "checkout.mjs", "line": 14, "words": "owner|another|other|idor|authoriz|belong", "min_severity": "HIGH" },
+      { "file": "webhook.mjs", "line": 12, "words": "missing|absent|without|no signature|omit|unsigned|forg|bypass|optional", "min_severity": "HIGH" },
+      { "file": "webhook.mjs", "line": 16, "words": "secret|log|leak|expos", "min_severity": "MEDIUM" }
+    ] },
+    { "type": "src_unmodified", "src": "src" }
+  ]
+}

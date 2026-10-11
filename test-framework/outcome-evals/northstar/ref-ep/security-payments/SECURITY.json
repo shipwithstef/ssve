@@ -1,0 +1,8 @@
+[
+  {"file": "src/checkout.mjs", "line": 7, "severity": "CRITICAL", "issue": "the amount comes from the client body, so a customer can pay 1 cent for any class; always use the server price"},
+  {"file": "src/checkout.mjs", "line": 14, "severity": "HIGH", "issue": "refundBooking never checks the booking belongs to the user: any customer can refund another customer's booking (IDOR); verify the owner before refunding"},
+  {"file": "src/webhook.mjs", "line": 12, "severity": "CRITICAL", "issue": "a request without the x-signature header skips verification, so anyone can forge a checkout.paid event; reject unsigned requests"},
+  {"file": "src/webhook.mjs", "line": 16, "severity": "HIGH", "issue": "the webhook signing material (config.hmac) is written to the logs on every event; never log it, redact instead"},
+  {"file": "src/webhook.mjs", "line": 13, "severity": "MEDIUM", "issue": "JSON.parse on the raw body is not guarded: a malformed payload throws an unhandled exception from the handler instead of answering 400, so one bad request can crash or 500 the endpoint; wrap the parse in try/catch"},
+  {"file": "src/checkout.mjs", "line": 17, "severity": "MEDIUM", "issue": "the booking is set to refunding before the gateway call and never rolled back when gateway.refund throws, so a failed refund leaves it stuck in that state; revert the status on failure and make the transition atomic"}
+]

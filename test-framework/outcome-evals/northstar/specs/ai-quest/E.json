@@ -1,0 +1,14 @@
+{
+  "component": "E",
+  "task": "ai-quest",
+  "start": "npm start",
+  "ready": "/",
+  "checks": [
+    { "type": "chaos", "faults": ["restart", "malformed", "flood"], "flood": 60 },
+    { "type": "unknown_route" },
+    { "type": "ui_offline" },
+    { "type": "ui_walk", "seeds": [1, 2, 3], "steps": 40 },
+    { "type": "game_bad_input", "module": "game/quest.mjs" },
+    { "type": "game_deadends", "module": "game/quest.mjs", "walkthrough": "docs/walkthrough.json", "walks": 20, "wrong_steps": 14, "skips": 10 }
+  ]
+}

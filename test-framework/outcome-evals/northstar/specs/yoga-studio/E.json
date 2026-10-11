@@ -1,0 +1,14 @@
+{
+  "component": "E",
+  "task": "yoga-studio",
+  "start": "node server.mjs",
+  "ready": "/",
+  "extra_pages": ["/login", "/schedule", "/classes", "/book", "/admin"],
+  "checks": [
+    { "type": "chaos", "faults": ["restart", "malformed", "flood"], "flood": 60 },
+    { "type": "unknown_route" },
+    { "type": "ui_bad_input" },
+    { "type": "ui_offline" },
+    { "type": "ui_walk", "seeds": [1, 2, 3], "steps": 40 }
+  ]
+}

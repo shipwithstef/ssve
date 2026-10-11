@@ -1,0 +1,10 @@
+{
+  "component": "E",
+  "task": "security-payments",
+  "report": "SECURITY.json",
+  "checks": [
+    { "type": "report_wellformed", "src": "src" },
+    { "type": "report_finding", "name": "edge: a malformed webhook body is reported", "file": "webhook.mjs", "line": 13, "tolerance": 2, "words": "malformed|invalid json|parse|unhandled|exception|crash|try ?/ ?catch" },
+    { "type": "report_finding", "name": "failure: a failed refund leaves the booking stuck", "file": "checkout.mjs", "line": 17, "tolerance": 2, "words": "stuck|roll ?back|revert|refunding|atomic|inconsistent|fails?" }
+  ]
+}
