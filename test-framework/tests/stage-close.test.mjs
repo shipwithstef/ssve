@@ -217,6 +217,58 @@ test("claude and codex outcomes with the same model and effort do not share a po
   assert.equal(n, 2);
 });
 
+test("rejects a dangling receipt symlink aimed at a missing ledger", () => {
+  const root = tmp();
+  const ledger = ledgerPath(root);
+  const receiptDir = path.join(root, "receipts");
+  fs.mkdirSync(receiptDir, { recursive: true });
+  const receipt = path.join(receiptDir, "exec.json");
+  const relative = path.relative(receiptDir, ledger);
+  fs.symlinkSync(relative, receipt);
+  assert.notEqual(path.resolve(receipt), path.resolve(ledger));
+  assert.equal(fs.lstatSync(receipt).isSymbolicLink(), true);
+  assert.equal(fs.existsSync(receipt), false);
+  assert.equal(fs.existsSync(ledger), false);
+
+  assert.throws(
+    () => closeStage({ ...base, projectRoot: root, receipt }),
+    (error) => error.code === "USAGE" && error.message === "--receipt must not be the outcome ledger",
+  );
+  assert.equal(fs.existsSync(ledger), false);
+  assert.equal(fs.existsSync(`${ledger}.lock`), false);
+  assert.equal(fs.existsSync(path.dirname(ledger)), false);
+  assert.equal(fs.readlinkSync(receipt), relative);
+  assert.equal(fs.existsSync(receipt), false);
+
+  const lockRoot = tmp();
+  const lockLedger = ledgerPath(lockRoot);
+  const lockReceipt = path.join(lockRoot, "lock-receipt.json");
+  fs.symlinkSync(`${lockLedger}.lock`, lockReceipt);
+  assert.throws(
+    () => closeStage({ ...base, projectRoot: lockRoot, receipt: lockReceipt, id: "lock-dangling" }),
+    (error) => error.code === "USAGE" && error.message === "--receipt must not be the outcome ledger lock",
+  );
+  assert.equal(fs.existsSync(`${lockLedger}.lock`), false);
+  assert.equal(fs.existsSync(lockLedger), false);
+  assert.equal(fs.existsSync(lockReceipt), false);
+
+  const via = tmp();
+  const viaLedger = ledgerPath(via);
+  fs.mkdirSync(path.dirname(viaLedger), { recursive: true });
+  const alias = path.join(via, "alias-svc");
+  fs.symlinkSync(path.dirname(viaLedger), alias);
+  const viaReceipt = path.join(via, "via-receipt.json");
+  fs.symlinkSync(path.join(alias, path.basename(viaLedger)), viaReceipt);
+  assert.notEqual(path.resolve(viaReceipt), path.resolve(viaLedger));
+  assert.equal(fs.existsSync(viaReceipt), false);
+  assert.throws(
+    () => closeStage({ ...base, projectRoot: via, receipt: viaReceipt, id: "via-dangling" }),
+    (error) => error.code === "USAGE" && error.message === "--receipt must not be the outcome ledger",
+  );
+  assert.equal(fs.existsSync(viaLedger), false);
+  assert.equal(fs.existsSync(viaReceipt), false);
+});
+
 test("rejects a receipt hard-linked to the ledger without changing either file", () => {
   const root = tmp();
   const ledger = ledgerPath(root);

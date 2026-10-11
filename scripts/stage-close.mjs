@@ -13,7 +13,9 @@
  *
  * Receipt files are read-only. `--receipt` hashes a regular file and stores
  * its basename plus digest. This script never creates, rewrites, or deletes
- * a receipt, a git note, or any ledger line.
+ * a receipt or a git note. A receipt symlink is resolved, including a
+ * dangling link, and refused when that path is the ledger or its lock,
+ * before either exists.
  *
  *   node scripts/stage-close.mjs \
  *     --stage S --wi WI --model M --harness H --effort E \
@@ -137,8 +139,9 @@ function refuseSymlink(file) {
   }
 }
 
-// Device and inode, so a hard link or a symlink to the same file compares equal
-// even when the path strings differ. stat follows links; a missing path does not.
+// Device and inode, so a hard link or a live symlink to the same file compares
+// equal even when the path strings differ. stat follows links and reports
+// ENOENT for a dangling symlink, so it cannot see a target that does not exist yet.
 function fileIdentity(file) {
   try {
     const st = fs.statSync(file);
@@ -149,9 +152,57 @@ function fileIdentity(file) {
   }
 }
 
+// Absolute path a name denotes, following symlinks. A missing final component
+// still canonicalizes through the longest existing ancestor, so a dangling
+// link aimed at the ledger compares equal before that file is created.
+function resolveLinkPath(file) {
+  let current = path.resolve(file);
+  const seen = new Set();
+  for (let i = 0; i < 40; i++) {
+    let st;
+    try {
+      st = fs.lstatSync(current);
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+      return canonicalizeMissing(current);
+    }
+    if (st.isSymbolicLink()) {
+      if (seen.has(current)) throw usage("--receipt symlink cycle");
+      seen.add(current);
+      current = path.resolve(path.dirname(current), fs.readlinkSync(current));
+      continue;
+    }
+    try {
+      return fs.realpathSync(current);
+    } catch (error) {
+      if (error?.code === "ENOENT") return canonicalizeMissing(current);
+      if (error?.code === "ELOOP") throw usage("--receipt symlink cycle");
+      throw error;
+    }
+  }
+  throw usage("--receipt symlink chain is too long");
+}
+
+function canonicalizeMissing(file) {
+  const rest = [];
+  let dir = file;
+  while (dir !== path.dirname(dir)) {
+    rest.unshift(path.basename(dir));
+    dir = path.dirname(dir);
+    try {
+      return path.join(fs.realpathSync(dir), ...rest);
+    } catch (error) {
+      if (error?.code === "ENOENT") continue;
+      if (error?.code === "ELOOP") throw usage("--receipt symlink cycle");
+      throw error;
+    }
+  }
+  return path.resolve(file);
+}
+
 function assertReceiptDistinct(receiptPath, otherPath, label) {
   if (!receiptPath) return;
-  if (path.resolve(receiptPath) === path.resolve(otherPath)) {
+  if (resolveLinkPath(receiptPath) === resolveLinkPath(otherPath)) {
     throw usage(`--receipt must not be the ${label}`);
   }
   const receiptId = fileIdentity(receiptPath);
