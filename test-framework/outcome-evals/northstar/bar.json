@@ -3,8 +3,8 @@
   "source": "docs/analysis/2026-10-11-organism-plan.md section 4 (rev 4 overrides from section 11)",
   "dev": ["yoga-studio", "ai-quest", "waitlist-feature", "bugfix-rootcause", "security-payments", "typo-readme", "continuity-rules"],
   "reserve": [
-    { "task": "R1", "grader_sha256": null },
-    { "task": "R2", "grader_sha256": null }
+    { "task": "R1", "grader_sha256": "f64ec33c324692d2206b0a3328fc2b5687b07c6c369f1c5795b65544c3cae8ec" },
+    { "task": "R2", "grader_sha256": "33ffa5cf4b32432782298d046d8e29c2b85a5e8d8e2620789336566a3bd78736" }
   ],
   "matrix": {
     "yoga-studio": ["E", "S", "P"],
