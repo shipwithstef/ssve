@@ -22,18 +22,27 @@ function walk(dir, out = []) {
   return out;
 }
 
-export function readTranscripts(dir) {
+// One entry per session transcript file, in the order the sessions started (first
+// timestamp in the file; file name breaks ties), so a step can be bound to its session.
+export function readSessions(dir) {
   if (!dir || !fs.existsSync(dir)) return [];
-  const events = [];
+  const sessions = [];
   for (const f of walk(dir).filter((p) => p.endsWith(".jsonl"))) {
     let text;
     try { text = fs.readFileSync(f, "utf8"); } catch { continue; }
+    const events = [];
     for (const line of text.split("\n")) {
       if (!line.trim()) continue;
       try { events.push(JSON.parse(line)); } catch { /* tolerate bad lines */ }
     }
+    const first = events.map((e) => Date.parse(e?.timestamp)).find((t) => Number.isFinite(t));
+    sessions.push({ file: f, started: Number.isFinite(first) ? first : Infinity, events });
   }
-  return events;
+  return sessions.sort((a, b) => a.started - b.started || (a.file < b.file ? -1 : a.file > b.file ? 1 : 0));
+}
+
+export function readTranscripts(dir) {
+  return readSessions(dir).flatMap((s) => s.events);
 }
 
 export function toolUses(events) {
@@ -188,6 +197,7 @@ export function validateSpec(spec) {
     else if (seen.has(id)) problems.push(`${where}: duplicate id`);
     else seen.add(id);
     if (!MUSTS.includes(s.must)) problems.push(`${where}: must is ${JSON.stringify(s.must)}, expected MUST, CONDITIONAL or OPTIONAL`);
+    if (s.session !== undefined && !(Number.isInteger(s.session) && s.session >= 1)) problems.push(`${where}: session must be a positive integer`);
     if (s.evidence === undefined) problems.push(`${where}: missing evidence predicate`);
     else problems.push(...predicateProblems(s.evidence, `${where}.evidence`));
     if (s.when !== undefined) problems.push(...predicateProblems(s.when, `${where}.when`));
@@ -203,13 +213,18 @@ const canonical = (v) => {
 export const specSha = (spec) => crypto.createHash("sha256").update(canonical(spec)).digest("hex").slice(0, 12);
 
 export function checkJourney(spec, { transcriptsDir = null, buildDir = null } = {}) {
-  const ctx = { tools: toolUses(readTranscripts(transcriptsDir)), buildDir };
+  const sessions = readSessions(transcriptsDir);
+  const all = { tools: toolUses(sessions.flatMap((x) => x.events)), buildDir };
+  // A step with `session: n` sees only the n-th session's tool uses, so one session's
+  // work never counts for another (continuity: session 2 must walk its own journey).
+  const ctxFor = (s) => (s.session == null ? all : { tools: toolUses(sessions[s.session - 1]?.events || []), buildDir });
   const steps = [];
   for (const s of spec.steps) {
+    const ctx = ctxFor(s);
     let applies = true;
     if (s.must === "CONDITIONAL" && s.when !== undefined) applies = evalPredicate(s.when, ctx).hit;
     const r = evalPredicate(s.evidence, ctx);
-    steps.push({ id: s.id, must: s.must, applies, hit: r.hit, evidence: r.evidence });
+    steps.push({ id: s.id, must: s.must, ...(s.session != null ? { session: s.session } : {}), applies, hit: r.hit, evidence: r.evidence });
   }
   const required = steps.filter((s) => s.must !== "OPTIONAL" && s.applies);
   const missing = required.filter((s) => !s.hit).map((s) => s.id);

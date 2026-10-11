@@ -300,3 +300,30 @@ test("an existing spec file holding null, false, 0, \"\" or an array is refused,
     assert.equal(p.length, 1, body); assert.match(p[0], /journey spec for t1 is invalid: .*not a JSON object/, body);
   }
 });
+
+test("a session-bound step only sees its own session: session 1 work never satisfies session 2", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "jsess-"));
+  const ev = (ts, skill) => JSON.stringify({ type: "assistant", timestamp: ts, message: { role: "assistant", content: [{ type: "tool_use", name: "Skill", input: { skill } }] } });
+  // File names sort opposite to start time, so ordering must come from timestamps.
+  fs.writeFileSync(path.join(dir, "b-first.jsonl"), [ev("2026-01-01T00:00:00Z", "route-workflow"), ev("2026-01-01T00:01:00Z", "plan-changeset")].join("\n") + "\n");
+  fs.writeFileSync(path.join(dir, "a-second.jsonl"), ev("2026-01-01T01:00:00Z", "route-workflow") + "\n");
+  const spec = { task: "t", version: 1, steps: [
+    { id: "s1-plan", kind: "skill", name: "plan-changeset", must: "MUST", session: 1, evidence: { skill: "plan-changeset" } },
+    { id: "s2-route", kind: "skill", name: "route-workflow", must: "MUST", session: 2, evidence: { skill: "route-workflow" } },
+    { id: "s2-plan", kind: "skill", name: "plan-changeset", must: "MUST", session: 2, evidence: { skill: "plan-changeset" } },
+  ] };
+  assert.deepEqual(validateSpec(spec), []);
+  const r = checkJourney(spec, { transcriptsDir: dir, buildDir: dir });
+  assert.equal(r.conformant, false);
+  assert.deepEqual(r.missing, ["s2-plan"], "session 2 skipped plan-changeset; session 1's call must not count");
+  assert.ok(validateSpec({ ...spec, steps: [{ ...spec.steps[0], session: 0 }] }).some((p) => /session must be a positive integer/.test(p)));
+});
+
+test("the continuity spec binds every s1-/s2- step to its session", () => {
+  const spec = JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "../outcome-evals/northstar/journeys/continuity-rules.json"), "utf8"));
+  for (const s of spec.steps) {
+    if (s.id.startsWith("s1-")) assert.equal(s.session, 1, s.id);
+    if (s.id.startsWith("s2-")) assert.equal(s.session, 2, s.id);
+  }
+  assert.deepEqual(validateSpec(spec), []);
+});

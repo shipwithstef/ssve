@@ -206,17 +206,19 @@ export function isEvalSeedCommit(epoch, author, subject) {
 // began; without it only the cadence is known.
 export function history(dir, startedAt = null) {
   if (!fs.existsSync(path.join(dir, ".git"))) return { commits: 0, first_commit_min: null, reason: "no git history" };
-  const r = spawnSync("git", ["log", "--format=%at%x1f%an%x1f%s"], { cwd: dir, encoding: "utf8" });
+  // Author date identifies the seed (prepare() pins it); commit date times the builder.
+  const r = spawnSync("git", ["log", "--format=%at%x1f%ct%x1f%an%x1f%s"], { cwd: dir, encoding: "utf8" });
   const ts = [];
   for (const line of (r.stdout || "").split("\n")) {
     if (!line) continue;
     const parts = line.split("\x1f");
-    if (parts.length < 3) continue;
-    const epoch = Number(parts[0]);
-    const author = parts[1];
-    const subject = parts.slice(2).join("\x1f");
-    if (isEvalSeedCommit(epoch, author, subject)) continue;
-    if (Number.isFinite(epoch)) ts.push(epoch * 1000);
+    if (parts.length < 4) continue;
+    const authored = Number(parts[0]);
+    const committed = Number(parts[1]);
+    const author = parts[2];
+    const subject = parts.slice(3).join("\x1f");
+    if (isEvalSeedCommit(authored, author, subject)) continue;
+    if (Number.isFinite(committed)) ts.push(committed * 1000);
   }
   ts.sort((a, b) => a - b);
   if (!ts.length) return { commits: 0, first_commit_min: null, commits_per_10_min: null, reason: "no commits" };

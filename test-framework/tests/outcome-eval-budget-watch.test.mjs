@@ -175,3 +175,19 @@ test("a seed-only checkout reports 0 builder commits and null first_commit_min",
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("history times builder commits by commit date, not author date (an old cherry-pick lands now)", () => {
+  const dir = oe.prepare("cron");
+  try {
+    fs.writeFileSync(path.join(dir, "picked.txt"), "work\n");
+    spawnSync("git", ["add", "-A"], { cwd: dir, encoding: "utf8" });
+    const env = { ...process.env, GIT_AUTHOR_DATE: "2020-01-01T00:00:00Z" };
+    const c = spawnSync("git", ["-c", "user.name=builder", "-c", "user.email=builder@example.invalid", "commit", "-qm", "picked"], { cwd: dir, encoding: "utf8", env });
+    assert.equal(c.status, 0, c.stderr);
+    const h = history(dir, Date.now() - 60000);
+    assert.equal(h.commits, 1);
+    assert.ok(h.first_commit_min >= 0 && h.first_commit_min < 5, `commit-date timing expected, got ${h.first_commit_min}`);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
