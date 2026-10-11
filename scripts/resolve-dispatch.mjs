@@ -768,8 +768,11 @@ function requireOption(options, key, hint) {
   return options[key];
 }
 
-function printModel(result, format) {
-  if (format === '--json' || format === 'json') {
+function printModel(result, rawFormat) {
+  // Accept both `json` and `--json`: resolve-model.sh passes the bare name, because the
+  // argument parser reads a value starting with `--` as a flag of its own.
+  const format = rawFormat && rawFormat !== 'true' ? `--${String(rawFormat).replace(/^--/, '')}` : null;
+  if (format === '--json') {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
   }

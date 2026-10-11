@@ -34,13 +34,16 @@ while [[ $# -gt 0 ]]; do
       # Backward compat: tier-1 is already the suite default (WI-358 gate and
       # older docs pass it explicitly). Accepted and ignored.
       shift ;;
+    --tier2)
+      # Tier 2 has its own runner (live model scenarios); hand over to it.
+      exec bash "$(dirname "$0")/tier-2/run-tier2.sh" "${@:2}" ;;
     --surface)
       [[ -n "${2:-}" ]] || { echo "FAIL: --surface requires a path argument" >&2; exit 2; }
       IFS=',' read -r -a _parts <<< "$2"
       TIER1_SURFACES+=("${_parts[@]}")
       shift 2 ;;
     *)
-      echo "FAIL: unknown argument $1 (supported: --surface <path>)" >&2
+      echo "FAIL: unknown argument $1 (supported: --tier1, --tier2, --surface <path>)" >&2
       exit 2 ;;
   esac
 done

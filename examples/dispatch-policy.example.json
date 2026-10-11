@@ -54,7 +54,7 @@
               "kind": "external",
               "required": true,
               "authority": "independent",
-              "tuple": { "host": "cursor", "family": "anthropic", "model": "claude-fable-5", "effort": "high" },
+              "tuple": { "host": "claude", "family": "anthropic", "model": "claude-fable-5", "effort": "high" },
               "max_invocations": 1,
               "round_trip": false
             },
@@ -63,7 +63,7 @@
               "kind": "external",
               "required": true,
               "authority": "independent",
-              "tuple": { "host": "cursor", "family": "openai", "model": "gpt-5.6-sol", "effort": "high" }
+              "tuple": { "host": "codex", "family": "openai", "model": "gpt-5.6-sol", "effort": "high" }
             },
             {
               "id": "agy-gemini-3.7-high",
@@ -93,7 +93,7 @@
               "kind": "external",
               "required": true,
               "authority": "independent",
-              "tuple": { "host": "cursor", "family": "anthropic", "model": "claude-fable-5", "effort": "high" },
+              "tuple": { "host": "claude", "family": "anthropic", "model": "claude-fable-5", "effort": "high" },
               "max_invocations": 1,
               "round_trip": false
             },
@@ -102,7 +102,7 @@
               "kind": "external",
               "required": true,
               "authority": "independent",
-              "tuple": { "host": "cursor", "family": "openai", "model": "gpt-5.6-sol", "effort": "high" }
+              "tuple": { "host": "codex", "family": "openai", "model": "gpt-5.6-sol", "effort": "high" }
             },
             {
               "id": "agy-gemini-3.7-high",

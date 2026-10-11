@@ -700,7 +700,7 @@ function nextTask(graph, tasksById) {
 const [command, fileArg, ...rest] = process.argv.slice(2);
 if (!command || !fileArg) {
   die(
-  "Usage: node scripts/task-graph.mjs <init|generate|validate|next|summary|graph-status|set-status|load-skill|activate-skill|record-process|record-phase|backfill-receipts|bind-delivery-cycle|record-delivery-event> <path> [...]"
+  "Usage: node scripts/task-graph.mjs <init|generate|validate|next|checkpoint|summary|graph-status|set-status|load-skill|activate-skill|record-process|record-phase|backfill-receipts|bind-delivery-cycle|record-delivery-event> <path> [...]"
   );
 }
 
@@ -992,6 +992,24 @@ if (command === "validate") {
       2
     )
   );
+  process.exit(0);
+}
+
+// Recovery point after a completed stage (55 skills call this before a likely compaction).
+// Writes .svc/.checkpoint-<WI>.checkpoint.json beside the graph with the next runnable task;
+// on resume the graph stays the authority and a disagreeing checkpoint is rewritten.
+if (command === "checkpoint") {
+  let next = null;
+  try { next = nextTask(graph, tasksById); } catch { next = null; }
+  const cpPath = path.join(path.dirname(filePath), path.basename(filePath).replace(/^lane-tasks-/, ".checkpoint-").replace(/\.json$/, ".checkpoint.json"));
+  const checkpoint = {
+    wi: graph.wi || null, lane: graph.lane || null, graph: path.basename(filePath), at: new Date().toISOString(),
+    next_task: next ? { id: next.id, skill: next.skill || next.metadata?.skill || null, subject: next.subject || "", status: next.status } : null,
+    completed: (graph.tasks || []).filter((task) => task.status === "completed").map((task) => task.id),
+  };
+  const tmp = `${cpPath}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(checkpoint, null, 2)}\n`); fs.renameSync(tmp, cpPath);
+  console.log(JSON.stringify({ status: "checkpointed", file: cpPath, next_task: checkpoint.next_task }, null, 2));
   process.exit(0);
 }
 

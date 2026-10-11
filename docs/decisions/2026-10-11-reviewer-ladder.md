@@ -1,6 +1,6 @@
 # Reviewer ladder: review that always runs, labelled for what it is
 
-Status: proposed 2026-10-11, for adversarial review before any gate code changes.
+Status: revised 2026-10-11 after adversarial review (below). The first draft is kept above the review for the record; the **Revised decision** at the end is what gets built.
 Context: a framework-arm eval in a fresh project found that no adversarial review could run. `run-external-review.mjs --policy-status` returned `config_invalid` (no `~/.svc/dispatch-policy.json`), there is no availability probe, and the receipt gates accept only a different-family independent reviewer. A user with one model family (Claude only, the common case) can therefore never produce a passing chain, and with no chain policy the framework fails closed to `refuse`.
 
 ## Problem, measured
@@ -69,3 +69,28 @@ Rung-1 cross-family review and its gates; owner configs; the reviewer allowlist;
 1. Probe and synthesized default policy, with tests (no gate change yet): reviews now run and are labelled.
 2. Gate acceptance for rungs 2 and 3, with every threat-model row as a failing-first tier-1 test.
 3. A fresh-project Haiku run confirms route-workflow reaches a labelled review receipt with no owner config.
+
+## Adversarial review (2026-10-11)
+Reviewer: a fresh-context Opus agent, read-only, against the code named above. Verdict: accept the ladder with changes; reject the slot section as written. Accepted findings, each with its disposition:
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | `delivery_profile` and the graph are agent-writable, so a profile-gated rule can be bypassed by declaring `mvp` | Gates stop trusting the profile at all (see revised decision) |
+| 2 | Zones come from planner-declared files; the path regex misses oauth, jwt, rbac, prisma, release workflows | Same: no zone-based relief; zones can only add review |
+| 3 | A probe file is forgeable and stale; Cursor is family `multi` | No probe file as evidence: the launcher attempts the other family and its signed failure receipt is the proof |
+| 4 | "Stronger model" does not order cleanly; alias tuples fail `model_mismatch`; the executor tuple is declared, not observed | One rung only: the family's pinned top model, effort ≥ high, `server_observed` attestation |
+| 5 | No Bash would weaken the reviewer (it must prove findings) | Keep `--tools Read,Grep,Glob,Bash --permission-mode plan`; add the tree-unchanged check the codex host already has |
+| 6 | Contradicts review-cross-model's single-vendor doctrine (drain queue) | Keep the drain queue: same-family reviews never authorise promotion |
+| 7 | Same-family runs have no round cap, so verdicts can be shopped | Own signed cap of 2 per WI and kind |
+| 8 | Receipt schema, launcher version and cache-key changes were missing | Listed in the build steps below |
+| 9 | The five slot layers duplicate resolve-dispatch's overlays and are agent-writable above the owner | Slot section withdrawn; reuse existing layers; only fix the missing-file crash |
+| 10 | The Agent tool takes aliases only and gives no attestation | Agent-dispatched work is never reviewer evidence; ladder reviews run only through the launcher |
+| 11 | Lenses carry no provenance | Lenses stay advisory; one attested launcher pass is the review |
+| 12 | Anthropic-only; plan-reviewer is referenced by sync scripts | Generic over the family's top model; drop Bash in plan-reviewer source only |
+
+## Revised decision (what gets built)
+1. **No owner file is not an error.** `resolve-dispatch.mjs` falls back to the registry defaults when `~/.svc/dispatch-policy.json` is absent; a present but malformed owner file still fails closed. Owner deny/allow apply after every layer. Per-work-item model decisions use the existing work overlay; per-run overrides use the existing receipt-gated session override. No new layers.
+2. **Review always runs.** The launcher tries the configured or available different-family reviewer first. If that attempt ends in a signed, classified unavailability (no station that can be independent, missing binary, authentication, entitlement, quota), it runs the same family's pinned top model at effort ≥ high through its `claude -p`-style transport, in plan mode, with the tree checked unchanged afterwards and the served model attested.
+3. **Labelled for what it is.** That receipt carries `review_route: same-family`, never `independent: true`. Same-family runs have their own cap of 2 per work item and kind.
+4. **What it authorises.** A same-family review satisfies the chain's review steps so work proceeds. It never authorises promotion (land-changeset, verify-promotion, production): those still need a cross-family review covering the range, or the owner's explicit `same_family_release: accept` in the owner-protected policy, recorded in the receipt. Same-family-reviewed ranges are queued for a cross-family pass when one becomes available.
+5. **Tests first**, one per review finding above, before any gate change.

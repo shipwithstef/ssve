@@ -32,7 +32,7 @@ fi
 
 FORMAT_ARG=""
 if [ -n "$FORMAT" ]; then
-  FORMAT_ARG="--format $FORMAT"
+  FORMAT_ARG="--format ${FORMAT#--}"
 fi
 
 # shellcheck disable=SC2086

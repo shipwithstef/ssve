@@ -25,7 +25,7 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--wi") o.wi = argv[++i];
-    else if (a === "--class") o.cls = argv[++i];
+    else if (a === "--class" || a === "--task") o.cls = argv[++i]; // --task: the name craft-prompt documents
     else if (a === "--size") o.size = argv[++i];
     else if (a === "--files") o.files = Number(argv[++i]);
     else if (a === "--root") o.root = argv[++i];
