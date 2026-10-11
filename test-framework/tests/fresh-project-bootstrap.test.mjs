@@ -8,6 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { selectPlanAuthorityBytes } from "../../scripts/emit-receipt.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const script = (name) => path.join(ROOT, "scripts", name);
@@ -280,4 +281,38 @@ test("R4. bootstrap honors owner commit hooks and reports a refusal instead of b
   assert.match(w.stderr, /owner hook says no/);
   fs.writeFileSync(hook, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
   assert.equal(JSON.parse(out(node(dir, "svc-bootstrap-repo.mjs", "--json"))).created_root_commit, true, "a passing hook lets bootstrap commit");
+});
+
+// ---- Round 3 regression ----
+
+test("R5. binding keeps the seal-bound plan bytes exactly; it never swaps in the re-serialised staged file", () => {
+  const original = Buffer.from('{"wi":"WI-5","receipt_type":"plan-manifest","schema_version":5,"x":[1,2]}');
+  const body = JSON.parse(original.toString("utf8"));
+  const reformatted = JSON.stringify(body, null, 2); // what the staging mirror contains
+  const kept = selectPlanAuthorityBytes({ bindStaged: true, loadedBytes: original, raw: reformatted, body });
+  assert.ok(Buffer.compare(kept, original) === 0, "the original authority bytes are retained byte for byte");
+  assert.notEqual(kept.toString("utf8"), reformatted);
+  // Direct emission is unchanged: the caller's bytes are the authority.
+  assert.equal(selectPlanAuthorityBytes({ bindStaged: false, loadedBytes: original, raw: reformatted, body }).toString("utf8"), reformatted);
+  // A staged body that is not the sealed document is refused.
+  assert.throws(() => selectPlanAuthorityBytes({ bindStaged: true, loadedBytes: original, raw: reformatted, body: { ...body, x: [9] } }), /differs from the seal-bound/);
+  assert.throws(() => selectPlanAuthorityBytes({ bindStaged: true, loadedBytes: undefined, raw: reformatted, body }), /unavailable/);
+});
+
+test("R5b. bind refuses staged plan and control-plan receipts whose authority cannot be recovered, and writes no note", () => {
+  const dir = freshProject();
+  assert.equal(node(dir, "init-project-state.mjs").status, 0);
+  const head = sha(dir, "HEAD");
+  const tree = out(git(dir, "rev-parse", "HEAD^{tree}"));
+  const staging = path.join(dir, ".svc", "receipts", "staging", tree);
+  fs.mkdirSync(staging, { recursive: true });
+  fs.writeFileSync(path.join(staging, "plan-manifest--WI-5.json"), JSON.stringify({ receipt_type: "plan-manifest", schema_version: 5, wi: "WI-5", mode: "inline" }, null, 2));
+  fs.writeFileSync(path.join(staging, "control-plan--WI-5.json"), JSON.stringify({ receipt_type: "control-plan", schema_version: 1, wi: "WI-5" }, null, 2));
+  const bound = node(dir, "emit-receipt.mjs", "--bind-staging", "--sha", head);
+  assert.equal(bound.status, 1, bound.stdout);
+  const report = JSON.parse(bound.stdout);
+  assert.equal(report.bound.length, 0);
+  assert.equal(report.refused.length, 2);
+  assert.match(report.refused.find((r) => r.type === "control-plan").reason, /cannot be recovered from staging/);
+  assert.equal(git(dir, "notes", "--ref=svc-receipts", "show", head).status === 0, false, "no note was written");
 });

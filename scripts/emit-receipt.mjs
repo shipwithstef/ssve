@@ -37,6 +37,7 @@ import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { writeJsonAtomic } from "./state-io.mjs";
 import { acquireLock } from "./state-lock.mjs";
 import { familyOf } from "./lib/cognitive-family.mjs";   // WI-385 mechanical cross-family resolution
@@ -404,6 +405,18 @@ export function writeReceiptMirror({ type, wi, body, phase = null, targetShaOver
 }
 
 
+// The seal-bound plan authority is the exact original bytes held in the content-addressed store. A
+// direct emission supplies those bytes itself (`raw`). A staged file is a re-serialised mirror, so
+// binding keeps the CAS bytes untouched and only checks that the staged body is the same document.
+export function selectPlanAuthorityBytes({ bindStaged, loadedBytes, raw, body }) {
+  if (!bindStaged) return Buffer.from(raw);
+  if (!Buffer.isBuffer(loadedBytes) && !(loadedBytes instanceof Uint8Array)) throw new Error("plan authority bytes are unavailable for binding");
+  let parsed;
+  try { parsed = JSON.parse(Buffer.from(loadedBytes).toString("utf8")); } catch { throw new Error("plan authority bytes are not valid JSON"); }
+  if (!isDeepStrictEqual(parsed, body)) throw new Error("staged plan body differs from the seal-bound authority bytes");
+  return Buffer.from(loadedBytes);
+}
+
 class EmitError extends Error { constructor(message, code = 2) { super(message); this.code = code; } }
 function emitFail(message, code = 2) { throw new EmitError(message, code); }
 
@@ -411,7 +424,7 @@ function emitFail(message, code = 2) { throw new EmitError(message, code); }
 // bound receipt gets exactly the producer safeguards a direct emission gets: identity defaults, review
 // schema v3 + reviewer evidence, cross-family derivation, schema validation, tree binding, supersession
 // and the note writer. `idempotent` makes an already-present identical note a no-op (re-bind).
-function emitReceipt({ args, raw, explicitTargetSha, idempotent = false }) {
+function emitReceipt({ args, raw, explicitTargetSha, idempotent = false, bindStaged = false }) {
   let body;
   try { body = JSON.parse(raw); }
   catch (e) { emitFail(`body is not valid JSON: ${e.message}`, 1); }
@@ -426,8 +439,14 @@ function emitReceipt({ args, raw, explicitTargetSha, idempotent = false }) {
   }
   if (immutablePlan && (body.wi!==args.wi || body.receipt_type!==args.type)) emitFail("immutable planning receipt identity mismatch");
   const authority = immutablePlan ? {planBytes:Buffer.from(raw),manifestPath:args.manifest,sealRef:args.sealRef} : {};
+  if (bindStaged && args.type === "control-plan") {
+    emitFail("control-plan authority bytes cannot be recovered from staging; re-emit it with --sha and the original body");
+  }
   if (args.type === "plan-manifest" && [4,5].includes(body.schema_version) && !authority.manifestPath) {
-    try { Object.assign(authority,loadPlanAuthority({consumerRoot:process.cwd(),body}),{planBytes:Buffer.from(raw)}); } catch(error) { emitFail(error.message); }
+    try {
+      const loaded = loadPlanAuthority({consumerRoot:process.cwd(),body});
+      Object.assign(authority, loaded, { planBytes: selectPlanAuthorityBytes({ bindStaged, loadedBytes: loaded.planBytes, raw, body }) });
+    } catch(error) { emitFail(error.message); }
   }
 
   // Every review receipt produced after the WI-541 contract is v3. Historical
@@ -564,7 +583,7 @@ function bindStaging(shaArg) {
     if (!staged || typeof staged.receipt_type !== "string" || typeof staged.wi !== "string") { refused.push({ file: name, reason: "unreadable staged receipt" }); continue; }
     const phase = typeof staged.phase === "string" && staged.phase ? staged.phase : null;
     try {
-      const done = emitReceipt({ args: { type: staged.receipt_type, wi: staged.wi, phase, noNote: false, manifest: undefined, sealRef: undefined }, raw, explicitTargetSha: sha, idempotent: true });
+      const done = emitReceipt({ args: { type: staged.receipt_type, wi: staged.wi, phase, noNote: false, manifest: undefined, sealRef: undefined }, raw, explicitTargetSha: sha, idempotent: true, bindStaged: true });
       bound.push({ file: name, type: staged.receipt_type, wi: staged.wi, slot_key: done.note_slot_key, already_bound: Boolean(done.already_bound) });
     } catch (error) {
       if (!(error instanceof EmitError)) throw error;
