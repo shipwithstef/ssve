@@ -1176,7 +1176,7 @@
     {
       "skill": "manage-learnings",
       "path": "skills/manage-learnings/SKILL.md",
-      "content_hash": "e61c6034a264c55fb37a817d67e3833d3f2f3a4fcf0b6db801de7e834a9dbc82",
+      "content_hash": "01a35320c5948c414ad1c5c402b37aa6a6a4ea88cd90a41eb4310e87517eae21",
       "description": "Review, search, prune, promote and export learnings captured across sessions. Use when: what did we learn, show learnings, search learnings for <topic>, prune stale learnings, promote auto-captured learnings.",
       "aliases": [],
       "positive_triggers": [],
