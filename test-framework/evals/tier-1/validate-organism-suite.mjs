@@ -15,6 +15,13 @@ const files = fs.readdirSync(DIR)
   .filter((f) => fs.readFileSync(path.join(DIR, f), "utf8").includes("@organism-suite"))
   .sort();
 
+// Node reports a file with no tests as one passing test, so a marked file must declare at
+// least one test itself.
+const empty = files.filter((f) => !/\b(?:test|it|describe|suite)(?:\.\w+)?\s*\(/.test(fs.readFileSync(path.join(DIR, f), "utf8")));
+if (empty.length) {
+  console.error(`FAIL validate-organism-suite: marked file(s) declare no tests: ${empty.join(", ")}`);
+  process.exit(1);
+}
 if (!files.length) {
   console.log("PASS validate-organism-suite: no marked test files yet");
   process.exit(0);
