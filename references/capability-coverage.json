@@ -1813,7 +1813,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-blind-floor.sh",
-        "test-framework/evals/tier-1/validate-prompt-floor.sh"
+        "test-framework/evals/tier-1/validate-prompt-floor.sh",
+        "test-framework/tests/craft-prompt-orchestrator-family.test.mjs"
       ]
     },
     {
@@ -2225,7 +2226,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
-        "test-framework/evals/tier-1/validate-harness-intel.mjs"
+        "test-framework/evals/tier-1/validate-harness-intel.mjs",
+        "test-framework/tests/harness-playbook-review-sandbox.test.mjs"
       ]
     },
     {
