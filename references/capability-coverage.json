@@ -1813,7 +1813,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-blind-floor.sh",
-        "test-framework/evals/tier-1/validate-prompt-floor.sh"
+        "test-framework/evals/tier-1/validate-prompt-floor.sh",
+        "test-framework/tests/craft-prompt-orchestrator-family.test.mjs"
       ]
     },
     {
@@ -1999,6 +2000,16 @@
         "test-framework/evals/tier-1/validate-delivery-graph-closeout-classification.sh",
         "test-framework/evals/tier-1/validate-delivery-graph-replay-autorun.sh",
         "test-framework/evals/tier-1/validate-delivery-tier.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/cockpit-serve.mjs",
+      "kind": "engine",
+      "source": "scripts/cockpit-serve.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cockpit-live.mjs",
+        "test-framework/tests/cockpit-token.test.mjs"
       ]
     },
     {
@@ -2215,7 +2226,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
-        "test-framework/evals/tier-1/validate-harness-intel.mjs"
+        "test-framework/evals/tier-1/validate-harness-intel.mjs",
+        "test-framework/tests/harness-playbook-review-sandbox.test.mjs"
       ]
     },
     {
@@ -2402,7 +2414,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
-        "test-framework/evals/tier-1/validate-planning-signals.mjs"
+        "test-framework/evals/tier-1/validate-planning-signals.mjs",
+        "test-framework/tests/overengineering-index.test.mjs"
       ]
     },
     {
@@ -2452,7 +2465,8 @@
       "source": "scripts/probe-loop.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-probe-loop.mjs"
+        "test-framework/evals/tier-1/validate-probe-loop.mjs",
+        "test-framework/tests/probe-loop-containment.test.mjs"
       ]
     },
     {
@@ -2751,7 +2765,8 @@
       "source": "scripts/skill-ab-eval.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-skill-ab-eval.mjs"
+        "test-framework/evals/tier-1/validate-skill-ab-eval.mjs",
+        "test-framework/tests/skill-ab-eval.test.mjs"
       ]
     },
     {
@@ -3983,8 +3998,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-cockpit-live.mjs",
-        "scripts/orch/orch.test.mjs",
-        "scripts/orch/owner-view.test.mjs"
+        "test-framework/tests/cockpit-token.test.mjs",
+        "scripts/orch/orch.test.mjs"
       ]
     },
     {

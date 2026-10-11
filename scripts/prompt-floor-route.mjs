@@ -13,11 +13,14 @@
  *   - size is M or larger:   M | L | XL
  * SKIP otherwise (quick-fix/trivial, WI-360 exempt class, not opted-in, kill-switch present).
  *
- * Usage: node scripts/prompt-floor-route.mjs --wi WI-XXX --class <infra|product|docs> --size <XS|S|M|L|XL> [--files N] [--root .]
- * Output: { "run": bool, "reason": "..." }  (exit 0 always; routing is advisory)
+ * Usage: node scripts/prompt-floor-route.mjs --wi WI-XXX --class <infra|product|docs> --size <XS|S|M|L|XL> [--files N] [--root .] --orchestrator-family <host-family>
+ * Output: { "run": bool, "reason": "...", "orchestrator_family": "..." }
+ * --orchestrator-family is REQUIRED (the family of the host authoring the work, from its own
+ * identity; never defaulted). Missing/unrecognised -> exit 2. Otherwise exit 0; routing is advisory.
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { requireOrchestratorFamily } from "./lib/cognitive-family.mjs";
 import { realpathSync as __svcRealpath } from "node:fs";
 import { fileURLToPath as __svcToPath } from "node:url";
 // Real paths on both sides, so the entry runs through install symlinks; built-ins only,
@@ -33,6 +36,7 @@ function parseArgs(argv) {
     else if (a === "--size") o.size = argv[++i];
     else if (a === "--files") o.files = Number(argv[++i]);
     else if (a === "--root") o.root = argv[++i];
+    else if (a === "--orchestrator-family") o.orchestratorFamily = argv[++i];
   }
   return o;
 }
@@ -52,13 +56,18 @@ export function decide({ cls, size, files, optedIn, killSwitch }) {
 
 function main() {
   const a = parseArgs(process.argv.slice(2));
+  let orchestratorFamily;
+  try { orchestratorFamily = requireOrchestratorFamily(a.orchestratorFamily); } catch (e) {
+    process.stderr.write(`prompt-floor-route: ${e.message}\n`);
+    process.exit(2);
+  }
   let optedIn = false;
   const policyPath = join(a.root, ".svc", "chain-policy.json");
   if (existsSync(policyPath)) {
     try { optedIn = JSON.parse(readFileSync(policyPath, "utf8")).prompt_craft === "measured"; } catch { optedIn = false; }
   }
   const killSwitch = existsSync(join(a.root, ".svc", "prompt-craft.off"));
-  const result = decide({ cls: a.cls, size: a.size, files: a.files, optedIn, killSwitch });
+  const result = { ...decide({ cls: a.cls, size: a.size, files: a.files, optedIn, killSwitch }), orchestrator_family: orchestratorFamily };
   process.stdout.write(JSON.stringify(result, null, 2) + "\n");
 }
 

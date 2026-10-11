@@ -14,15 +14,17 @@
  *
  * Anti-self-grade (AC3): this script NEVER writes certified_strict_improvement. It only
  * READS certifications from the judge verdicts file, and a certification whose
- * reviewer_family === the orchestrator family (default "anthropic") is INVALID (forged
- * self-cert) and does not count.
+ * reviewer_family === the orchestrator (author) family is INVALID (self-cert) and does not
+ * count. A reviewer family that cannot be derived is not provably independent and does not
+ * count either. The orchestrator family is REQUIRED (--orchestrator-family, passed from the
+ * host's own identity); it is never defaulted.
  *
  * Purity (AC4): same {B, F, verdicts} inputs → identical ledger JSON + identical exit code.
  * No Date.now / Math.random / new Date in the compute path (run-twice-golden).
  *
  * Usage:
  *   node scripts/blind-floor-check.mjs --blind B.json --merged F.json [--verdicts V.json]
- *        [--adopt-blind] [--orchestrator-family anthropic]
+ *        [--adopt-blind] --orchestrator-family <claude|codex|gemini|grok|anthropic|openai|google|xai>
  *
  * Plan file shape (B.json / F.json):  { "elements": [ { "key": "<structural-key>", "content": "<text>" }, ... ] }
  *   key examples: "file:scripts/x.mjs", "task:T2", "ac:AC1->task:T2", "validation:run-twice", "rollback:delete-new-files"
@@ -34,6 +36,7 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { familyOf, requireOrchestratorFamily } from "./lib/cognitive-family.mjs";
 import { realpathSync as __svcRealpath } from "node:fs";
 import { fileURLToPath as __svcToPath } from "node:url";
 // Real paths on both sides, so the entry runs through install symlinks; built-ins only,
@@ -49,7 +52,7 @@ function bindingSha(kind, bContent, fContent) {
 }
 
 function parseArgs(argv) {
-  const out = { orchestratorFamily: "anthropic", adoptBlind: false };
+  const out = { orchestratorFamily: undefined, adoptBlind: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--blind") out.blind = argv[++i];
@@ -96,7 +99,8 @@ function elementMap(plan, label) {
 export function classify(B, F, verdicts, orchestratorFamily, adoptBlind) {
   const bKeys = [...B.keys()].sort();
   const ledger = { kept: [], added: [], refined: [], removed: [], altered: [] };
-  const orch = orchestratorFamily.toLowerCase();
+  const orch = requireOrchestratorFamily(orchestratorFamily);
+  const sameFamilyRejected = new Set();
 
   const certByKey = new Map();
   const certs = (verdicts && Array.isArray(verdicts.certifications)) ? verdicts.certifications : [];
@@ -112,9 +116,10 @@ export function classify(B, F, verdicts, orchestratorFamily, adoptBlind) {
   //      issued for a different B/F pair no longer matches and is rejected)
   function valid(c, binding) {
     if (!c) return false;
-    const fam = (c.reviewer_family || "").toLowerCase();
-    return c.certified_strict_improvement === true
-      && fam && fam !== orch
+    if (c.certified_strict_improvement !== true) return false;
+    const fam = familyOf(c.reviewer_family);
+    if (fam === orch) { sameFamilyRejected.add(c.key); return false; }
+    return fam !== "unknown"
       && typeof c.for_content_sha === "string"
       && c.for_content_sha === binding;
   }
@@ -156,11 +161,12 @@ export function classify(B, F, verdicts, orchestratorFamily, adoptBlind) {
   } else {
     floor_verdict = "fail";
   }
-  return { floor_verdict, element_ledger: ledger, violations };
+  return { floor_verdict, element_ledger: ledger, violations, same_family_rejected: [...sameFamilyRejected].sort() };
 }
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
+  try { requireOrchestratorFamily(args.orchestratorFamily); } catch (e) { fail(e.message); }
   const B = elementMap(readJson(args.blind, "blind"), "blind");
   const F = elementMap(readJson(args.merged, "merged"), "merged");
   const verdicts = args.verdicts ? readJson(args.verdicts, "verdicts") : null;
@@ -174,6 +180,7 @@ function main() {
     floor_verdict: result.floor_verdict,
     element_ledger: result.element_ledger,
     violations: result.violations,
+    same_family_rejected: result.same_family_rejected,
   }, null, 2) + "\n");
 
   // Fail-closed: any uncertified REMOVE/ALTER → non-zero (unless retention escape hatch).
