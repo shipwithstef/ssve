@@ -41,6 +41,15 @@ const HAS_AC = new RegExp(AC_ID.source, "i");
 const normAc = (id) => id.toUpperCase().replace(/[-_ ]/, "-");
 const DEP = /\b(add(?:s|ing)? (?:a |the )?(?:new )?(?:dependency|dependencies|package|library)|npm (?:i|install) |pip install |go get |cargo add )/i;
 
+// A negated clause ("do not add a cache", "no queue needed", "without microservices") rejects
+// the thing it names, so it must not be scored as proposing it. A clause runs from the negator
+// to the next sentence/field boundary or a contrasting ", but" / "; ".
+const NEGATOR = String.raw`\b(?:(?:do|does|did|will|would|should|must|can|could|is|are|was|were|has|have)(?:\s+not|n['’]t)|cannot|not|no|never|without|avoid(?:s|ed|ing)?)\b|\b(?:don|doesn|didn|won|shouldn|mustn|can|isn|aren)['’]t\b`;
+const NEGATED_CLAUSE = new RegExp(`(?:${NEGATOR})[^.;:!?\\n"{}\\[\\]]*?(?=,\\s*(?:but|however|yet|instead|then)\\b|\\s+(?:but|however|instead)\\b|[.;:!?\\n"{}\\[\\]]|$)`, "gi");
+// Trailing form: "a registry is not needed" rejects everything before it in its clause.
+const NOT_NEEDED = /[^.;:!?\n"{}[\]]*?\b(?:is|are|was|were)(?:\s+not|n['’]t)\s+(?:needed|required|necessary|wanted)\b/gi;
+export const stripNegated = (text) => String(text).replace(NOT_NEEDED, " ").replace(NEGATED_CLAUSE, " ");
+
 export function loadPlan(file) {
   const text = fs.readFileSync(file, "utf8");
   if (/^\s*\{/.test(text)) return JSON.parse(text);
@@ -92,7 +101,7 @@ export function score(plan, chain = null) {
   } else notes.push(items.length ? "task_graph items cite no AC ids: unanchored not measured" : "no changeset_blueprints or task_graph: unanchored not measured");
 
   // speculative generality across the plan's own prose.
-  const prose = [items.map((i) => i.text).join(" "), str(plan.decision_trace), str(plan.scope)].join(" ");
+  const prose = stripNegated([items.map((i) => i.text).join(" "), str(plan.decision_trace), str(plan.scope)].join(" "));
   const hits = [...new Set([...prose.matchAll(SPECULATIVE)].map((m) => m[0].toLowerCase()))];
   components.speculative = { weight: 25, share: Math.min(1, hits.length / (2 + acs.size)), items: hits,
     fix: "build the concrete case the AC needs; generalise when a second real case exists" };
@@ -106,7 +115,7 @@ export function score(plan, chain = null) {
   } else notes.push("no file actions: surface not measured");
 
   // deps: new dependencies named in work items or dependencies[].
-  const depItems = items.filter((i) => DEP.test(i.text)).map((i) => i.id);
+  const depItems = items.filter((i) => DEP.test(stripNegated(i.text))).map((i) => i.id);
   components.deps = { weight: 10, share: Math.min(1, depItems.length * 0.5), items: depItems,
     fix: "use what the repo already depends on unless an AC needs the new one" };
 
