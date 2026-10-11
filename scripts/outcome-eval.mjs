@@ -579,7 +579,11 @@ export function pinDispatchPolicy(policy, model) {
     if (Array.isArray(v)) return v.map(walk);
     if (v && typeof v === "object") {
       const o = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]));
-      if (typeof o.model === "string" && o.model !== "web_search" && ("host" in o || "family" in o)) { o.model = model; if ("host" in o) o.host = "claude"; if ("family" in o) o.family = "anthropic"; }
+      // Same-family slots run the arm's model. Cross-family roles (Codex reviewers and
+      // two-box planners) keep the framework's own tuple: adversarial review is part of the
+      // framework arm and reaches the real Codex through the orchestrator relay.
+      const crossFamily = (typeof o.host === "string" && o.host !== "claude") || (typeof o.family === "string" && o.family !== "anthropic");
+      if (typeof o.model === "string" && o.model !== "web_search" && ("host" in o || "family" in o) && !crossFamily) { o.model = model; if ("host" in o) o.host = "claude"; if ("family" in o) o.family = "anthropic"; }
       return o;
     }
     return v;
