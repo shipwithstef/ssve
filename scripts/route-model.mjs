@@ -83,7 +83,13 @@ export function readOutcomes(files) {
       rows.push(row);
     }
   }
-  return rows;
+  // stage-close corrections append a new line and name the replaced id in
+  // `supersedes`. The replaced line stays in the file; it no longer counts.
+  const superseded = new Set();
+  for (const row of rows) {
+    if (typeof row.supersedes === "string" && row.supersedes) superseded.add(row.supersedes);
+  }
+  return superseded.size === 0 ? rows : rows.filter((row) => !(row.id && superseded.has(row.id)));
 }
 
 // Counts per arm, only for the model id currently behind each alias (legacy rows without model_id count).
