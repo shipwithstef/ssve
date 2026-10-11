@@ -60,7 +60,8 @@ async function run(step) {
   if (op === "http") {
     const url = (vars.base || "") + (step.path || "/");
     const res = await fetch(url, { method: step.method || "GET", body: step.body, headers: step.headers, signal: AbortSignal.timeout(5000) });
-    const text = await res.text();
+    // At most one megabyte is read, whatever the build streams.
+    let text = ""; { const reader = res.body?.getReader(); let n = 0; const parts = []; while (reader) { const { done, value } = await reader.read(); if (done) break; parts.push(value); n += value.length; if (n > 1_000_000) { await reader.cancel().catch(() => {}); break; } } text = Buffer.concat(parts).toString("utf8"); }
     let json; try { json = JSON.parse(text); } catch {}
     const r = { status: res.status, text, json };
     if (step.save) vars[step.save] = r;

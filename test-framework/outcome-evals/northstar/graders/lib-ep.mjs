@@ -15,7 +15,7 @@ export const TASKS = path.resolve(NORTHSTAR, "..", "tasks");
 export const REPO_ROOT = path.resolve(NORTHSTAR, "..", "..", "..");
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-export const check = (name, pass, detail = "") => ({ name, pass: Boolean(pass), detail: String(detail ?? "").replace(/\s+/g, " ").slice(0, 400) });
+export const check = (name, pass, detail = "", extra = {}) => ({ name, pass: Boolean(pass), detail: String(detail ?? "").replace(/\s+/g, " ").slice(0, 400), ...extra });
 
 // score = passed checks / total checks; no checks means no evidence, which scores 0.
 export function scoreChecks(checks) {
@@ -42,6 +42,98 @@ export function validateSpec(spec, label = "spec") {
 }
 
 // ---------------------------------------------------------------------------------------
+// Containment. Everything the artifact makes us run (install, start, test, mutation, library
+// cases) runs with a private temporary HOME and npm cache and a minimal environment (no host
+// credentials), and under bubblewrap when it exists: the whole filesystem read-only except
+// the work directory and that private home, the task folders (answers) masked.
+
+const jails = new Map(); // work dir -> private home
+const liveGroups = new Set();
+const TOOLING_ENV = ["PATH", "LANG", "LC_ALL", "TERM"];
+
+export function bwrapAvailable() {
+  return process.env.OE_NO_BUILDER_SANDBOX !== "1" && spawnSync("sh", ["-c", "command -v bwrap"]).status === 0;
+}
+
+export function jailHome(workDir) {
+  const key = path.resolve(workDir);
+  if (!jails.has(key)) {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "ns-home-"));
+    fs.mkdirSync(path.join(home, "tmp"), { recursive: true });
+    jails.set(key, home);
+  }
+  return jails.get(key);
+}
+export function releaseJail(workDir) {
+  const key = path.resolve(workDir);
+  const home = jails.get(key);
+  if (home) { fs.rmSync(home, { recursive: true, force: true }); jails.delete(key); }
+}
+
+// The command line and environment for running argv inside the jail of workDir.
+export function containedCommand(workDir, argv, { env = {}, rw = [] } = {}) {
+  const home = jailHome(workDir);
+  const work = path.resolve(workDir);
+  const base = Object.fromEntries(TOOLING_ENV.filter((k) => process.env[k] !== undefined).map((k) => [k, process.env[k]]));
+  const full = { ...base, HOME: home, npm_config_cache: path.join(home, ".npm"), XDG_CACHE_HOME: path.join(home, ".cache"), TMPDIR: bwrapAvailable() ? "/tmp" : path.join(home, "tmp"), CI: "1", ...env };
+  if (!bwrapAvailable()) return { bin: argv[0], args: argv.slice(1), env: full, sandbox: null };
+  const mask = fs.existsSync(TASKS) && !work.startsWith(TASKS) ? ["--tmpfs", TASKS] : [];
+  const binds = [work, home, ...rw].flatMap((d) => ["--bind", d, d]);
+  return { bin: "bwrap", args: ["--ro-bind", "/", "/", "--tmpfs", "/tmp", ...binds, ...mask, "--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent", "--chdir", work, "--", ...argv], env: full, sandbox: "bwrap" };
+}
+
+export function runContainedSync(workDir, argv, { cwd = workDir, env = {}, timeoutMs = 120000, rw = [] } = {}) {
+  const c = containedCommand(workDir, argv, { env, rw });
+  const r = spawnSync(c.bin, c.args, { cwd, encoding: "utf8", timeout: timeoutMs, env: c.env, maxBuffer: 8 * 1024 * 1024 });
+  return { status: r.status, stdout: r.stdout || "", stderr: r.stderr || "", timedOut: r.error?.code === "ETIMEDOUT", out: `${r.stdout || ""}\n${r.stderr || ""}` };
+}
+
+export function spawnContained(workDir, argv, { cwd = workDir, env = {}, rw = [] } = {}) {
+  const c = containedCommand(workDir, argv, { env, rw });
+  const child = spawn(c.bin, c.args, { cwd, env: c.env, stdio: ["ignore", "pipe", "pipe"], detached: true });
+  liveGroups.add(child.pid);
+  child.on("close", () => liveGroups.delete(child.pid));
+  child.on("error", () => {});
+  return child;
+}
+export const killGroup = (child, signal = "SIGKILL") => { try { process.kill(-child.pid, signal); } catch {} };
+
+// Runs a node script in the jail with a hard deadline: SIGTERM to its process group, then
+// SIGKILL two seconds later. Resolves { status, stdout, stderr, timedOut }.
+export function runNodeContained(workDir, script, args, { timeoutMs = 120000, env = {}, rw = [] } = {}) {
+  return new Promise((resolve) => {
+    const child = spawnContained(workDir, [process.execPath, script, ...args], { env, rw });
+    let stdout = "", stderr = "", timedOut = false;
+    child.stdout.on("data", (c) => { stdout = (stdout + c).slice(-200000); });
+    child.stderr.on("data", (c) => { stderr = (stderr + c).slice(-20000); });
+    const t1 = setTimeout(() => { timedOut = true; killGroup(child, "SIGTERM"); }, timeoutMs);
+    const t2 = setTimeout(() => killGroup(child), timeoutMs + 2000);
+    child.on("close", (status) => { clearTimeout(t1); clearTimeout(t2); killGroup(child); resolve({ status, stdout, stderr, timedOut }); });
+  });
+}
+
+process.on("exit", () => {
+  for (const pid of liveGroups) { try { process.kill(-pid, "SIGKILL"); } catch {} }
+  for (const home of jails.values()) { try { fs.rmSync(home, { recursive: true, force: true }); } catch {} }
+});
+
+// One request with a time limit and a cap on the bytes read; never throws.
+export async function boundedFetch(url, init = {}, { ms = 5000, bytes = 1_000_000 } = {}) {
+  try {
+    const res = await fetch(url, { ...init, signal: AbortSignal.timeout(ms) });
+    const reader = res.body?.getReader();
+    let total = 0; const parts = []; let truncated = false;
+    while (reader) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.length; parts.push(value);
+      if (total > bytes) { truncated = true; await reader.cancel().catch(() => {}); break; }
+    }
+    return { status: res.status, headers: res.headers, text: Buffer.concat(parts).toString("utf8"), truncated };
+  } catch (e) { return { status: 0, headers: new Headers(), text: "", truncated: false, error: String(e.message || e) }; }
+}
+
+// ---------------------------------------------------------------------------------------
 // Working copies
 
 // A copy of the build as the arm left it. Kept artifacts exclude node_modules, so a build
@@ -54,10 +146,10 @@ export function workCopy(dir, { deps = true, clean = false } = {}) {
   fs.cpSync(dir, work, { recursive: true, filter: (s) => !skip.test(s) && !/[\\/]__hidden[^\\/]*$/.test(s) });
   const notes = [];
   if (deps && !clean && hasDependencies(work) && !fs.existsSync(path.join(work, "node_modules"))) {
-    const r = spawnSync("npm", ["install", "--no-audit", "--no-fund"], { cwd: work, encoding: "utf8", timeout: 180000 });
-    if (r.status !== 0) notes.push(`npm install failed: ${`${r.stderr || r.stdout || ""}`.trim().slice(-160)}`);
+    const r = runContainedSync(work, ["npm", "install", "--ignore-scripts", "--no-audit", "--no-fund"], { timeoutMs: 180000 });
+    if (r.status !== 0) notes.push(`npm install failed: ${r.out.trim().slice(-160)}`);
   }
-  return { dir: work, notes, cleanup: () => fs.rmSync(work, { recursive: true, force: true }) };
+  return { dir: work, notes, cleanup: () => { releaseJail(work); fs.rmSync(work, { recursive: true, force: true }); } };
 }
 
 export function readPackage(dir) {
@@ -100,14 +192,13 @@ export async function waitReady(base, readyPath = "/", ms = 20000, child = null)
 // Starts `start` on a free PORT in dir; resolves { base, up, stop, log }.
 export async function startApp(dir, { start = "npm start", ready = "/", env = {}, waitMs = 20000 } = {}) {
   const port = await freePort();
-  const child = spawn("sh", ["-c", start], { cwd: dir, env: { ...process.env, PORT: String(port), ...env }, stdio: ["ignore", "pipe", "pipe"], detached: true });
+  const child = spawnContained(dir, ["sh", "-c", start], { env: { PORT: String(port), ...env } });
   let log = "";
   const grab = (c) => { log = (log + c).slice(-3000); };
   child.stdout.on("data", grab); child.stderr.on("data", grab);
-  child.on("error", () => {});
   const base = `http://127.0.0.1:${port}`;
   const up = await waitReady(base, ready, waitMs, child);
-  const stop = () => { try { process.kill(-child.pid, "SIGKILL"); } catch {} };
+  const stop = () => killGroup(child);
   return { base, port, up, stop, log: () => log, alive: () => child.exitCode === null };
 }
 
@@ -187,11 +278,13 @@ export function attachWatch(page, base) {
 
 // Same-origin pages reachable by links from "/" (breadth first) plus a few common entry
 // points, so forms behind a navigation step are found without knowing the product's routes.
-export async function discoverPages(browser, base, { max = 8, extra = [] } = {}) {
+// With `ctx` the pages are read in that browser context (a signed-in session stays signed in);
+// otherwise a fresh anonymous context is used.
+export async function discoverPages(browser, base, { max = 8, extra = [], ctx: given = null } = {}) {
   const origin = new URL(base).origin;
   const seen = new Set(["/"]);
   const order = ["/"];
-  const ctx = await browser.newContext();
+  const ctx = given || await browser.newContext();
   const page = await ctx.newPage();
   const watch = attachWatch(page, base);
   try {
@@ -207,23 +300,44 @@ export async function discoverPages(browser, base, { max = 8, extra = [] } = {})
     }
     for (const p of extra) {
       if (seen.has(p) || order.length >= max + extra.length) continue;
-      try { const r = await fetch(base + p, { signal: AbortSignal.timeout(3000) }); if (r.status === 200 && /html/.test(r.headers.get("content-type") || "")) { seen.add(p); order.push(p); } } catch {}
+      const r = await boundedFetch(base + p, {}, { ms: 3000, bytes: 100000 });
+      if (r.status === 200 && /html/.test(r.headers.get("content-type") || "")) { seen.add(p); order.push(p); }
     }
-  } finally { await ctx.close().catch(() => {}); }
+  } finally { await page.close().catch(() => {}); if (!given) await ctx.close().catch(() => {}); }
   return { pages: order, requests: watch.requests };
 }
 
-// Best-effort sign-in for products that need one: find a visible password field, fill the
-// other visible text-like fields with a fixed test identity and submit. Returns whether a
-// form was found and submitted; never throws.
-export async function loginAuto(page, base) {
+// Routes that answer 200 only to a signed-in user, tried in order when a spec names none.
+export const DEFAULT_AUTH_PATHS = ["/api/me", "/api/session", "/api/user", "/api/account", "/api/bookings", "/me", "/account", "/bookings", "/profile", "/dashboard"];
+const ANON_REFUSED = [401, 403, 301, 302, 303, 307, 308];
+
+// Signed in means a route that refuses an anonymous visitor answers 200 in this browser
+// context (same cookies). Nothing else counts: a form that was merely submitted proves nothing.
+export async function verifyAuth(ctx, base, paths = DEFAULT_AUTH_PATHS) {
+  for (const p of paths) {
+    try {
+      const authed = await ctx.request.get(base + p, { maxRedirects: 0, timeout: 4000 });
+      if (authed.status() !== 200) continue;
+      const anon = await boundedFetch(base + p, { redirect: "manual" }, { ms: 4000, bytes: 100000 });
+      if (ANON_REFUSED.includes(anon.status)) return { ok: true, path: p };
+    } catch {}
+  }
+  return { ok: false };
+}
+
+// Best-effort sign-in: a visible password field marks a form; the other visible fields get a
+// fixed test identity, the form is submitted, and the session is verified with verifyAuth.
+// Registration pages are tried after login pages, then login again with the same identity.
+// Returns { attempted, authenticated, via } and never throws.
+export async function loginAuto(ctx, page, base, { verify = DEFAULT_AUTH_PATHS } = {}) {
+  const result = { attempted: false, authenticated: false, via: null };
+  const order = ["/login", "/signin", "/sign-in", "/", "/register", "/signup", "/sign-up", "/login", "/signin"];
   try {
-    const candidates = ["/", "/login", "/signin", "/sign-in", "/register", "/signup", "/sign-up", "/account"];
-    for (const p of candidates) {
+    for (const p of order) {
       await page.goto(base + p, { waitUntil: "load", timeout: 6000 }).catch(() => {});
       if (!(await page.locator("input[type=password]:visible").count())) continue;
-      const fields = await page.$$("input:visible, textarea:visible");
-      for (const f of fields) {
+      result.attempted = true;
+      for (const f of await page.$$("input:visible, textarea:visible")) {
         const type = (await f.getAttribute("type")) || "text";
         const hint = `${await f.getAttribute("name")} ${await f.getAttribute("id")} ${await f.getAttribute("placeholder")} ${await f.getAttribute("autocomplete")}`.toLowerCase();
         if (type === "password") await f.fill("Passw0rd!test").catch(() => {});
@@ -235,10 +349,11 @@ export async function loginAuto(page, base) {
       if (await submit.count()) await submit.click({ timeout: 2000 }).catch(() => {}); else await page.keyboard.press("Enter");
       await page.waitForLoadState("load", { timeout: 4000 }).catch(() => {});
       await sleep(400);
-      return true;
+      const v = await verifyAuth(ctx, base, verify);
+      if (v.ok) return { attempted: true, authenticated: true, via: v.path };
     }
   } catch {}
-  return false;
+  return result;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -246,16 +361,15 @@ export async function loginAuto(page, base) {
 // that hangs or crashes costs one failed check, never the grader.
 
 export function runCase(workDir, kase, defaults = {}, timeoutMs = 20000) {
-  const file = path.join(os.tmpdir(), `ns-case-${process.pid}-${Math.random().toString(36).slice(2)}.json`);
+  const home = jailHome(workDir);
+  const file = path.join(home, `case-${Math.random().toString(36).slice(2)}.json`);
   fs.writeFileSync(file, JSON.stringify({ module: defaults.module, ...kase }));
   try {
-    const r = spawnSync(process.execPath, [path.join(HERE, "runner-ep.mjs"), file], {
-      cwd: workDir, encoding: "utf8", timeout: kase.timeout_ms || timeoutMs,
-      env: { ...process.env, ...(kase.env || {}), NODE_TEST_CONTEXT: "" },
-    });
-    if (r.error?.code === "ETIMEDOUT") return { ok: false, detail: `timed out after ${kase.timeout_ms || timeoutMs} ms` };
-    const line = `${r.stdout || ""}`.trim().split("\n").filter((l) => l.startsWith("{")).pop();
-    if (!line) return { ok: false, detail: `runner produced no result: ${`${r.stderr || ""}`.trim().slice(-200)}` };
+    const limit = kase.timeout_ms || timeoutMs;
+    const r = runContainedSync(workDir, [process.execPath, path.join(HERE, "runner-ep.mjs"), file], { env: { ...(kase.env || {}), NODE_TEST_CONTEXT: "" }, timeoutMs: limit });
+    if (r.timedOut) return { ok: false, detail: `timed out after ${limit} ms` };
+    const line = r.stdout.trim().split("\n").filter((l) => l.startsWith("{")).pop();
+    if (!line) return { ok: false, detail: `runner produced no result: ${r.stderr.trim().slice(-200)}` };
     return JSON.parse(line);
   } finally { fs.rmSync(file, { force: true }); }
 }
@@ -293,10 +407,8 @@ export function documentedCommand(readmeText, allowlist = []) {
 }
 
 export function runShell(cmd, cwd, timeoutMs = 120000, env = {}) {
-  const { NODE_TEST_CONTEXT, ...base } = process.env;
-  const r = spawnSync("sh", ["-c", cmd], { cwd, encoding: "utf8", timeout: timeoutMs, env: { ...base, CI: "1", ...env } });
-  const out = `${r.stdout || ""}\n${r.stderr || ""}`;
-  return { status: r.status, out, timedOut: r.error?.code === "ETIMEDOUT" };
+  const r = runContainedSync(cwd, ["sh", "-c", cmd], { timeoutMs, env });
+  return { status: r.status, out: r.out, timedOut: r.timedOut };
 }
 
 export function countPassed(out) {

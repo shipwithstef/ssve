@@ -3,6 +3,19 @@
  "task": "bugfix-rootcause",
  "checks": [
   {
+   "type": "readme",
+   "min_chars": 120,
+   "require": [
+    "test"
+   ],
+   "commands": {
+    "test": [
+     "node --test",
+     "npm test"
+    ]
+   }
+  },
+  {
    "type": "clean_run",
    "commands": {
     "install": [

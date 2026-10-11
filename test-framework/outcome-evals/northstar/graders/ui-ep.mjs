@@ -157,27 +157,33 @@ export async function a11yLite(page) {
   });
 }
 
-// Frame interval p95 over 90 animation frames, idle and then after a few clicks.
-export async function framesP95(page) {
-  const sample = () => page.evaluate(() => new Promise((done) => {
-    const t = []; let prev = performance.now();
-    const tick = (now) => { t.push(now - prev); prev = now; t.length < 90 ? requestAnimationFrame(tick) : done(t.slice(8)); };
-    requestAnimationFrame(tick);
-  }));
-  const s = (await sample()).sort((a, b) => a - b);
-  return +s[Math.floor(s.length * 0.95)].toFixed(1);
-}
+// Accessibility is always judged by this pinned DOM-rule subset, never by whichever tool
+// happens to be installed, so a score means the same thing on every machine. The name and
+// version go into every check that depends on it.
+export const A11Y_TOOL = { name: "ns-dom-rules", version: "1", rules: ["html-has-lang", "document-title", "meta-viewport", "image-alt", "button-name", "link-name", "label", "color-contrast"] };
 
 // The page-level numbers scripts/web-probes.mjs records (same definitions), measured in one
 // pass with no game hook needed: web-probes waits for window.__game on every page it opens,
 // which costs 15 s each on a page that has none.
-export async function webMetrics(browser, base, route = "/", { axePath = null } = {}) {
-  const out = {};
+//
+// ready_ms     milliseconds from navigation start until the task's readiness signal holds
+//              (a visible element matching `ready.selector`, and `ready.js` truthy when given);
+//              not the document load event.
+// frame p95    the 95th percentile of animation-frame intervals while a seeded click workload
+//              runs for `playS` seconds, so frames are sampled under use, not at rest.
+export async function webMetrics(browser, base, route = "/", { ready = {}, playS = 3 } = {}) {
+  const out = { tool: { a11y: A11Y_TOOL, browser: `chromium ${browser.version()}` } };
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await ctx.newPage();
   const watch = attachWatch(page, base);
   await page.goto(base + route, { waitUntil: "load", timeout: 15000 });
-  out.ready_ms = await page.evaluate(() => Math.round(performance.getEntriesByType("navigation")[0]?.loadEventEnd || performance.now()));
+  const sel = ready.selector || "button, a[href], input, [data-action]";
+  out.ready_ms = await page.waitForFunction(({ sel, js }) => {
+    const el = [...document.querySelectorAll(sel)].find((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+    if (!el) return false;
+    if (js && !new Function(`return (${js});`)()) return false;
+    return Math.round(performance.now());
+  }, { sel, js: ready.js || null }, { timeout: 10000, polling: "raf" }).then((h) => h.jsonValue(), () => Infinity);
   out.js_kb = await page.evaluate(() => Math.round(performance.getEntriesByType("resource").filter((r) => r.initiatorType === "script" || /\.m?js(\?|$)/.test(r.name)).reduce((a, r) => a + (r.transferSize || r.encodedBodySize || 0), 0) / 1024));
   out.body_font_px = await page.evaluate(() => {
     const blocks = [...document.querySelectorAll("p, li, dd, td, blockquote, pre, div, span, label, button")].filter((e) => e.offsetParent !== null && [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 20));
@@ -186,15 +192,6 @@ export async function webMetrics(browser, base, route = "/", { axePath = null } 
     return sizes[Math.floor(sizes.length / 2)];
   });
   out.a11y = await a11yLite(page);
-  if (axePath) {
-    const audit = await browser.newContext({ bypassCSP: true });
-    const p = await audit.newPage();
-    await p.goto(base + route, { waitUntil: "load" });
-    await p.addScriptTag({ path: axePath });
-    const r = await p.evaluate(() => window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa"] } }));
-    out.axe = { serious: r.violations.filter((v) => v.impact === "serious" || v.impact === "critical" ).reduce((a, v) => a + (v.id === "color-contrast" ? 0 : v.nodes.length), 0), contrast: r.violations.find((v) => v.id === "color-contrast")?.nodes.length || 0 };
-    await audit.close();
-  }
   // Keyboard: share of visible interactive controls that Tab reaches.
   out.tab_reach = await page.evaluate(() => [...document.querySelectorAll("button,a[href],input,select,textarea,[tabindex]:not([tabindex='-1'])")].filter((e) => e.offsetParent !== null).length).then(async (total) => {
     if (!total) return null;
@@ -206,10 +203,28 @@ export async function webMetrics(browser, base, route = "/", { axePath = null } 
     }
     return +(Math.min(seen.size, total) / total).toFixed(2);
   });
-  out.frame_p95_ms = await framesP95(page);
-  // A few clicks, to catch errors a user would meet right away.
-  const ctl = page.locator(CONTROLS);
-  for (let i = 0; i < Math.min(4, await ctl.count()); i++) { await ctl.nth(i).click({ timeout: 1000 }).catch(() => {}); await sleep(60); }
+  // The prescribed workload: seeded clicks for playS seconds with a frame recorder running.
+  // The recorder is re-armed after every navigation (a click may submit a form) and drained into
+  // this process on each pass, so frames from every page the workload visits are counted.
+  const arm = () => page.evaluate(() => { if (window.__ns_rec) return; window.__ns_rec = true; window.__ns_f = []; let prev = performance.now(); const tick = (n) => { window.__ns_f.push(n - prev); prev = n; requestAnimationFrame(tick); }; requestAnimationFrame(tick); }).catch(() => {});
+  const drain = () => page.evaluate(() => { const f = window.__ns_f || []; window.__ns_f = []; return f; }).catch(() => []);
+  const all = [];
+  await arm();
+  const pick = rng(4242);
+  const end = Date.now() + playS * 1000;
+  let clicks = 0;
+  while (Date.now() < end) {
+    if (!page.url().startsWith(base)) await page.goBack().catch(() => {});
+    await arm();
+    const ctl = page.locator(CONTROLS);
+    const n = await ctl.count().catch(() => 0);
+    if (n) { await ctl.nth(pick(n)).click({ timeout: 800 }).then(() => clicks++, () => {}); }
+    await sleep(60);
+    all.push(...(await drain()));
+  }
+  const frames = all.slice(8).sort((a, b) => a - b);
+  out.workload_clicks = clicks;
+  out.frame_p95_ms = frames.length ? +frames[Math.floor(frames.length * 0.95)].toFixed(1) : Infinity;
   out.console_errors = watch.errors.length;
   out.console_sample = watch.errors.slice(0, 2);
   await ctx.close();

@@ -5,20 +5,15 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import {
   REPO_ROOT, TASKS, check, scoreChecks, validateSpec, workCopy, startApp, withBrowser, ensureStartScript,
   ensureBrowser, findReadme, documentedCommand, runShell, countPassed, countCases, testFiles, listFiles, hasDependencies,
-  discoverPages, loginAuto, readFindings, findingMatches, SEVERITY_RANK,
+  discoverPages, loginAuto, runNodeContained, jailHome, readFindings, findingMatches, SEVERITY_RANK,
 } from "./lib-ep.mjs";
 import { webMetrics } from "./ui-ep.mjs";
+import { HERE } from "./lib-ep.mjs";
 
-function axeEntry() {
-  const root = spawnSync("npm", ["root", "-g"], { encoding: "utf8" }).stdout?.trim() || "";
-  const f = path.join(root, "axe-core", "axe.min.js");
-  return fs.existsSync(f) ? f : null;
-}
 const importScript = (rel) => import(pathToFileURL(path.join(REPO_ROOT, rel)).href);
 
 export async function grade(dir, task, spec) {
@@ -66,43 +61,63 @@ export async function grade(dir, task, spec) {
     return out;
   }
 
+  // The run-path is what the README documents. Each step needs an allowlisted command that
+  // the README names; with no README, or no documented command, the step fails and nothing
+  // is guessed. Installs run with --ignore-scripts.
   async function cleanRun(c) {
     const text = readmeText();
     const clean = workCopy(dir, { clean: true });
     const out = [];
+    const undocumented = (cat) => (text === null ? `no README, so no documented ${cat} command` : `the README documents no ${cat} command (${c.commands[cat].join(" / ")})`);
     try {
       const cwd = clean.dir;
-      const deps = hasDependencies(cwd);
-      const install = documentedCommand(text, c.commands.install || []) ?? (c.commands.install || [])[0];
-      if (deps) {
-        const r = install ? runShell(install, cwd, 240000) : { status: 1, out: "no allowlisted install command" };
-        out.push(check("clean:install", r.status === 0, r.status === 0 ? `\`${install}\` succeeded` : `\`${install}\` failed: ${r.out.trim().slice(-140)}`));
+      if (hasDependencies(cwd)) {
+        const install = text === null ? null : documentedCommand(text, c.commands.install || []);
+        if (!install) out.push(check("clean:install", false, undocumented("install")));
+        else {
+          const safe = /^npm (install|i|ci)\b/.test(install) ? `${install} --ignore-scripts --no-audit --no-fund` : install;
+          const r = runShell(safe, cwd, 240000);
+          out.push(check("clean:install", r.status === 0, r.status === 0 ? `\`${safe}\` succeeded` : `\`${safe}\` failed: ${r.out.trim().slice(-140)}`));
+        }
       } else out.push(check("clean:install", true, "no dependencies to install"));
       if (c.commands.test) {
-        const cmd = documentedCommand(text, c.commands.test) ?? c.commands.test[0];
-        const r = runShell(cmd, cwd, 180000, { PORT: "0" });
-        const n = countPassed(r.out);
-        out.push(check("clean:tests_pass", r.status === 0 && n > 0, r.status === 0 ? (n > 0 ? `\`${cmd}\`: ${n} passed` : `\`${cmd}\` ran no tests`) : `\`${cmd}\` failed${r.timedOut ? " (timed out)" : ""}: ${r.out.trim().slice(-140)}`));
+        const cmd = text === null ? null : documentedCommand(text, c.commands.test);
+        if (!cmd) out.push(check("clean:tests_pass", false, undocumented("test")));
+        else {
+          const r = runShell(cmd, cwd, 180000, { PORT: "0" });
+          const n = countPassed(r.out);
+          out.push(check("clean:tests_pass", r.status === 0 && n > 0, r.status === 0 ? (n > 0 ? `\`${cmd}\`: ${n} passed` : `\`${cmd}\` ran no tests`) : `\`${cmd}\` failed${r.timedOut ? " (timed out)" : ""}: ${r.out.trim().slice(-140)}`));
+        }
       }
       if (c.commands.start) {
-        const cmd = documentedCommand(text, c.commands.start) ?? c.commands.start[0];
-        const app = await startApp(cwd, { start: cmd, ready: c.ready || "/", waitMs: 20000 });
-        const up = app.up;
-        const detail = up ? `\`${cmd}\` serves ${c.ready || "/"}` : `\`${cmd}\` did not serve: ${app.log().trim().slice(-140)}`;
-        app.stop();
-        out.push(check("clean:start_serves", up, detail));
+        const cmd = text === null ? null : documentedCommand(text, c.commands.start);
+        if (!cmd) out.push(check("clean:start_serves", false, undocumented("start")));
+        else {
+          const app = await startApp(cwd, { start: cmd, ready: c.ready || "/", waitMs: 20000 });
+          const up = app.up;
+          const detail = up ? `\`${cmd}\` serves ${c.ready || "/"}` : `\`${cmd}\` did not serve: ${app.log().trim().slice(-140)}`;
+          app.stop();
+          out.push(check("clean:start_serves", up, detail));
+        }
       }
     } finally { clean.cleanup(); }
     return out;
   }
 
   async function mutation(c) {
-    const { mutation: mutate } = await importScript("scripts/quality-probes.mjs");
-    const w = workDir();
-    const r = mutate(w.dir, { mutants: c.mutants || 12, timeoutMs: 90000 });
     const min = c.min ?? 0.6;
     // The score must reflect the arm's own tests, not the ones the repository started with.
     if (c.needs_new_tests && countCases(dir) <= countCases(path.join(TASKS, task, "repo"))) return [check("mutation_score", false, "the build added no tests of its own, so the score would measure the starting repository")];
+    const w = workDir();
+    // Run inside the jail with the build's installed dependencies linked in (mutation-ep.mjs).
+    const file = path.join(jailHome(w.dir), "mutation.json");
+    fs.writeFileSync(file, JSON.stringify({ mutants: c.mutants || 12, timeoutMs: 90000, scripts_root: path.join(REPO_ROOT, "scripts") }));
+    const deadline = c.deadline_ms || 300000;
+    const run = await runNodeContained(w.dir, path.join(HERE, "mutation-ep.mjs"), [file], { timeoutMs: deadline });
+    const line = run.stdout.trim().split("\n").filter((l) => l.startsWith("{")).pop();
+    let r = null; try { r = line ? JSON.parse(line) : null; } catch {}
+    if (run.timedOut) return [check("mutation_score", false, `mutation run passed its ${deadline / 1000}s deadline and was killed`)];
+    if (!r?.ok) return [check("mutation_score", false, `mutation run failed: ${r?.error || run.stderr.trim().slice(-120)}`)];
     return [check("mutation_score", r.score !== null && r.score >= min, r.score === null ? r.reason : `${r.killed}/${r.mutants} mutants caught (${r.score}), need ${min}`)];
   }
 
@@ -153,26 +168,25 @@ export async function grade(dir, task, spec) {
       const app = await startApp(w.dir, { start: "npm start", ready: spec.ready || "/", waitMs: 20000 });
       if (!app.up) { const why = app.log().trim().slice(-120); app.stop(); return fail(`npm start did not serve ${spec.ready || "/"}: ${why}`); }
       let m;
-      try { m = await withBrowser((browser) => webMetrics(browser, app.base, spec.ready || "/", { axePath: axeEntry() })); }
+      try { m = await withBrowser((browser) => webMetrics(browser, app.base, spec.ready || "/", { ready: c.ready || {}, playS: c.play_s ?? 3 })); }
       catch (e) { return fail(`probe failed: ${String(e.message).slice(0, 120)}`); }
       finally { app.stop(); }
       const rules = m.a11y.filter((x) => x !== "color-contrast");
-      const contrast = m.axe ? m.axe.contrast : m.a11y.filter((x) => x === "color-contrast").length;
-      const serious = m.axe ? m.axe.serious : rules.length;
-      const src = m.axe ? "axe-core" : "dom rules";
+      const contrast = m.a11y.length - rules.length;
+      const tool = `${m.tool.a11y.name}@${m.tool.a11y.version}`;
       const val = {
-        a11y_serious_critical: [serious <= t.a11y_serious_critical, `${serious} serious/critical violations (${src}${rules.length ? `: ${[...new Set(rules)].join(", ")}` : ""})`],
-        contrast: [contrast <= t.contrast, `${contrast} text elements below WCAG AA contrast`],
+        a11y_serious_critical: [rules.length <= t.a11y_serious_critical, `${rules.length} serious/critical violations (${tool}${rules.length ? `: ${[...new Set(rules)].join(", ")}` : ""})`],
+        contrast: [contrast <= t.contrast, `${contrast} text elements below WCAG AA contrast (${tool})`],
         console_errors: [m.console_errors <= t.console_errors, `${m.console_errors} console or page errors${m.console_sample.length ? `: ${m.console_sample.join("; ")}` : ""}`],
         tab_reach: [m.tab_reach !== null && m.tab_reach >= t.tab_reach, m.tab_reach === null ? "no interactive controls" : `${m.tab_reach} of controls reachable by Tab`],
         phone_overflow: [m.overflow_px <= 1, `${m.overflow_px} px of horizontal overflow at 390 px`],
         tap_targets_44: [m.tap_small_share !== null && m.tap_small_share <= t.tap_targets_44, m.tap_small_share === null ? "no tap targets" : `${m.tap_small_share} of tap targets under 44 px at 390 px`],
         body_font_px: [m.body_font_px !== null && m.body_font_px >= t.body_font_px, `${m.body_font_px} px median body text`],
-        ready_ms: [m.ready_ms <= t.ready_ms, `${m.ready_ms} ms to load`],
+        ready_ms: [m.ready_ms <= t.ready_ms, Number.isFinite(m.ready_ms) ? `${m.ready_ms} ms until ${c.ready?.selector || "a control"} was visible${c.ready?.js ? ` and ${c.ready.js}` : ""}` : "the readiness signal never held within 10 s"],
         js_kb: [m.js_kb <= t.js_kb, `${m.js_kb} KB of script`],
-        frame_p95_ms: [m.frame_p95_ms <= t.frame_p95_ms, `${m.frame_p95_ms} ms frame interval p95`],
+        frame_p95_ms: [m.frame_p95_ms <= t.frame_p95_ms, `${m.frame_p95_ms} ms frame interval p95 over ${c.play_s ?? 3} s of seeded clicking (${m.workload_clicks} clicks)`],
       };
-      return names.map((n) => check(`web:${n}`, val[n][0], val[n][1]));
+      return names.map((n) => check(`web:${n}`, val[n][0], val[n][1], { tool: m.tool }));
     } finally { w.cleanup(); }
   }
 
@@ -184,6 +198,7 @@ export async function grade(dir, task, spec) {
       if (!app.up) return [check("mobile_occlusion", false, `app did not start: ${app.log().trim().slice(-100)}`)];
       const vp = c.viewport || { width: 390, height: 844 };
       const results = [];
+      let session = "anonymous only (this product has no sign-in form)";
       await withBrowser(async (browser) => {
         const ctx = await browser.newContext({ viewport: vp, isMobile: true, hasTouch: true });
         const page = await ctx.newPage();
@@ -196,14 +211,19 @@ export async function grade(dir, task, spec) {
         };
         const paths = c.pages || ["/"];
         await scan("anonymous", paths);
-        if (c.login === "auto" && (await loginAuto(page, app.base))) {
-          const found = await discoverPages(browser, app.base, { max: 1 });
-          await scan("signed in", [...new Set([...paths, ...found.pages])].slice(0, 4));
+        if (c.login === "auto") {
+          const auth = await loginAuto(ctx, page, app.base, { verify: c.verify });
+          if (auth.authenticated) {
+            // Routes are discovered in this same signed-in context.
+            const found = await discoverPages(browser, app.base, { max: 4, ctx });
+            await scan("signed in", [...new Set([...paths, ...found.pages])].slice(0, 4));
+            session = `signed in, verified by ${auth.via} answering 200 to this session and refusing an anonymous one`;
+          } else if (auth.attempted) session = "NOT AUTHENTICATED: a sign-in form was found and submitted, but no protected route accepted the session; anonymous screens only";
         }
         await ctx.close();
       });
       const bad = results.filter((r) => !r.pass);
-      return [check("mobile_occlusion", results.length > 0 && !bad.length, bad.length ? bad.slice(0, 2).map((r) => `${r.label}: ${r.detail}`).join("; ") : `${results.length} screens clear at ${vp.width}x${vp.height}${results.some((r) => /signed in/.test(r.label)) ? " (including a signed-in session)" : ""}`)];
+      return [check("mobile_occlusion", results.length > 0 && !bad.length, `${session}. ${bad.length ? bad.slice(0, 2).map((r) => `${r.label}: ${r.detail}`).join("; ") : `${results.length} screens clear at ${vp.width}x${vp.height}`}`)];
     } finally { app.stop(); w.cleanup(); }
   }
 

@@ -4,11 +4,9 @@
 // libraries, the dead-end walk for the adventure, report integrity for review tasks.
 import fs from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
-import { pathToFileURL } from "node:url";
 import {
   HERE, REPO_ROOT, check, scoreChecks, validateSpec, workCopy, withApp, withBrowser, startApp,
-  discoverPages, runCase, readFindings, findingMatches, listFiles,
+  discoverPages, runCase, readFindings, findingMatches, listFiles, runNodeContained, runContainedSync, boundedFetch, jailHome,
 } from "./lib-ep.mjs";
 import { uiWalk, uiBadInput, uiOffline } from "./ui-ep.mjs";
 
@@ -94,15 +92,26 @@ export async function grade(dir, task, spec) {
   }
 
   async function chaos(c) {
-    const { probe } = await import(pathToFileURL(path.join(REPO_ROOT, "scripts", "chaos-probe.mjs")).href);
     const opts = startOpts(c);
     let endpoints = c.endpoints || [];
     if (c.discover !== false && ui && !ui.error) endpoints = [...endpoints, ...(ui.requests || [])];
     const seen = new Set();
     endpoints = endpoints.filter((e) => { const k = `${e.method} ${e.path}`; if (seen.has(k)) return false; seen.add(k); return true; });
     if (!endpoints.length) endpoints = [{ method: "GET", path: opts.ready }];
-    const r = await probe(workDir().dir, { ...opts, steady: c.steady || DEFAULT_STEADY(opts.ready), endpoints, faults: c.faults, flood: c.flood || 60, race: c.race, bots: c.bots });
-    return r.faults.map((f) => check(`chaos:${f.fault}`, f.pass, f.detail));
+    const faults = c.faults || ["restart", "malformed", "flood"];
+    const w = workDir().dir;
+    const file = path.join(jailHome(w), "chaos-spec.json");
+    fs.writeFileSync(file, JSON.stringify({ ...opts, steady: c.steady || DEFAULT_STEADY(opts.ready), endpoints, faults, flood: c.flood || 60, race: c.race, bots: c.bots, __scripts_root: path.join(REPO_ROOT, "scripts") }));
+    const deadline = c.deadline_ms || 150000;
+    const r = await runNodeContained(w, path.join(HERE, "chaos-ep.mjs"), [file], { timeoutMs: deadline });
+    const line = r.stdout.trim().split("\n").filter((l) => l.startsWith("{")).pop();
+    let res = null;
+    try { res = line ? JSON.parse(line) : null; } catch {}
+    if (r.timedOut || !res?.ok) {
+      const why = r.timedOut ? `the chaos probe passed its ${deadline / 1000}s deadline and was killed` : `chaos probe failed: ${res?.error || r.stderr.trim().slice(-120) || "no result"}`;
+      return faults.map((f) => check(`chaos:${f}`, false, why));
+    }
+    return res.faults.map((f) => check(`chaos:${f.fault}`, f.pass, f.detail));
   }
 
   async function unknownRoute(c) {
@@ -111,20 +120,19 @@ export async function grade(dir, task, spec) {
       if (!app.up) return [check("unknown_route", false, "app did not start")];
       const codes = [];
       for (const p of c.paths || ["/__no_such_page__", "/%E0%A4%A", "/a/b/c/../../../../etc/passwd", `/${"x".repeat(3000)}`]) {
-        try { const r = await fetch(app.base + p, { signal: AbortSignal.timeout(4000) }); await r.arrayBuffer(); codes.push(r.status); } catch { codes.push(0); }
+        codes.push((await boundedFetch(app.base + p, {}, { ms: 4000, bytes: 200000 })).status);
       }
-      let after = 0;
-      try { after = (await fetch(app.base + opts.ready, { signal: AbortSignal.timeout(3000) })).status; } catch {}
+      const after = (await boundedFetch(app.base + opts.ready, {}, { ms: 3000, bytes: 200000 })).status;
       const bad = codes.filter((s) => s === 0 || s >= 500);
       return [check("unknown_route", !bad.length && after > 0 && after < 500, bad.length ? `statuses ${codes.join(",")}` : `statuses ${codes.join(",")}; app still serves ${opts.ready}`)];
     });
   }
 
   function gameChild(mode, opts, timeoutMs) {
-    const r = spawnSync(process.execPath, [path.join(HERE, "game-ep.mjs"), mode, workDir().dir, JSON.stringify(opts)], { encoding: "utf8", timeout: timeoutMs });
-    if (r.error?.code === "ETIMEDOUT") return { ok: false, error: `timed out after ${timeoutMs / 1000}s (a loop that never ends counts as stuck)` };
-    const line = `${r.stdout || ""}`.trim().split("\n").filter((l) => l.startsWith("{")).pop();
-    return line ? JSON.parse(line) : { ok: false, error: `no result: ${`${r.stderr || ""}`.slice(-160)}` };
+    const r = runContainedSync(workDir().dir, [process.execPath, path.join(HERE, "game-ep.mjs"), mode, workDir().dir, JSON.stringify(opts)], { timeoutMs });
+    if (r.timedOut) return { ok: false, error: `timed out after ${timeoutMs / 1000}s (a loop that never ends counts as stuck)` };
+    const line = r.stdout.trim().split("\n").filter((l) => l.startsWith("{")).pop();
+    return line ? JSON.parse(line) : { ok: false, error: `no result: ${r.stderr.slice(-160)}` };
   }
   function gameBadInput(c) {
     const r = gameChild("bad_input", { module: c.module }, 30000);
