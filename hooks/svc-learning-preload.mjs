@@ -14,7 +14,22 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { fileURLToPath } from "node:url";
+
+// Same rule as hooks/lib/svc-state-dir.mjs (inlined so the hook stays a single
+// self-contained file): the nearest ancestor with an existing .svc/ directory,
+// never the system temp root itself.
+function hasSvcAncestor(start) {
+  const temp = new Set([os.tmpdir(), "/tmp", process.env.TMPDIR].filter(Boolean).map((t) => path.resolve(t)));
+  let dir = path.resolve(start);
+  for (;;) {
+    if (!temp.has(dir)) { try { if (fs.statSync(path.join(dir, ".svc")).isDirectory()) return true; } catch {} }
+    const up = path.dirname(dir);
+    if (up === dir) return false;
+    dir = up;
+  }
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "..");
@@ -92,8 +107,29 @@ function isCodexHost() {
   return typeof process.argv[1] === "string" && process.argv[1].replace(/\\/g,"/").includes("/.codex/");
 }
 
+function sessionCwd() {
+  try {
+    const raw = process.stdin.isTTY ? "" : fs.readFileSync(0, "utf8");
+    const payload = raw.trim() ? JSON.parse(raw) : {};
+    return path.resolve(payload.cwd || payload.working_directory || process.env.CLAUDE_PROJECT_DIR || process.cwd());
+  } catch {
+    return path.resolve(process.env.CLAUDE_PROJECT_DIR || process.cwd());
+  }
+}
+
+// Framework lore belongs in sessions that work on the framework or in a project
+// that opted into it (an existing .svc/). A plain user project gets nothing.
+function frameworkSession(cwd) {
+  let fw = REPO_ROOT;
+  try { fw = fs.realpathSync(REPO_ROOT); } catch {}
+  let dir = cwd;
+  try { dir = fs.realpathSync(cwd); } catch {}
+  if (dir === fw || dir.startsWith(fw + path.sep)) return true;
+  return hasSvcAncestor(cwd);
+}
+
 function main() {
-  const learnings = loadAllLearnings();
+  const learnings = frameworkSession(sessionCwd()) ? loadAllLearnings() : [];
   if (learnings.length === 0) {
     // Codex rejects empty stdout as invalid JSON; emit an empty object instead.
     if (isCodexHost()) process.stdout.write("{}\n");

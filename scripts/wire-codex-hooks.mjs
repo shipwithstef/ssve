@@ -213,9 +213,6 @@ function buildHookEntries(skillsPath) {
       hooks: [{ type: "command", command: `${NODE_CMD} ${shellQuote(path.join(codexHooksDir, "svc-codex-stop-firewall.mjs"))}` }],
     });
   }
-  // Codex CLI does not support PreCompact   — svc-pre-compact-snapshot skipped.
-  // Codex CLI does not support SessionEnd   — svc-session-end-log skipped.
-  // Codex CLI does not support Notification — svc-notification-surface skipped.
 
   entries.PreToolUse = DISABLED.has("svc-codex-pretool-dispatcher") ? entries.PreToolUse : [{
     matcher: "Bash|apply_patch|Edit|Write|mcp__.*",

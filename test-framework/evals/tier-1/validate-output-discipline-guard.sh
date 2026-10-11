@@ -62,7 +62,7 @@ rm -f .svc/rule-injections-wi393a1.json
 printf '%s' '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"docs/specs/audit-reports/WI-1.md"},"session_id":"wi393a1-'"$RUN_ID"'"}' \
   | run_node "$INJ" > "$TMP/a1.json" 2>/dev/null
 check "(a) injector fires long-output on audit-reports path" grep -q "long-output-to-file" "$TMP/a1.json"
-check "(a) injector emits allow on PreToolUse" grep -q '"permissionDecision":"allow"' "$TMP/a1.json"
+check "(a) injector adds context only on PreToolUse (no permission decision)" bash -c "! grep -q permissionDecision '$TMP/a1.json'"
 
 # injector FIRES on an output-heavy bash command
 rm -f .svc/rule-injections-wi393a2.json

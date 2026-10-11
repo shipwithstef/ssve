@@ -75,9 +75,26 @@ function writeCacheAtomic(cachePath, value) {
   }
 }
 
+// Cheap presence test before any process spawn: the briefing exists only where
+// company-state.mjs could resolve a state dir (a linked company repo, or a
+// company-state/ directory at the repository root or, outside a repository, in
+// the cwd). Every other session pays one stat walk, not two spawns.
+function companyStateMayExist(cwd) {
+  let dir = cwd;
+  while (true) {
+    if (fs.existsSync(path.join(dir, ".git"))) {
+      return fs.existsSync(path.join(dir, ".svc", "company-link.json")) || fs.existsSync(path.join(dir, "company-state"));
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) return fs.existsSync(path.join(cwd, "company-state"));
+    dir = parent;
+  }
+}
+
 try {
   const payload = readPayload();
   const cwd = payloadCwd(payload);
+  if (!companyStateMayExist(cwd)) { emit(""); process.exit(0); }
   const context = JSON.parse(runCompanyState(["resolve", "--repo", cwd, "--json"]));
   const stateDir = fs.realpathSync(context.stateDir);
   const inputFingerprint = fingerprint(stateDir);

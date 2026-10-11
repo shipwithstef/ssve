@@ -35,7 +35,7 @@ Use `{"mode":"advisory"}` to return to advice. Invalid configuration is reported
 | Hook exceeds its bounded deadline | Terminate child execution and report warning | Fail the hook invocation |
 | Foreign/user hook blocks | Preserve its behavior | Preserve its behavior |
 
-Default advisory mode defers automatic SessionStart installation repair, Stop formatting/quality tasks, all-host pre-commit refresh, and the full pre-push suite. It prints the manual command instead of starting work that can take minutes. Run those commands explicitly when needed; enforce mode retains their bounded automatic execution. Other managed checks still run with bounded deadlines.
+Default advisory mode defers automatic SessionStart installation repair, Kimi's Stop formatting/quality wrapper, all-host pre-commit refresh, and the full pre-push suite. It prints the manual command instead of starting work that can take minutes. The Claude Stop quality check (`hooks/svc-stop-quality.js --check`) runs in both modes: it checks the source files changed in the working tree with checkers already installed, skips a file set it already checked, and in advisory mode reports findings as a message instead of blocking. Run those commands explicitly when needed; enforce mode retains their bounded automatic execution. Other managed checks still run with bounded deadlines.
 
 Warnings describe an observed problem, not a completed repair. Hooks may still perform their existing bookkeeping. Advisory mode changes the hook's blocking decision; it does not turn the underlying workflow into a read-only operation.
 

@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 /**
- * svc-rule-injector — WI-361 context diet ph.1.
+ * svc-rule-injector — WI-361 context diet ph.1; the one context injector process.
  *
- * Injects subject-matter rules ON DEMAND instead of always-on. Three triggers
+ * Injects subject-matter rules ON DEMAND instead of always-on. Triggers
  * (wired by wire-hooks.mjs):
- *   PreToolUse  Edit|Write        — PRIMARY: rules arrive BEFORE the first edit
- *   PreToolUse  Bash              — command-keyword rules (git/gh/docker classes)
+ *   PreToolUse  Edit|Write|Bash   — rules arrive BEFORE the first edit; command-
+ *                                   keyword rules (git/gh/docker classes) on Bash
  *   PostToolUse Read|Grep|Glob    — earlier arrival while exploring
  *
- * Output (docs-verified 2026-06-07): PreToolUse responds
- *   { hookSpecificOutput: { hookEventName, permissionDecision: "allow",
- *     additionalContext } }  — allow + inject in one response, 10K-char cap.
- * PostToolUse responds { hookSpecificOutput: { hookEventName, additionalContext } }.
+ * On PreToolUse the same process also runs the action-time learning injector
+ * (svc-learning-inject.mjs, WI-384) and the intended-owner injector
+ * (svc-owner-inject.mjs, WI-392) in-process: one spawn per Edit/Write/Bash
+ * instead of three.
+ *
+ * Output: { hookSpecificOutput: { hookEventName, additionalContext } }, 10K-char
+ * cap. Never a permissionDecision: this hook only adds context, and an "allow"
+ * would skip the host's own permission prompt for the call.
  *
  * Cost model: matched rules use atomic session markers before loading rule text.
  * Memo: private runtime session-findings; atomic once per session and rule.
@@ -97,14 +101,12 @@ function repoHasMarker(root, markers) {
   return false;
 }
 
-function main() {
-  const call = readHookPayload();              // {toolName, toolInput, sessionId, cwd, raw} (PLAN-002)
-  if (!call) process.exit(0);
-  if (evaluatePreToolObservation(call.raw) && isShellTool(call.toolName)) process.exit(0);
-  const event = call.raw.hook_event_name || call.raw.hookEventName || "";
+// Subject-matter rules for this call, or "" when none apply.
+function ruleContext(call) {
+  if (evaluatePreToolObservation(call.raw) && isShellTool(call.toolName)) return "";
   const tool = call.toolName;
   const input = call.toolInput || {};
-  if (!findingSession(call.raw)) process.exit(0);
+  if (!findingSession(call.raw)) return "";
 
   // Extract match subjects per trigger (helper-first per host-variant contract)
   let paths = [];
@@ -117,15 +119,15 @@ function main() {
   } else if (tool === "Read") paths = [extractFilePath(input)].filter(Boolean);
   else if (tool === "Grep" || tool === "Glob") paths = [input.path || input.pattern || ""].filter(Boolean);
   else if (isShellTool(tool)) bashCmd = extractCommand(input);
-  if (paths.length === 0 && !bashCmd && !content) process.exit(0);
+  if (paths.length === 0 && !bashCmd && !content) return "";
 
   // Repo-relative-ize vs payload cwd first (PLAN-002)
   const operation = resolveHookOperation(call);
-  if (operation.host === "codex" && !operation.scope?.ok) process.exit(0);
+  if (operation.host === "codex" && !operation.scope?.ok) return "";
   const cwd = operation.root || call.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
   // WI-452: only inject/persist within an svc-governed repo; never seed .svc in /tmp or a foreign cwd.
   const svcDir = resolveSvcStateDir(cwd);
-  if (!svcDir) process.exit(0);
+  if (!svcDir) return "";
   paths = paths
     .map((p) => path.normalize(path.isAbsolute(p) ? path.relative(cwd, p) : p))
     .filter((p) => p && !p.startsWith(".."));   // G6 EXEC-002 r2: normalize FIRST so embedded a/../../b traversal is resolved before the escape check
@@ -168,12 +170,12 @@ function main() {
     }
     if (hit) matched.push(e);
   }
-  if (matched.length === 0) process.exit(0);
+  if (matched.length === 0) return "";
 
   // The memo follows the stable session across worktrees. A pointer also
   // counts as delivery: repeating it spends context without new information.
   const fresh = matched.filter(e => firstSessionFinding(call.raw, "rules", "rule-injector", e.path));
-  if (fresh.length === 0) process.exit(0);
+  if (fresh.length === 0) return "";
 
   // Cap-aware packing: corrections first (full text), then steering; overflow → pointer lines
   fresh.sort((a, b) => (a.type === "correction" ? 0 : 1) - (b.type === "correction" ? 0 : 1));
@@ -194,18 +196,29 @@ function main() {
   if (pointers.length) {
     ctx += `\nAlso applicable (Read before relying): ${pointers.join(", ")}\n`;
   }
-  ctx = ctx.slice(0, CAP);
-
-  const out = { hookSpecificOutput: { hookEventName: event, additionalContext: ctx } };
-  if (event === "PreToolUse") out.hookSpecificOutput.permissionDecision = "allow";
-  process.stdout.write(JSON.stringify(out));
-  process.exit(0);
+  return ctx.slice(0, CAP);
 }
 
-try {
-  main();
-} catch {
+async function main() {
+  const call = readHookPayload();              // {toolName, toolInput, sessionId, cwd, raw} (PLAN-002)
+  if (!call) return;
+  const event = call.raw.hook_event_name || call.raw.hookEventName || "";
+  const disabled = new Set(String(process.env.SVC_DISABLED_HOOKS || "").split(",").map((s) => s.trim()).filter(Boolean));
+  const tool = call.toolName;
+  const action = event !== "PostToolUse" && (tool === "Edit" || tool === "Write" || tool === "Bash");
+  const rulesOff = action && disabled.has(tool === "Bash" ? "svc-rule-injector-bash" : "svc-rule-injector-edit");
+  const parts = [];
   // G6 EXEC-003: fail-open is the contract — a broken registry/manifest must
-  // never block tooling. Silent exit 0.
-  process.exit(0);
+  // never block tooling, nor suppress the other injectors.
+  if (!rulesOff) try { parts.push(ruleContext(call)); } catch { /* fail open */ }
+  // Learnings and owner routing are pre-action reminders on Edit/Write/Bash only.
+  if (action) {
+    if (!disabled.has("svc-learning-inject")) parts.push(await import("./svc-learning-inject.mjs").then((m) => m.learningContext(call), () => ""));
+    if (!disabled.has("svc-owner-inject")) parts.push(await import("./svc-owner-inject.mjs").then((m) => m.ownerContext(call), () => ""));
+  }
+  const ctx = parts.filter(Boolean).join("\n").slice(0, CAP);
+  if (!ctx) return;
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: event || "PreToolUse", additionalContext: ctx } }));
 }
+
+main().then(() => process.exit(0), () => process.exit(0));

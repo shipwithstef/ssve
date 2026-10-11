@@ -249,24 +249,8 @@ function buildHookEntries(skillsPath) {
       command: `node ${hooksDir}/svc-prompt-stale-state.mjs`,
       timeout: 10,
     },
-    {
-      event: "PreCompact",
-      matcher: "",
-      command: `node ${hooksDir}/svc-pre-compact-snapshot.mjs`,
-      timeout: 20,
-    },
-    {
-      event: "SessionEnd",
-      matcher: "",
-      command: `node ${hooksDir}/svc-session-end-log.mjs`,
-      timeout: 10,
-    },
-    {
-      event: "Notification",
-      matcher: "",
-      command: `node ${hooksDir}/svc-notification-surface.mjs`,
-      timeout: 10,
-    },
+    // PreCompact snapshot / SessionEnd log / Notification log were removed: they
+    // wrote .svc/sessions/* files nothing read (docs/removals.md).
   ];
   return hooks.map((hook) => wrapHookEntries(hook, { skillsPath, host: "kimi", event: hook.event, outerTimeout: 30 }));
 }

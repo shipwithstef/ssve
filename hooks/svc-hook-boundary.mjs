@@ -104,13 +104,14 @@ function deferredAdvisoryCommand(spec) {
       : `run setup --host ${spec.host} from the canonical SSVE source checkout`;
     return `automatic SessionStart install check deferred; if installation needs refresh, ${command}`;
   }
-  if (spec.event.toLowerCase() === "stop" && /svc-(?:kimi-)?stop-quality/.test(spec.command)) {
+  // The Claude Stop quality check runs in advisory mode too: it derives changed
+  // files from git, skips an already-checked file set, runs only installed
+  // checkers, and reports findings as advice. Kimi's wrapper stays deferred.
+  if (spec.event.toLowerCase() === "stop" && /svc-kimi-stop-quality/.test(spec.command)) {
     let quality = spec.command;
     try {
       const script = parseManagedCommand(spec.command).args[0];
-      if (script.includes("svc-kimi-stop-quality.sh")) {
-        quality = `node '${path.join(path.dirname(path.dirname(script)), "svc-stop-quality.js").replace(/'/g, "'\\''")}' --check`;
-      }
+      quality = `node '${path.join(path.dirname(path.dirname(script)), "svc-stop-quality.js").replace(/'/g, "'\\''")}' --check`;
     } catch {}
     return `automatic Stop quality check deferred; if files changed, run ${quality} from the project worktree`;
   }

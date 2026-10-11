@@ -4020,7 +4020,7 @@
       "kind": "hook",
       "source": "hooks/hooks.json",
       "event": "PreToolUse",
-      "command": "node hooks/codex/svc-codex-pretool-dispatcher.mjs",
+      "command": "SVC_HOST=\"${SVC_HOST:-claude}\" node hooks/codex/svc-codex-pretool-dispatcher.mjs",
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/goal-delivery-hooks.test.mjs",
@@ -4029,29 +4029,29 @@
       ]
     },
     {
-      "id": "hook:svc-workflow-guard",
+      "id": "hook:svc-impact-triad-guard",
       "kind": "hook",
       "source": "hooks/hooks.json",
       "event": "PreToolUse",
-      "command": "node hooks/svc-workflow-guard.mjs",
+      "command": "node hooks/svc-impact-triad-guard.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
-        "test-framework/evals/tier-1/validate-advisory-hook-boundary.mjs",
-        "test-framework/evals/tier-1/validate-brownfield-iteration-guard.sh"
+        "test-framework/evals/tier-1/validate-codex-session-rebinding.sh",
+        "test-framework/evals/tier-1/validate-git-hooks-installed.sh",
+        "test-framework/evals/tier-1/validate-impact-triad-contract-fast-v2.mjs"
       ]
     },
     {
-      "id": "hook:svc-bash-guard",
+      "id": "hook:svc-loop-guard-agent",
       "kind": "hook",
       "source": "hooks/hooks.json",
       "event": "PreToolUse",
-      "command": "node hooks/svc-workflow-guard.mjs --bash-guard",
+      "command": "node hooks/svc-loop-guard.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
-        "test-framework/evals/tier-1/validate-advisory-hook-boundary.mjs",
-        "test-framework/evals/tier-1/validate-brownfield-iteration-guard.sh"
+        "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh",
+        "test-framework/evals/tier-1/validate-codex-session-rebinding.sh",
+        "test-framework/evals/tier-1/validate-loop-guard-state-lifecycle.sh"
       ]
     },
     {
@@ -4091,46 +4091,7 @@
       "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
     },
     {
-      "id": "hook:svc-skill-artifact-authenticity",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "PreToolUse",
-      "command": "node hooks/svc-skill-artifact-authenticity.mjs",
-      "status": "tested",
-      "evidence": [
-        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
-        "test-framework/evals/tier-1/validate-codex-session-rebinding.sh",
-        "test-framework/evals/tier-1/validate-concrete-path-bash-guards.sh"
-      ]
-    },
-    {
-      "id": "hook:svc-session-contract-freshness",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "PreToolUse",
-      "command": "node hooks/svc-session-contract-freshness.mjs",
-      "status": "tested",
-      "evidence": [
-        "test-framework/evals/tier-1/goal-delivery-hooks.test.mjs",
-        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
-        "test-framework/evals/tier-1/validate-codex-session-rebinding.sh"
-      ]
-    },
-    {
-      "id": "hook:svc-inertia-check",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "PreToolUse",
-      "command": "node hooks/svc-inertia-check.mjs",
-      "status": "tested",
-      "evidence": [
-        "test-framework/evals/tier-1/validate-actionable-hook-denial.sh",
-        "test-framework/evals/tier-1/validate-capability-blocker-inertia.sh",
-        "test-framework/evals/tier-1/validate-codex-session-rebinding.sh"
-      ]
-    },
-    {
-      "id": "hook:svc-rule-injector-edit",
+      "id": "hook:svc-rule-injector",
       "kind": "hook",
       "source": "hooks/hooks.json",
       "event": "PreToolUse",
@@ -4139,42 +4100,7 @@
       "evidence": [
         "test-framework/evals/tier-1/goal-delivery-hooks.test.mjs",
         "test-framework/evals/tier-1/validate-always-loaded-budget.mjs",
-        "test-framework/evals/tier-1/validate-output-discipline-guard.sh"
-      ]
-    },
-    {
-      "id": "hook:svc-rule-injector-bash",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "PreToolUse",
-      "command": "node hooks/svc-rule-injector.mjs",
-      "status": "tested",
-      "evidence": [
-        "test-framework/evals/tier-1/goal-delivery-hooks.test.mjs",
-        "test-framework/evals/tier-1/validate-always-loaded-budget.mjs",
-        "test-framework/evals/tier-1/validate-output-discipline-guard.sh"
-      ]
-    },
-    {
-      "id": "hook:svc-learning-inject",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "PreToolUse",
-      "command": "node hooks/svc-learning-inject.mjs",
-      "status": "tested",
-      "evidence": [
         "test-framework/evals/tier-1/validate-learning-injection.sh"
-      ]
-    },
-    {
-      "id": "hook:svc-owner-inject",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "PreToolUse",
-      "command": "node hooks/svc-owner-inject.mjs",
-      "status": "tested",
-      "evidence": [
-        "test-framework/evals/tier-1/validate-owner-injection.sh"
       ]
     },
     {
@@ -4182,7 +4108,7 @@
       "kind": "hook",
       "source": "hooks/hooks.json",
       "event": "PostToolUse",
-      "command": "node hooks/codex/svc-codex-posttool-heartbeat.mjs",
+      "command": "SVC_HOST=\"${SVC_HOST:-claude}\" node hooks/codex/svc-codex-posttool-heartbeat.mjs",
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-tool-call-heartbeat.sh",
@@ -4204,24 +4130,30 @@
       ]
     },
     {
-      "id": "hook:svc-edit-accumulator",
+      "id": "hook:svc-phase-receipt-autoemit",
       "kind": "hook",
       "source": "hooks/hooks.json",
       "event": "PostToolUse",
-      "command": "node hooks/svc-stop-quality.js --accumulate",
-      "status": "untested",
-      "evidence": [],
-      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+      "command": "node hooks/svc-phase-receipt-autoemit.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh",
+        "test-framework/evals/tier-1/validate-phase-receipt-autoemit.sh",
+        "test-framework/evals/tier-1/validate-phase-receipt-migration.sh"
+      ]
     },
     {
-      "id": "hook:svc-vibe-auditor",
+      "id": "hook:svc-rule-injector-explore",
       "kind": "hook",
       "source": "hooks/hooks.json",
       "event": "PostToolUse",
-      "command": "node hooks/svc-vibe-auditor.js",
-      "status": "untested",
-      "evidence": [],
-      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+      "command": "node hooks/svc-rule-injector.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/goal-delivery-hooks.test.mjs",
+        "test-framework/evals/tier-1/validate-always-loaded-budget.mjs",
+        "test-framework/evals/tier-1/validate-learning-injection.sh"
+      ]
     },
     {
       "id": "hook:svc-lane-tasks-validator",
@@ -4247,134 +4179,6 @@
         "test-framework/evals/tier-1/validate-hook-payload-not-argv.sh",
         "test-framework/evals/tier-1/validate-wi-pillars-hard-block.sh"
       ]
-    },
-    {
-      "id": "hook:svc-auto-capture-learnings",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "PostToolUse",
-      "command": "node hooks/svc-auto-capture-learnings.mjs --trigger post-tool-use",
-      "status": "tested",
-      "evidence": [
-        "test-framework/evals/tier-1/validate-authorization-envelope.sh",
-        "test-framework/evals/tier-1/validate-auto-learning-capture.sh",
-        "test-framework/evals/tier-1/validate-auto-learning-promote-replay.sh"
-      ]
-    },
-    {
-      "id": "hook:svc-spec-index-update",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "PostToolUse",
-      "command": "node hooks/svc-spec-index-update.mjs",
-      "status": "untested",
-      "evidence": [],
-      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
-    },
-    {
-      "id": "hook:svc-rule-injector-explore",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "PostToolUse",
-      "command": "node hooks/svc-rule-injector.mjs",
-      "status": "tested",
-      "evidence": [
-        "test-framework/evals/tier-1/goal-delivery-hooks.test.mjs",
-        "test-framework/evals/tier-1/validate-always-loaded-budget.mjs",
-        "test-framework/evals/tier-1/validate-output-discipline-guard.sh"
-      ]
-    },
-    {
-      "id": "hook:svc-phase-receipt-autoemit-edit",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "PostToolUse",
-      "command": "node hooks/svc-phase-receipt-autoemit.mjs",
-      "status": "tested",
-      "evidence": [
-        "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh",
-        "test-framework/evals/tier-1/validate-phase-receipt-autoemit.sh",
-        "test-framework/evals/tier-1/validate-phase-receipt-migration.sh"
-      ]
-    },
-    {
-      "id": "hook:svc-phase-receipt-autoemit-bash",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "PostToolUse",
-      "command": "node hooks/svc-phase-receipt-autoemit.mjs",
-      "status": "tested",
-      "evidence": [
-        "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh",
-        "test-framework/evals/tier-1/validate-phase-receipt-autoemit.sh",
-        "test-framework/evals/tier-1/validate-phase-receipt-migration.sh"
-      ]
-    },
-    {
-      "id": "hook:svc-origin-orchestrator-prompt",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "SessionStart",
-      "command": "node hooks/svc-origin-orchestrator-prompt.mjs",
-      "status": "tested",
-      "evidence": [
-        "test-framework/evals/tier-1/validate-cross-repo-orch-02.mjs"
-      ]
-    },
-    {
-      "id": "hook:svc-session-start-healthcheck",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "SessionStart",
-      "command": "node hooks/svc-session-start-healthcheck.mjs",
-      "status": "tested",
-      "evidence": [
-        "test-framework/evals/tier-1/validate-advisory-hook-boundary.mjs",
-        "test-framework/evals/tier-1/validate-codex-sessionstart-json.sh",
-        "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh"
-      ]
-    },
-    {
-      "id": "hook:svc-session-end-log",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "SessionEnd",
-      "command": "node hooks/svc-session-end-log.mjs",
-      "status": "untested",
-      "evidence": [],
-      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
-    },
-    {
-      "id": "hook:svc-prompt-stale-state",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "UserPromptSubmit",
-      "command": "node hooks/svc-prompt-stale-state.mjs",
-      "status": "tested",
-      "evidence": [
-        "test-framework/evals/tier-1/validate-active-intent-guard.sh",
-        "test-framework/evals/tier-1/validate-prompt-progress-prereqs.sh"
-      ]
-    },
-    {
-      "id": "hook:svc-pre-compact-snapshot",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "PreCompact",
-      "command": "node hooks/svc-pre-compact-snapshot.mjs",
-      "status": "untested",
-      "evidence": [],
-      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
-    },
-    {
-      "id": "hook:svc-notification-surface",
-      "kind": "hook",
-      "source": "hooks/hooks.json",
-      "event": "Notification",
-      "command": "node hooks/svc-notification-surface.mjs",
-      "status": "untested",
-      "evidence": [],
-      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
     },
     {
       "id": "hook:svc-stop-quality",
@@ -4412,24 +4216,102 @@
       ]
     },
     {
-      "id": "hook:svc-subagent-start-log",
+      "id": "hook:svc-auto-capture-learnings",
       "kind": "hook",
       "source": "hooks/hooks.json",
-      "event": "SubagentStart",
-      "command": "node hooks/svc-subagent-start.mjs",
-      "status": "untested",
-      "evidence": [],
-      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+      "event": "Stop",
+      "command": "node hooks/svc-auto-capture-learnings.mjs --trigger stop",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-authorization-envelope.sh",
+        "test-framework/evals/tier-1/validate-auto-learning-capture.sh",
+        "test-framework/evals/tier-1/validate-auto-learning-promote-replay.sh"
+      ]
     },
     {
-      "id": "hook:svc-subagent-stop-log",
+      "id": "hook:svc-origin-orchestrator-prompt",
       "kind": "hook",
       "source": "hooks/hooks.json",
-      "event": "SubagentStop",
-      "command": "node hooks/svc-subagent-stop.mjs",
-      "status": "untested",
-      "evidence": [],
-      "next_eval": "Add a tier-1 test for this hook, or retire it if it guards nothing (value audit)"
+      "event": "UserPromptSubmit",
+      "command": "SVC_HOST=claude node hooks/svc-origin-orchestrator-prompt.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-cross-repo-orch-02.mjs"
+      ]
+    },
+    {
+      "id": "hook:svc-prompt-stale-state",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "UserPromptSubmit",
+      "command": "node hooks/svc-prompt-stale-state.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-active-intent-guard.sh",
+        "test-framework/evals/tier-1/validate-prompt-progress-prereqs.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-learning-preload",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "SessionStart",
+      "command": "node hooks/svc-learning-preload.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-auto-learning-capture.sh",
+        "test-framework/evals/tier-1/validate-auto-learning-promote-replay.sh",
+        "test-framework/evals/tier-1/validate-codex-sessionstart-json.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-cos-briefing",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "SessionStart",
+      "command": "node hooks/cos-briefing.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh",
+        "test-framework/evals/tier-1/validate-company-fleet-integration.sh",
+        "test-framework/evals/tier-1/validate-ownership-predicate-parity.mjs"
+      ]
+    },
+    {
+      "id": "hook:svc-delta-preload",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "SessionStart",
+      "command": "node hooks/svc-delta-preload.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-claude-wirer-cutover.sh",
+        "test-framework/evals/tier-1/validate-company-fleet-integration.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-session-start-healthcheck",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "SessionStart",
+      "command": "node hooks/svc-session-start-healthcheck.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-advisory-hook-boundary.mjs",
+        "test-framework/evals/tier-1/validate-codex-sessionstart-json.sh",
+        "test-framework/evals/tier-1/validate-grok-hook-toml-roundtrip.sh"
+      ]
+    },
+    {
+      "id": "hook:svc-zombie-session-sweep",
+      "kind": "hook",
+      "source": "hooks/hooks.json",
+      "event": "SessionStart",
+      "command": "node scripts/zombie-session-sweep.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-output-discipline-guard.sh"
+      ]
     },
     {
       "id": "claim:one-prompt-to-product",

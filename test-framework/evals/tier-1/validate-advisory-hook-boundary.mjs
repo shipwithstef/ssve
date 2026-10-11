@@ -112,7 +112,16 @@ try {
   assert.equal(jsonAdvice.stdout, "");
   assert.match(jsonAdvice.stderr, /repair the task graph/);
   assert.equal(run({ scenario: "text", event: "SessionStart" }).stdout, "plain hook advice");
-  for (const [name, event] of [["svc-session-start-healthcheck.mjs", "SessionStart"], ["svc-stop-quality.js", "Stop"]]) {
+  // The Claude Stop quality check is no longer deferred in advisory mode: it is
+  // fast on an unchanged file set and reports findings as advice.
+  {
+    const quality = path.join(spaced, "svc-stop-quality.js");
+    fs.writeFileSync(quality, "process.stdout.write('quality ran');\n");
+    const ran = run({ event: "Stop", command: `${quote(process.execPath)} ${quote(quality)}` });
+    assert.equal(ran.status, 0, ran.stderr);
+    assert.equal(ran.stdout, "quality ran");
+  }
+  for (const [name, event] of [["svc-session-start-healthcheck.mjs", "SessionStart"], ["svc-kimi-stop-quality.sh", "Stop"]]) {
     const expensive = path.join(spaced, name);
     fs.writeFileSync(expensive, "process.stdout.write('expensive child ran');\n");
     const command = `${quote(process.execPath)} ${quote(expensive)}`;

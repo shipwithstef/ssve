@@ -13,6 +13,9 @@
     "framework": {
       "hooks/.keep": "",
       "scripts/.keep": ""
+    },
+    "node-api": {
+      "package.json": "{\"name\":\"api\",\"dependencies\":{\"express\":\"5.0.0\"}}\n"
     }
   },
   "events": [
@@ -251,6 +254,26 @@
         "rules/common/gh-workflow-validation.md",
         "rules/cross-ref-workflow-dispatch-coherence.md"
       ]
+    },
+    {
+      "id": "api-edit-route",
+      "repo": "node-api",
+      "tool": "Edit",
+      "input": {
+        "file_path": "src/routes/users.ts",
+        "new_string": "x"
+      },
+      "relevant": []
+    },
+    {
+      "id": "api-edit-server-mjs",
+      "repo": "node-api",
+      "tool": "Edit",
+      "input": {
+        "file_path": "src/server.mjs",
+        "new_string": "x"
+      },
+      "relevant": []
     }
   ]
 }

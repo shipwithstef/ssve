@@ -181,6 +181,10 @@ export function recordStopAuthorizationSummary(root) {
   const loaded = lastContract(root); if (loaded.state === "invalid") throw new Error("session authorization contract is malformed");
   const parsed = rulesOf(loaded.contract); if (parsed.state === "invalid") throw new Error("typed authorization envelope is malformed or conflicting");
   const rules = parsed.rules; const eventsPath = path.join(root, ".svc", "authorization-events.jsonl");
+  // The summary answers "which declared authorization rules went unused". With no
+  // typed rules declared there is nothing to answer, and a row per Stop only churned
+  // the file (and, in a repo without .svc/, created it).
+  if (parsed.state !== "typed" || rules.length === 0) return { recorded: false, declared: 0, used: 0, unused: [] };
   let used = [];
   try { used = fs.readFileSync(eventsPath, "utf8").trim().split(/\r?\n/).filter(Boolean).map(JSON.parse).filter((e) => e.event === "authorized-action").map((e) => e.rule_id).filter(Boolean); } catch {}
   const unused = rules.map((r) => r.id).filter(Boolean).filter((id) => !used.includes(id));

@@ -660,7 +660,10 @@ function resolveActiveWI(hookInput) {
       } catch {}
     }
   }
-  // 5. Session-contract last-line (racy fallback)
+  // 5. Session-contract last-line — only when that contract row belongs to THIS
+  // session. A row written by another (often long-finished) session named a WI
+  // this session never touched, and the guard then pushed "EXECUTE it" at an
+  // unrelated, stale WI.
   if (svcDir) {
     const cp = path.join(svcDir, "session-contract.jsonl");
     if (fs.existsSync(cp)) {
@@ -668,7 +671,9 @@ function resolveActiveWI(hookInput) {
         const lines = fs.readFileSync(cp, "utf8").split(/\r?\n/).filter(Boolean);
         if (lines.length > 0) {
           const last = JSON.parse(lines[lines.length - 1]);
-          return last.wi || "";
+          const current = String(hookInput?.session_id || hookInput?.sessionId || process.env.SVC_SESSION_ID || "");
+          const owner = String(last.session_id || last.owner_session || "");
+          if (current && owner && current === owner) return last.wi || "";
         }
       } catch {}
     }
@@ -705,6 +710,17 @@ if (isNonExecutionRole(input)) {
 }
 
 const workerWi = resolveActiveWI(input);
+// Several task graphs and none attributable to this session (no binding, no
+// requested WI, no WI branch, no single active graph, no own session contract):
+// the guard cannot know which work is this session's, so it stays silent rather
+// than pressing on another session's or an abandoned WI. A single graph remains
+// unambiguous and keeps its legacy enforcement.
+if (!workerWi && laneFiles.length > 1) {
+  // "unattributed" also skips the WI-550 receipt barrier, which would otherwise
+  // pick the WI from the last session-contract row of whatever session wrote it.
+  console.log("status\tunattributed");
+  process.exit(0);
+}
 if (workerWi) {
   laneFiles = laneFiles.filter((file) => {
     try {
@@ -1139,7 +1155,7 @@ if [[ "${ACTIONABLE:-0}" == "0" && "$STATUS" =~ ^(allow|advisory_contract|adviso
 fi
 
 case "$STATUS" in
-  allow|subagent|anti_loop)
+  allow|subagent|anti_loop|unattributed)
     exit 0
     ;;
   advisory_contract)

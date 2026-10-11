@@ -66,7 +66,10 @@ function managedPathSet() {
   const paths = new Set();
   collectScripts("hooks", "hooks", paths);
   collectScripts("scripts", "scripts", paths);
-  for (const legacy of ["hooks/svc-workflow-guard.js", "hooks/svc-bash-guard.sh"]) paths.add(legacy);
+  // Removed scripts stay recognized so a re-wire strips their stale entries
+  // from existing installs (docs/removals.md).
+  for (const legacy of ["hooks/svc-workflow-guard.js", "hooks/svc-bash-guard.sh", "hooks/svc-vibe-auditor.js",
+    "hooks/svc-session-end-log.mjs", "hooks/svc-notification-surface.mjs", "hooks/svc-pre-compact-snapshot.mjs"]) paths.add(legacy);
   managedPaths = paths;
   return paths;
 }

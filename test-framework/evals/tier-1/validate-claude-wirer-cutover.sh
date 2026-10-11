@@ -154,7 +154,8 @@ check "legacy seed run exits 0" test "$?" = "0"
 check "legacy .js workflow-guard gone" test "$(q "$S1" PreToolUse "sum('svc-workflow-guard.js' in h.get('command','') for _,h in cmds)")" = "0"
 check "one consolidated Claude pretool dispatcher" test "$(q "$S1" PreToolUse "sum('svc-codex-pretool-dispatcher.mjs' in h.get('command','') for _,h in cmds)")" = "1"
 check "argv payload token stripped from managed hooks" test "$(q "$S1" PreToolUse "sum('TOOL_INPUT' in h.get('command','') for _,h in cmds)")" = "0"
-check "vibe-auditor async adopted via rebuild" test "$(q "$S1" PostToolUse "sum('svc-vibe-auditor' in h.get('command','') and h.get('async') is True for _,h in cmds)")" = "1"
+# svc-vibe-auditor was removed (docs/removals.md): its stale managed entry is stripped.
+check "removed vibe-auditor stripped via rebuild" test "$(q "$S1" PostToolUse "sum('svc-vibe-auditor' in h.get('command','') for _,h in cmds)")" = "0"
 check "loop-guard single canonical" test "$(q "$S1" PreToolUse "sum('svc-loop-guard.mjs' in h.get('command','') for _,h in cmds)")" = "1"
 
 check "no separately wired legacy mutation guards" test "$(q "$S1" PreToolUse "sum('svc-workflow-guard.mjs' in h.get('command','') and not h.get('command','').startswith('echo ') for _,h in cmds)")" = "0"

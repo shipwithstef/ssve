@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Tier 1: action-time intended-owner injection gate (WI-392).
 #
-# Proves the PreToolUse owner router is ADDITIVE-ONLY (allow + additionalContext,
+# Proves the PreToolUse owner router is ADDITIVE-ONLY (additionalContext only, no permission decision,
 # never a deny — AC1), DETERMINISTIC (project-first, then task_class ASC, deduped
 # by task_class — golden, order-stable), loads BOTH the global ownersRegistry
 # (skills-manifest.json, AC3) AND a project .svc/task-owners.json that SHADOWS a
@@ -65,9 +65,14 @@ cat > "$TMPD/.svc/task-owners.json" <<JSON
 [{"task_class":"deploy","owner":"project-owner","owner_kind":"app","message":"project deploy owner","signals":{"bash":["mydeploy"]}}]
 JSON
 OUT=$(printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"mydeploy --prod"},"session_id":"o1","cwd":"%s"}' "$TMPD" | node "$REPO_ROOT/$HOOK" 2>/dev/null)
-if echo "$OUT" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const j=JSON.parse(d);const o=j.hookSpecificOutput;process.exit(o&&o.permissionDecision==="allow"&&/project-owner/.test(o.additionalContext)?0:1)})'; then
-  pass "live hook injects the (project-shadowed) owner with permissionDecision=allow (AC1 additive, AC2 project)"
-else fail "live hook did not allow+inject the project owner"; fi
+if echo "$OUT" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const j=JSON.parse(d);const o=j.hookSpecificOutput;process.exit(o&&o.permissionDecision===undefined&&/project-owner/.test(o.additionalContext)?0:1)})'; then
+  pass "live hook injects the (project-shadowed) owner as context, with no permission decision (AC1 additive, AC2 project)"
+else fail "live hook did not inject the project owner, or returned a permission decision"; fi
+# The wired process (svc-rule-injector) runs the owner injector in-process.
+OUT_RI=$(printf '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"mydeploy --prod"},"session_id":"o9","cwd":"%s"}' "$TMPD" | node "$REPO_ROOT/hooks/svc-rule-injector.mjs" 2>/dev/null)
+if echo "$OUT_RI" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const o=JSON.parse(d).hookSpecificOutput;process.exit(o&&o.permissionDecision===undefined&&/project-owner/.test(o.additionalContext)?0:1)})'; then
+  pass "the single wired injector process delivers the owner reminder"
+else fail "svc-rule-injector did not deliver the owner reminder in-process"; fi
 if echo "$OUT" | grep -q '"deny"'; then fail "hook emitted a deny (must be additive-only)"; else pass "hook never denies (AC1)"; fi
 # global owner must NOT also appear (project shadowed it — one owner per task_class)
 if echo "$OUT" | grep -q 'global-owner'; then fail "global owner leaked despite project shadow"; else pass "project row shadows global of same task_class (no double-owner)"; fi

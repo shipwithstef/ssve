@@ -218,16 +218,6 @@ export function buildGrokHookEntries(skillsPath) {
     });
   }
 
-  // Session end log
-  if (!DISABLED.has("svc-session-end-log")) {
-    hooks.push({
-      event: "SessionEnd",
-      matcher: "*",
-      command: `${NODE_CMD} ${hooksDir}/svc-session-end-log.mjs`,
-      timeout: 10,
-    });
-  }
-
   // Stop completion guard (governed launcher route)
   if (!DISABLED.has("svc-task-completion-guard")) {
     hooks.push({

@@ -1303,6 +1303,24 @@
             "src/.*\\.(tsx?|jsx?|mjs|vue|svelte|css|scss)$",
             "\\.css$",
             "vite\\.config"
+          ],
+          "repo_markers": [
+            "package.json:\"react\"",
+            "package.json:\"react-dom\"",
+            "package.json:\"next\"",
+            "package.json:\"vue\"",
+            "package.json:\"nuxt\"",
+            "package.json:\"svelte\"",
+            "package.json:\"@sveltejs/kit\"",
+            "package.json:\"@angular/core\"",
+            "package.json:\"solid-js\"",
+            "package.json:\"preact\"",
+            "package.json:\"astro\"",
+            "package.json:\"vite\"",
+            "index.html",
+            "vite.config.ts",
+            "vite.config.js",
+            "vite.config.mjs"
           ]
         }
       },

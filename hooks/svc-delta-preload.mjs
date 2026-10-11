@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -24,6 +25,10 @@ try {
   const payload = rawPayload ? JSON.parse(rawPayload) : {};
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new Error("invalid payload");
   const cwd = path.resolve(payload.cwd || payload.working_directory || payload.workspace?.current_dir || process.cwd());
+  // Nothing to report until verify-promotion has indexed a promotion: skip the
+  // git and indexer spawns when the index does not exist.
+  const stateRoot = path.resolve(process.env.SVC_STATE_HOME || path.join(os.homedir(), ".svc"));
+  if (!fs.existsSync(path.join(stateRoot, "wi-promotion-index.jsonl"))) { emit(""); process.exit(0); }
   const rootResult = spawnSync("git", ["-C", cwd, "rev-parse", "--show-toplevel"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 5_000 });
   if (rootResult.status !== 0 || rootResult.error) throw new Error("not a repository");
   const repo = fs.realpathSync(rootResult.stdout.trim());

@@ -61,6 +61,8 @@ done
 grep -q 'classifyBashMutationTargets' hooks/svc-workflow-guard.mjs
 grep -q 'classifyBashMutationTargets' hooks/svc-skill-artifact-authenticity.mjs
 grep -q 'classifyBashMutationTargets' hooks/svc-session-contract-freshness.mjs
-node -e 'const h=require("./hooks/hooks.json").hooks.PreToolUse; for (const id of ["svc-skill-artifact-authenticity","svc-session-contract-freshness"]) { const x=h.find(v=>v.id===id); if (!x || !x.matcher.includes("Bash")) process.exit(1); }'
+# Both guards run as Bash-matching children of the decision engine (hooks.json
+# lists them under engine_children; the engine itself matches Bash).
+node -e 'const j=require("./hooks/hooks.json"); const engine=j.hooks.PreToolUse.find(v=>v.id==="svc-pretool-decision-engine"); if (!engine || !engine.matcher.split("|").includes("Bash")) process.exit(1); for (const id of ["svc-skill-artifact-authenticity","svc-session-contract-freshness"]) { const x=(j.engine_children||[]).find(v=>v.id===id); if (!x || !x.matcher.includes("Bash")) process.exit(1); }'
 
 echo "PASS: concrete Bash writers inherit all path-specific guards; reads stay target-free"

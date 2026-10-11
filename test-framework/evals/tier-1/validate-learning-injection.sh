@@ -3,7 +3,7 @@
 #
 # Proves the PreToolUse learning injector is DETERMINISTIC (same touched path →
 # same learning keys, order-stable by confidence desc then key asc — AC2),
-# ADDITIVE-ONLY (allow + additionalContext, never a deny — AC4), and records
+# ADDITIVE-ONLY (additionalContext only: no permission decision, never a deny — AC4), and records
 # FIRES (.svc/learning-fires.jsonl, the elevation-predicate substrate — AC3).
 # Hermetic + deterministic: the order test uses a synthetic in-memory learning
 # set; no network/LLM.
@@ -49,9 +49,18 @@ mkdir -p "$TMPD/.svc" "$TMPD/references"
 # one synthetic framework learning keyed on a path
 printf '%s\n' '{"key":"k-test","insight":"test learning","confidence":9,"files":["app/widget.ts"],"type":"x"}' > "$TMPD/references/framework-learnings.jsonl"
 OUT=$(printf '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"app/widget.ts"},"session_id":"s1","cwd":"%s"}' "$TMPD" | node "$REPO_ROOT/$HOOK" 2>/dev/null)
-if echo "$OUT" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const j=JSON.parse(d);process.exit(j.hookSpecificOutput && j.hookSpecificOutput.permissionDecision==="allow" && /k-test/.test(j.hookSpecificOutput.additionalContext) ? 0 : 1)})'; then
-  pass "live hook injects the matching learning with permissionDecision=allow (AC4 additive)"
-else fail "live hook did not allow+inject"; fi
+# Context only: a permissionDecision "allow" would skip the host's permission
+# prompt for the tool call in enforce mode, so the injector must not return one.
+if echo "$OUT" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const j=JSON.parse(d);process.exit(j.hookSpecificOutput && j.hookSpecificOutput.permissionDecision===undefined && /k-test/.test(j.hookSpecificOutput.additionalContext) ? 0 : 1)})'; then
+  pass "live hook injects the matching learning as context, with no permission decision (AC4 additive)"
+else fail "live hook did not inject, or returned a permission decision"; fi
+# The wired process (svc-rule-injector) runs the learning injector in-process.
+OUT3=$(printf '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"app/widget.ts"},"session_id":"s3","cwd":"%s"}' "$TMPD" | node "$REPO_ROOT/hooks/svc-rule-injector.mjs" 2>/dev/null)
+if echo "$OUT3" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const j=JSON.parse(d);process.exit(j.hookSpecificOutput && j.hookSpecificOutput.permissionDecision===undefined && /k-test/.test(j.hookSpecificOutput.additionalContext) ? 0 : 1)})'; then
+  pass "the single wired injector process delivers the learning"
+else fail "svc-rule-injector did not deliver the learning in-process"; fi
+# keep the fires-ledger checks below about session s1 only
+node -e 'const fs=require("fs"),p=process.argv[1];fs.writeFileSync(p,fs.readFileSync(p,"utf8").split("\n").filter(l=>l&&!/"session":"s3"/.test(l)).map(l=>l+"\n").join(""))' "$TMPD/.svc/learning-fires.jsonl"
 # never a deny
 if echo "$OUT" | grep -q '"deny"'; then fail "hook emitted a deny (must be additive-only)"; else pass "hook never denies (AC4)"; fi
 # fires ledger appended

@@ -26,7 +26,9 @@ function remaining(deadline) {
 
 function git(args, cwd, timeoutMs) {
   try {
-    return execFileSync("git", args, { cwd, encoding: "utf8", timeout: timeoutMs }).trim();
+    // stderr ignored: `merge-base origin/main` in a repo without that remote
+    // printed "fatal: Not a valid object name" into the user's session.
+    return execFileSync("git", args, { cwd, encoding: "utf8", timeout: timeoutMs, stdio: ["ignore", "pipe", "ignore"] }).trim();
   } catch {
     return "";
   }
@@ -84,6 +86,12 @@ function main() {
   try { payload = JSON.parse(readStdin() || "{}"); } catch { payload = {}; }
   const root = loadRepoRoot(payload);
   if (!root) return;
+  // Only a repo that opted in (an existing .svc/ from init-project-state, or the
+  // framework repo itself) is touched. A fresh repo stays untouched: no .svc/,
+  // no git calls, no output.
+  const svcDir = resolveSvcStateDir(root);
+  if (!svcDir) return;
+  // Writes only when the session declared typed authorization rules.
   if (trigger === "stop") try { recordStopAuthorizationSummary(root); } catch {}
 
   try {
@@ -107,10 +115,6 @@ function main() {
       warn: (msg) => warnings.push(msg),
     });
 
-    // WI-452: only capture into an svc-governed repo's .svc; never seed .svc in a
-    // non-repo cwd (/tmp scratch, sandbox). No svc repo → skip capture entirely.
-    const svcDir = resolveSvcStateDir(root);
-    if (!svcDir) return;
     const paths = candidatePaths(root);
     const outPath = reviewMode
       ? resolve(svcDir, "auto-learnings.draft.jsonl")

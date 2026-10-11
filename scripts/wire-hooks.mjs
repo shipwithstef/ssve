@@ -161,6 +161,17 @@ function buildHookEntries(skillsPath) {
     });
   }
 
+  // WI-552 AC-552-4: a session launched by an open restart-boundary continuation
+  // baton may not re-run the phases the baton declares. Fail-open by absence.
+  // Listed in hooks/hooks.json since WI-552 but previously never wired here.
+  if (!DISABLED.has("svc-continuation-phase-guard")) {
+    entries.PreToolUse.push({
+      id: "svc-continuation-phase-guard",
+      matcher: "Skill",
+      hooks: [{ type: "command", command: `node ${hooksDir}/svc-continuation-phase-guard.mjs` }],
+    });
+  }
+
   // (WI-FW-HOOKS-SAFETY-01) The legacy Bash|Edit|Write loop-guard wiring is
   // consolidated into the decision engine above; only the Agent matcher stays.
 
@@ -188,45 +199,41 @@ function buildHookEntries(skillsPath) {
     });
   }
 
-  if (PROFILE !== "minimal" && !DISABLED.has("svc-edit-accumulator")) {
-    entries.PostToolUse.push({
-      id: "svc-edit-accumulator",
-      matcher: "Edit|Write",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-stop-quality.js --accumulate` }],
-    });
-  }
-
-  // WI-361: rule injector — PRIMARY pre-edit injection (NOT async: PreToolUse
-  // must respond before the tool call so additionalContext lands pre-edit)
-  if (!DISABLED.has("svc-rule-injector-edit")) {
-    entries.PreToolUse.push({
-      id: "svc-rule-injector-edit",
-      matcher: "Edit|Write",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-rule-injector.mjs` }],
-    });
-  }
-  if (!DISABLED.has("svc-rule-injector-bash")) {
-    entries.PreToolUse.push({
-      id: "svc-rule-injector-bash",
-      matcher: "Bash",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-rule-injector.mjs` }],
-    });
+  // ONE context injector per Edit/Write/Bash (NOT async: PreToolUse must respond
+  // before the tool call so additionalContext lands pre-edit). One process runs
+  // the WI-361 rule injector, the WI-384 learning injector and the WI-392
+  // intended-owner injector in-process; each stays individually disableable
+  // (svc-rule-injector-edit / -bash, svc-learning-inject, svc-owner-inject via
+  // SVC_DISABLED_HOOKS, read inside the process). Additive context only: it never
+  // returns a permission decision.
+  {
+    const tools = [
+      ...(DISABLED.has("svc-rule-injector-edit") && DISABLED.has("svc-learning-inject") && DISABLED.has("svc-owner-inject") ? [] : ["Edit", "Write"]),
+      ...(DISABLED.has("svc-rule-injector-bash") && DISABLED.has("svc-learning-inject") && DISABLED.has("svc-owner-inject") ? [] : ["Bash"]),
+    ];
+    if (tools.length && !DISABLED.has("svc-rule-injector")) {
+      entries.PreToolUse.push({
+        id: "svc-rule-injector",
+        matcher: tools.join("|"),
+        hooks: [{ type: "command", command: `node ${hooksDir}/svc-rule-injector.mjs` }],
+      });
+    }
   }
   // WI-363: phase-receipt auto-emission (sync — Stop-guard reads receipts
-  // immediately; observable-evidence phases only, judgment stays manual)
-  if (!DISABLED.has("svc-phase-receipt-autoemit-edit")) {
-    entries.PostToolUse.push({
-      id: "svc-phase-receipt-autoemit-edit",
-      matcher: "Edit|Write",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-phase-receipt-autoemit.mjs` }],
-    });
-  }
-  if (!DISABLED.has("svc-phase-receipt-autoemit-bash")) {
-    entries.PostToolUse.push({
-      id: "svc-phase-receipt-autoemit-bash",
-      matcher: "Bash",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-phase-receipt-autoemit.mjs` }],
-    });
+  // immediately; observable-evidence phases only, judgment stays manual).
+  // One entry for both the Edit/Write and Bash sides.
+  {
+    const tools = [
+      ...(DISABLED.has("svc-phase-receipt-autoemit-edit") ? [] : ["Edit", "Write"]),
+      ...(DISABLED.has("svc-phase-receipt-autoemit-bash") ? [] : ["Bash"]),
+    ];
+    if (tools.length && !DISABLED.has("svc-phase-receipt-autoemit")) {
+      entries.PostToolUse.push({
+        id: "svc-phase-receipt-autoemit",
+        matcher: tools.join("|"),
+        hooks: [{ type: "command", command: `node ${hooksDir}/svc-phase-receipt-autoemit.mjs` }],
+      });
+    }
   }
 
   if (!DISABLED.has("svc-rule-injector-explore")) {
@@ -234,39 +241,6 @@ function buildHookEntries(skillsPath) {
       id: "svc-rule-injector-explore",
       matcher: "Read|Grep|Glob",
       hooks: [{ type: "command", command: `node ${hooksDir}/svc-rule-injector.mjs` }],
-    });
-  }
-
-  // WI-384: action-time LEARNING injection — inject the 1-3 learnings keyed to
-  // the path/command the agent is about to touch (additive; allow + context;
-  // never blocks). PreToolUse so the learning lands BEFORE the edit/command.
-  if (!DISABLED.has("svc-learning-inject")) {
-    entries.PreToolUse.push({
-      id: "svc-learning-inject",
-      matcher: "Edit|Write|Bash",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-learning-inject.mjs` }],
-    });
-  }
-
-  // WI-392: action-time INTENDED-OWNER routing — when a command/path belongs to a
-  // task-class with a registered owner (deploy→base44-environment, browser-verify
-  // →Playwright browse mode, per-project app owners), inject "route through the
-  // owner" (additive; allow + context; never blocks). PreToolUse so the reminder
-  // lands BEFORE the wrong-approach command runs.
-  if (!DISABLED.has("svc-owner-inject")) {
-    entries.PreToolUse.push({
-      id: "svc-owner-inject",
-      matcher: "Edit|Write|Bash",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-owner-inject.mjs` }],
-    });
-  }
-
-  if (PROFILE !== "minimal" && !DISABLED.has("svc-vibe-auditor")) {
-    entries.PostToolUse.push({
-      id: "svc-vibe-auditor",
-      matcher: "Edit|Write",
-      // async: observational auditor — never blocks (docs-verified 2026-06-07)
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-vibe-auditor.js`, async: true }],
     });
   }
 
@@ -285,15 +259,6 @@ function buildHookEntries(skillsPath) {
       id: "svc-wi-pillars-check",
       matcher: "Edit|Write",
       hooks: [{ type: "command", command: `bash ${hooksDir}/svc-wi-pillars-check.sh`, if: "Edit(//**/docs/specs/work-items/WI-*.md)" }],
-    });
-  }
-
-  if (!DISABLED.has("svc-auto-capture-learnings")) {
-    entries.PostToolUse.push({
-      id: "svc-auto-capture-learnings",
-      matcher: "Edit|Write",
-      // async: observational capture — never blocks (docs-verified 2026-06-07)
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-auto-capture-learnings.mjs --trigger post-tool-use`, async: true }],
     });
   }
 
@@ -434,14 +399,6 @@ function buildHookEntries(skillsPath) {
     });
   }
 
-  if (!DISABLED.has("svc-pre-compact-snapshot")) {
-    entries.PreCompact.push({
-      id: "svc-pre-compact-snapshot",
-      matcher: "*",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-pre-compact-snapshot.mjs` }],
-    });
-  }
-
   if (!DISABLED.has("svc-auto-capture-learnings")) {
     entries.PreCompact.push({
       id: "svc-auto-capture-learnings",
@@ -450,21 +407,8 @@ function buildHookEntries(skillsPath) {
     });
   }
 
-  if (!DISABLED.has("svc-session-end-log")) {
-    entries.SessionEnd.push({
-      id: "svc-session-end-log",
-      matcher: "*",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-session-end-log.mjs` }],
-    });
-  }
-
-  if (!DISABLED.has("svc-notification-surface")) {
-    entries.Notification.push({
-      id: "svc-notification-surface",
-      matcher: "*",
-      hooks: [{ type: "command", command: `node ${hooksDir}/svc-notification-surface.mjs` }],
-    });
-  }
+  // SessionEnd / Notification / PreCompact snapshot loggers were removed: they
+  // wrote .svc/sessions/* files nothing read (docs/removals.md).
 
   return Object.fromEntries(Object.entries(entries).map(([event, hooks]) =>
     [event, wrapHookEntries(hooks, { skillsPath, host: "claude", event })]));

@@ -23,7 +23,7 @@ import { redactSecrets } from "./secret-redaction.mjs";
 function gitOutput(args, cwd, timeout = 1500) {
   try {
     const argv = Array.isArray(args) ? args : String(args).split(/\s+/).filter(Boolean);
-    return execFileSync("git", argv, { cwd, encoding: "utf8", timeout }).trim();
+    return execFileSync("git", argv, { cwd, encoding: "utf8", timeout, stdio: ["ignore", "pipe", "ignore"] }).trim();
   } catch (_) {
     return "";
   }

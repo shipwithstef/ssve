@@ -78,49 +78,6 @@
       }
     },
     {
-      "id": "pre-compact-snapshot",
-      "description": "R-1 (WI-116): on PreCompact (Claude/Kimi) or PreCompress (Gemini), write a session snapshot to .svc/sessions/. Observe-only. Codex CLI does not support PreCompact. OpenCode handles via session.compacted plugin event.",
-      "must_hosts": ["claude", "opencode"],
-      "may_hosts": ["kimi", "gemini", "cursor", "grok"],
-      "host_id_patterns": {
-        "claude": "svc-pre-compact-snapshot",
-        "kimi": "svc-pre-compact-snapshot",
-        "codex": "",
-        "gemini": "svc-pre-compact-snapshot",
-        "opencode": "svc-opencode-plugin",
-        "cursor": "",
-        "grok": ""
-      }
-    },
-    {
-      "id": "session-end-log",
-      "description": "R-1 (WI-116): on SessionEnd, append a session record to .svc/sessions/sessions.jsonl. Observe-only. Codex CLI does not support SessionEnd.",
-      "must_hosts": ["claude"],
-      "may_hosts": ["kimi", "gemini", "cursor", "grok"],
-      "host_id_patterns": {
-        "claude": "svc-session-end-log",
-        "kimi": "svc-session-end-log",
-        "codex": "",
-        "gemini": "svc-session-end-log",
-        "cursor": "",
-        "grok": "svc-session-end-log"
-      }
-    },
-    {
-      "id": "notification-surface",
-      "description": "R-1 (WI-116): on Notification, append payloads to .svc/sessions/notifications.jsonl. Observe-only. Codex CLI does not support Notification.",
-      "must_hosts": ["claude"],
-      "may_hosts": ["kimi", "gemini", "cursor", "grok"],
-      "host_id_patterns": {
-        "claude": "svc-notification-surface",
-        "kimi": "svc-notification-surface",
-        "codex": "",
-        "gemini": "svc-notification-surface",
-        "cursor": "",
-        "grok": ""
-      }
-    },
-    {
       "id": "lane-tasks-validator",
       "description": "Validate .svc/lane-tasks-*.json structure on Edit|Write (PostToolUse).",
       "must_hosts": ["claude", "kimi", "gemini", "opencode", "cursor", "grok"],

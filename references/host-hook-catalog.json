@@ -150,7 +150,7 @@
       "events": [
         "Stop"
       ],
-      "command_template": "node {HOOKS_DIR}/stop-quality.mjs",
+      "command_template": "node {HOOKS_DIR}/svc-stop-quality.js --check",
       "host_commands": {}
     },
     {
@@ -170,7 +170,8 @@
         "claude"
       ],
       "events": [
-        "PostToolUse"
+        "Stop",
+        "PreCompact"
       ],
       "command_template": "node {HOOKS_DIR}/svc-auto-capture-learnings.mjs",
       "host_commands": {}
@@ -271,7 +272,7 @@
         "claude"
       ],
       "events": [
-        "UserPromptSubmit"
+        "PreToolUse"
       ],
       "command_template": "node {HOOKS_DIR}/svc-learning-inject.mjs",
       "host_commands": {}
@@ -302,23 +303,12 @@
       "host_commands": {}
     },
     {
-      "id": "svc-notification-surface",
-      "hosts": [
-        "claude"
-      ],
-      "events": [
-        "Notification"
-      ],
-      "command_template": "node {HOOKS_DIR}/svc-notification-surface.mjs",
-      "host_commands": {}
-    },
-    {
       "id": "svc-owner-inject",
       "hosts": [
         "claude"
       ],
       "events": [
-        "SessionStart"
+        "PreToolUse"
       ],
       "command_template": "node {HOOKS_DIR}/svc-owner-inject.mjs",
       "host_commands": {}
@@ -338,17 +328,6 @@
         "cursor": "node {NODE_Q} {HOOKS_DIR}/svc-phase-receipt-autoemit.mjs",
         "grok": "node {HOOKS_DIR}/svc-phase-receipt-autoemit.mjs"
       }
-    },
-    {
-      "id": "svc-pre-compact-snapshot",
-      "hosts": [
-        "claude"
-      ],
-      "events": [
-        "PreCompact"
-      ],
-      "command_template": "node {HOOKS_DIR}/svc-pre-compact-snapshot.mjs",
-      "host_commands": {}
     },
     {
       "id": "svc-origin-orchestrator-prompt",
@@ -384,7 +363,8 @@
         "claude"
       ],
       "events": [
-        "UserPromptSubmit"
+        "PreToolUse",
+        "PostToolUse"
       ],
       "command_template": "node {HOOKS_DIR}/svc-rule-injector.mjs",
       "host_commands": {}
@@ -402,17 +382,6 @@
       "host_commands": {
         "cursor": "node {NODE_Q} \"{HOOKS_DIR}/svc-session-contract-freshness.mjs\""
       }
-    },
-    {
-      "id": "svc-session-end-log",
-      "hosts": [
-        "claude"
-      ],
-      "events": [
-        "SessionEnd"
-      ],
-      "command_template": "node {HOOKS_DIR}/svc-session-end-log.mjs",
-      "host_commands": {}
     },
     {
       "id": "svc-spec-index-update",

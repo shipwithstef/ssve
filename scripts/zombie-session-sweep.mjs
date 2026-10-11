@@ -28,12 +28,16 @@
 //   1. SVC_TRANSCRIPT_DIR            — explicit dir (hermetic validator fixtures)
 //   2. payload.transcript_path       — sibling .jsonl files in its directory
 //      (Claude SessionStart payload carries the current transcript path)
-// Memo: .svc/zombie-session-candidates.jsonl is append-only and self-dedupes by
+// Memo: a per-transcript-dir (size, mtime) cache under ~/.cache/svc/zombie-sweep
+// keeps each SessionStart incremental; .svc/zombie-session-candidates.jsonl
+// (written only when the project already has .svc/) is append-only and self-dedupes by
 // transcript basename so re-runs across sessions never double-emit.
 // Fail-open: ANY error → exit 0 with no output (never blocks session start).
 
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, statSync, realpathSync, mkdirSync, writeFileSync, renameSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { appendJsonlLine } from "./state-io.mjs";
 
@@ -173,10 +177,37 @@ function alreadyRecorded(candPath) {
   return seen;
 }
 
+// Per-transcript-dir classification cache in the user cache (never the project).
+function sweepCachePath(dir) {
+  let real = dir;
+  try { real = realpathSync(dir); } catch { /* keep as given */ }
+  const base = process.env.XDG_CACHE_HOME ? path.resolve(process.env.XDG_CACHE_HOME) : path.join(os.homedir(), ".cache");
+  return path.join(base, "svc", "zombie-sweep", `${createHash("sha256").update(real).digest("hex").slice(0, 32)}.json`);
+}
+function readSweepCache(file) {
+  try {
+    const value = JSON.parse(readFileSync(file, "utf8"));
+    if (value && value.version === 1 && value.files && typeof value.files === "object") return value;
+  } catch { /* absent or corrupt: classify everything once */ }
+  return { version: 1, files: {} };
+}
+function writeSweepCache(file, value) {
+  try {
+    mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+    const tmp = `${file}.${process.pid}.tmp`;
+    writeFileSync(tmp, JSON.stringify(value), { mode: 0o600 });
+    renameSync(tmp, file);
+  } catch { /* a missing cache only costs a re-scan */ }
+}
+
 function main() {
   const stdin = readStdin();
   const payload = safeJson(stdin) || {};
   const cwd = payload.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  // The candidate row feeds the framework's learning review; a project that has
+  // not opted in (no .svc/) gets no scan, no file and no message.
+  const candDir = path.join(cwd, ".svc");
+  if (!existsSync(candDir)) return;
 
   const dir = discoverTranscriptDir(payload);
   if (!dir) return;
@@ -194,19 +225,31 @@ function main() {
   } catch { return; }
   if (files.length === 0) return;
 
-  const candPath = path.join(cwd, ".svc", "zombie-session-candidates.jsonl");
+  const candPath = path.join(candDir, "zombie-session-candidates.jsonl");
   const seen = alreadyRecorded(candPath);
+
+  // Incremental: a transcript whose size and mtime match the cached entry was
+  // already classified (and, if a zombie, already reported). Only new or grown
+  // transcripts are read — the full reread cost 0.7 s at 74 MB, ~5 s at 438 MB.
+  const cachePath = sweepCachePath(dir);
+  const cache = readSweepCache(cachePath);
+  const nextCache = { version: 1, files: {} };
 
   const flagged = [];
   for (const file of files) {
     const base = path.basename(file);
+    let st;
+    try { st = statSync(file); } catch { continue; }
+    const prior = cache.files[base];
+    nextCache.files[base] = { size: st.size, mtimeMs: st.mtimeMs, zombie: false };
+    if (prior && prior.size === st.size && prior.mtimeMs === st.mtimeMs) { nextCache.files[base].zombie = prior.zombie; continue; }
     if (seen.has(base)) continue;
     let info;
     try { info = classifyTranscript(file); } catch { continue; }
     if (!info || !info.zombie) continue;
+    nextCache.files[base].zombie = true;
 
-    let sizeBytes = 0;
-    try { sizeBytes = statSync(file).size; } catch { /* best-effort */ }
+    const sizeBytes = st.size;
 
     // Structured learning-candidate row. Schema mirrors framework-learnings
     // fields (date/type/key/insight/confidence/source/files) plus the evidence
@@ -234,6 +277,7 @@ function main() {
     try { appendJsonlLine(candPath, row); flagged.push(row); }
     catch { /* fail-open: surfacing is best-effort, never blocks */ }
   }
+  writeSweepCache(cachePath, nextCache);
 
   if (flagged.length === 0) return;
 

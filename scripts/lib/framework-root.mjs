@@ -19,6 +19,7 @@ export function frameworkRoot() {
 export function frameworkRootContext(root = frameworkRoot(), cwd = process.cwd()) {
   const inside = path.resolve(cwd) === root || path.resolve(cwd).startsWith(root + path.sep);
   if (inside) return null; // working on the framework itself: short paths already resolve
-  const state = fs.existsSync(path.join(cwd, ".svc")) ? "" : ` This project has no .svc/ yet: create it first with \`node ${root}/scripts/init-project-state.mjs\`.`;
-  return `SSVE framework root: ${root} (also $SVC_ROOT in Bash). In skill text, scripts/, schemas/, templates/, hooks/, agents/, _shared/, REPO_MODES.md, skills-manifest.json, and any references/ path not inside the loaded skill's own folder, are framework files under this root, never project files: run them as \`node ${root}/scripts/<name>.mjs\` from the project directory. Project state lives in the project's .svc/.${state}`;
+  // No "create .svc/ first" nudge: a session that never uses the framework must not
+  // be pushed into initialising it; route-workflow initialises .svc when it is used.
+  return `SSVE framework root: ${root} (also $SVC_ROOT in Bash). In skill text, scripts/, schemas/, templates/, hooks/, agents/, _shared/, REPO_MODES.md, skills-manifest.json, and any references/ path not inside the loaded skill's own folder, are framework files under this root, never project files: run them as \`node ${root}/scripts/<name>.mjs\` from the project directory. Project state lives in the project's .svc/.`;
 }

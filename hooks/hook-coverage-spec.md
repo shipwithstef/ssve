@@ -15,15 +15,15 @@ Source: Claude Code host docs (per `rules/host-capability-research.md`). Last re
 | Event | svc posture | Wired? | Rationale |
 |---|---|---|---|
 | PreToolUse | block | Yes | Enforces workflow guards, bash bypass blocks, eval-gate, skill artifact authenticity |
-| PostToolUse | warn | Yes | Lane-tasks validator, edit accumulator, vibe auditor, eval-gate post |
-| Stop | block | Yes | svc-stop-quality + task-completion-guard |
+| PostToolUse | warn | Yes | Lane-tasks validator, phase-receipt auto-emit, eval-gate post, explore-time rule injection |
+| Stop | block | Yes | svc-stop-quality (edited files from git; advice in advisory mode) + task-completion-guard (session-bound WIs only) |
 | StopFailure | observe | No | Documented but not yet wired in svc; future log of stop hook failures |
 | SessionStart | warn | Yes | Healthcheck — dangling symlinks, framework-state coherence |
-| SessionEnd | observe | Yes | Append session record to `.svc/sessions/sessions.jsonl` for audit-session-execution |
+| SessionEnd | skip | No | Removed: the session-record log had no reader (docs/removals.md) |
 | UserPromptSubmit | warn | Yes | Detect stale active-WI / lane-tasks state per prompt |
-| PreCompact | observe | Yes | Snapshot active task graph + last decisions to `.svc/sessions/<ISO>.snapshot.json` |
+| PreCompact | observe | Yes | Capture learning candidates before compaction (governed repos only); recovery state comes from `task-graph.mjs checkpoint` |
 | PostCompact | observe | No | Documented but not yet wired in svc; future post-compact recovery hook |
-| Notification | observe | Yes | Append notification payloads to `.svc/sessions/notifications.jsonl` |
+| Notification | skip | No | Removed: the notification log had no reader (docs/removals.md) |
 | SubagentStart | observe | Yes | Append `subagent_start` record to `.svc/dispatch-log.jsonl` (WI-CLN-13 / plan §4.15) |
 | SubagentStop | observe | Yes | Append `subagent_stop` record to `.svc/dispatch-log.jsonl` (WI-CLN-13 / plan §4.15) |
 
@@ -33,6 +33,7 @@ The following events are part of the Claude Code host surface but svc has not ch
 
 - StopFailure
 - PostCompact
+- SessionEnd, Notification (previously wired as write-only loggers; removed)
 
 ## How to extend
 

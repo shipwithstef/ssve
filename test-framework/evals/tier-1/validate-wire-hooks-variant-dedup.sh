@@ -66,10 +66,12 @@ check "single deny-capable decision engine wired" test "$(q PreToolUse "sum('svc
 check "loop-guard Agent coverage retained" test "$(q PreToolUse "sum(('Agent' in str(r).split('|')) and ('svc-loop-guard.mjs' in h.get('command','')) for r,h in cmds) >= 1")" = "1"
 check "post-tool heartbeat wired once" test "$(q PostToolUse "sum('svc-codex-posttool-heartbeat.mjs' in h.get('command','') for _,h in cmds)")" = "1"
 check "no payload tokens on any svc hook" test "$(q PreToolUse "sum('TOOL_INPUT' in h.get('command','') for _,h in cmds)")" = "0"
-check "accumulate entry survived canonicalized" test "$(q PostToolUse "sum('--accumulate' in h.get('command','') and 'TOOL_INPUT' not in h.get('command','') for _,h in cmds)")" = "1"
+# The Claude edit accumulator, vibe auditor and post-edit learning capture were
+# removed (docs/removals.md); a rebuild strips their stale managed entries.
+check "removed accumulator entry stripped on rebuild" test "$(q PostToolUse "sum('--accumulate' in h.get('command','') for _,h in cmds)")" = "0"
 check "eval-gate pre+post both present (distinct identities)" test "$(q PreToolUse "sum('eval-gate.mjs pre' in h.get('command','') for _,h in cmds)")$(q PostToolUse "sum('eval-gate.mjs post' in h.get('command','') for _,h in cmds)")" = "11"
-check "vibe-auditor is async" test "$(q PostToolUse "sum('svc-vibe-auditor' in h.get('command','') and h.get('async') is True for _,h in cmds)")" = "1"
-check "capture-learnings PostToolUse is async" test "$(q PostToolUse "sum('svc-auto-capture-learnings' in h.get('command','') and h.get('async') is True for _,h in cmds)")" = "1"
+check "removed vibe-auditor entry stripped on rebuild" test "$(q PostToolUse "sum('svc-vibe-auditor' in h.get('command','') for _,h in cmds)")" = "0"
+check "post-edit capture-learnings entry stripped on rebuild" test "$(q PostToolUse "sum('svc-auto-capture-learnings' in h.get('command','') for _,h in cmds)")" = "0"
 check "capture-learnings Stop is async" test "$(q Stop "sum('svc-auto-capture-learnings' in h.get('command','') and h.get('async') is True for _,h in cmds)")" = "1"
 check "stop-quality --check stays synchronous" test "$(q Stop "sum('--check' in h.get('command','') and h.get('async') is True for _,h in cmds)")" = "0"
 check "backup created + restore line printed" bash -c "ls \"$TMP\"/settings.json.svc-backup-* >/dev/null 2>&1 && grep -q 'restore:' \"$TMP/run1.log\""

@@ -44,6 +44,8 @@ test("injected rule text carries no YAML frontmatter", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "svc-inj-fm-"));
   try {
     const repo = path.join(tmp, "r"); fs.mkdirSync(path.join(repo, ".svc"), { recursive: true });
+    // rules/web/performance.md needs front-end evidence in the repo (repo_markers).
+    fs.writeFileSync(path.join(repo, "package.json"), JSON.stringify({ dependencies: { react: "19.0.0" } }));
     const home = path.join(tmp, "h"); fs.mkdirSync(home, { mode: 0o700 });
     const r = spawnSync(process.execPath, [path.join(root, "hooks/svc-rule-injector.mjs")], {
       input: JSON.stringify({ hook_event_name: "PreToolUse", tool_name: "Edit", tool_input: { file_path: "src/a.tsx", new_string: "x" }, session_id: "fm1", cwd: repo }),

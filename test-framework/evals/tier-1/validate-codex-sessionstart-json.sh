@@ -15,9 +15,12 @@ is_json(){ printf '%s' "$1" | node -e 'let s="";process.stdin.on("data",d=>s+=d)
 # Invoke a hook under a fake host path (argv[1] carries the host dir). We symlink the
 # real hook under a .codex/.claude/Windows-style tree so argv[1] contains the marker
 # while the code is unchanged.
-run_as(){ # $1=hookfile $2=fake-argv0-dir(with trailing marker) -> stdout
-  local hook="$1" dir="$2"; mkdir -p "$dir"; ln -sf "$ROOT/hooks/$hook" "$dir/$(basename "$hook")"
-  printf '{"hook_event_name":"SessionStart","session_id":"s","cwd":"'"$TMP"'"}' | node "$dir/$(basename "$hook")" 2>/dev/null
+# The session runs in a project that opted into svc (an existing .svc/): framework
+# learnings preload only there and in the framework repo, never in a plain project.
+GOVERNED="$TMP/governed"; mkdir -p "$GOVERNED/.svc"
+run_as(){ # $1=hookfile $2=fake-argv0-dir(with trailing marker) [$3=cwd] -> stdout
+  local hook="$1" dir="$2" cwd="${3:-$GOVERNED}"; mkdir -p "$dir"; ln -sf "$ROOT/hooks/$hook" "$dir/$(basename "$hook")"
+  printf '{"hook_event_name":"SessionStart","session_id":"s","cwd":"'"$cwd"'"}' | node "$dir/$(basename "$hook")" 2>/dev/null
 }
 
 echo "== SB-03: SessionStart hooks emit VALID JSON on the Codex path =="
@@ -31,6 +34,11 @@ is_json "$OUT" && ok "healthcheck -> valid JSON on ~/.codex/ path" || bad "healt
 echo "== SB-03: Claude path stays plain text (byte-identical, NOT wrapped) =="
 OUT="$(run_as svc-learning-preload.mjs "$TMP/home/.claude/skills/hooks")"
 if printf '%s' "$OUT" | head -c 40 | grep -q "FRAMEWORK LEARNINGS"; then ok "learning-preload -> plain text on ~/.claude/ path"; else bad "learning-preload claude output changed"; fi
+mkdir -p "$TMP/plain"
+OUT="$(run_as svc-learning-preload.mjs "$TMP/home/.claude/skills/hooks" "$TMP/plain")"
+[ -z "$OUT" ] && ok "learning-preload -> nothing in a plain (non-svc) project" || bad "learning-preload injected framework lore into a plain project"
+OUT="$(run_as svc-learning-preload.mjs "$TMP/home/.codex/skills/hooks" "$TMP/plain")"
+is_json "$OUT" && ok "learning-preload -> still valid JSON on codex path in a plain project" || bad "learning-preload NOT json on codex path in a plain project"
 
 echo "== SB-02: Windows-style backslash .codex path also detected =="
 # emulate a path whose separators are backslashes by passing an argv that contains \.codex\

@@ -285,45 +285,8 @@ function buildHookEntries(skillsPath) {
       ],
     });
   }
-  if (!DISABLED.has("svc-session-end-log")) {
-    entries.SessionEnd.push({
-      matcher: ".*",
-      hooks: [
-        {
-          name: "svc-session-end-log",
-          type: "command",
-          command: `node ${hooksDir}/svc-session-end-log.mjs`,
-          timeout: 10000,
-        },
-      ],
-    });
-  }
-  if (!DISABLED.has("svc-pre-compact-snapshot")) {
-    entries.PreCompress.push({
-      matcher: ".*",
-      hooks: [
-        {
-          name: "svc-pre-compact-snapshot",
-          type: "command",
-          command: `node ${hooksDir}/svc-pre-compact-snapshot.mjs`,
-          timeout: 20000,
-        },
-      ],
-    });
-  }
-  if (!DISABLED.has("svc-notification-surface")) {
-    entries.Notification.push({
-      matcher: ".*",
-      hooks: [
-        {
-          name: "svc-notification-surface",
-          type: "command",
-          command: `node ${hooksDir}/svc-notification-surface.mjs`,
-          timeout: 10000,
-        },
-      ],
-    });
-  }
+  // SessionEnd log / PreCompress snapshot / Notification log were removed: they
+  // wrote .svc/sessions/* files nothing read (docs/removals.md).
   // Gemini CLI does not list a UserPromptSubmit event — svc-prompt-stale-state
   // skipped on Gemini until host-side support lands.
 

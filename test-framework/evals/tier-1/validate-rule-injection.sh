@@ -49,12 +49,12 @@ for e in m['rulesRegistry']['entries']:
         s=e.get('signals',{}) or {}
         assert s.get('paths') or s.get('bash') or s.get('keywords') or 'concern-bridge' in (e.get('notes','') or ''), e['path']"
 
-# I2: PreToolUse(Edit) on a react file injects react rule with allow (fresh session s1)
+# I2: PreToolUse(Edit) on a react file injects react rule as context only (fresh session s1)
 rm -f .svc/rule-injections-wi361s1.json
 OUT1=$(payload PreToolUse Edit file_path src/components/App.tsx wi361s1 | run_inj)
 printf '%s' "$OUT1" > "$TMP/o1.json"
 check "I2 react rule injected pre-edit" grep -q "react/coding-style" "$TMP/o1.json"
-check "I2 permissionDecision allow present" grep -q '"permissionDecision":"allow"' "$TMP/o1.json"
+check "I2 no permissionDecision (context only; an allow would skip the host permission prompt)" bash -c "! grep -q permissionDecision '$TMP/o1.json'"
 check "I2 under 10K cap" python3 -c "
 import json;d=json.load(open('$TMP/o1.json'));assert len(d['hookSpecificOutput']['additionalContext'])<=10000"
 

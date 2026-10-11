@@ -73,8 +73,7 @@ if ls "$IN/.svc"/svc-edited-files*.json >/dev/null 2>&1; then pass "stop-quality
 # behavioral assertion would be false-green; it is covered by the static check in D2.)
 GENERIC='{"tool_name":"Edit","tool_input":{"file_path":"app/x.ts","content":"y"},"session_id":"t","cwd":"PH"}'
 for h in svc-loop-guard svc-rule-injector svc-owner-inject svc-learning-inject \
-         svc-subagent-start svc-subagent-stop svc-notification-surface \
-         svc-session-end-log svc-pre-compact-snapshot; do
+         svc-subagent-start svc-subagent-stop; do
   d="$TMP/seed-$h"; mkdir -p "$d"; : > "$d/.git"   # stray .git, no .svc
   ( cd "$d" && printf '%s' "${GENERIC/PH/$d}" | node "$REPO_ROOT/hooks/$h.mjs" >/dev/null 2>&1 || true )
   [ -e "$d/.svc" ] && fail "$h seeded .svc out-of-repo" || pass "$h: no .svc out-of-repo"
@@ -84,8 +83,7 @@ done
 # (A) and proven effective end-to-end in (B)/(C) — so wiring each seeder to it is the
 # hermetic proof for the git-timing-dependent ones (auto-capture) without flakiness.
 for h in svc-loop-guard svc-rule-injector svc-owner-inject svc-learning-inject \
-         svc-subagent-start svc-subagent-stop svc-notification-surface \
-         svc-session-end-log svc-pre-compact-snapshot svc-auto-capture-learnings; do
+         svc-subagent-start svc-subagent-stop svc-auto-capture-learnings; do
   f="$REPO_ROOT/hooks/$h.mjs"
   if grep -q 'resolveSvcStateDir' "$f" && grep -qE 'if \(!(svcDir|stateDir)\)' "$f"; then
     pass "$h: wired to resolveSvcStateDir + skips when null"
