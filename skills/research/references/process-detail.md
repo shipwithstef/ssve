@@ -68,3 +68,17 @@ Append to `docs/specs/research-log.md` (create if absent):
 ```
 
 On a cache hit past `Re-verify after`, the entry is a LEAD, not an answer — re-ground first.
+
+### Step 2b: Tiered Discovery commands (T0–T2)
+
+- **T0 — Local:** `node -p "require('./package.json').dependencies['<pkg>']"` or
+  `cat node_modules/<pkg>/package.json`; `grep -rn "<symbol>" src/`; `node_modules/<pkg>/README.md`
+  or type defs.
+- **T1 — Registry:**
+    - npm: `npm view <pkg> version dist-tags repository.url homepage versions` or `curl -s https://registry.npmjs.org/<pkg>`
+    - PyPI: `curl -s https://pypi.org/pypi/<pkg>/json` → version, requires_python, project_urls
+    - crates: `curl -s -H "User-Agent: svc-research/1.0" https://crates.io/api/v1/crates/<crate>`
+- **T2 — GitHub:**
+    - Exists already? `gh search repos "<capability>" --language=<lang> --sort=stars --json fullName,stargazersCount,pushedAt,license`
+    - Real API shape: `gh search code "<Symbol>" --repo <owner>/<repo> --json path,textMatches`
+    - Exact version source, no clone: `gh api repos/<owner>/<repo>/releases/latest -q '.tag_name + " " + .published_at'`; `gh api "repos/<owner>/<repo>/contents/<file>?ref=<tag>" -q '.content' | base64 -d`

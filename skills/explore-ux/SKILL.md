@@ -69,25 +69,19 @@ Produces actionable improvement proposals with competitive citations.
 
 **Announce at start:** "I'm using explore-ux to perform competitive UX exploration."
 
+**Outcome:** per-flow competitive scorecards, implementable proposals, and a WI for every
+finding of Medium severity or higher. **Check:** Self-Verify below. **Boundary:** every
+score cites a specific competitor and a screenshot — no ungrounded opinions.
+
 ## Hard rule — knowledge base precondition
 
-This skill MUST NOT run without a populated competitive knowledge base.
-Before invocation, verify:
-
-```bash
-# Check for competitor knowledge
-ls references/knowledge/competitors/*/CAPABILITIES.md 2>/dev/null | wc -l
-# Check for sector reference bank
-ls references/landing-bank/*/INDEX.md 2>/dev/null | wc -l
-```
-
-If either count is zero:
+This skill does not run without a populated competitive knowledge base, because exploration
+without it produces ungrounded opinions — the exact failure mode this skill exists to
+prevent. Before invocation, count `references/knowledge/competitors/*/CAPABILITIES.md` and
+`references/landing-bank/*/INDEX.md`. If either count is zero:
 1. **Halt** — do not proceed with exploration
 2. **Route to `analyze-competitors`** (if no knowledge base) or `benchmark-landing` (if no reference bank)
 3. Log the blocker in `.svc/ux-exploration/<WI>/blocker.md`
-
-Running competitive UX exploration without competitive knowledge produces
-ungrounded opinions — the exact failure mode this skill is designed to prevent.
 
 ## Modes
 
@@ -106,96 +100,40 @@ ungrounded opinions — the exact failure mode this skill is designed to prevent
 
 ## Process
 
+Templates for every artifact below: `references/templates.md`.
+
 ### Step 0: Scope Definition
 
-Define what to explore:
-
-```markdown
-| Parameter | Value |
-|-----------|-------|
-| Mode | competitive-benchmark / friction-audit / innovation-proposal |
-| Target URL | <live app URL> |
-| Sector | <sector slug from landing-bank> |
-| Flow(s) | <journey IDs or "full app"> |
-| Competitors to reference | <specific slugs or "all tracked"> |
-| Viewports | desktop (1280) / mobile (375) / both |
-```
-
-Log to `.svc/ux-exploration/<WI>/scope.md`.
+Record mode, target URL, sector, flows, competitors to reference, and viewports in
+`.svc/ux-exploration/<WI>/scope.md`.
 
 ### Step 1: Load Competitive Context
 
-Read the relevant competitor knowledge:
-
-1. `references/knowledge/competitors/<slug>/CAPABILITIES.md` — extract UX patterns for the target flow
-2. `references/knowledge/competitors/<slug>/enrollment-flow.md` or equivalent — flow-specific deep dives
-3. `references/landing-bank/<sector>/<anchor>/pattern.md` — visual pattern references
-4. `references/landing-bank/<sector>/INDEX.md` — sector baseline context
-
-For each competitor, extract:
-- Step count for comparable flows
-- Key UX patterns (auto-fill, progressive disclosure, one-tap actions)
-- Notable friction points (from customer-complaints.md if available)
-- Enrollment/auth mechanisms
+From the competitor knowledge (`CAPABILITIES.md`, flow-specific deep dives such as
+`enrollment-flow.md`, `customer-complaints.md`) and the landing bank (`<sector>/INDEX.md`,
+`<sector>/<anchor>/pattern.md`), extract per competitor: step count for comparable flows,
+key UX patterns (auto-fill, progressive disclosure, one-tap actions), notable friction
+points, and enrollment/auth mechanisms.
 
 ### Step 2: Browser Pre-flight
 
-```bash
-BROWSE="$HOME/gstack/browse/dist/browse"
-if $BROWSE status 2>&1 | grep -q "Status: healthy"; then
-  echo "✅ browse daemon ready"
-  USE_BROWSE=true
-else
-  echo "⚠️  browse daemon unavailable — falling back to Playwright MCP"
-  USE_BROWSE=false
-fi
-```
-
-Auth bootstrap (same pattern as test-journeys):
-```bash
-ls e2e/helpers/browse-auth.md 2>/dev/null && cat e2e/helpers/browse-auth.md
-```
+Use the gstack `browse` daemon when healthy, else fall back to Playwright MCP; bootstrap
+auth the same way test-journeys does (`e2e/helpers/browse-auth.md`).
 
 ### Step 3: Interactive Exploration
 
-For each flow in scope:
-
-**A. Navigate and capture baseline**
-```bash
-browse goto <target_url>
-browse snapshot -i
-browse screenshot .svc/ux-exploration/<WI>/<flow>-start.png
-```
-
-**B. Walk the flow step by step**
-
-For each step:
-1. Record the action required (tap, fill, scroll, wait)
-2. Record time-to-completion (estimate or measure)
-3. Capture screenshot at each state transition
-4. Note any friction: confusion points, extra steps, missing feedback
-5. Compare to competitor pattern: "Competitor X does this in 2 taps; ours requires 5"
-
-**C. Capture competitor reference side-by-side (if available)**
-
-If competitor screenshots exist in `references/landing-bank/` or captured anchors:
-- Load competitor screenshot for comparable state
-- Note deltas: layout, copy, interaction model, step count
+For each flow in scope, capture a baseline screenshot, then walk the flow and record, per
+step: the action (tap, fill, scroll, wait), time-to-completion, a screenshot at each state
+transition, friction (confusion, extra steps, missing feedback), and the competitor
+comparison ("Competitor X does this in 2 taps; ours requires 5"). Where competitor
+screenshots exist in `references/landing-bank/` or captured anchors, note layout, copy,
+interaction-model and step-count deltas side by side.
 
 ### Step 4: Competitive Scoring
 
-For each flow explored, produce a competitive scorecard:
-
-```markdown
-| Dimension | Ours | Best Competitor | Gap | Severity |
-|-----------|------|-----------------|-----|----------|
-| Steps to complete | 7 | 3 (Toast) | +4 steps | High |
-| Time to first value | 45s | 12s (Square) | +33s | High |
-| Clarity of primary action | 2/4 | 4/4 (Fivestars) | -2 | Medium |
-| Empty state quality | 2/4 | 4/4 (TapMango) | -2 | Medium |
-| Error recovery | 1/4 | 3/4 (Toast) | -2 | Critical |
-| Mobile optimization | 2/4 | 4/4 (all) | -2 | High |
-```
+Produce a scorecard per flow (dimension, ours, best competitor, gap, severity) covering
+steps to complete, time to first value, clarity of primary action, empty states, error
+recovery and mobile optimization.
 
 Scoring scale (1-4, same as track-visuals comprehension rubric):
 - **4 (Best-in-class):** Matches or exceeds top competitor
@@ -205,66 +143,16 @@ Scoring scale (1-4, same as track-visuals comprehension rubric):
 
 ### Step 5: Generate Proposals
 
-For each gap with severity ≥ Medium, generate a structured proposal:
-
-```markdown
-### Proposal: <title>
-
-**Flow:** <flow name>
-**Severity:** <Critical / High / Medium>
-**Competitor reference:** <competitor slug> — <specific pattern or screenshot>
-**Current state:** <what we do now>
-**Proposed change:** <specific, implementable change>
-**Expected impact:** <step reduction, time reduction, or qualitative improvement>
-**Implementation effort:** <small / medium / large>
-**Reversibility:** <two-way / one-way>
-**Files likely touched:** <guess at affected components>
-```
-
-Save proposals to `.svc/ux-exploration/<WI>/proposals.jsonl`:
-```json
-{"ts":"ISO-8601","flow":"<flow>","severity":"high","title":"...","competitor_ref":"...","proposal":"...","effort":"medium","reversibility":"two-way"}
-```
+For each gap with severity ≥ Medium, write a structured proposal (flow, severity,
+competitor reference, current state, proposed change, expected impact, effort,
+reversibility, files likely touched) and append it to
+`.svc/ux-exploration/<WI>/proposals.jsonl`.
 
 ### Step 6: Write Exploration Report
 
-```markdown
-# UX Exploration Report: <project> — <date>
-
-**Mode:** <mode>
-**Target:** <URL>
-**Sector:** <sector>
-**Competitors referenced:** <list>
-**Viewports tested:** <list>
-
-## Flow Scorecards
-
-<scorecards from Step 4>
-
-## Proposals
-
-<proposals from Step 5>
-
-## Quick Wins (effort: small, impact: high)
-
-<subset of proposals fitting quick-fix criteria>
-
-## Strategic Changes (effort: large or one-way)
-
-<subset requiring spec/plan/execute pipeline>
-
-## Competitor Patterns Not Yet Adopted
-
-<patterns from innovation-proposal mode>
-
-## Evidence Paths
-
-- Screenshots: `.svc/ux-exploration/<WI>/`
-- Structured proposals: `.svc/ux-exploration/<WI>/proposals.jsonl`
-- Competitive context: `references/knowledge/competitors/`
-```
-
-Save to `docs/specs/ux-exploration/<run-id>.md`.
+Save to `docs/specs/ux-exploration/<run-id>.md`: header, flow scorecards, proposals, Quick
+Wins (small effort, high impact), Strategic Changes (large or one-way), competitor patterns
+not yet adopted, and evidence paths.
 
 ## Routing Rules
 
@@ -278,14 +166,14 @@ Route findings automatically:
 - Journey flow issue → `write-journeys` + WI
 - Spec drift (competitor now does what our spec says is unique) → `sync-spec-code` + WI
 
-Every finding ≥ Medium severity MUST produce a WI file before the skill completes.
+Every finding of Medium severity or higher produces a WI file before the skill completes.
 
 ## Guardrails
 
 1. **Never run without competitor knowledge.** The knowledge base precondition is a hard gate.
-2. **Score against specific competitors, not generic "best practice."** Every score must cite a competitor.
+2. **Score against specific competitors, not generic "best practice."** Every score cites a competitor.
 3. **Capture screenshots at every state transition.** A score without evidence is an opinion.
-4. **Proposals must be implementable.** "Be more like Toast" is not a proposal. "Replace 3-screen onboarding with 1-screen phone-number + SMS flow, matching Toast" is.
+4. **Proposals are implementable.** "Be more like Toast" is not a proposal. "Replace 3-screen onboarding with 1-screen phone-number + SMS flow, matching Toast" is.
 5. **Distinguish quick wins from strategic changes.** Don't bury a 2-line CSS fix inside a 6-week refactor proposal.
 6. **Respect viewport differences.** A flow that scores 4/4 on desktop can score 2/4 on mobile. Score independently.
 
@@ -333,15 +221,13 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (source of truth: `.svc/lane-tasks-<WI>.json`; mirrors: Claude `TaskList`, Kimi `/task`+`TaskList`/`TaskOutput` observe-only, Codex `update_plan`)
+- Treat `Invoke: /skill-name` + `metadata.skill` as routing instructions, not prose.
+- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume.
+- In Claude Code mirror file state with `TaskList` / `TaskUpdate`; Kimi observes only; in Codex and other hosts without native task-mutation APIs, mirror only the active step in `update_plan`.
+- Mark this task `completed` before leaving; then mirror. Evaluate the next task's conditions:
+  runnable → mark `in_progress`, persist, load that skill; skippable → mark `completed` + skip reason.
+- Per `route-workflow` Task-Graph Execution Protocol.
 
 This skill does not advance progressive chains. It produces reports and proposals
 that feed into downstream skills (`quick-fix`, `write-spec`, `validate-feature`).

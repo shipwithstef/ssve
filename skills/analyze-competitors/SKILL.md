@@ -67,29 +67,26 @@ chain:
 Preserve this skill's unique competitor evidence and thin-landscape conditions.
 
 Product intelligence — what exists in the market, what works, what's missing,
-and where the whitespace is. This is NOT marketing positioning. This feeds product
+and where the whitespace is. This is not marketing positioning; it feeds product
 decisions: feature scope, UX patterns, differentiation strategy.
 
 **Announce at start:** "I'm using the analyze-competitors skill to map the competitive landscape."
 
+**Outcome:** `docs/specs/analyze-competitors.md` + `.data.json` grounded in fresh web
+research, with whitespace and moat scored, and competitor knowledge persisted. **Check:**
+Self-Verify below and `validate-competitor-analysis-schema.sh`. **Boundary:** every
+competitor fact comes from a source you actually read this run or a dated knowledge entry —
+never from memory or invention.
 
 **Knowledge protocol:** follow `references/knowledge-protocol.md` for extraction, storage, and staleness rules.
 
 ## Knowledge-First
 
-Before researching competitors, check the knowledge base:
-
-```bash
-cat references/knowledge/INDEX.md 2>/dev/null
-```
-
-If competitors in this space were already analyzed (e.g., for a previous
-project in the same domain), read their Layer 2 CAPABILITIES.md. Update
-with delta only — new entrants, recent launches, pricing changes. Don't
-re-analyze what's already known.
-
-After analysis, write knowledge layers for each significant competitor
-so future projects don't re-research them. See Step 6 below.
+Start from `references/knowledge/INDEX.md`. If competitors in this space were already
+analyzed (e.g., for a previous project in the same domain), read their Layer 2
+CAPABILITIES.md and update with the delta only — new entrants, recent launches, pricing
+changes. After analysis, write knowledge layers for each significant competitor so future
+projects don't re-research them (Step 6).
 
 ## Process
 
@@ -103,30 +100,22 @@ full re-analysis." In `--refresh` mode, only update: pricing rows, current
 buzz, new entrants (add to Emerging tier), and shutdowns/pivots. Skip full
 9-dimension re-analysis for existing competitors.
 
-Read `docs/specs/vision.md` and `docs/specs/domain-profile.md` (if exists).
-
-Determine: what category does this product compete in? Be specific — not "productivity tool"
-but "AI-assisted learning recommendation platform" or "real-time collaboration for distributed teams."
+Read `docs/specs/vision.md` and `docs/specs/domain-profile.md` (if exists), then name the
+category precisely — not "productivity tool" but "AI-assisted learning recommendation
+platform" or "real-time collaboration for distributed teams."
 
 ### Step 2: Find competitors (4-tier, up to 20)
 
-**Web research is MANDATORY** (per WI-140 / SDKG instance `competitor-analysis`). Output MUST include both `docs/specs/analyze-competitors.md` (human) AND `docs/specs/analyze-competitors.data.json` (machine, conforming to `references/schemas/competitor-analysis.schema.json`). The header pattern "no new web research performed" / "consolidation only" / "read-only consolidation" is REJECTED by `validate-competitor-analysis-schema.sh` (COMP-07). You MUST invoke WebSearch + WebFetch (or agy-cli per `rules/research-must-use-agy-cli.md`) per direct competitor before producing output. See `references/templates/analyze-competitors-output-template.md` for the required output shape (markdown + companion JSON).
+**Web research is required** (per WI-140 / SDKG instance `competitor-analysis`), because a landscape built from memory misses new entrants and current mechanics. Output both `docs/specs/analyze-competitors.md` (human) and `docs/specs/analyze-competitors.data.json` (machine, conforming to `references/schemas/competitor-analysis.schema.json`). The header pattern "no new web research performed" / "consolidation only" / "read-only consolidation" is REJECTED by `validate-competitor-analysis-schema.sh` (COMP-07). Invoke WebSearch + WebFetch (or agy-cli per `rules/research-must-use-agy-cli.md`) per direct competitor before producing output. See `references/templates/analyze-competitors-output-template.md` for the output shape (markdown + companion JSON).
 
-**Customer Mechanic Analysis section is REQUIRED for each direct competitor** (per WI-140 COMP-03): how does the customer earn / enroll / verify; merchant cost; POS integrations; fraud prevention; customer complaints. This is what catches the "we're the only ones who do receipt scanning" class of failure on day 1.
+**Customer Mechanic Analysis section is required for each direct competitor** (per WI-140 COMP-03): how does the customer earn / enroll / verify; merchant cost; POS integrations; fraud prevention; customer complaints. This is what catches the "we're the only ones who do receipt scanning" class of failure on day 1.
 
-**If `/last30days` is available** (recommended — [mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill)):
-Run `/last30days "[category] tools products competitors"` first. This gives
-you what people are ACTUALLY talking about right now — not just what ranks on
-Google. Cross-platform signals (Reddit + HN + X) reveal which competitors have
-real momentum vs which are just SEO-optimized landing pages.
-
-**Then supplement with WebSearch** for:
-- "[category] top companies {current year}"
-- "[category] best tools {current year}"
-- "[category] alternatives comparison"
-- "[specific problem from vision] solutions"
-- "[category] startups funded {current year}"
-- "[category] open source alternatives"
+**If `/last30days` is available** (recommended — [mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill)), run
+`/last30days "[category] tools products competitors"` first: cross-platform signals
+(Reddit + HN + X) show which competitors have real momentum versus SEO-optimized landing
+pages. Then supplement with WebSearch covering top companies and best tools for the current
+year, alternatives comparisons, solutions to the specific problem in the vision, recently
+funded startups, and open-source alternatives.
 
 Map competitors across 4 tiers:
 
@@ -139,9 +128,8 @@ Map competitors across 4 tiers:
 
 **Minimum:** 3 direct + 1 from any other tier. **Maximum:** 20 total.
 
-For mature domains with many competitors, populate all tiers. For niche
-markets, it's acceptable to have fewer — log "Tier X: <N> found (market
-is narrow)" rather than padding with irrelevant entries.
+For mature domains, populate all tiers. For niche markets, fewer is acceptable — log
+"Tier X: <N> found (market is narrow)" rather than padding with irrelevant entries.
 
 ### Step 3: Analyze each competitor
 
@@ -186,118 +174,26 @@ durability on a 1–5 scale:
 | 5 | Structural moat | Regulatory, geographic, certification, or proprietary pipeline | MoR status, local business licensing, exclusive partnerships |
 
 Products with no moat (all 1s) are revenue plays, not defensible businesses —
-that's fine for a first revenue project but important to know explicitly.
-Products with mixed moats (some 3+) can be defensible if the high-moat
-dimensions reinforce each other.
+fine for a first revenue project but important to know explicitly. Mixed moats
+(some 3+) can be defensible if the high-moat dimensions reinforce each other.
 
-**Output a moat table** with each opportunity/strength scored:
-
-```markdown
-## Moat Assessment
-
-| Opportunity/Strength | Moat score | Type | Why |
-|---|---|---|---|
-| [opportunity 1] | 3 | Data/network | Loyalty visit history accumulates over months |
-| [opportunity 2] | 1 | Feature parity | Any competitor could add this in a week |
-```
-
+Output a `## Moat Assessment` table (opportunity/strength, moat score, type, why).
 **Overall moat rating:** average of top 3 scores. Below 2.0 = no moat (flag
 it). 2.0–3.0 = weak moat. 3.0+ = defensible position.
 
 ### Step 5: Write analysis
 
-Produce `docs/specs/analyze-competitors.md`:
-
-```markdown
-# Competitor Analysis
-
-**Generated:** YYYY-MM-DD
-**Category:** [specific competitive category]
-**Source:** WebSearch + public reviews
-
-## Direct Competitors (target 8-10, was up to 6)
-
-### 1. [Company Name]
-- **What they do:** [1-2 sentences]
-- **Key features:** [bulleted list]
-- **Business model:** [pricing approach]
-- **Users love:** [from reviews]
-- **Users hate:** [from reviews]
-- **Differentiator:** [what they claim]
-
-### 2-6. [Same structure]
-
-## Adjacent Competitors (target 8-10, was up to 5)
-[Core dimensions only: product, pricing, differentiator, user pain]
-
-## Emerging / Insurgent (target 6-8, was up to 5)
-[Core + funding/traction signals]
-
-## Macro Disruptors (target 4-6, was up to 4)
-[Threat assessment: what trigger, what timeline, how to survive]
-
-## Landscape Summary
-
-### Table Stakes (everyone has, we must too)
-- [feature 1]
-- [feature 2]
-
-### Competitive Features (some have, worth considering)
-- [feature] — [who has it, why it matters]
-
-### Whitespace (nobody does well)
-- [gap 1] — [why it's an opportunity]
-- [gap 2] — [why it's an opportunity]
-
-### Common User Complaints (across all competitors)
-- [complaint] — [N mentions across reviews]
-
-## Moat Assessment
-
-| Opportunity/Strength | Moat score (1-5) | Type | Why |
-|---|---|---|---|
-| [opportunity 1] | [score] | [type] | [reasoning] |
-
-**Overall moat rating:** [average of top 3] — [no moat / weak / defensible]
-
-## Differentiation Opportunity
-
-Based on the whitespace, user pain, and moat assessment:
-- **Our angle:** [how vision.md's approach differs]
-- **What we can do that they can't/won't:** [specific capabilities]
-- **What we should steal:** [best practices from competitors]
-- **What we should avoid:** [mistakes competitors make]
-
-## Impact on Feature Decisions
-
-- **Feature discovery Q4 (the bet):** [informed by whitespace]
-- **Spec ACs:** [informed by table stakes + competitive features]
-- **UX design:** [informed by what users love/hate about competitors]
-- **Marketing positioning:** [informed by differentiation opportunity]
-```
+Produce `docs/specs/analyze-competitors.md` with: header (Generated date, category,
+sources), one section per tier, Landscape Summary (table stakes, competitive features,
+whitespace, common complaints), Moat Assessment, Differentiation Opportunity (our angle,
+what we can do that they can't/won't, what to steal, what to avoid), and Impact on Feature
+Decisions. Template: `references/output-templates.md`.
 
 ### Step 6: Write knowledge layers
 
-For each competitor analyzed, write to the knowledge base:
-
-```bash
-mkdir -p references/knowledge/competitors/<competitor-slug>
-```
-
-Write CAPABILITIES.md:
-```markdown
-# <Competitor Name> — Capabilities
-Analyzed: <date>
-URL: <url>
-## What: <one sentence>
-## Pricing: <model and price points>
-## Strengths: <bullet list>
-## Weaknesses: <bullet list>  
-## Users: <who uses it>
-```
-
-Write `.version` with analysis date (stale after 7 days — competitors move fast).
-Update `references/knowledge/INDEX.md` with a row.
+For each competitor analyzed, write `references/knowledge/competitors/<competitor-slug>/CAPABILITIES.md`
+(template in `references/output-templates.md`) and `.version` with the analysis date (stale
+after 7 days — competitors move fast). Update `references/knowledge/INDEX.md` with a row.
 
 ## Phase Receipt Contract
 
@@ -339,62 +235,30 @@ For existing products: read the codebase to understand what features already exi
 
 ## Audit Mode
 
-When invoked with `--audit` to refresh competitive intelligence:
-
-1. Read `docs/specs/analyze-competitors.md`
-2. Check age: more than 7 days old? Market moves fast.
-3. WebSearch for recent changes: new competitors? Pivots? Shutdowns?
-4. Check our product against the table stakes list: any we still don't have?
-5. Check whitespace: has any competitor filled a gap we identified?
-6. Report: competitor-by-competitor CURRENT/CHANGED/NEW with specific findings
+When invoked with `--audit` to refresh competitive intelligence: if
+`docs/specs/analyze-competitors.md` is more than 7 days old, WebSearch for new competitors,
+pivots and shutdowns; check our product against the table-stakes list and whether any
+competitor filled an identified whitespace gap; report competitor-by-competitor
+CURRENT/CHANGED/NEW with specific findings.
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
-
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (source of truth: `.svc/lane-tasks-<WI>.json`; mirrors: Claude `TaskList`, Kimi `/task`+`TaskList`/`TaskOutput` observe-only, Codex `update_plan`)
+- Treat `Invoke: /skill-name` + `metadata.skill` as routing instructions, not prose.
+- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume.
+- Host-UI mirroring only in the parent session (host exposes TaskList and no `SVC_SUBAGENT=1`);
+  otherwise skip it — the file is the durable record and the parent re-mirrors after the subagent returns.
+  Subagents do not call TaskUpdate: a failed call is silent drift between the subagent's intent and the host UI.
+- In Codex and other hosts without native task-mutation APIs, mirror only the active step in `update_plan`.
+- Mark this task `completed` before leaving; then mirror. Evaluate the next task's conditions:
+  runnable → mark `in_progress`, persist, load that skill; skippable → mark `completed` + skip reason.
+- Per `route-workflow` Task-Graph Execution Protocol.
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+**If `--progressive` and self-verify passed:** chain to build-personas: `build-personas --progressive --lane greenfield`
 
-**If `--progressive` and self-verify passed:**
-- Chain to build-personas: `build-personas --progressive --lane greenfield`
-
-**If standalone:**
-- Report competitive landscape summary
-- Suggest: "Next: run `build-personas` or `validate-feature`"
+**If standalone:** report the competitive landscape summary and suggest: "Next: run `build-personas` or `validate-feature`"
 
 ## Post-Compaction Recovery
 

@@ -63,7 +63,7 @@
     {
       "skill": "analyze-competitors",
       "path": "skills/analyze-competitors/SKILL.md",
-      "content_hash": "c91bfb0b9308f0ba023c8f03cbd23545227f60eff70104b79911a2338c24938e",
+      "content_hash": "aa1dd7537c7860646eb62abd423b9e6f2aac2047a7439c26cf042017dd44d7c5",
       "description": "Researches up to 30 competitors across direct, adjacent, emerging and macro tiers, scoring moats and whitespace into docs/specs/analyze-competitors.md. Use for \"competitors\", \"who are we competing with\", \"differentiation\", \"market analysis\". Product decisions, not marketing copy.",
       "aliases": [],
       "positive_triggers": [],
@@ -81,7 +81,7 @@
     {
       "skill": "analyze-domain",
       "path": "skills/analyze-domain/SKILL.md",
-      "content_hash": "580f4ded31e9650f68858d78b59ac9575ea3c84a4e30931a35148c7f3e26a403",
+      "content_hash": "44ea9989647710921131d8f4c6f5fce61f7009560ba2b546830b6921cb96b113",
       "description": "Identifies the project's industry, stack and domain, loads stack convention packs, and writes docs/specs/domain-profile.md; also answers domain questions for other skills. Terms mode names 10 expert terms and the question to settle first, before a bounded plan. Use for \"what domain is this\", \"industry context\", \"domain expertise\", \"teach me the terms\".",
       "aliases": [],
       "positive_triggers": [],
@@ -99,7 +99,7 @@
     {
       "skill": "analyze-marketing",
       "path": "skills/analyze-marketing/SKILL.md",
-      "content_hash": "17c8a41e6ec5c53e9e0bcde7e25f0d3a60142e1ba71a05f9c99798a8902d0f48",
+      "content_hash": "a14a42d46147c9d751a2500d47b0be59f83f80897a7a7322e19f72f51c06773b",
       "description": "Mines feature specs for marketing value and maintains docs/specs/marketing-context.md; second mode stress-tests messaging against buyer personas. Use for \"mine features\", \"positioning\", \"what should we market\", \"does our messaging work\".",
       "aliases": [],
       "positive_triggers": [],
@@ -477,7 +477,7 @@
     {
       "skill": "create-skill",
       "path": "skills/create-skill/SKILL.md",
-      "content_hash": "a1274c9a56a09d9aa5e4d9af82dfb58366d870e74bfdd94bbd14f9e1b5d13ac2",
+      "content_hash": "7ca70c9f9321fe1b294970318dd054ea68155cdc61dd9eb6e2624f4c5b21b872",
       "description": "Creates or edits svc skills so they meet the framework contract (frontmatter, self- verify, receipts, pipeline continuation, tier-1 evals). Use for \"create a skill\", \"edit this skill\", or when the pipeline needs a project-specific helper skill mid-run.",
       "aliases": [],
       "positive_triggers": [],
@@ -825,7 +825,7 @@
     {
       "skill": "explore-ux",
       "path": "skills/explore-ux/SKILL.md",
-      "content_hash": "5767407b3fa1573609e14133bc5dd51a9b70ef5b7ecfd055ba4699444345ab24",
+      "content_hash": "1e415ef0a3c8f3360a596f193ea4a3a9e7da71c7f346a3d678514c79c4e36919",
       "description": "Competitive UX teardown of live app flows against the competitor knowledge base and sector reference bank. Use for \"how does our UX compare to competitors\", \"friction audit\", \"UX benchmark\", \"why is our onboarding worse\". For one region use propose-ux- improvements.",
       "aliases": [],
       "positive_triggers": [],
@@ -999,7 +999,7 @@
     {
       "skill": "improve-framework",
       "path": "skills/improve-framework/SKILL.md",
-      "content_hash": "43f8f3d03121137d26de045c0f0ac5e5dd6ee5bd0ff5ce8def2eb07c68583759",
+      "content_hash": "705602a1343b2580e30b78a76e8dd71919401526954de6cf0f58d948d8eeb3d9",
       "description": "Fix or improve the svc framework itself: close gaps, apply pending proposals, act on test-framework failures or drift. Use for \"improve the framework\", \"run self- improvement\", \"close framework gaps\". To find gaps first use evolve-framework.",
       "aliases": [],
       "positive_triggers": [],
@@ -1035,7 +1035,7 @@
     {
       "skill": "ingest-guide",
       "path": "skills/ingest-guide/SKILL.md",
-      "content_hash": "9a35cafa6265069d1b134ee0c6f79fdbc5796dff1196e0fc6c87a48aa338fe5c",
+      "content_hash": "54d0fda3b4bc21f0d566234dca7d789a9987a45185b60f6b7b1bc0dfe87a3358",
       "description": "Process pasted long-form content (X threads, LinkedIn posts, blog guides) against the existing catalog and decide: discard, store as reference, blend, or promote to a skill. Use for \"ingest this thread\", \"process this post\", \"what should we do with this guide\".",
       "aliases": [],
       "positive_triggers": [],
@@ -1212,7 +1212,7 @@
     {
       "skill": "mine-builder",
       "path": "skills/mine-builder/SKILL.md",
-      "content_hash": "3986445e1e00b1e6048ba3a7904938e6e8a81a3bc7fe7bd96fdc45551a327490",
+      "content_hash": "e350c052c3845969106f05926d5382b145cc2efb6c3f149a3be3e6dc80467754",
       "description": "Create or update the builder profile (~/.svc/builder-profile.md): finances, time, skills, team, audience, tools, entity, goals, past projects. Use when: first pipeline run, update my profile, anything changed.",
       "aliases": [],
       "positive_triggers": [],
@@ -1248,7 +1248,7 @@
     {
       "skill": "onboard-repo",
       "path": "skills/onboard-repo/SKILL.md",
-      "content_hash": "8883afc3ed62c24bca9649b0821f79df29018c71f6086736226d32df24e1a023",
+      "content_hash": "e93cb33de791702c2ca9735bc1fb0db9706dba8a3b652e4a2e94e2b15f62d3e7",
       "description": "Convert an existing repo to the svc way of working without overwriting what already ships: map current docs, tests and conventions into project state and work items. Use when onboarding a brownfield repo.",
       "aliases": [],
       "positive_triggers": [],
@@ -1482,7 +1482,7 @@
     {
       "skill": "research",
       "path": "skills/research/SKILL.md",
-      "content_hash": "904435d0899bd11ca3ca0135e9a5c0c2030802660786dbd82253fed07f2f37bb",
+      "content_hash": "3a2a13602fcd1d016253c83c730243f47a4d0962aaa0a092b938168c93327329",
       "description": "In-flow research on an API, library version, pattern or domain fact: registries and vendor docs first, dated and cross-checked, logged to the research log; big questions go to deep-research. Use when the user asks to research, look up or find out a named scope, or researchDecision() returns external_research_required. Not for ordinary coding uncertainty or local unknowns.",
       "aliases": [
         "look up",
@@ -1515,7 +1515,7 @@
     {
       "skill": "reverse-engineer",
       "path": "skills/reverse-engineer/SKILL.md",
-      "content_hash": "08af628be69afdef0a05484f3ee1da504e1e861fed3bfbef1797bf79c6dcd7a7",
+      "content_hash": "310a9024a6a4e95de1ea9b33038c8c9cbc57461e7af7d862659daa3aaf62ac6e",
       "description": "Deconstruct a company, product, tweet or technique into a buildable spec with a unique twist. Use when: reverse engineer X, how would I build X, clone X but better, tear this apart, what's their stack, how do they make money, or a product/tweet URL with build intent.",
       "aliases": [],
       "positive_triggers": [],
@@ -1739,7 +1739,7 @@
     {
       "skill": "strategic-decision",
       "path": "skills/strategic-decision/SKILL.md",
-      "content_hash": "774edb17103562aaecbe2d9a1491842ac108f2c667ebe938e12fe31917175dc9",
+      "content_hash": "cbe8b242a95d2057cbab177c12dffdee334afbc042371e3461979ed93b779492",
       "description": "N-way strategic trade study: build vs buy, vendor, framework, database, hosting, AI model, payment provider, pricing or pivot. Use for 'which X should I use', 'compare providers', 'pick a vendor'. Not within-feature architecture (use design-tech).",
       "aliases": [
         "trade study",

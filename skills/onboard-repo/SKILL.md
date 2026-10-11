@@ -81,19 +81,23 @@ not fix everything it finds while still mapping the system.
 
 ## Core Rule
 
-**Log then triage. Do not fix as found.**
+**Log then triage; don't fix as found.**
 
 Conversion discovers findings and records them as work items. Resolution begins only
-after the map is complete, unless the repo is so broken that mapping cannot continue.
+after the map is complete, unless the repo is so broken that mapping cannot continue —
+fixing mid-map loses the overall picture and turns conversion into an endless audit.
+
+**Outcome:** the four canonical state files plus a triaged work-item index. **Check:**
+Self-Verify below. **Boundary:** work items carry tool-verified evidence; existing
+owner-authored files are preserved, and nothing is pushed to an external tracker without
+the owner's explicit choice.
 
 ## Step 0: Initialize Project State Infrastructure
 
 Before mapping the repo, ensure the svc runtime state directory exists:
 
 ```bash
-# Initialize .svc/ state files from framework templates
-# (path depends on your CLI host — see table below)
-node <SKILLS_PATH>/scripts/init-project-state.mjs
+node <SKILLS_PATH>/scripts/init-project-state.mjs   # <SKILLS_PATH> per host, table below
 ```
 
 **Host-specific skills path:**
@@ -133,7 +137,7 @@ These repo files are the source of truth. External trackers are projections.
 
 ## Project State File
 
-**Project State File** — Write `docs/specs/project-state.md` (repo mode `convert`, conversion status, active lanes, current focus, subsystem map, compatibility notes, work-item summary, coverage gaps), `docs/specs/router-context.md` (required skills by intent, precedence repo override > project-local platform rule > generic platform heuristic > global fallback, forbidden flows, code-style authority, deployment contract, detected host and wired rules) and `docs/specs/agent-topology.md` (delegation allowed or not, roles, ownership, shared write surfaces, when to stay single-agent). The foundational artifact status MUST come from `audit-coverage` (the full catalog in `docs/specs/coverage-audit.md`): link or summarize it, never hand-list a subset, which hides gaps. Details: `references/project-state-and-work-items.md`.
+**Project State File** — Write `docs/specs/project-state.md` (repo mode `convert`, conversion status, active lanes, current focus, subsystem map, compatibility notes, work-item summary, coverage gaps), `docs/specs/router-context.md` (required skills by intent, precedence repo override > project-local platform rule > generic platform heuristic > global fallback, forbidden flows, code-style authority, deployment contract, detected host and wired rules) and `docs/specs/agent-topology.md` (delegation allowed or not, roles, ownership, shared write surfaces, when to stay single-agent). The foundational artifact status comes from `audit-coverage` (the full catalog in `docs/specs/coverage-audit.md`): link or summarize it, never hand-list a subset, which hides gaps. Details: `references/project-state-and-work-items.md`.
 
 ## Work Item Types
 
@@ -147,15 +151,8 @@ These repo files are the source of truth. External trackers are projections.
 
 ### 1. Inventory current truth
 
-Read:
-
-- code layout
-- existing docs
-- existing tests
-- existing workflow/status files
-- issue tracker references if present
-
-Answer:
+From the code layout, docs, tests, workflow/status files and any issue-tracker
+references, answer:
 
 - what is actually shipped?
 - what conventions already exist?
@@ -167,11 +164,10 @@ Answer:
 
 ### 2. Map current artifacts into svc form
 
-Do not rename everything on day one.
-
-Instead, classify current truth against the **full svc canonical artifact
-catalog**. The catalog (20 canonical artifacts as of v1) lives in
-`skills/audit-coverage/SKILL.md` — do not maintain a parallel subset list here.
+Rather than renaming everything on day one, classify current truth against the
+**full svc canonical artifact catalog**. The catalog (20 canonical artifacts as of v1)
+lives in `skills/audit-coverage/SKILL.md`; point to it rather than keeping a parallel
+subset list here.
 
 Record compatibility notes where current structure differs from svc (e.g.,
 uppercase `VISION.md` instead of `vision.md`, or specs split by user role
@@ -183,17 +179,16 @@ Create the two brownfield routing artifacts during mapping:
   repo docs + platform/runtime config
 - `docs/specs/agent-topology.md` — explicit delegation contract for the repo
 
-Do not wait for later feature work to discover these. They are part of the
-conversion map.
+They are part of the conversion map, not something later feature work discovers.
 
 ### 2.4 Detect core-mechanic features (per WI-140 ONB-01..04)
 
-**2.4 Detect core-mechanic features** — Run a day-1 competitive sweep. Pass 1 (MANDATORY, universal): enumerate source directories and entry points and group them into feature areas (auth, billing, onboarding, rewards, admin), checking `references/knowledge/competitors/` for each. Pass 2 (supplementary): grep domain-specific core-mechanic patterns derived from the domain profile. For each detected mechanic, run `analyze-competitors` scoped to that mechanic only (not the full 20-competitor analysis) and write `docs/specs/brownfield-competitive-flags.md` per `references/templates/brownfield-competitive-flags.md` with code evidence, competitor match and severity: HIGH (0 of N competitors match) auto-creates a backlog WI tagged `competitive-strategy-review`, MEDIUM (1-2 of N) is flagged in the onboard report with no WI, LOW (3+ of N) is no concern. Details: `references/process-detail.md`.
+**2.4 Detect core-mechanic features** — Run a day-1 competitive sweep. Pass 1 (required, universal): enumerate source directories and entry points and group them into feature areas (auth, billing, onboarding, rewards, admin), checking `references/knowledge/competitors/` for each. Pass 2 (supplementary): grep domain-specific core-mechanic patterns derived from the domain profile. For each detected mechanic, run `analyze-competitors` scoped to that mechanic only (not the full 20-competitor analysis) and write `docs/specs/brownfield-competitive-flags.md` per `references/templates/brownfield-competitive-flags.md` with code evidence, competitor match and severity: HIGH (0 of N competitors match) auto-creates a backlog WI tagged `competitive-strategy-review`, MEDIUM (1-2 of N) is flagged in the onboard report with no WI, LOW (3+ of N) is no concern. Details: `references/process-detail.md`.
 
 ### 2.5 Coverage Audit (mandatory)
 
 After Step 2's informal mapping, invoke `audit-coverage` to produce the
-formal coverage report. This is **not optional** — without it, missing
+formal coverage report. It always runs, because without it missing
 canonical artifacts (domain profile, code-style contract, design contracts,
 visual baselines, marketing context) are silently absent and downstream
 lanes (especially Lane 3 Brownfield Feature Extension) skip steps without
@@ -213,7 +208,7 @@ via `analyze-competitors`.
 
 The same rule applies to repo-local routing knowledge. A repo with critical
 deploy or workflow rules in `AGENTS.md` / `CLAUDE.md` but no
-`docs/specs/router-context.md` is not fully mapped. The audit must flag that
+`docs/specs/router-context.md` is not fully mapped. The audit flags that
 gap so the router stops rediscovering it ad hoc.
 
 Invoke as:
@@ -229,18 +224,18 @@ after writing its outputs, so this skill can continue to Step 3.
 
 When capturing findings from conversation context, prior sessions, or user reports:
 
-1. **Every code-level claim must be verified by reading the actual file.**
+1. **Verify every code-level claim by reading the actual file.**
    "The function bypasses secureOperation" → Read the function. Confirm.
-2. **Every field/function/component name must be grep-verified.**
+2. **Grep-verify every field/function/component name.**
    "Field mismatch: writes discount_percent, reads discount_percentage" → Grep both. Confirm.
-3. **Route recommendations must use Core Pack skills only.**
+3. **Route recommendations use Core Pack skills only.**
    Check against `skills-manifest.json` includedSkills. No external add-ons as primary routes.
 4. **If verification fails, mark the finding as `unverified-report`** and note
    what couldn't be confirmed. Do not assign severity above `medium` to
    unverified findings.
 
-Work items must contain evidence from system tools (Read, Grep, Bash),
-not from conversation history.
+Work items carry evidence from system tools (Read, Grep, Bash), not from
+conversation history, because remembered claims are often stale or wrong.
 
 ### 3. Capture findings as work items
 
@@ -256,14 +251,7 @@ Examples:
 
 ### 4. Triage, then stop
 
-Assign each item:
-
-- type
-- severity
-- lane
-- next skill
-
-Conversion ends when:
+Assign each item a type, severity, lane and next skill. Conversion ends when:
 
 - the repo has a `project-state.md`
 - the repo has a `router-context.md`
@@ -301,10 +289,10 @@ skill explicitly.
 
 ## What Not To Do
 
-- Do not force a clean svc structure on first pass
-- Do not rewrite existing docs just because they are not canonical yet
-- Do not fix every bug you notice while still mapping the repo
-- Do not leave findings in freeform prose when they should be tracked as work items
+- Forcing a clean svc structure on the first pass
+- Rewriting existing docs just because they are not canonical yet
+- Fixing bugs you notice while still mapping the repo
+- Leaving findings in freeform prose instead of tracked work items
 
 ## Tracker Integration
 
@@ -325,32 +313,16 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
-
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (source of truth: `.svc/lane-tasks-<WI>.json`; mirrors: Claude `TaskList`, Kimi `/task`+`TaskList`/`TaskOutput` observe-only, Codex `update_plan`)
+- Treat `Invoke: /skill-name` + `metadata.skill` as routing instructions, not prose.
+- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume.
+- Host-UI mirroring only in the parent session (host exposes TaskList and no `SVC_SUBAGENT=1`);
+  otherwise skip it — the file is the durable record and the parent re-mirrors after the subagent returns.
+  Subagents do not call TaskUpdate: a failed call is silent drift between the subagent's intent and the host UI.
+- In Codex and other hosts without native task-mutation APIs, mirror only the active step in `update_plan`.
+- Mark this task `completed` before leaving; then mirror. Evaluate the next task's conditions:
+  runnable → mark `in_progress`, persist, load that skill; skippable → mark `completed` + skip reason.
+- Per `route-workflow` Task-Graph Execution Protocol.
 
 ### Self-Verify
 
@@ -371,16 +343,6 @@ Before declaring done, verify:
 If any check FAILs, fix before continuing. If a fix requires upstream changes, stop and report.
 
 ### Chaining
-
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
 
 **If `--progressive` flag is present AND self-verify passed:**
 - Check `--skip` list. If this skill is in the skip list, pass through to next.

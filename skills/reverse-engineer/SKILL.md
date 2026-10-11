@@ -78,12 +78,15 @@ Deconstruct anything into a buildable plan with a unique twist.
 Input: a company, product, tweet, technique, workflow, or URL.
 Output: a complete teardown + a build brief ready for `write-vision`.
 
-This skill does NOT just research. It reverse-engineers HOW something works
-across every dimension, identifies what makes it successful, finds its
-weaknesses, and produces a concrete plan to build a differentiated version
-matched to this builder's strengths.
+Beyond research, this skill reverse-engineers how something works across every
+dimension, identifies what makes it successful, finds its weaknesses, and produces a
+concrete plan to build a differentiated version matched to this builder's strengths.
 
 **Announce at start:** "I'm using the reverse-engineer skill to deconstruct [target] and produce a build brief with a unique twist."
+
+**Outcome:** a sourced teardown and an actionable build brief for a family-matched target.
+**Check:** Self-Verify below. **Boundary:** no Phase 1 on a family-mismatched target without
+user confirmation; estimates are labelled, never presented as facts.
 
 ## Input Detection
 
@@ -101,7 +104,7 @@ Parse the user's input to determine what they're pointing at:
 
 ## Phase 0.5: Reference-Family Fit Check
 
-Before spending cycles on Phase 1 intelligence gathering, validate the named targets are from the right PRODUCT FAMILY for the caller's product. Processing a dev-tool teardown for a local-business landing page is not a research failure — it is a *family mismatch* that the caller cannot detect without this check.
+Before spending cycles on Phase 1 intelligence gathering, validate that the named targets are from the right product family for the caller's product. Processing a dev-tool teardown for a local-business landing page is not a research failure — it is a *family mismatch* that the caller cannot detect without this check.
 
 ### Step 1 — Load caller's product context (cheap)
 
@@ -112,7 +115,7 @@ Read, in order, stopping when you have enough signal:
 
 ### Step 2 — Classify the caller's product family
 
-Pick ONE as the primary family (two if genuinely hybrid):
+Pick one primary family (two if genuinely hybrid):
 
 | Family | Signals | Emotional register |
 |---|---|---|
@@ -136,7 +139,7 @@ For each target the user named, pick the same-taxonomy family. If uncertain, Web
 |---|---|
 | Target family == caller family | PROCEED to Phase 1 |
 | Target family ≠ caller family, but user is explicitly seeking cross-family patterns (e.g., "I know it's not the same family, I want to steal the interaction pattern") | PROCEED to Phase 1 with a register-warning in the Twist section |
-| Target family ≠ caller family with no cross-family intent stated | **STOP.** Do not proceed to Phase 1. |
+| Target family ≠ caller family with no cross-family intent stated | **Stop** before Phase 1 and report (Step 5). |
 
 ### Step 5 — On mismatch, report and offer alternatives
 
@@ -157,53 +160,15 @@ Only proceed to Phase 1 after the user confirms. In auto mode with no user prese
 
 ## Phase 1: Intelligence Gathering
 
-Gather everything. Leave no dimension unresearched.
+Research every dimension that applies — a teardown with blind spots produces a twist built on guesses.
 
-### 1A. Product Intelligence
-
-| Dimension | What to find | How |
-|---|---|---|
-| **What it does** | Core value prop in one sentence | Landing page, About page, app store description |
-| **Who it's for** | Target users, personas, use cases | Marketing copy, testimonials, case studies, subreddit |
-| **Pricing** | Plans, pricing model, free tier, enterprise | Pricing page, comparison sites |
-| **Key features** | Top 5-10 features that differentiate | Feature page, changelog, product hunt launch |
-| **UX patterns** | Onboarding flow, core loop, retention hooks | Browse the product if possible, screenshots, demo videos |
-| **Content/SEO** | Blog, docs, guides — what drives organic traffic | Site structure, blog topics, keyword targets |
-| **Social proof** | Stars, users, testimonials, press, awards | Landing page, GitHub, social media, review sites |
-
-### 1B. Business Intelligence
-
-| Dimension | What to find | How |
-|---|---|---|
-| **Revenue model** | How they make money (SaaS, marketplace, ads, API) | Pricing page, job posts (reveals scale), press interviews |
-| **Revenue estimate** | ARR/MRR if available, or proxy signals | Crunchbase, BuiltWith, job count, pricing x estimated users |
-| **Growth channels** | How they acquire users (organic, paid, viral, API) | Similarweb, social media presence, backlink analysis |
-| **Team size** | Headcount, key roles, hiring signals | LinkedIn, About page, job board |
-| **Funding** | Raised? From whom? Bootstrapped? | Crunchbase, press, founder interviews |
-| **Moat** | What makes them hard to compete with | Network effects, data, brand, regulatory, tech |
-| **Weakness** | Where they're vulnerable | Bad reviews, missing features, pricing complaints, slow iteration |
-
-### 1C. Technical Intelligence
-
-| Dimension | What to find | How |
-|---|---|---|
-| **Tech stack** | Frontend, backend, database, infra | BuiltWith, Wappalyzer, job posts, GitHub, blog posts |
-| **Architecture** | Monolith, microservices, serverless, edge | Engineering blog, conference talks, job descriptions |
-| **API** | Public API? Docs? Rate limits? Pricing? | /api, /docs, developer portal |
-| **Integrations** | What does it connect to? | Integrations page, marketplace, Zapier/Make |
-| **Data model** | What entities exist? Relationships? | API docs, UI structure, database mentions in blog |
-| **Performance** | Fast? Slow? Real-time? | Browse it, check Lighthouse scores, check latency |
-
-### 1D. Technique Intelligence (if input is a technique/workflow)
-
-| Dimension | What to find | How |
-|---|---|---|
-| **What it is** | The technique in concrete steps | Source tweet/article, related discussions |
-| **Who invented it** | Origin, evolution, variations | Search for earliest mention, related techniques |
-| **Who uses it** | Companies, teams, individuals applying it | Case studies, blog posts, conference talks |
-| **Why it works** | The mechanism — not just "it's good" | First principles analysis, empirical evidence |
-| **Limitations** | When it fails, edge cases, prerequisites | Criticisms, failure stories, context dependencies |
-| **Tools that support it** | Software, frameworks, templates | Product Hunt, GitHub, tool comparisons |
+Cover product (1A: value prop, users, pricing, key features, UX patterns, content/SEO,
+social proof), business (1B: revenue model and estimate, growth channels, team, funding,
+moat, weakness), technical (1C: stack, architecture, API, integrations, data model,
+performance) and — for a technique or workflow input — technique intelligence (1D: what it
+is, origin, who uses it, why it works, limitations, supporting tools). Dimension tables with
+where-to-look hints: `references/intelligence-dimensions.md`. Every claim carries its source;
+estimates (revenue, stack) are labelled as estimates with confidence.
 
 ## Phase 2: Teardown
 
@@ -213,80 +178,25 @@ Synthesize intelligence into a structured teardown document.
 
 Write to `docs/specs/reverse-engineer/<name>-teardown.md`:
 
-```markdown
-# Teardown: <name>
-
-## One-Liner
-<What it does in one sentence>
-
-## Target Users
-<Who uses it and why, with specific personas>
-
-## Revenue Model
-<How it makes money, estimated revenue, pricing tiers>
-
-## Core Loop
-<The user behavior loop that drives retention>
-1. User does X
-2. Product provides Y
-3. User gets value Z
-4. User returns because W
-
-## Feature Map
-| Feature | Purpose | Execution quality (1-10) | Difficulty to replicate |
-|---|---|---|---|
-| ... | ... | ... | easy / medium / hard / moat |
-
-## Tech Stack (best estimate)
-| Layer | Technology | Confidence |
-|---|---|---|
-| Frontend | ... | high/medium/low |
-| Backend | ... | ... |
-| Database | ... | ... |
-| Infra | ... | ... |
-
-## Growth Engine
-| Channel | Estimated % of traffic | Replicable? |
-|---|---|---|
-| ... | ... | yes/no/partially |
-
-## Moat Analysis
-| Moat type | Strength (1-10) | How to overcome |
-|---|---|---|
-| ... | ... | ... |
-
-## Weaknesses
-| Weakness | Evidence | Opportunity |
-|---|---|---|
-| ... | (bad reviews, missing feature, complaint) | (what you'd do differently) |
-
-## What Makes It Work (the 3 things)
-1. <The #1 reason this succeeds — not a feature, a truth about the market>
-2. <The #2 reason>
-3. <The #3 reason>
-
-## What's Overrated About It
-<Things that look important but aren't actually why it works>
-```
+Sections: One-Liner, Target Users, Revenue Model, Core Loop, Feature Map (execution
+quality and difficulty to replicate), Tech Stack (with confidence), Growth Engine, Moat
+Analysis, Weaknesses (with evidence), What Makes It Work (the 3 things — market truths, not
+features), and What's Overrated About It. Template: `references/output-templates.md`.
 
 ## Phase 3: Unique Twist Generation
 
-This is the creative core. Do NOT just copy — find the angle that makes
-your version worth building.
+This is the creative core: find the angle that makes your version worth building, rather
+than a copy.
 
 ### 3A. Load Builder Context
 
-Read builder profile (`~/.svc/builder-profile.md`) if it exists.
-Extract: skills, distribution channels, time constraints, financial situation.
-
-If no builder profile exists, ask:
-- What are you best at? (tech stack, domain expertise)
-- Who can you reach? (existing audience, network, community)
-- How much time do you have? (full-time, evenings, weekends)
+From `~/.svc/builder-profile.md` (if it exists), take skills, distribution channels, time
+constraints and financial situation. Without a profile, ask what they are best at (stack,
+domain), who they can reach (audience, network, community), and how much time they have.
 
 ### 3B. Generate 5 Twist Angles
 
-For each twist, explain WHY it's differentiated — not just what's different.
+For each twist, explain why it's differentiated — not just what's different.
 
 | Angle type | How to generate |
 |---|---|
@@ -295,7 +205,7 @@ For each twist, explain WHY it's differentiated — not just what's different.
 | **Integrate** | Combine two products into one. "It's X + Y in one tool" |
 | **Open source** | Closed-source product → open-source alternative. Capture the self-host crowd |
 | **Different business model** | They charge monthly → you do one-time. They're enterprise → you're indie. They're free + ads → you're paid + private |
-| **Builder advantage** | Use something unique about THIS builder — their audience, domain expertise, geographic market, language, existing product |
+| **Builder advantage** | Use something unique about this builder — their audience, domain expertise, geographic market, language, existing product |
 | **Technique flip** | They do it X way → you do it Y way because of a first-principles insight about why X is suboptimal |
 | **Speed/UX flip** | They're complex → you're instant. They require setup → you work out of the box |
 | **AI-native** | They built pre-AI → you build AI-first. Core experience changes when AI is the default |
@@ -319,51 +229,10 @@ Produce a concrete build brief that feeds directly into `write-vision`.
 
 Write to `docs/specs/reverse-engineer/<name>-build-brief.md`:
 
-```markdown
-# Build Brief: <chosen-twist-name>
-
-**Based on:** <original product/company/technique>
-**Twist:** <the differentiation in one sentence>
-**Builder:** <name from profile or "not profiled">
-
-## Vision Draft
-<2-3 paragraphs: what you're building, for whom, why now, how it's different>
-
-## Target User
-<Primary persona with specific needs the original doesn't serve>
-
-## Core Features (MVP — ship in <timeframe>)
-| # | Feature | Why included | Inspired by original? | Twist applied? |
-|---|---------|-------------|----------------------|---------------|
-| 1 | ... | ... | yes/no | yes — <how it's different> |
-
-## Features to SKIP (deliberately)
-| Feature in original | Why skip |
-|---|---|
-| ... | <not core to twist / too expensive / moat-dependent> |
-
-## Revenue Model
-<How this version makes money, day 1>
-
-## Growth Plan (first 100 users)
-| Week | Action | Channel | Expected result |
-|---|---|---|---|
-| 1 | ... | ... | ... |
-
-## Tech Stack Recommendation
-<Based on builder's skills + speed requirement>
-
-## Risk Register
-| Risk | Likelihood | Mitigation |
-|---|---|---|
-| Original company copies your twist | ... | Ship fast, build community |
-| ... | ... | ... |
-
-## Next Step
-→ Feed this brief into `write-vision` to start the svc pipeline.
-  The teardown at `docs/specs/reverse-engineer/<name>-teardown.md`
-  becomes input for `analyze-competitors`.
-```
+Sections: header (based on, twist, builder), Vision Draft, Target User, Core Features
+(MVP), Features to SKIP (deliberately), day-1 Revenue Model, Growth Plan (first 100 users),
+Tech Stack Recommendation, Risk Register, and Next Step (→ `write-vision`; the teardown
+feeds `analyze-competitors`). Template: `references/output-templates.md`.
 
 ## Phase 5: Knowledge Persistence
 
@@ -398,44 +267,18 @@ skip. Do not complete the task until all required phase ids appear in
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
-
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (source of truth: `.svc/lane-tasks-<WI>.json`; mirrors: Claude `TaskList`, Kimi `/task`+`TaskList`/`TaskOutput` observe-only, Codex `update_plan`)
+- Treat `Invoke: /skill-name` + `metadata.skill` as routing instructions, not prose.
+- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume.
+- Host-UI mirroring only in the parent session (host exposes TaskList and no `SVC_SUBAGENT=1`);
+  otherwise skip it — the file is the durable record and the parent re-mirrors after the subagent returns.
+  Subagents do not call TaskUpdate: a failed call is silent drift between the subagent's intent and the host UI.
+- In Codex and other hosts without native task-mutation APIs, mirror only the active step in `update_plan`.
+- Mark this task `completed` before leaving; then mirror. Evaluate the next task's conditions:
+  runnable → mark `in_progress`, persist, load that skill; skippable → mark `completed` + skip reason.
+- Per `route-workflow` Task-Graph Execution Protocol.
 
 ### Chaining
-
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
 
 After this skill completes:
 

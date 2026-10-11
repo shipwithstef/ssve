@@ -7,8 +7,8 @@ Moved verbatim from SKILL.md (progressive disclosure).
 Based on the user interview, fill in these components:
 
 - **name**: Skill identifier (use `verb-noun` convention: write-spec, design-ux, audit-ac)
-- **version**: SKILL.md contract version, a quoted string starting at `"1.0"` (placed immediately after `name`). REQUIRED on every includedSkill. SKILL.md contracts (inputs/outputs/chain) change frequently; the version field lets downstream skills and validators detect breaking contract changes. Bump it when you change inputs/outputs/chain in a backward-incompatible way. Enforced by `test-framework/evals/tier-1/validate-skill-structure.sh`.
-- **description**: When to trigger, what it does. This is the primary triggering mechanism - include both what the skill does AND specific contexts for when to use it. All "when to use" info goes here, not in the body. Note: currently Claude has a tendency to "undertrigger" skills -- to not use them when they'd be useful. To combat this, please make the skill descriptions a little bit "pushy". So for instance, instead of "How to build a simple fast dashboard to display internal Anthropic data.", you might write "How to build a simple fast dashboard to display internal Anthropic data. Make sure to use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'"
+- **version**: SKILL.md contract version, a quoted string starting at `"1.0"` (placed immediately after `name`). Required on every includedSkill. SKILL.md contracts (inputs/outputs/chain) change frequently; the version field lets downstream skills and validators detect breaking contract changes. Bump it when you change inputs/outputs/chain in a backward-incompatible way. Enforced by `test-framework/evals/tier-1/validate-skill-structure.sh`.
+- **description**: When to trigger, what it does. This is the primary triggering mechanism - include both what the skill does AND specific contexts for when to use it. All "when to use" info goes here, not in the body. Name the concrete contexts and phrasings that should trigger it, including ones where the user does not name the skill, so a vague description does not cause undertriggering. State this plainly; an aggressive "always use this skill" description overtriggers on current models, which follow descriptions closely.
 - **compatibility**: Required tools, dependencies (optional, rarely needed)
 
 **svc-specific frontmatter (required for pipeline skills, optional for utility skills):**
@@ -42,7 +42,7 @@ chain:
 4. Create eval at `test-framework/evals/tier-2/scenarios/<name>-eval.md`
 5. Run `node scripts/lint-skills-manifest.mjs` to verify consistency
 6. Check for overlap: `grep -r "<trigger phrases>" --include="SKILL.md"` across existing skills
-7. **MANDATORY — run the installer** to symlink the new skill into every installed host's skills directory. Without this step, the skill exists in the framework repo but is invisible to Claude Code / Codex after session restart:
+7. **Run the installer** to symlink the new skill into every installed host's skills directory. Without this step, the skill exists in the framework repo but is invisible to Claude Code / Codex after session restart:
 
    ```bash
    cd $FRAMEWORK_REPO && ./setup --host claude
@@ -123,7 +123,7 @@ Prefer using the imperative form in instructions.
 **Defining output formats** - You can do it like this:
 ```markdown
 ## Report structure
-ALWAYS use this exact template:
+Use this template:
 # [Title]
 ## Executive summary
 ## Key findings

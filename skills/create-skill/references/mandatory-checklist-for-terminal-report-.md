@@ -1,10 +1,10 @@
-# MANDATORY checklist for terminal/report skills — detail
+# Checklist for terminal/report skills — detail
 
 Moved verbatim from SKILL.md (progressive disclosure).
 
-## MANDATORY checklist for terminal/report skills
+## Checklist for terminal/report skills
 
-If the new skill is terminal by nature — it produces a final report, answer, or decision artifact and should not automatically push the user into a downstream lane — the SKILL.md frontmatter MUST include `chain.terminal: true`. Route-producing pre-lane skills may still name a recommended next lane in their output, but the router treats backlog dispatch after the skill as advisory unless the user explicitly continues.
+If the new skill is terminal by nature — it produces a final report, answer, or decision artifact and should not automatically push the user into a downstream lane — the SKILL.md frontmatter includes `chain.terminal: true` (validator `validate-terminal-skill-frontmatter.sh`). Route-producing pre-lane skills may still name a recommended next lane in their output, but the router treats backlog dispatch after the skill as advisory unless the user explicitly continues.
 
 At a high level, the process of creating a skill goes like this:
 

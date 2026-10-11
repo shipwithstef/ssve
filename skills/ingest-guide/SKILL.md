@@ -71,7 +71,9 @@ Route manually-pasted long-form content through a disciplined pipeline: extract,
 
 **Announce at start:** "I'm using the ingest-guide skill to process this content."
 
-**Doctrine (binding):** knowledge is earned by execution, not by extraction. Pasting a guide does NOT yet make it knowledge. The claim comparison + experiment + benefit framing steps are how this skill stays honest.
+**Doctrine (binding):** knowledge is earned by execution, not by extraction. Pasting a guide does not yet make it knowledge; the claim comparison + experiment + benefit framing steps are how this skill stays honest.
+
+**Outcome:** every extracted claim classified, framed and routed (discard / store / blend-or-link / selective-blend / promote), with a validated report and one decision-log entry. **Check:** Self-Verify below and `validate-ingest-report.mjs`. **Boundary:** this skill recommends blends, skill creation and knowledge supersession but never executes them without the builder's checkpoint; it never routes a half-extracted guide.
 
 ## Inputs
 
@@ -84,11 +86,7 @@ If the builder did not supply a source label, ask for one before proceeding.
 
 ### Step 1 — Delegate extraction to `research` (with upstream-fetch requirement)
 
-Hand the pasted content to the refactored `research` skill (see `skills/research/SKILL.md`). Research handles:
-- Pre-scope manifest of the pasted content
-- Sub-agent selection (gemini-cli primary, Claude fallback)
-- Single-pass extraction
-- Domain classification gate
+Hand the pasted content to the `research` skill (see `skills/research/SKILL.md`), which owns the pre-scope manifest, sub-agent selection (gemini-cli primary, Claude fallback), single-pass extraction and the domain classification gate.
 
 **Input to research:** the pasted text + "analyze" mode.
 **Expected output:** structured knowledge — a list of distinct **claims** / **techniques** / **results** / **conditions**, each with supporting text.
@@ -114,25 +112,18 @@ node skills/ingest-guide/scripts/dispatch-research-detached.mjs \
   --raw-file docs/specs/ingest-guide/<source-id>-raw.md \
   --skip-if-extracted
 ```
-This script:
-1. Checks for pre-existing `ingest-ready.json` (short-circuit)
-2. If none, constructs a strict JSON-structured prompt
-3. Dispatches via `scripts/run-kimi-detached.sh` (60 min cap for `ingest-guide`)
-4. Polls `scripts/kimi-job-status.sh` until `state: done`
-5. Converts the raw log to canonical `ingest-ready.json` via `convert-to-ingest-ready.mjs --from research-log`
+It short-circuits on an existing `ingest-ready.json`, otherwise dispatches a strict JSON-structured prompt via `scripts/run-kimi-detached.sh` (60 min cap for `ingest-guide`), polls `scripts/kimi-job-status.sh` until `state: done`, and converts the raw log to canonical `ingest-ready.json` (`convert-to-ingest-ready.mjs --from research-log`). The parent session stays unblocked throughout. See `references/kimi-detached-pattern.md`.
 
-Parent session is unblocked during the entire extraction. See `references/kimi-detached-pattern.md`.
+**Upstream-fetch requirement:** If the pasted content cites a public source URL (GitHub repo, gist, primary-doc page, public blog), the `research` dispatch attempts to fetch the upstream and incorporate its substantive content (e.g. the actual SKILL.md files of a referenced skill pack), because marketing copy alone misrepresents what the source does. If the fetch fails (404, gated, network error), record the attempt with the failure reason in the report's `## Upstream Fetch` section and proceed with a **REDUCED-CONFIDENCE** flag on every downstream claim. Never silently skip the fetch.
 
-**Upstream-fetch requirement (NEW):** If the pasted content cites a public source URL (GitHub repo, gist, primary-doc page, public blog), the `research` dispatch MUST attempt to fetch the upstream and incorporate its substantive content (e.g. the actual SKILL.md files of a referenced skill pack) — the marketing copy alone is not sufficient. If the fetch fails (404, gated, network error), record the attempt with the failure reason in the report's `## Upstream Fetch` section and proceed with a **REDUCED-CONFIDENCE** flag on every downstream claim. Never silently skip the fetch.
+If research cannot produce a clean extraction (partial coverage, sub-agent failure after fallback), stop and report the failure rather than routing a half-extracted guide.
 
-If research cannot produce a clean extraction (partial coverage, sub-agent failure after fallback), STOP and report the failure. Do NOT proceed with a half-extracted guide.
-
-### Step 2 — Catalog cross-check (NEW)
+### Step 2 — Catalog cross-check
 
 For each extracted claim that describes a **capability, skill, or workflow stage**, scan the existing svc skill catalog for functional overlap before any classification:
 
 1. Read `skills-manifest.json` `includedSkills` array and `EXTERNAL_ADDONS.md` core-pack list.
-2. For each candidate-overlap skill identified by name+description match, read its SKILL.md frontmatter (`description`, `inputs`, `outputs`) — NOT the full body — to confirm or reject the overlap.
+2. For each candidate-overlap skill identified by name+description match, read its SKILL.md frontmatter (`description`, `inputs`, `outputs`), not the full body, to confirm or reject the overlap.
 3. Tag every claim with one of:
    - **catalog-overlap-strong** — an existing svc skill already does ≥80% of what the claim describes (cite skill name + one-line evidence)
    - **catalog-overlap-partial** — an existing svc skill covers ≤79% — note both the overlap and the delta worth borrowing
@@ -140,7 +131,7 @@ For each extracted claim that describes a **capability, skill, or workflow stage
 
 Record per-claim catalog tags in the report under `## Catalog Cross-Check`. Strong overlaps tilt the routing decision toward `discard` or `store-as-reference (delta-note)`, never `promote-to-skill`.
 
-### Step 3 — External-addons / blend dedup check (NEW)
+### Step 3 — External-addons / blend dedup check
 
 If the source looks like a multi-skill pack, named ecosystem, or external repo (signals: contains a "kit"/"pack"/"suite" framing, names ≥3 sub-skills, points at a single repo URL):
 
@@ -151,7 +142,7 @@ If the source looks like a multi-skill pack, named ecosystem, or external repo (
    - **addon-known-not-blended** — recognized but not yet imported; eligible for `blend-or-link` decision
    - **addon-novel** — neither in EXTERNAL_ADDONS nor in blend-registry; eligible for `blend-or-link`
 
-For `addon-known-not-blended` and `addon-novel`, the routing decision in Step 10 may select **`blend-or-link`** which hands off to `blend-external` (or `blend-private` if the source is private and authorized). Do NOT call `blend-external` from inside this skill — only set the routing decision and surface the recommendation to the builder.
+For `addon-known-not-blended` and `addon-novel`, the routing decision in Step 10 may select **`blend-or-link`** which hands off to `blend-external` (or `blend-private` if the source is private and authorized). This skill only sets the routing decision and surfaces the recommendation to the builder; `blend-external` runs after the builder's checkpoint.
 
 Record per-source addon tag in the report under `## Addon Dedup Check`.
 
@@ -176,7 +167,7 @@ For each claim classified `new` or `contradicts-known`, propose a concrete runna
 
 `already-known` claims skip this step.
 
-Experiments are recorded but NOT executed by this skill. Execution is a separate downstream action (the builder can run them or hand to `execute-changeset`).
+Experiments are recorded but not executed by this skill. Execution is a separate downstream action (the builder can run them or hand to `execute-changeset`).
 
 ### Step 6 — Benefit framing
 
@@ -187,7 +178,7 @@ For each validated (post-experiment) or already-known technique, articulate **se
 
 Both angles, separately. If a claim benefits neither, mark it for likely discard.
 
-### Step 7 — Project-fit query (NEW)
+### Step 7 — Project-fit query
 
 Invoke `capability-concierge` (read-only) to retrieve the active list of shippable projects with their state and persona context. For each surviving claim, tag it with:
 
@@ -216,7 +207,7 @@ Apply a 4-dimension rubric to each surviving claim:
 
 Aggregate score per claim. Low-signal + low-novelty + low-actionability = discard candidate.
 
-### Step 9 — Decision matrix (catalog × knowledge × project-fit) (NEW)
+### Step 9 — Decision matrix (catalog × knowledge × project-fit)
 
 Before picking a routing label, apply this decision matrix to every surviving claim. The columns combine outputs from Steps 2 (catalog), 3 (addon), 4 (knowledge), and 7 (project-fit):
 
@@ -228,10 +219,10 @@ Before picking a routing label, apply this decision matrix to every surviving cl
 | catalog-novel | already-known | strong | `promote-to-skill` candidate (knowledge exists, skill missing, project ready) |
 | catalog-novel | already-known | weak / none | `store-as-reference` — wait for project demand |
 | catalog-novel | new | strong | `promote-to-skill` candidate after experiment validates the new claim |
-| catalog-novel | new | weak / none | `store-as-reference` (with pending experiment) — DO NOT promote yet |
+| catalog-novel | new | weak / none | `store-as-reference` (with pending experiment) — not promoted yet |
 | (any) | contradicts-known | (any) | HUMAN CHECKPOINT — never auto-route a contradicting claim |
 | addon-known-not-blended OR addon-novel (multi-skill source) | (any) | strong, AND ≥1 claim is catalog-novel | `blend-or-link` candidate (recommend `blend-external`) — there is genuinely-novel functionality in the pack worth importing |
-| addon-known-not-blended OR addon-novel (multi-skill source) | (any) | strong, AND all claims are catalog-overlap-{strong,partial} | `selective-blend` recommendation — cherry-pick only the catalog-overlap-partial sub-skills' deltas via `improve-framework` against the existing svc skill; do NOT blend the full pack |
+| addon-known-not-blended OR addon-novel (multi-skill source) | (any) | strong, AND all claims are catalog-overlap-{strong,partial} | `selective-blend` recommendation — cherry-pick only the catalog-overlap-partial sub-skills' deltas via `improve-framework` against the existing svc skill rather than blending the full pack |
 | addon-known-not-blended OR addon-novel (multi-skill source) | (any) | weak / none | `store-as-reference` — pack is interesting but no project to land in; revisit if a fitting project appears |
 
 ### Tie-break precedence (when multiple rows match)
@@ -251,16 +242,16 @@ The matrix is a **default**, not a verdict. The actual routing in Step 10 may ov
 For each claim, pick exactly one of:
 
 - **Discard** — log the decision + reason; no artifact written beyond the decision log.
-- **Store as reference knowledge** — invoke the domain gate (`node skills/research/scripts/domain-gate.mjs ...`) and write to `references/knowledge/<domain>/`. Include claim status + experiment outcome (or "experiment pending") + benefit framing in the knowledge file. For `catalog-overlap-partial`, the knowledge file MUST contain a `## Delta vs <existing-skill>` section.
-- **Blend-or-link (NEW)** — when the source is a multi-skill pack scoring `addon-known-not-blended` or `addon-novel` AND at least one claim has `project_fit_strength: strong` AND ≥1 surviving claim is `catalog-novel`, recommend running `blend-external` on the upstream source. This skill does NOT execute the blend — it logs the recommendation and exits. The builder confirms via human checkpoint before `blend-external` actually runs. If the source is private and authorized for blending, recommend `blend-private` instead.
-- **Selective-blend (NEW)** — when the source is a multi-skill pack but ALL surviving claims are `catalog-overlap-{strong,partial}` (i.e. nothing genuinely novel) AND project-fit is strong, recommend `improve-framework` against the existing svc skill(s) to absorb the specific deltas, rather than blending the full pack. Names the sub-skills whose deltas justify the absorption. This skill logs the recommendation as a `selective-blend` decision in `.svc/pipeline-decisions.jsonl` (do NOT call `improve-framework` directly — log + exit, builder confirms).
+- **Store as reference knowledge** — invoke the domain gate (`node skills/research/scripts/domain-gate.mjs ...`) and write to `references/knowledge/<domain>/`. Include claim status + experiment outcome (or "experiment pending") + benefit framing in the knowledge file. For `catalog-overlap-partial`, the knowledge file contains a `## Delta vs <existing-skill>` section.
+- **Blend-or-link** — when the source is a multi-skill pack scoring `addon-known-not-blended` or `addon-novel` AND at least one claim has `project_fit_strength: strong` AND ≥1 surviving claim is `catalog-novel`, recommend running `blend-external` on the upstream source. This skill logs the recommendation and exits rather than executing the blend. The builder confirms via human checkpoint before `blend-external` actually runs. If the source is private and authorized for blending, recommend `blend-private` instead.
+- **Selective-blend** — when the source is a multi-skill pack but ALL surviving claims are `catalog-overlap-{strong,partial}` (i.e. nothing genuinely novel) AND project-fit is strong, recommend `improve-framework` against the existing svc skill(s) to absorb the specific deltas, rather than blending the full pack. Names the sub-skills whose deltas justify the absorption. This skill logs the recommendation as a `selective-blend` decision in `.svc/pipeline-decisions.jsonl` (log + exit; the builder confirms before `improve-framework` runs).
 - **Promote to new skill** — hand off to `create-skill` with a draft brief that includes:
   - The validated experiment (or pending experiment) as proof / precondition
   - Product + framework benefit framing
   - The decision-matrix justification showing why `promote` over `blend-or-link` or `store`
   - A question to the builder: **on-demand** skill vs **embedded in an existing lane**?
 
-Only ONE routing decision per claim. Aggregate claims may produce multiple routing decisions per ingest run, including a `blend-or-link` recommendation that wraps the whole source.
+One routing decision per claim. Aggregate claims may produce multiple routing decisions per ingest run, including a `blend-or-link` recommendation that wraps the whole source.
 
 ### Step 11 — Log and handoff
 
@@ -289,9 +280,9 @@ Then produce a short summary to the builder: claims found, classification breakd
 
 Before any `promote-to-skill` handoff, confirm with the builder: the new skill title, brief, and placement (on-demand vs embedded). `create-skill` requires this confirmation per its human_checkpoint setting.
 
-Before any `blend-or-link` handoff, confirm with the builder: the upstream source URL, the addon-tag (known-not-blended vs novel), and whether to dispatch `blend-external` (public source, attribution allowed) or `blend-private` (authorized private source, no source identifiers). This skill does NOT auto-trigger a blend.
+Before any `blend-or-link` handoff, confirm with the builder: the upstream source URL, the addon-tag (known-not-blended vs novel), and whether to dispatch `blend-external` (public source, attribution allowed) or `blend-private` (authorized private source, no source identifiers). This skill never auto-triggers a blend.
 
-Before any `contradicts-known` claim is stored, confirm with the builder that the existing knowledge should be superseded — this skill does NOT silently overwrite prior knowledge.
+Before any `contradicts-known` claim is stored, confirm with the builder that the existing knowledge should be superseded — this skill never silently overwrites prior knowledge.
 
 ## Self-Verify
 
@@ -334,15 +325,16 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (source of truth: `.svc/lane-tasks-<WI>.json`; mirrors: Claude `TaskList`, Kimi `/task`+`TaskList`/`TaskOutput` observe-only, Codex `update_plan`)
+- Treat `Invoke: /skill-name` + `metadata.skill` as routing instructions, not prose.
+- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume.
+- Host-UI mirroring only in the parent session (host exposes TaskList and no `SVC_SUBAGENT=1`);
+  otherwise skip it — the file is the durable record and the parent re-mirrors after the subagent returns.
+  Subagents do not call TaskUpdate: a failed call is silent drift between the subagent's intent and the host UI.
+- In Codex and other hosts without native task-mutation APIs, mirror only the active step in `update_plan`.
+- Mark this task `completed` before leaving; then mirror. Evaluate the next task's conditions:
+  runnable → mark `in_progress`, persist, load that skill; skippable → mark `completed` + skip reason.
+- Per `route-workflow` Task-Graph Execution Protocol.
 
 ### Chaining
 
@@ -354,7 +346,7 @@ ingest-guide is on-demand — it does not participate in progressive chains. Ups
 
 **Downstream handoffs from the routing decision:**
 - `store` → writes directly to `references/knowledge/`; control returns to the builder.
-- `blend-or-link` → recommends `blend-external` (public source) or `blend-private` (authorized private source) to the builder; **human_checkpoint required**. ingest-guide logs the recommendation and exits — it does NOT auto-invoke either skill.
+- `blend-or-link` → recommends `blend-external` (public source) or `blend-private` (authorized private source) to the builder; **human_checkpoint required**. ingest-guide logs the recommendation and exits without invoking either skill.
 - `promote` → hands off to `create-skill` (human_checkpoint). ingest-guide logs the handoff and exits.
 - `discard` → logs the decision. Control returns to the builder.
 

@@ -71,6 +71,8 @@ Build the product marketing context from the ground up by systematically mining 
 
 **Announce at start:** "I'm using the analyze-marketing skill to analyze marketing potential."
 
+**Outcome:** atomic, weighted, user-centric insights in the tracker and context doc, plus a follow-up prompt for the next batch. **Check:** Self-Verify below and Mode 9 before any "complete" claim. **Boundary:** never invent claims or stats, never market a planned feature as live, never destroy prior insights.
+
 This skill owns the entire marketing context document (`.agents/product-marketing-context.md`):
 - **Foundation** (sections 1-12): Product overview, audience, pain points, competitors, voice, proof points
 - **Layer 1 (atomic insights)**: Individual feature traits with full metadata — one trait, one claim, one weight
@@ -84,7 +86,7 @@ Per WI-135, the canonical svc-path output is `docs/specs/marketing-context.md`. 
 
 ### Update, don't overwrite
 
-If `docs/specs/marketing-context.md` already exists when this skill runs, the skill MUST update it in place rather than rewrite from scratch. Preserve prior insights and revision history. Append a revision-log entry at the bottom of the file:
+If `docs/specs/marketing-context.md` already exists, update it in place rather than rewriting from scratch, so prior insights and revision history survive. Append a revision-log entry at the bottom of the file:
 
 ```markdown
 ## Revision Log
@@ -98,7 +100,7 @@ If the file does not exist, generate fresh.
 
 ### No-duplication coverage matrix
 
-`docs/specs/marketing-context.md` exists alongside several other context artifacts. Each piece of content has exactly ONE owner. Skills MUST NOT duplicate content across these files; they reference by ID/path instead.
+`docs/specs/marketing-context.md` exists alongside several other context artifacts. Each piece of content has exactly one owner; other files reference it by ID/path instead of duplicating it, so a correction lands in one place.
 
 | Content type | Owner | Notes |
 |--------------|-------|-------|
@@ -123,77 +125,31 @@ This skill is the first producer for `.agents/product-marketing-context.md` in s
 Contract:
 - Keep `.agents/product-marketing-context.md` as canonical shared path.
 - Run `analyze-marketing` first to produce tracker-backed insights and foundation sync.
-- If coreyhaines `product-marketing` runs, it must start from the existing file and transform/adapt it rather than replacing svc insight payload.
+- If coreyhaines `product-marketing` runs, it starts from the existing file and transforms/adapts it rather than replacing the svc insight payload.
 - Preserve compatibility mirror behavior for `.claude/product-marketing-context.md` only as optional bridge.
 
 ## Critical Design: Iterative Batches
 
-**This skill processes 3-4 features per conversation, NOT all at once.**
+**This skill processes 3-4 features per conversation, not all at once**, because insight quality degrades as context fills.
 
-The tracker (`docs/marketing/feature-mining-tracker.json`) is the persistent state between sessions. Each invocation:
-1. Reads the tracker to see what's already mined
-2. Picks the next 3-4 unmined or stale features
-3. Mines them, writes results to tracker + context doc
-4. Outputs a **follow-up prompt** the user can paste to continue in a new conversation
-
-This prevents context window exhaustion and keeps each session focused.
+The tracker (`docs/marketing/feature-mining-tracker.json`) is the persistent state between sessions. Each invocation reads the tracker, picks the next 3-4 unmined or stale features, mines them into tracker + context doc, and ends with a **follow-up prompt** the user can paste to continue in a new conversation.
 
 ---
 
 ## Operating Modes
 
-**Operating Modes** — Nine modes: 1 Full Scan (iterative, 3-4 features per session, resume from the follow-up prompt), 2 Single Feature, 3 Refresh (re-mine only specs modified since `last_mined`; run a weight-correction pass using sync-spec-code statuses, where `RESOLVED`/`FIXED` removes the planned penalty, `DRIFT`/`REVERTED` keeps it or marks the insight `deprecated`/`pending_validation`; flag stale foundation values but NEVER auto-edit foundational sections; the status alignment gate MUST fail the run on any insight whose penalty or live claim contradicts its latest status), 4 Foundation (draft or update sections 1-12 of the context doc; new evidence goes to "Suggested Foundation Updates" for user approval), 5 Compact (when the context doc exceeds 500 lines, remove insights with weight < 55 from the doc only; NEVER compact weight >= 55, foundational sections, narratives or content under 7 days old; the tracker is never modified), 6 Capability Combinations (`references/capability-combinations.md`, after a full scan), 7 Quality Eval (`references/quality-eval.md`, after Mode 6, never during active mining), 8 Persona Validation (`references/persona-validation.md`, after 8+ features mined AND Mode 4 has run), 9 Completeness Gap-Check (`references/completeness-gap-check.md`; MANDATORY before declaring any refresh or foundation pass complete, before the context feeds a marketing plan, campaign or copy wave, whenever the owner questions coverage, or 30+ days since the last check; the author cannot verify absence of their own output). Details: `references/operating-modes.md`.
+**Operating Modes** — Nine modes: 1 Full Scan (iterative, 3-4 features per session, resume from the follow-up prompt), 2 Single Feature, 3 Refresh (re-mine only specs modified since `last_mined`; run a weight-correction pass using sync-spec-code statuses, where `RESOLVED`/`FIXED` removes the planned penalty, `DRIFT`/`REVERTED` keeps it or marks the insight `deprecated`/`pending_validation`; flag stale foundation values but never auto-edit foundational sections; the status alignment gate fails the run on any insight whose penalty or live claim contradicts its latest status), 4 Foundation (draft or update sections 1-12 of the context doc; new evidence goes to "Suggested Foundation Updates" for user approval), 5 Compact (when the context doc exceeds 500 lines, remove insights with weight < 55 from the doc only; never compact weight >= 55, foundational sections, narratives or content under 7 days old; the tracker is never modified), 6 Capability Combinations (`references/capability-combinations.md`, after a full scan), 7 Quality Eval (`references/quality-eval.md`, after Mode 6, never during active mining), 8 Persona Validation (`references/persona-validation.md`, after 8+ features mined AND Mode 4 has run), 9 Completeness Gap-Check (`references/completeness-gap-check.md`; required before declaring any refresh or foundation pass complete, before the context feeds a marketing plan, campaign or copy wave, whenever the owner questions coverage, or 30+ days since the last check; the author cannot verify absence of their own output). Details: `references/operating-modes.md`.
 
 ## Pre-Flight (Every Invocation)
 
-```
-1. Read tracker -> docs/marketing/feature-mining-tracker.json
-   - If missing: create empty scaffold, proceed as first Full Scan
-   - If exists: extract last_mined dates for all features
-
-2. Schema validation pass:
-   - For each feature in the upcoming batch, check every insight against
-     references/output-schema.md required fields
-   - Fix field name errors (e.g., "audience" -> "audience_segment",
-     "status: live" -> "status: active")
-   - Log fixes in mining_notes, apply before mining starts
-
-3. Determine work queue:
-   - Full Scan: features sorted by priority, filter to unmined or stale
-   - Refresh: features where spec file mtime > last_mined
-   - Single: just the named feature
-
-4. Comprehensively-mined check (early exit):
-   - A feature is "comprehensively mined" if ALL of:
-     (a) 4+ active insights exist
-     (b) Top insight weight >= 70
-     (c) Spec file NOT modified since last_mined
-     (d) No insights have status "pending_validation"
-   - For comprehensively-mined features: report "Feature X: comprehensively
-     mined, skipping" and move to next feature. Do NOT re-read the full spec,
-     do NOT run web research, do NOT re-evaluate. Just validate schema (step 2)
-     and move on.
-   - Exception: user explicitly requests re-mine ("re-mine feature-matching")
-
-5. Pick next 3-4 from work queue (NEVER more than 4)
-
-6. Load existing insights for deduplication:
-   - Read insights arrays for ALL features in the upcoming batch from the tracker
-   - These are your semantic dedup reference
-
-7. Read foundational sections (skim, not deep-read):
-   - Target audience, voice, competitive landscape — these inform how you write insights
-   - **Quick Stats Reference** — load into working memory now for stat amplification in Step 2
-   - Note any gaps you spot for the "Suggested Foundation Updates" output
-   - Read `docs/specs/domain-profile.md` for industry positioning context
-   - Read `docs/specs/analyze-competitors.md` for competitive messaging gaps — marketing angles should target whitespace, not head-on competition
-
-8. Coverage-ledger staleness check (Mode 9 contract):
-   - If the tracker has no `gap_check` entry, or it is 30+ days old, or spec statuses
-     may lag deploys (any WI shipped since last mining), flag "Mode 9 due" in the
-     session output. Spec headers are NOT ground truth for live/gated — reconcile
-     against feature flags + deploy records before marking any insight live.
-```
+1. **Tracker** — read `docs/marketing/feature-mining-tracker.json`; if missing, scaffold it and run as a first Full Scan.
+2. **Schema validation** — check every insight in the upcoming batch against `references/output-schema.md` required fields; fix field-name errors (e.g., "audience" -> "audience_segment", "status: live" -> "status: active") and log fixes in `mining_notes` before mining.
+3. **Work queue** — Full Scan: priority order, unmined or stale; Refresh: spec mtime > `last_mined`; Single: the named feature.
+4. **Comprehensively-mined early exit** — a feature with 4+ active insights, top weight >= 70, spec unchanged since `last_mined`, and no `pending_validation` insights is reported as "comprehensively mined, skipping": validate schema only, with no spec re-read, web research or re-evaluation. Exception: the user explicitly asks to re-mine it.
+5. **Pick the next 3-4** from the queue (at most 4).
+6. **Dedup reference** — load the tracker insight arrays for every feature in the batch.
+7. **Foundation skim** — target audience, voice, competitive landscape, and the **Quick Stats Reference** (kept in working memory for stat amplification); note gaps for "Suggested Foundation Updates"; read `docs/specs/domain-profile.md` for industry positioning and `docs/specs/analyze-competitors.md` so angles target whitespace, not head-on competition.
+8. **Coverage-ledger staleness (Mode 9 contract)** — if the tracker has no `gap_check` entry, it is 30+ days old, or any WI shipped since last mining, flag "Mode 9 due". Spec headers are not ground truth for live/gated; reconcile against feature flags + deploy records before marking any insight live.
 
 **Priority order** (process highest marketing value first):
 
@@ -208,7 +164,7 @@ This prevents context window exhaustion and keeps each session focused.
 
 ## Per-Feature Mining Loop (7 Steps)
 
-**Per-Feature Mining Loop (7 steps)** — (1) Read the first 100 lines of `docs/specs/features/<name>.md` (deep-read only if preliminary weight >= 60), extracting problem, mechanism, metrics, and live vs planned status where sync-spec-code annotations override spec status. (2) Evaluate with `references/evaluation-framework.md`, then apply stat amplification (a stat that proves the mechanism marks the angle `validated: true`) and unlock reasoning (what can the user now do, what behavior it encourages, what compounds). (3) Web research is REQUIRED for preliminary weight >= 70, max 3 searches per feature, and skipped below 70. (4) Write 1-5 atomic insights per feature (hard cap), from each user role's first-person view; each MUST pass user-centric language, specific claim, differentiated, and unlock reasoning checks (3+ flags: replace; 1-2: revise), and must be deduplicated against existing insights. (5) Weight with `references/weight-calibration.md` (+10 unique, +5 stat backup, -10 competitors have; planned penalty -15 homepage/social, -5 blog/email, 0 roadmap/pitch; clamp 1-100). (6) Write to `docs/marketing/feature-mining-tracker.json` immediately after each feature (merge, never delete, `deployed_in: []`, recompute stats from actual array lengths) and append only weight >= 55 insights to `.agents/product-marketing-context.md` by weight tier, planned ones marked "(Coming soon)". (7) After the batch, write 0-3 narratives that back-reference source insight IDs and never replace them; mark fully subsumed insights `elevated_to_narrative`. Details: `references/mining-loop.md`.
+**Per-Feature Mining Loop (7 steps)** — (1) Read the first 100 lines of `docs/specs/features/<name>.md` (deep-read only if preliminary weight >= 60), extracting problem, mechanism, metrics, and live vs planned status where sync-spec-code annotations override spec status. (2) Evaluate with `references/evaluation-framework.md`, then apply stat amplification (a stat that proves the mechanism marks the angle `validated: true`) and unlock reasoning (what can the user now do, what behavior it encourages, what compounds). (3) Web research is required for preliminary weight >= 70, max 3 searches per feature, and skipped below 70. (4) Write 1-5 atomic insights per feature (hard cap), from each user role's first-person view; each passes user-centric language, specific claim, differentiated, and unlock reasoning checks (3+ flags: replace; 1-2: revise), and is deduplicated against existing insights. (5) Weight with `references/weight-calibration.md` (+10 unique, +5 stat backup, -10 competitors have; planned penalty -15 homepage/social, -5 blog/email, 0 roadmap/pitch; clamp 1-100). (6) Write to `docs/marketing/feature-mining-tracker.json` immediately after each feature (merge, never delete, `deployed_in: []`, recompute stats from actual array lengths) and append only weight >= 55 insights to `.agents/product-marketing-context.md` by weight tier, planned ones marked "(Coming soon)". (7) After the batch, write 0-3 narratives that back-reference source insight IDs and never replace them; mark fully subsumed insights `elevated_to_narrative`. Details: `references/mining-loop.md`.
 
 ## End-of-Session Output
 
@@ -218,7 +174,7 @@ This prevents context window exhaustion and keeps each session focused.
 
 ### Iterative, Not Monolithic
 
-- **3-4 features per conversation.** Never more than 4. Context quality degrades past that. **Exception:** If the user provides an explicit pre-planned batch sequence and requests the full session, execute the complete plan — but stop early if insights become generic.
+- **3-4 features per conversation**, at most 4, because context quality degrades past that. **Exception:** if the user provides an explicit pre-planned batch sequence and requests the full session, execute the complete plan — but stop early if insights become generic.
 - **Tracker is persistent state.** Write after every feature, not at end of batch.
 - **Follow-up prompt enables continuation.** User shouldn't need to remember what was done.
 - **Skip already-mined features** in Full Scan if mined within 7 days and spec unchanged.
@@ -235,7 +191,7 @@ Translate mechanisms to outcomes. If you catch yourself writing implementation d
 
 ### Atomic Insights Are Sacred
 
-- **Layer 1 (atomic):** One trait, one claim, full metadata. NEVER merge, summarize, or consolidate.
+- **Layer 1 (atomic):** One trait, one claim, full metadata. Never merge, summarize, or consolidate.
 - **Layer 2 (narratives):** Cross-feature combinations referencing Layer 1 by ID. Additive only.
 
 When you "consolidate" atomic insights, you lose the specific evidence, audience, and weight that made each one useful. Synthesis is a view on top of the data, not a replacement.
@@ -246,12 +202,12 @@ When you "consolidate" atomic insights, you lose the specific evidence, audience
 - Never delete insights (mark `"status": "deprecated"` if outdated, or `"superseded"` if replaced)
 - Never reorder existing content or merge atomic insights
 - Never auto-edit foundational sections — suggest updates, let user approve
-- **Copy refinement exception:** You MAY update an insight's `insight` text to weave in a stat or sharpen wording — this is NOT merging or deleting. Preserve the ID, weight, audience_segment, and all metadata. Set `"updated"` to the current timestamp. Use this when stat amplification (Step 2) finds a number that directly strengthens an existing insight.
+- **Copy refinement exception:** you may update an insight's `insight` text to weave in a stat or sharpen wording — this is not merging or deleting. Preserve the ID, weight, audience_segment, and all metadata, and set `"updated"` to the current timestamp. Use this when stat amplification (Step 2) finds a number that directly strengthens an existing insight.
 
 ### Bloat Prevention
 
 - **Per-session cap: 5 new insights per feature per mining session.** This prevents flooding.
-- Features CAN accumulate more than 5 total insights across multiple sessions — that's fine. Accumulated coverage reflects genuine depth.
+- Features can accumulate more than 5 total insights across sessions — accumulated coverage reflects genuine depth.
 - When a new insight covers the same ground as an existing one but is sharper, mark the old one `"status": "superseded"` with `"superseded_by": "<new-id>"` in the tracker. Superseded insights are excluded from summary stats and the context doc, but remain in the tracker for audit.
 - "No strong marketing angle" is valid — record with weight < 30, don't force content
 - Don't add to context doc if weight < 55 (tracker only)
@@ -290,15 +246,7 @@ After completing a Full Scan (all 16 features), evaluate the context doc:
 
 ## Feature Spec Discovery
 
-Feature specs live at `docs/specs/features/`. Discover them dynamically:
-
-```bash
-ls docs/specs/features/*.md 2>/dev/null
-```
-
-Read each spec to extract the feature name, status, and user-facing description
-before analyzing its marketing angle. Do not hardcode feature names — use what
-the current project actually has.
+Discover feature specs dynamically under `docs/specs/features/*.md` and read each one's name, status and user-facing description before analyzing its marketing angle. Use what the current project actually has rather than hardcoded feature names.
 
 ## Phase Receipt Contract
 
@@ -315,32 +263,16 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
-
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (source of truth: `.svc/lane-tasks-<WI>.json`; mirrors: Claude `TaskList`, Kimi `/task`+`TaskList`/`TaskOutput` observe-only, Codex `update_plan`)
+- Treat `Invoke: /skill-name` + `metadata.skill` as routing instructions, not prose.
+- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume (across sessions and subagents too).
+- Host-UI mirroring only in the parent session (host exposes TaskList and no `SVC_SUBAGENT=1`);
+  otherwise skip it — the file is the durable record and the parent re-mirrors after the subagent returns.
+  Subagents do not call TaskUpdate: a failed call is silent drift between the subagent's intent and the host UI.
+- In Codex and other hosts without native task-mutation APIs, mirror only the active step in `update_plan`.
+- Mark this task `completed` before leaving; then mirror. Evaluate the next task's conditions:
+  runnable → mark `in_progress`, persist, load that skill; skippable → mark `completed` + skip reason.
+- Per `route-workflow` Task-Graph Execution Protocol.
 
 ### Self-Verify
 
@@ -356,21 +288,8 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
-
-**If `--progressive` flag is absent:**
-- Report results to user
-- Suggest: "Next: consider running Mode 6 (Capability Combinations) or Mode 7 (Quality Eval)"
-
-Not part of progressive chains (parallel track).
+Not part of progressive chains (parallel track). Without `--progressive`, report results
+to the user and suggest: "Next: consider running Mode 6 (Capability Combinations) or Mode 7 (Quality Eval)".
 
 ## Post-Compaction Recovery
 

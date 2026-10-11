@@ -58,7 +58,7 @@ chain:
 
 # Mine the Builder Profile
 
-Understand WHO is building before deciding WHAT to build or HOW. The builder
+Understand who is building before deciding what to build or how. The builder
 profile captures the user's real-world context — financial situation, time,
 skills, team, tools, business entity, social presence, and goals. This is
 project-agnostic and reusable across everything they build.
@@ -72,6 +72,10 @@ integrations for people without a business entity.
 
 **Announce at start:** "I'm using mine-builder to understand your situation before
 we plan anything."
+
+**Outcome:** a current, honest `~/.svc/builder-profile.md` that downstream skills can plan
+against. **Check:** Self-Verify below. **Boundary:** the profile records what the builder
+said or demonstrably did — unknowns are marked unknown, never invented.
 
 ---
 
@@ -103,11 +107,7 @@ during normal operation.
 
 ### Step 0: Check for Existing Profile
 
-```
-ls ~/.svc/builder-profile.md
-```
-
-If the file exists, switch to Mode 2. If not, proceed with the interview.
+If `~/.svc/builder-profile.md` exists, switch to Mode 2; otherwise run the interview.
 
 ### Step 1: Extract Before Asking
 
@@ -132,9 +132,8 @@ before asking a single question.
 
 ### Step 2: Ask Critical Unknowns
 
-After extracting what you can, identify the 2-3 most impactful unknowns and
-ask them. Do not interrogate with a 20-question form. Cluster related questions
-naturally.
+After extracting what you can, ask the 2-3 most impactful unknowns, clustered
+naturally — a 20-question form costs the builder's patience and adds little.
 
 **Priority order for unknowns (ask the highest-impact ones first):**
 
@@ -148,8 +147,8 @@ naturally.
 
 **Interview behavior by mode:**
 
-- **Interactive mode:** Ask one cluster at a time. Wait for the answer. Do not
-  dump all questions at once. Infer aggressively, confirm lightly.
+- **Interactive mode:** Ask one cluster at a time and wait for the answer. Infer
+  aggressively, confirm lightly.
 - **Autorun mode:** The interview is woven into the single prompt. Extract what
   you can from the initial message, ask 2-3 critical unknowns, create the
   profile, and continue the pipeline — all in one flow.
@@ -218,7 +217,7 @@ After any update:
 
 ## Mode 3: Post-Project Update
 
-The MOST valuable update. Triggered at two points:
+The most valuable update. Triggered at two points:
 
 ### After verify-promotion (project shipped)
 
@@ -237,7 +236,7 @@ Update the builder profile:
 
 **Abandonment detection triggers:**
 - User explicitly says "I'm stopping this" / "abandoning" / "moving on"
-- User starts a NEW project via `route-workflow` while a previous project has an
+- User starts a new project via `route-workflow` while a previous project has an
   unmerged feature branch (route-workflow detects this at Session Setup by
   checking `git worktree list` and `git branch --no-merged main`)
 - User has not touched the project in 30+ days and starts a new session
@@ -309,7 +308,7 @@ strategy or scope decisions.
 
 ## Baseline Failure This Skill Fixes
 
-Without this skill, the pipeline has no concept of WHO is building. Every
+Without this skill, the pipeline has no concept of who is building. Every
 recommendation assumes an idealized builder with unlimited time, full-stack
 skills, existing distribution, and a business entity. The result:
 
@@ -358,44 +357,18 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Pipeline Continuation
 
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
-
-### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first — this is the cross-host,
-  cross-session, cross-subagent source of truth.
-- Host UI mirroring (TaskList/TaskUpdate in Claude Code; `/task` + `TaskList`/`TaskOutput` observation in Kimi; `update_plan` in Codex)
-  is ONLY performed when running in the parent/top-level session. Detect via:
-  host exposes TaskList tool AND no `SVC_SUBAGENT=1` marker in env. If either
-  check fails, skip host mirroring — file state is the durable record; the
-  orchestrator parent will re-read and re-mirror after the subagent returns.
-- Subagents MUST NOT attempt TaskUpdate calls. Trying and failing is not
-  graceful; it's silent drift between the subagent's intent and the host UI.
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
+### Task-graph mode (source of truth: `.svc/lane-tasks-<WI>.json`; mirrors: Claude `TaskList`, Kimi `/task`+`TaskList`/`TaskOutput` observe-only, Codex `update_plan`)
+- Treat `Invoke: /skill-name` + `metadata.skill` as routing instructions, not prose.
+- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume.
+- Host-UI mirroring only in the parent session (host exposes TaskList and no `SVC_SUBAGENT=1`);
+  otherwise skip it — the file is the durable record and the parent re-mirrors after the subagent returns.
+  Subagents do not call TaskUpdate: a failed call is silent drift between the subagent's intent and the host UI.
+- In Codex and other hosts without native task-mutation APIs, mirror only the active step in `update_plan`.
+- Mark this task `completed` before leaving; then mirror. Evaluate the next task's conditions:
+  runnable → mark `in_progress`, persist, load that skill; skippable → mark `completed` + skip reason.
+- Per `route-workflow` Task-Graph Execution Protocol.
 
 ### Chaining
-
-**Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`):**
-- Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose
-- Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume
-- In Claude Code: mirror file state with `TaskList` / `TaskUpdate`; in Kimi use `/task` or `TaskList` / `TaskOutput` only as observation while the file remains authoritative; in Codex and other hosts without native task-mutation APIs: mirror only the active step in `update_plan`
-- Mark this skill's task `completed` in `lane-tasks.json` before leaving the skill, then update the host-specific mirror
-- Evaluate the next task's conditions from its description
-- If runnable: mark the next task `in_progress`, persist it to `lane-tasks.json`, and load that skill before doing work (`Skill` tool in Claude Code; direct `SKILL.md` load by skill name in Codex)
-- If skippable: mark the next task `completed` in `lane-tasks.json` with a skip reason, then mirror that status and evaluate the one after
-- Per `route-workflow` Task-Graph Execution Protocol
 
 This skill has no lane position. It is invoked by `route-workflow` before the
 pipeline starts, not as part of the pipeline sequence.

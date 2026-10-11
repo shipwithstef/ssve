@@ -63,12 +63,17 @@ chain:
 
 Inside a `product-improvement-protocol-v2` run, compile the trade study into the unified product
 graph and hand its single irreducible owner question to `decide`. Use
-`references/owner-decision-runtime-v2.md`. Do not independently ask the owner, create a second
-writable decision record, or omit rejected alternatives. Deduplicate by unresolved-decision digest;
+`references/owner-decision-runtime-v2.md`. `decide` owns the owner conversation and the single
+writable decision record, so do not ask the owner directly or create a second record; keep the
+rejected alternatives in what you hand over. Deduplicate by unresolved-decision digest;
 an unchanged question is not a new decision round.
 
 Systematic N-way decision analysis with constraint-profile awareness, funnel-adjusted
 cost modeling, elimination gates, and adversarial review.
+
+**Outcome:** a DECISION.md for one declared constraint profile, backed by an evidence chain,
+an EV model, and an adversarial review. **Check:** Self-Verify below. **Boundary:** no
+silent profile defaults, no invented numbers (mark unknowns), local evidence before web.
 
 ## When to use this skill
 
@@ -125,21 +130,18 @@ Multi-profile mode adds per-profile artifacts + MULTI-PROFILE-DELTA.md.
 ## Phase -1 — Clarify ambiguous question
 
 If the decision question is underspecified ("which auth should I use" — user/service/session?),
-ask ONE structured clarification: "The phrase 'X' could mean (a), (b), or (c) — which?"
-
-Do not proceed with a guessed interpretation. Wrong scope choice cascades through all 8
-remaining phases wastefully.
-
-Skip this phase if the question is clearly scoped.
+ask one structured clarification: "The phrase 'X' could mean (a), (b), or (c) — which?" rather
+than guessing, because a wrong scope cascades through all 8 remaining phases. Skip this phase if
+the question is clearly scoped.
 
 ## Phase 0 — Declare constraint profile (interactive)
 
-**Phase 0a-0c: Constraint Profile** — 0a: present the 4 canonical profiles from `_shared/constraint-profiles.md` (Bootstrapper, Self-financed, Funded startup, Enterprise) plus a comparison-mode option, and let the caller pick with optional overrides; NEVER silently default. 0b: in comparison mode, run Phases 1-7 three times (Bootstrapper, Self-financed, Funded) and write `MULTI-PROFILE-DELTA.md` showing where the winner flips. 0c: write `CONSTRAINT-PROFILE.md` with the profile, overrides, declared thresholds (monthly bill, runway, reversibility) and a validity note that the decision holds ONLY for that profile. Details: `references/phase-0-constraint-profile.md`.
+**Phase 0a-0c: Constraint Profile** — 0a: present the 4 canonical profiles from `_shared/constraint-profiles.md` (Bootstrapper, Self-financed, Funded startup, Enterprise) plus a comparison-mode option, and let the caller pick with optional overrides; never silently default. 0b: in comparison mode, run Phases 1-7 three times (Bootstrapper, Self-financed, Funded) and write `MULTI-PROFILE-DELTA.md` showing where the winner flips. 0c: write `CONSTRAINT-PROFILE.md` with the profile, overrides, declared thresholds (monthly bill, runway, reversibility) and a validity note that the decision holds only for that profile. Details: `references/phase-0-constraint-profile.md`.
 
 ### 0d. Stop-gate
 
-If caller refuses to declare anything, STOP. Do not assume — wrong profile produces
-wrong decision silently.
+If the caller declines to declare anything, stop rather than assume — a wrong profile
+produces a wrong decision silently.
 
 ## Phase 1 — Research (meta-research + layered research)
 
@@ -147,7 +149,7 @@ wrong decision silently.
 
 Before researching specific options, answer:
 
-1. What does "right" mean for this decision under THIS profile? (cost / quality / coverage / lock-in / compliance / conversion / other)
+1. What does "right" mean for this decision under this profile? (cost / quality / coverage / lock-in / compliance / conversion / other)
 2. Which dimensions are **HARD** (elimination gates) vs **SOFT** (scoring dimensions)? Apply `references/elimination-gate-protocol.md` classification rules.
 3. Unit of measurement per dimension. ($mo, %, regions-covered, days-to-migrate, etc.)
 4. Which dimensions are profile-sensitive? (A budget-eliminator at $0 becomes a budget-scorer at $10k funded)
@@ -158,8 +160,8 @@ Write DIMENSIONS.md with HARD-vs-SOFT classification + unit + profile-sensitivit
 
 ### 1b. Layered research — local evidence first, then gap-targeted external fetches
 
-Before any WebSearch or external fetch, perform a local index scan. This is a
-hard order-of-operations rule, not a suggestion.
+Before any WebSearch or external fetch, perform a local index scan. This order is a
+hard rule: local evidence is cheaper, already curated, and keeps external research gap-targeted.
 
 For each dimension, check these sources in order:
 
@@ -191,27 +193,16 @@ Freshness + coverage gate:
 - If no local source exists for the dimension, mark `research-needed` in
   `DIMENSIONS.md` and proceed to targeted external research.
 
-**If data is still missing after the local scan: use WebSearch inline — NOT the `research` skill.**
-
-Why not the `research` skill? Because `skills/research/SKILL.md` mandates commit/tag/push per run.
-Invoking research multiple times per dimension would create mid-analysis commit cascades.
-Reserved for one-off explicit deep research.
-
-Inline WebSearch queries per dimension:
-
-```
-WebSearch: "2026 pricing for <provider A, B, C> for <specific SKU>"
-WebSearch: "completion rate benchmarks for <discovery pattern> vs <alternative>"
-WebSearch: "TOS storage restrictions for <provider>"
-WebSearch: "known failure modes for <vendor> in <region>"
-```
-
-Each result summarized + cited in DIMENSIONS.md with URL as source. External
+**If data is still missing after the local scan: use WebSearch inline**, not the `research`
+skill — research commits/tags/pushes per run, so invoking it per dimension creates
+mid-analysis commit cascades. Query per dimension with dated, specific queries (pricing for
+a named SKU, completion-rate benchmarks, TOS storage restrictions, regional failure modes),
+and summarize + cite each result in DIMENSIONS.md with its URL. External
 research must be gap-targeted to the `research-needed` or `partial` rows from
 the Local Evidence Scan.
 
-If a dimension genuinely needs persisted multi-hour investigation, invoke `research` skill
-as a SINGLE one-off escalation. Accept the commit side effect as deliberate.
+If a dimension genuinely needs persisted multi-hour investigation, invoke the `research` skill
+as a single one-off escalation and accept the commit side effect as deliberate.
 
 ## Phase 2 — Option enumeration (≥10 diverse; ≥30 if broad)
 
@@ -229,14 +220,14 @@ Enumerate across these categories — each must have ≥1 candidate:
 | Escape hatch — "don't do this" | See Phase 2.5 |
 
 Force-generative prompts when stuck:
-- "What's the laziest solution that meets the MUST criteria?"
+- "What's the laziest solution that meets the HARD (must-have) criteria?"
 - "What's the non-obvious path nobody in this domain is talking about?"
 - "What would be true if we didn't solve this at all?"
 - "What would someone from a completely different domain do?"
 
 Write OPTIONS.md with ≥10 (or ≥30 if broad domain) 1-line descriptions + category tag per option.
 
-**Phase 2.5: Escape Hatch (should we build this at all?)** — Before eliminating options, ask whether not solving the problem, delivering the value another way, or a reframe removes the decision (e.g. a feature competitors have that no customer uses). Append an "Escape Hatch Analysis" table (option, feasibility, impact on core journey, verdict) to `DIMENSIONS.md`. If an escape hatch is viable, SHORT-CIRCUIT to Phase 7 with the decision "don't build in original form, adopt <reframe> instead", route to `validate-feature`, and stop; otherwise proceed to Phase 3. Details: `references/phase-2-5-escape-hatch.md`.
+**Phase 2.5: Escape Hatch (should we build this at all?)** — Before eliminating options, ask whether not solving the problem, delivering the value another way, or a reframe removes the decision (e.g. a feature competitors have that no customer uses). Append an "Escape Hatch Analysis" table (option, feasibility, impact on core journey, verdict) to `DIMENSIONS.md`. If an escape hatch is viable, short-circuit to Phase 7 with the decision "don't build in original form, adopt <reframe> instead", route to `validate-feature`, and stop; otherwise proceed to Phase 3. Details: `references/phase-2-5-escape-hatch.md`.
 
 ## Phase 3 — Elimination gates
 
@@ -270,13 +261,13 @@ Compare each survivor using `_shared/product-question-format.md`: evidence, mean
 
 Write QUESTIONNAIRE.md for compatibility, with substantive per-survivor comparison blocks. Retain a Constraint Profile Validity header (profile plus overrides; identify which risks/personas change under another profile) and an Adoption Timing footer (Now / Next / Later / Never, tied to EV-MODEL.md or revisit triggers). Include funnel-impact cost evidence where relevant to Phase 5; mark unknown inputs instead of manufacturing precise values. No fixed section or competitor count.
 
-**Phase 5 EV Model and Phase 6 Adversarial Review** — Phase 5: for each survivor compute `EV_per_action = P(completes given friction) x LTV - cost per attempt` from the unit cost, completion rate and LTV inputs, giving EV at Y1/Y2/Y3 under Low/Base/High growth, break-even completion rate, and a sensitivity ranking; write `EV-MODEL.md` (one `EV-MODEL-<profile>.md` per profile plus `MULTI-PROFILE-DELTA.md` if comparison mode ran). Invoke `manage-finops` only optionally, when `vision.md` exists and the decision is infrastructure-cost-heavy. Phase 6: invoke `agents/strategic-reviewer` in a fresh, read-only context (Claude Code: `Agent` tool, `strategic-reviewer` subagent type, else a general subagent told to follow `agents/strategic-reviewer.md`; Kimi: `Agent` tool with the read-only built-in `plan` subagent, prompt = the full text of `agents/strategic-reviewer.md` plus the manifest paths; Codex and Gemini: inline load of that file; never `scripts/dispatch-worker.sh`, which has no `--agent` flag and runs a skill, default `execute-changeset`) with all `docs/specs/decisions/<slug>/` artifacts, this SKILL.md, `_shared/constraint-profiles.md`, `_shared/product-question-format.md`, `references/elimination-gate-protocol.md` and relevant cited specs; the parent writes the YAML findings to `REVIEW.md`. CRITICAL findings MUST be resolved before proceeding by looping back to the flagged phase; HIGH go in DECISION.md under Why NOT alternatives; MEDIUM under Risks; LOW optional. Details: `references/phases-5-6-ev-and-adversarial.md`.
+**Phase 5 EV Model and Phase 6 Adversarial Review** — Phase 5: for each survivor compute `EV_per_action = P(completes given friction) x LTV - cost per attempt` from the unit cost, completion rate and LTV inputs, giving EV at Y1/Y2/Y3 under Low/Base/High growth, break-even completion rate, and a sensitivity ranking; write `EV-MODEL.md` (one `EV-MODEL-<profile>.md` per profile plus `MULTI-PROFILE-DELTA.md` if comparison mode ran). Invoke `manage-finops` only optionally, when `vision.md` exists and the decision is infrastructure-cost-heavy. Phase 6: invoke `agents/strategic-reviewer` in a fresh, read-only context (Claude Code: `Agent` tool, `strategic-reviewer` subagent type, else a general subagent told to follow `agents/strategic-reviewer.md`; Kimi: `Agent` tool with the read-only built-in `plan` subagent, prompt = the full text of `agents/strategic-reviewer.md` plus the manifest paths; Codex and Gemini: inline load of that file; never `scripts/dispatch-worker.sh`, which has no `--agent` flag and runs a skill, default `execute-changeset`) with all `docs/specs/decisions/<slug>/` artifacts, this SKILL.md, `_shared/constraint-profiles.md`, `_shared/product-question-format.md`, `references/elimination-gate-protocol.md` and relevant cited specs; the parent writes the YAML findings to `REVIEW.md`. CRITICAL findings are resolved before proceeding by looping back to the flagged phase; HIGH go in DECISION.md under Why NOT alternatives; MEDIUM under Risks; LOW optional. Details: `references/phases-5-6-ev-and-adversarial.md`.
 
 ## Phase 7 — Decision synthesis
 
 ### 7a. Reconciliation rule between Phase 4 (qualitative) and Phase 5 (quantitative)
 
-The decision is driven by EV (Phase 5) PRIMARILY, with Phase 4 as tiebreaker and disqualifier:
+The decision is driven primarily by EV (Phase 5), with Phase 4 as tiebreaker and disqualifier:
 
 1. Rank survivors by EV.
 2. Take top 3.
@@ -296,7 +287,7 @@ EV dominates because grounded in data. Qualitative vetoes, doesn't vote.
 # Strategic Decision: <topic>
 **Date:** YYYY-MM-DD
 **Constraint profile:** <link to CONSTRAINT-PROFILE.md>
-**Validity:** Valid ONLY for declared constraint profile.
+**Validity:** Valid only for the declared constraint profile.
 
 ## Decision
 <Chosen option — one line>
@@ -324,7 +315,7 @@ DIMENSIONS.md Local Evidence Scan rows and any external gap-targeted fetches.>
 - Runner 2: <name> — <cited reason>
 - Runner 3: <name> — <cited reason>
 
-## Revisit Triggers (MANDATORY — ≥2 rows)
+## Revisit Triggers (required — ≥2 rows)
 Revisit this decision if any of:
 - <numeric threshold> — e.g., "monthly bill > $500 for 2 consecutive months"
 - <qualitative condition> — e.g., "provider loses > 20% of target region"
