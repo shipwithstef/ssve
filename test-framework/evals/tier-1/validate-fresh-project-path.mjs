@@ -37,6 +37,10 @@ test("a new empty project: init, reconcile, compile and walk the graph", () => {
   const next = svc(p, "task-graph.mjs", "next", ".svc/lane-tasks-WI-001.json");
   assert.equal(next.status, 0, next.stderr);
   assert.ok(JSON.parse(next.stdout).metadata.skill, "the next task names its skill");
+  // One graph per work item: a story-type template must not replace the compiled graph.
+  const gen = svc(p, "task-graph.mjs", "generate", ".svc/lane-tasks-WI-001.json", "--wi", "WI-001", "--story-type", "feature", "--lane", "greenfield");
+  assert.notEqual(gen.status, 0);
+  assert.match(gen.stderr, /delivery graph is already compiled for WI-001/);
 });
 
 test("an existing project adopts the framework without being blocked by its history, and new work is still checked", () => {

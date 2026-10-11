@@ -825,6 +825,15 @@ if (command === "generate") {
   // writing .svc/lane-tasks-<WI>.json; generate was a second, ungated path to
   // the exact same artifact shape. The assertion no-ops for any path outside
   // .svc/ (scratch/dogfood targets), so this only bites the real target shape.
+  // One graph per work item: when route-workflow has compiled a delivery graph for this WI
+  // (profile, planning mode, required stages), a story-type template would silently replace
+  // it with the generic lane chain (a prototype CLI got 32 tasks incl. mobile and pricing
+  // stages, 2026-10-11 live run). The compiled graph is the task graph.
+  const compiledBeside = path.join(path.dirname(filePath), `delivery-graph-${wi}.json`);
+  const existingCompiled = fs.existsSync(filePath) && (() => { try { return Boolean(JSON.parse(fs.readFileSync(filePath, "utf8")).delivery_graph); } catch { return false; } })();
+  if ((fs.existsSync(compiledBeside) || existingCompiled) && !force) {
+    die(`a delivery graph is already compiled for ${wi}; it is the task graph. Write it to the lane-tasks file instead: node <framework>/scripts/compile-delivery-graph.mjs --wi ${wi} ... --out ${path.join(path.dirname(filePath), `lane-tasks-${wi}.json`)}`);
+  }
   assertFreshSessionContractForInit(filePath, wi, "generate");
   // FIX 8 (review round): generate previously overwrote any existing target
   // unconditionally — proven to destroy a curated graph/receipts pair on a
