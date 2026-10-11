@@ -5,8 +5,11 @@
  * Appends a single JSON line to `<project>/.svc/model-outcomes.jsonl`, the
  * same store `route-model.mjs` reads (created if missing). A repeat of the
  * same id prints the existing line and does not append. A correction
- * (`--corrects <id>`) appends a new line; the named line stays on disk and
- * `readOutcomes` stops counting it.
+ * (`--corrects <id>`) appends a new line only when that id is an existing
+ * ledger row that no row already names in `supersedes`. The check runs
+ * under the ledger lock, so a second correction of an already replaced
+ * outcome is refused and cannot become a second router sample. The named
+ * line stays on disk and `readOutcomes` stops counting it.
  *
  * Receipt files are read-only. `--receipt` hashes a regular file and stores
  * its basename plus digest. This script never creates, rewrites, or deletes
@@ -158,6 +161,15 @@ function assertReceiptDistinct(receiptPath, otherPath, label) {
   }
 }
 
+// Active means a real row with this id, and no row already supersedes it.
+// A→B then A→C would otherwise leave both B and C in the router tally.
+function activeCorrectionTarget(rows, id) {
+  for (const row of rows) {
+    if (row && row.supersedes === id) return false;
+  }
+  return rows.some((row) => row && row.id === id);
+}
+
 /**
  * Append one stage outcome. `opts.projectRoot` selects the project whose
  * `.svc/model-outcomes.jsonl` is updated. Returns `{ record, appended, ledger }`.
@@ -245,8 +257,12 @@ export function closeStage(opts = {}) {
     // Re-check after the lock is held, immediately before any append. A hard
     // link created after the earlier check would otherwise share the ledger inode.
     assertReceiptDistinct(receiptPath, ledger, "outcome ledger");
-    const prior = readLedger(ledger).find((row) => row && row.id === record.id);
+    const rows = readLedger(ledger);
+    const prior = rows.find((row) => row && row.id === record.id);
     if (prior) return { record: prior, appended: false, ledger };
+    if (corrects && !activeCorrectionTarget(rows, corrects)) {
+      throw usage("--corrects must name an existing, active outcome");
+    }
     let existing = "";
     try {
       existing = fs.readFileSync(ledger, "utf8");

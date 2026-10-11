@@ -1,3 +1,4 @@
+// @organism-suite
 // stage-close appends one router outcome beside receipts and never rewrites them.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -5,10 +6,11 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { closeStage, ledgerPath } from "../../scripts/stage-close.mjs";
 import { loadIntel, readOutcomes, tally } from "../../scripts/route-model.mjs";
+import { withStateLock } from "../../scripts/state-io.mjs";
 
 const script = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../scripts/stage-close.mjs");
 
@@ -265,4 +267,151 @@ test("rejects a receipt that aliases the ledger lock before stale recovery can d
   assert.deepEqual(fs.readFileSync(alias), bytes);
   assert.deepEqual(fs.readFileSync(lock), bytes);
   assert.equal(fs.existsSync(ledger), false);
+});
+
+test("organism suite marker is the first line so tier-1 discovers this file", () => {
+  const text = fs.readFileSync(fileURLToPath(import.meta.url), "utf8");
+  assert.equal(text.startsWith("// @organism-suite\n"), true);
+  const discovered = fs.readFileSync(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), "../evals/tier-1/validate-organism-suite.mjs"),
+    "utf8",
+  );
+  assert.match(discovered, /@organism-suite/);
+  assert.match(discovered, /test-framework", "tests"/);
+});
+
+test("refuses a correction whose target is missing or already superseded", () => {
+  const root = tmp();
+  assert.throws(
+    () => closeStage({ ...base, projectRoot: root, corrects: "missing", id: "corr-missing" }),
+    (error) => error.code === "USAGE" && error.message === "--corrects must name an existing, active outcome",
+  );
+  assert.equal(fs.existsSync(ledgerPath(root)), false);
+
+  const first = closeStage({ ...base, projectRoot: root, id: "target-a" });
+  const replaced = closeStage({
+    ...base,
+    projectRoot: root,
+    id: "corr-b",
+    outcome: "fail",
+    corrects: first.record.id,
+  });
+  assert.equal(replaced.appended, true);
+  const before = fs.readFileSync(ledgerPath(root));
+  assert.throws(
+    () => closeStage({
+      ...base,
+      projectRoot: root,
+      id: "corr-c",
+      outcome: "pass",
+      attempt: 3,
+      corrects: first.record.id,
+    }),
+    (error) => error.code === "USAGE" && error.message === "--corrects must name an existing, active outcome",
+  );
+  assert.deepEqual(fs.readFileSync(ledgerPath(root)), before);
+  const seen = readOutcomes([ledgerPath(root)]);
+  assert.deepEqual(seen.map((row) => row.id), ["corr-b"]);
+  const counts = tally(seen);
+  assert.equal(counts.get("exec|sonnet|high").n, 1);
+  assert.equal(counts.get("exec|sonnet|high").pass, 0);
+
+  const again = closeStage({
+    ...base,
+    projectRoot: root,
+    id: "corr-b",
+    outcome: "pass",
+    corrects: first.record.id,
+  });
+  assert.equal(again.appended, false);
+  assert.equal(again.record.outcome, "fail");
+  assert.deepEqual(fs.readFileSync(ledgerPath(root)), before);
+});
+
+test("a correction of the active replacement still counts as one sample", () => {
+  const root = tmp();
+  const first = closeStage({ ...base, projectRoot: root, id: "target-a", outcome: "pass" });
+  const replaced = closeStage({
+    ...base,
+    projectRoot: root,
+    id: "corr-b",
+    outcome: "fail",
+    corrects: first.record.id,
+  });
+  const latest = closeStage({
+    ...base,
+    projectRoot: root,
+    id: "corr-c",
+    outcome: "pass",
+    attempt: 4,
+    corrects: replaced.record.id,
+  });
+  assert.equal(latest.appended, true);
+  assert.equal(latest.record.supersedes, "corr-b");
+  const seen = readOutcomes([ledgerPath(root)]);
+  assert.deepEqual(seen.map((row) => row.id), ["corr-c"]);
+  const counts = tally(seen);
+  assert.equal(counts.get("exec|sonnet|high").n, 1);
+  assert.equal(counts.get("exec|sonnet|high").pass, 1);
+});
+
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function childClose(args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [script, ...args], { stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.on("error", reject);
+    child.on("close", (status) => resolve({ status, stdout, stderr }));
+  });
+}
+
+test("a correction waiting on the ledger lock rechecks that the target is still active", async () => {
+  const root = tmp();
+  const first = closeStage({ ...base, projectRoot: root, id: "target-a" });
+  const ledger = ledgerPath(root);
+  const correction = `${JSON.stringify({
+    id: "corr-b",
+    kind: "stage-close",
+    task_type: "exec",
+    model: "sonnet",
+    harness: "claude",
+    effort: "high",
+    outcome: "fail",
+    supersedes: first.record.id,
+  })}\n`;
+  let pending;
+  withStateLock(ledger, () => {
+    pending = childClose([
+      "--stage", "execute-changeset",
+      "--wi", "WI-R2",
+      "--model", "sonnet",
+      "--harness", "claude",
+      "--outcome", "pass",
+      "--duration", "1",
+      "--cost", "0",
+      "--effort", "high",
+      "--id", "corr-c",
+      "--corrects", first.record.id,
+      "--project-root", root,
+    ]);
+    sleep(500);
+    fs.appendFileSync(ledger, correction);
+  });
+  const result = await pending;
+  assert.equal(result.status, 2, result.stderr);
+  assert.match(result.stderr, /existing, active outcome/);
+  const text = fs.readFileSync(ledger, "utf8");
+  assert.equal(text.includes('"id":"corr-c"'), false);
+  assert.equal(text.includes('"id":"corr-b"'), true);
+  const counts = tally(readOutcomes([ledger]));
+  assert.equal(counts.get("exec|sonnet|high").n, 1);
+  assert.equal(counts.get("exec|sonnet|high").pass, 0);
 });
