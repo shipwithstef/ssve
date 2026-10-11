@@ -75,8 +75,6 @@ Surface implementation discoveries that change consequential product choices; do
 
 ## Inputs
 
-Before building, run `node "$SVC_ROOT"/scripts/k-preload.mjs --root .` (from the project directory) and treat each printed fact as a requirement.
-
 Read and hold in context:
 
 | Artifact | Path | Purpose |

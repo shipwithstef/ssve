@@ -43,13 +43,16 @@ const DECISION_FILES = [
 ];
 
 const CREDENTIAL = String.raw`(?:api[_-]?key|secret|token|password)`;
+// Quoted values keep backslash escapes (\" and \') inside the secret so a
+// quote in the value cannot end redaction early.
+const QUOTED_VALUE = String.raw`(?:"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')`;
 const SECRET = new RegExp(
   [
     String.raw`(?:sk|pk|rk|ghp|gho|github_pat)_[A-Za-z0-9_-]{8,}`,
     String.raw`(?:sk|pk|rk)-[A-Za-z0-9_-]{8,}`,
     String.raw`AKIA[0-9A-Z]{16}`,
     String.raw`Bearer\s+[A-Za-z0-9._-]{8,}`,
-    `["']?${CREDENTIAL}["']?\\s*[:=]\\s*(?:"[^"\\n]*"|'[^'\\n]*')`,
+    `["']?${CREDENTIAL}["']?\\s*[:=]\\s*${QUOTED_VALUE}`,
     `${CREDENTIAL}\\s*[:=]\\s*\\S+`,
   ].join("|"),
   "gi",

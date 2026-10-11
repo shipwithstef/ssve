@@ -1,3 +1,4 @@
+// @organism-suite
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -125,6 +126,39 @@ test("prose owner notes with no bullets still yield a fact", () => {
     const digest = preloadKnowledge(root);
     assert.match(digest.text, /requirement: Games must look like a real game and use real art\. \(OWNER-NOTES\.md\)/);
   });
+});
+
+test("escaped quotes inside credential values stay inside the redaction", () => {
+  fixture((root) => {
+    const leaked = ["reef", "phrase"].join(" ");
+    write(root, "OWNER-NOTES.md", [
+      String.raw`Store "password": "coral \"${leaked}" and rotate it yearly.`,
+      String.raw`The backup reads 'token': 'coral \'${leaked}' before anyone prints it.`,
+      "",
+    ].join("\n"));
+    const digest = preloadKnowledge(root);
+    assert.equal(digest.text.includes(leaked), false);
+    assert.equal(digest.text.includes("reef"), false);
+    assert.equal(digest.text.includes("coral"), false);
+    assert.match(digest.text, /\[redacted\]/);
+    assert.match(digest.text, /rotate it yearly/);
+    assert.match(digest.text, /before anyone prints it/);
+  });
+});
+
+test("execute-changeset keeps its byte-bound contract and loads k-preload from before-starting", () => {
+  const skillPath = path.resolve(testsDir, "../../skills/execute-changeset/SKILL.md");
+  const sharedPath = path.resolve(testsDir, "../../_shared/before-starting.md");
+  const skill = fs.readFileSync(skillPath, "utf8");
+  const shared = fs.readFileSync(sharedPath, "utf8");
+  assert.equal(skill.includes("k-preload"), false);
+  assert.match(skill, /_shared\/before-starting\.md/);
+  assert.match(shared, /node "\$SVC_ROOT"\/scripts\/k-preload\.mjs --root \./);
+  assert.match(shared, /treat each printed fact as a requirement/);
+  assert.match(shared, /execute-changeset/);
+  const blob = spawnSync("git", ["hash-object", skillPath], { encoding: "utf8" });
+  assert.equal(blob.status, 0, blob.stderr);
+  assert.equal(blob.stdout.trim(), "c8979cedb762d7e34e9619e110dd21e82c68b591");
 });
 
 test("quoted credential labels and spaced quoted values are fully redacted", () => {
