@@ -33,7 +33,7 @@ const CHECK = `node -e 'import("./src/drop.mjs").then(m => { console.log(JSON.st
 
 test("the variant that passes the check wins; outside writes fail; apply copies only the winner", async () => {
   const dir = base();
-  const r = await run({ question: "how much padding survives a 32 m drop", base: dir, prompt: "pad the egg", owned: ["src"], check: CHECK, variants: 3, worker_cmd: WORKER }, { sandbox: null, lanes: { max_parallel: 3, why: "test" } });
+  const r = await run({ question: "how much padding survives a 32 m drop", base: dir, prompt: "pad the egg", owned: ["src"], check: CHECK, expect_base: "fail", variants: 3, worker_cmd: WORKER }, { sandbox: null, lanes: { max_parallel: 3, why: "test" } });
   const by = Object.fromEntries(r.variants.map((v) => [v.variant, v]));
   assert.equal(by[1].status, "fail");
   assert.equal(by[2].status, "pass");
@@ -52,7 +52,7 @@ test("lanes never exceed the plan cap", async () => {
 });
 
 test("no passing variant means no winner", async () => {
-  const r = await run({ question: "q", base: base(), prompt: "p", owned: ["src"], check: "false", variants: 2, worker_cmd: "echo x > src/a.txt" }, { sandbox: null, lanes: { max_parallel: 2, why: "t" } });
+  const r = await run({ question: "q", base: base(), prompt: "p", owned: ["src"], check: "false", expect_base: "fail", variants: 2, worker_cmd: "echo x > src/a.txt" }, { sandbox: null, lanes: { max_parallel: 2, why: "t" } });
   assert.equal(r.winner, null);
   assert.throws(() => apply(r, base()), /no passing variant/);
 });
@@ -128,7 +128,7 @@ test("the resolved sandbox wraps every worker and results say so", async () => {
   const sandbox = resolveSandbox({ sandbox_cmd: "fake" }, { probe: () => ({ contained: true }) });
   sandbox.prefix = `echo wrapped >> ${JSON.stringify(log)};`;
   const r = await run({ question: "q", base: base(), prompt: "p", owned: ["src"], check: "true", variants: 3, worker_cmd: "true" }, { sandbox, lanes: { max_parallel: 3, why: "t" } });
-  assert.equal(fs.readFileSync(log, "utf8").trim().split("\n").length, 3);
+  assert.equal(fs.readFileSync(log, "utf8").trim().split("\n").length, 7, "3 workers + 3 checks + the base check all run wrapped");
   assert.ok(r.contained && r.variants.every((v) => v.contained && v.sandbox === "custom"));
   const bare = await run({ question: "q", base: base(), prompt: "p", owned: ["src"], check: "true", variants: 1, worker_cmd: "true" }, { sandbox: null, lanes: { max_parallel: 1, why: "t" } });
   assert.equal(bare.variants[0].contained, false, "an uncontained command worker is recorded as such");
@@ -156,13 +156,12 @@ test("on this host either bubblewrap contains a worker's outside writes, or sand
   assert.equal(hasBwrap(), true);
 });
 
-test("apply keeps a winner's link as a link, even when its target is missing (review #127)", async () => {
+test("apply refuses a winner's symlink: a referent can pass through links already in the target (review #127)", async () => {
   const dir = base();
   const r = await run({ question: "q", base: dir, prompt: "p", owned: ["src"], check: "true", variants: 1, worker_cmd: "ln -s ./later.txt src/pending" }, { sandbox: null, lanes: { max_parallel: 1, why: "t" } });
   assert.equal(r.variants[0].status, "pass");
   const target = fs.mkdtempSync(path.join(os.tmpdir(), "probe-apply-link-"));
   fs.cpSync(dir, target, { recursive: true });
-  apply(r, target);
-  assert.equal(fs.lstatSync(path.join(target, "src/pending")).isSymbolicLink(), true);
-  assert.equal(fs.readlinkSync(path.join(target, "src/pending")), "./later.txt");
+  assert.throws(() => apply(r, target), /produced symlinks are not applied/);
+  assert.equal(fs.existsSync(path.join(target, "src/pending")), false);
 });

@@ -798,7 +798,7 @@ async function capabilityCheck(tuple, binary, timeoutMs, authority = 'advisory')
     return { ok: false, missing: [`no review transport for host ${tuple.host}`], output: '' };
   }
   const required = tuple.host === 'codex'
-    ? ['--config', '--strict-config', '--model', '--dangerously-bypass-approvals-and-sandbox', '--skip-git-repo-check', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--output-schema', '--json', '--output-last-message', '--color']
+    ? ['--config', '--strict-config', '--model', '--sandbox', '--skip-git-repo-check', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--output-schema', '--json', '--output-last-message', '--color']
     : tuple.host === 'agy'
       ? ['--sandbox', '--mode', '--model', '--effort', '--add-dir', '--json-schema', '--output-format', '--print-timeout', '--print']
       : tuple.host === 'cursor'
@@ -818,7 +818,7 @@ async function capabilityCheck(tuple, binary, timeoutMs, authority = 'advisory')
   const missing = required.filter((control) => control.startsWith('--') ? !helpFlags.has(control) : !output.includes(control));
   if (result.code !== 0) missing.unshift(`help exited ${result.code}`);
   const parserArgs = tuple.host === 'codex'
-    ? ['exec', '--skip-git-repo-check', '--dangerously-bypass-approvals-and-sandbox', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--strict-config', '--model', tuple.model, '-c', `model_reasoning_effort="${tuple.effort}"`, '--color', 'never', '--version']
+    ? ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--strict-config', '--model', tuple.model, '-c', `model_reasoning_effort="${tuple.effort}"`, '--color', 'never', '--version']
     : tuple.host === 'agy'
       ? ['--version']
       : tuple.host === 'cursor' || tuple.host === 'grok'
@@ -1308,7 +1308,7 @@ export async function invoke(tuple, binary, packageBytes, reviewKind, schemaByte
   let args;
   let result = null;
   if (tuple.host === 'codex') {
-    args = ['exec', '--skip-git-repo-check', '--dangerously-bypass-approvals-and-sandbox', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--strict-config', '--model', tuple.model, '-c', `model_reasoning_effort="${tuple.effort}"`, '--output-schema', FINDINGS_SCHEMA, '--json', '--output-last-message', finalFile, '--color', 'never', '-'];
+    args = ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--strict-config', '--model', tuple.model, '-c', `model_reasoning_effort="${tuple.effort}"`, '--output-schema', FINDINGS_SCHEMA, '--json', '--output-last-message', finalFile, '--color', 'never', '-'];
   } else if (tuple.host === 'agy') {
     const transportDir = path.join(artifactsDir, `${prefix}-agy-transport`);
     const reviewInstruction = Buffer.from(`You are the independent SVC ${reviewKind} reviewer. Work read-only. Return exactly one raw JSON object and no markdown or commentary. It must match the following schema, which SVC validates fail-closed after transport. The reviewer object must use host=agy, family=${tuple.family}, model=${tuple.model}, effort=${tuple.effort}.\nJSON_SCHEMA:\n${schemaBytes.toString('utf8')}\nEND_JSON_SCHEMA\n\n`);
