@@ -2398,9 +2398,9 @@
       "source": "scripts/northstar.mjs",
       "status": "tested",
       "evidence": [
+        "test-framework/tests/journey-conformance.test.mjs",
         "test-framework/tests/northstar-spec-root.test.mjs",
-        "test-framework/tests/northstar.test.mjs",
-        "test-framework/tests/p11-ready.test.mjs"
+        "test-framework/tests/northstar.test.mjs"
       ]
     },
     {
@@ -2511,6 +2511,7 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-quality-probes.mjs",
+        "test-framework/tests/outcome-eval-budget-watch.test.mjs",
         "test-framework/tests/p11-ready.test.mjs"
       ]
     },
@@ -3585,6 +3586,16 @@
       "status": "tested",
       "evidence": [
         "test-framework/tests/issue-tracker.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/journey-conformance.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/journey-conformance.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/journey-conformance.test.mjs",
+        "test-framework/tests/journey-intended-specs.test.mjs"
       ]
     },
     {
