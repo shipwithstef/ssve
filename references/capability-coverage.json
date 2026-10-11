@@ -2389,6 +2389,15 @@
       ]
     },
     {
+      "id": "engine:scripts/northstar.mjs",
+      "kind": "engine",
+      "source": "scripts/northstar.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/northstar.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/orchestrator-state.mjs",
       "kind": "engine",
       "source": "scripts/orchestrator-state.mjs",
@@ -3669,6 +3678,7 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
+        "test-framework/tests/delivery-graph-ordering.test.mjs",
         "test-framework/tests/research-decision.test.mjs"
       ]
     },
@@ -3823,6 +3833,15 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-g1-lane-tasks-edit-guard.sh",
         "test-framework/evals/tier-1/validate-stage-registry-single-source.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/stats.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/stats.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/stats.test.mjs"
       ]
     },
     {

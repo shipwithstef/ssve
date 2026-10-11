@@ -1,0 +1,168 @@
+{
+  "schema": "outcome-eval-results",
+  "fixture": "overhead-other-sha",
+  "rows": [
+    {
+      "task": "empty",
+      "arm": "solo",
+      "rep": 1,
+      "cost_usd": 0.02,
+      "wall_ms": 60000,
+      "turns": 10,
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap",
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
+    },
+    {
+      "task": "empty",
+      "arm": "solo",
+      "rep": 2,
+      "cost_usd": 0.02,
+      "wall_ms": 60000,
+      "turns": 10,
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap",
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
+    },
+    {
+      "task": "empty",
+      "arm": "solo",
+      "rep": 3,
+      "cost_usd": 0.02,
+      "wall_ms": 60000,
+      "turns": 10,
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap",
+      "model": "claude-haiku-4-5",
+      "framework_sha": null
+    },
+    {
+      "task": "empty",
+      "arm": "framework",
+      "rep": 1,
+      "cost_usd": 0.18,
+      "wall_ms": 60000,
+      "turns": 10,
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap",
+      "model": "claude-haiku-4-5",
+      "framework_sha": "abc1234"
+    },
+    {
+      "task": "empty",
+      "arm": "framework",
+      "rep": 2,
+      "cost_usd": 0.18,
+      "wall_ms": 60000,
+      "turns": 10,
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap",
+      "model": "claude-haiku-4-5",
+      "framework_sha": "abc1234"
+    },
+    {
+      "task": "empty",
+      "arm": "framework",
+      "rep": 3,
+      "cost_usd": 0.18,
+      "wall_ms": 60000,
+      "turns": 10,
+      "hidden_pass": 10,
+      "hidden_total": 10,
+      "score": 1,
+      "solved": true,
+      "model_usage": {
+        "claude-haiku-4-5": {
+          "inputTokens": 1000,
+          "outputTokens": 500,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "fail_open": 0,
+      "rules_not_loaded": false,
+      "stopped_by": null,
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap",
+      "model": "claude-haiku-4-5",
+      "framework_sha": "abc1234"
+    }
+  ]
+}

@@ -70,7 +70,7 @@ assert_node "CSS/browser-visible chore inserts track-visuals" css-browser 'graph
 assert_node "CSS/browser-visible graph records baseline and pre-G5 diff process" css-browser 'graph.tasks.some((task) => task.metadata.skill === "track-visuals" && task.metadata.mode === "baseline") && graph.tasks.some((task) => task.metadata.skill === "execute-changeset" && task.metadata.required_process_steps?.some((step) => step.skill === "track-visuals" && step.mode === "diff" && step.before === "review-gate")) && !graph.tasks.some((task) => task.metadata.skill === "track-visuals" && task.metadata.mode === "diff")'
 
 compile user-bugfix --wi WI-BUG --lane bugfix --change-type bugfix --intent "User-facing bugfix" --risk-flags user-facing
-assert_node "user-facing bugfix inserts test-journeys" user-bugfix 'graph.tasks.some((task) => task.metadata.skill === "test-journeys") && graph.delivery_graph.evidence_families.runtime === "required"'
+assert_node "user-facing bugfix inserts test-journeys before review-gate, as an execute-changeset process step" user-bugfix 'graph.tasks.some((task) => task.metadata.skill === "execute-changeset" && task.metadata.required_process_steps?.some((step) => step.skill === "test-journeys" && step.before === "review-gate")) && graph.delivery_graph.evidence_families.runtime === "required"'
 
 compile backend-base44 --input "$REPO_ROOT/test-framework/evals/tier-1/fixtures/delivery-graph-compiler/backend-base44-change.json"
 assert_node "backend Base44 function inserts base44-environment" backend-base44 'graph.tasks.some((task) => task.metadata.skill === "base44-environment") && graph.delivery_graph.evidence_families.deploy === "required"'
