@@ -30,6 +30,7 @@
     "product_cost_ratio_max": 1.5,
     "product_wall_ratio_max": 1.3,
     "typo_task": "typo-readme",
+    "typo_h_max_drop": 0,
     "typo_cost_ratio_max_net_overhead": 1.3
   },
   "budgets": {

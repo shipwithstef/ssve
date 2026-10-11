@@ -24,7 +24,8 @@
       "fail_open": 0,
       "rules_not_loaded": false,
       "stopped_by": null,
-      "budget_usd": 1
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap"
     },
     {
       "task": "empty",
@@ -48,7 +49,8 @@
       "fail_open": 0,
       "rules_not_loaded": false,
       "stopped_by": null,
-      "budget_usd": 1
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap"
     },
     {
       "task": "empty",
@@ -72,7 +74,8 @@
       "fail_open": 0,
       "rules_not_loaded": false,
       "stopped_by": null,
-      "budget_usd": 1
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap"
     },
     {
       "task": "empty",
@@ -96,7 +99,8 @@
       "fail_open": 0,
       "rules_not_loaded": false,
       "stopped_by": null,
-      "budget_usd": 1
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap"
     },
     {
       "task": "empty",
@@ -120,7 +124,8 @@
       "fail_open": 0,
       "rules_not_loaded": false,
       "stopped_by": null,
-      "budget_usd": 1
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap"
     },
     {
       "task": "empty",
@@ -144,7 +149,8 @@
       "fail_open": 0,
       "rules_not_loaded": false,
       "stopped_by": null,
-      "budget_usd": 1
+      "budget_usd": 1,
+      "builder_sandbox": "bwrap"
     }
   ]
 }

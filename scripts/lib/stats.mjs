@@ -41,8 +41,9 @@ export function bootstrapDeltas(cells, iterations, rand) {
 
 const bounds = (boots, iterations) => [boots[Math.floor(iterations * 0.025)], boots[Math.floor(iterations * 0.975)]];
 
-// Difference of means (a - b) with a bootstrap 95% interval and a two-sided permutation p-value.
-export function compareSamples(a, b, iterations = 10000) {
+// Unrounded difference of means (a - b) with a bootstrap 95% interval and a two-sided
+// permutation p-value. Decisions use these raw numbers; rounding is for display only.
+export function compareRaw(a, b, iterations = 10000) {
   if (!a.length || !b.length) return null;
   const rand = rng();
   const diff = avg(a) - avg(b);
@@ -55,7 +56,14 @@ export function compareSamples(a, b, iterations = 10000) {
     if (Math.abs(avg(shuffled.slice(0, a.length)) - avg(shuffled.slice(a.length))) >= Math.abs(diff) - 1e-12) extreme++;
   }
   const [lo, hi] = bounds(boots, iterations);
-  return { diff: +diff.toFixed(2), ci95: [+lo.toFixed(2), +hi.toFixed(2)], p: +((extreme + 1) / (iterations + 1)).toFixed(4), n: [a.length, b.length] };
+  return { diff, ci95: [lo, hi], p: (extreme + 1) / (iterations + 1), n: [a.length, b.length] };
+}
+
+// Same statistics rounded for display (diff and ci95 to 2 places, p to 4).
+export function compareSamples(a, b, iterations = 10000) {
+  const r = compareRaw(a, b, iterations);
+  if (!r) return null;
+  return { diff: +r.diff.toFixed(2), ci95: [+r.ci95[0].toFixed(2), +r.ci95[1].toFixed(2)], p: +r.p.toFixed(4), n: r.n };
 }
 
 // Stratified delta: each cell is { task, framework: [run scores], solo: [run scores] } for one
@@ -79,7 +87,8 @@ export const ADOPT_MIN_N = 5;
 export function adoptionDecision(a, b, iterations = 10000) {
   const n = [a.length, b.length];
   if (Math.min(...n) < ADOPT_MIN_N) return { decision: "inconclusive", reason: `n >= ${ADOPT_MIN_N} per arm required, got ${n[0]} and ${n[1]}`, n, stats: null };
+  const raw = compareRaw(a, b, iterations);
+  const ok = raw.p < 0.05 && raw.ci95[0] > 0; // unrounded: a bound of 0.004 is above zero, 0.00 displayed or not
   const stats = compareSamples(a, b, iterations);
-  const ok = stats.p < 0.05 && stats.ci95[0] > 0;
   return { decision: ok ? "adopt" : "inconclusive", reason: ok ? "gain established (p < .05, ci95 low > 0)" : `gain not established (diff ${stats.diff}, ci95 [${stats.ci95}], p ${stats.p})`, n, stats };
 }

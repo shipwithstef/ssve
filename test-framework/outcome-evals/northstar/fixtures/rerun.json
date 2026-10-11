@@ -25,6 +25,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "K": 0
       }
@@ -52,6 +53,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "K": 0
       }
@@ -79,6 +81,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "K": 0
       }
@@ -106,6 +109,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "K": 1
       }
@@ -133,6 +137,7 @@
       "rules_not_loaded": true,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "K": 0
       }
@@ -160,6 +165,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "K": 1
       }
@@ -187,6 +193,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "K": 1
       }

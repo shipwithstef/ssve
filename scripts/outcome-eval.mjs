@@ -291,30 +291,9 @@ export class Budget {
   settle(claim, actualUsd) { if (claim?.usd != null) this.promised -= claim.usd; this.spent += actualUsd || 0; }
 }
 
-// Seeded statistics so recorded evidence re-derives to the same numbers every time.
-function rng(seed = 20261010) {
-  return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
-const avg = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
-
-// Difference of means (a - b) with a bootstrap 95% interval and a two-sided permutation p-value.
-export function compareSamples(a, b, iterations = 10000) {
-  if (!a.length || !b.length) return null;
-  const rand = rng();
-  const diff = avg(a) - avg(b);
-  const pick = (xs) => xs[Math.floor(rand() * xs.length)];
-  const boots = [];
-  for (let i = 0; i < iterations; i++) boots.push(avg(a.map(() => pick(a))) - avg(b.map(() => pick(b))));
-  boots.sort((x, y) => x - y);
-  const pooled = [...a, ...b];
-  let extreme = 0;
-  for (let i = 0; i < iterations; i++) {
-    const shuffled = [...pooled];
-    for (let j = shuffled.length - 1; j > 0; j--) { const k = Math.floor(rand() * (j + 1)); [shuffled[j], shuffled[k]] = [shuffled[k], shuffled[j]]; }
-    if (Math.abs(avg(shuffled.slice(0, a.length)) - avg(shuffled.slice(a.length))) >= Math.abs(diff) - 1e-12) extreme++;
-  }
-  return { diff: +diff.toFixed(2), ci95: [+boots[Math.floor(iterations * 0.025)].toFixed(2), +boots[Math.floor(iterations * 0.975)].toFixed(2)], p: +((extreme + 1) / (iterations + 1)).toFixed(4), n: [a.length, b.length] };
-}
+// Seeded statistics live in lib/stats.mjs (one bootstrap shared with northstar decide).
+import { avg, compareSamples } from "./lib/stats.mjs";
+export { compareSamples };
 
 // Promotion rule for a prompt or method variant (candidate) over the current one
 // (baseline), from recorded rows only. Judged tasks: promote when the judge-score gain is

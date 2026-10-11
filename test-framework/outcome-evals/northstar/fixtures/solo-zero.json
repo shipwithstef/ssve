@@ -25,6 +25,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0,
         "S": 0,
@@ -54,6 +55,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0,
         "S": 0,
@@ -83,6 +85,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0,
         "S": 0,
@@ -112,6 +115,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.6,
         "S": 0.5,
@@ -141,6 +145,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.5,
         "S": 0.5,
@@ -170,6 +175,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.7,
         "S": 0.5,

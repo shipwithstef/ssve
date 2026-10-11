@@ -52,8 +52,21 @@ export function loadRows(files) {
 }
 
 const num = (x) => (typeof x === "number" && Number.isFinite(x) ? x : null);
-// A finished run ended on its own: no error, not stopped by a limit, not skipped.
-export const isFinished = (r) => !r.error && !r.stopped_by && !r.skipped;
+// Runner termination, normalised. The CLI's result subtype / terminal reason lands in `stop`
+// (or `stopped_by`); anything starting with "error" or naming a budget, turn or time cap
+// means the run did not finish on its own.
+const TERMINATION_CAP = /^error|budget|time[-_ ]?out|timed[-_ ]?out|max[-_]?turns?|turn[-_ ]?(limit|cap)|(^|[-_ ])cap(ped)?($|[-_ ])/i;
+export const isSkipped = (r) => Boolean(r.skipped) || /^skipped/i.test(String(r.error || ""));
+export function terminationUnfinished(r) {
+  if (r.ok === false) return true;
+  if (r.stopped_by) return true;
+  return typeof r.stop === "string" && TERMINATION_CAP.test(r.stop);
+}
+// A finished run ended on its own: no error, not stopped by a limit or cap, not skipped.
+export const isFinished = (r) => !r.error && !isSkipped(r) && !terminationUnfinished(r);
+// A row with no builder sandbox is void evidence (plan section 7 item 1): it never reaches a
+// score or a cost. A skipped row never ran, so it has no sandbox and is not void.
+export const isVoid = (r) => !isSkipped(r) && !r.builder_sandbox;
 
 // Run score for one component. Unfinished runs score 0 on every component; so does a
 // finished run whose grader left the component out (counted and reported as missing).
@@ -67,17 +80,26 @@ export function runScore(r, comp) {
   return v == null ? { value: 0, missing: true } : { value: v, missing: false };
 }
 
-// A re-run of the same task/arm/rep (the rules-not-loaded re-run) supersedes the earlier
-// row for scoring; the earlier row's spend and wall time stay on the kept row.
-export function dedupe(rows) {
-  const by = new Map();
+// The runner already merges its fail-open re-run into one row, so two rows for the same
+// task/arm/rep are an input error, unless the caller says duplicates are separate runs.
+export function checkDuplicates(rows, { allowDuplicateReps = false } = {}) {
+  if (allowDuplicateReps) return rows;
+  const seen = new Map();
   for (const r of rows) {
-    const key = `${r.task}|${r.arm}|${r.rep}`;
-    const prev = by.get(key);
-    if (!prev) { by.set(key, { ...r, superseded: 0 }); continue; }
-    by.set(key, { ...r, superseded: prev.superseded + 1, cost_usd: (num(prev.cost_usd) ?? 0) + (num(r.cost_usd) ?? 0), wall_ms: (num(prev.wall_ms) ?? 0) + (num(r.wall_ms) ?? 0) });
+    const k = `${r.task}/${r.arm}#${r.rep}`;
+    seen.set(k, (seen.get(k) || 0) + 1);
   }
-  return [...by.values()];
+  const dups = [...seen].filter(([, n]) => n > 1).map(([k, n]) => `${k} x${n}`);
+  if (dups.length) throw new NorthstarError(`duplicate task/arm/rep rows: ${dups.join(", ")} (pass --allow-duplicate-reps to count them as separate runs)`);
+  return rows;
+}
+
+// Void-evidence split plus the duplicate check: the rows every decision is computed from.
+export function usableRows(rawRows, { allowDuplicateReps = false } = {}) {
+  const voided = rawRows.filter(isVoid);
+  const rows = rawRows.filter((r) => !isVoid(r));
+  checkDuplicates(rows, { allowDuplicateReps });
+  return { rows, voided };
 }
 
 function tokensOf(usage) {
@@ -99,7 +121,11 @@ function armSummary(rows) {
     n_finished: fin.length,
     errored: rows.filter((r) => r.error).length,
     stopped: rows.filter((r) => r.stopped_by).length,
+    // Arm cost is the builder's spend (cost_usd) only. The judge is a grader, not arm work:
+    // both arms are judged the same way, so its spend is reported beside the arm cost
+    // (judge_cost_usd) and never enters cost, cost ratios or the typo-overhead arithmetic.
     cost_total_usd: r4(rows.reduce((a, r) => a + (num(r.cost_usd) ?? 0), 0)),
+    judge_cost_usd: r4(rows.reduce((a, r) => a + (num(r.judge_cost_usd) ?? 0), 0)),
     cost_mean_usd: r4(mean(rows.map((r) => num(r.cost_usd) ?? 0))),
     wall_mean_ms: rows.length ? Math.round(mean(rows.map((r) => num(r.wall_ms) ?? 0))) : null,
     turns_mean: r4(mean(rows.map((r) => num(r.turns) ?? 0))),
@@ -108,18 +134,18 @@ function armSummary(rows) {
     solved_all: rows.length > 0 && rows.every((r) => isFinished(r) && r.solved === true),
     rules_not_loaded: rows.filter((r) => r.rules_not_loaded).length,
     fail_open: rows.reduce((a, r) => a + (num(r.fail_open) ?? 0), 0),
-    superseded_runs: rows.reduce((a, r) => a + (r.superseded || 0), 0),
   };
 }
 
 // ---------- decide ----------
 
-export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, iterations = 10000 } = {}) {
+export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, iterations = 10000, allowDuplicateReps = false } = {}) {
   if (slice !== "dev" && slice !== "reserve") throw new NorthstarError("decide needs --slice dev|reserve (each slice is judged separately)");
   const tasks = sliceTasks(bar, slice);
   const minFin = bar.min_finished_runs_per_cell_arm;
   const [soloArm, fwArm] = bar.arms;
-  const rows = dedupe(rawRows.filter((r) => tasks.includes(r.task) && bar.arms.includes(r.arm)));
+  const inSlice = rawRows.filter((r) => tasks.includes(r.task) && bar.arms.includes(r.arm));
+  const { rows, voided } = usableRows(inSlice, { allowDuplicateReps });
   const of = (task, arm) => rows.filter((r) => r.task === task && r.arm === arm);
 
   // cells
@@ -185,7 +211,8 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
       continue;
     }
     const drop = t.solo.h_mean - t.framework.h_mean;
-    push(task, "h_drop", drop <= K.h_max_drop + EPS ? "pass" : "fail", { value: r4(drop), limit: K.h_max_drop });
+    const hLimit = task === K.typo_task ? (K.typo_h_max_drop ?? 0) : K.h_max_drop; // typo: "H not worse"
+    push(task, "h_drop", drop <= hLimit + EPS ? "pass" : "fail", { value: r4(drop), limit: hLimit });
     const missed = t.solo.solved_all ? f_unsolved(of(task, fwArm)) : 0;
     push(task, "h_miss", missed === 0 ? "pass" : "fail", { value: missed, note: t.solo.solved_all ? "solo solved every run" : "solo did not solve every run: not applicable" });
     if (K.product_tasks.includes(task)) {
@@ -197,6 +224,14 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   }
   if (tasks.includes(K.typo_task) && per_task[K.typo_task]) {
     const t = per_task[K.typo_task];
+    // No lane-upstream stages beyond the invariant tail: read from the optional row field
+    // `upstream_stages` (array) on framework rows.
+    const fwRows = of(K.typo_task, fwArm);
+    const listed = fwRows.filter((r) => Array.isArray(r.upstream_stages) && r.upstream_stages.length);
+    const absent = fwRows.filter((r) => !Array.isArray(r.upstream_stages));
+    if (listed.length) push(K.typo_task, "upstream_stages", "fail", { value: listed.reduce((a, r) => a + r.upstream_stages.length, 0), limit: 0, note: `upstream stages listed: ${[...new Set(listed.flatMap((r) => r.upstream_stages))].join(", ")}` });
+    else if (absent.length) push(K.typo_task, "upstream_stages", "unmeasured", { note: `upstream_stages missing on ${absent.length} framework row(s)` });
+    else push(K.typo_task, "upstream_stages", "pass", { value: 0, limit: 0 });
     const ov = overheadRows ? catalogOverhead(overheadRows, bar) : null;
     if (!ov) push(K.typo_task, "typo_cost", "unmeasured", { note: "no catalog overhead measured (--overhead <results.json> with both arms)" });
     else if (!measurable(K.typo_task)) push(K.typo_task, "typo_cost", "unmeasured", { note: `fewer than ${minFin} finished runs in an arm` });
@@ -209,7 +244,18 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
 
   const failed = constraints.filter((c) => c.status === "fail");
   const unmeasured = constraints.filter((c) => c.status === "unmeasured");
-  const overall = !headline.pass || failed.length ? "fail" : unmeasured.length ? "incomplete" : "pass";
+  // Overall is "pass" only on complete evidence: every registered task has rows, every
+  // cell has a number, no run is void and no constraint is unmeasured.
+  const incomplete_reasons = [];
+  if (headline.tasks_without_rows.length) incomplete_reasons.push(`no rows for registered task(s): ${headline.tasks_without_rows.join(", ")}`);
+  if (headline.cells_excluded) incomplete_reasons.push(`${headline.cells_excluded} cell(s) excluded without a number`);
+  if (voided.length) incomplete_reasons.push(`${voided.length} void run(s) (no builder sandbox) excluded from scores and costs`);
+  if (unmeasured.length) incomplete_reasons.push(`${unmeasured.length} constraint(s) unmeasured`);
+  // A failing headline is a "fail" only when numbered cells back it; with no numbered cell
+  // there is nothing to fail on yet, so the slice is "incomplete".
+  const headlineFailed = numbered.length > 0 && !headline.pass;
+  if (!numbered.length) incomplete_reasons.push("no cell has a number");
+  const overall = headlineFailed || failed.length ? "fail" : incomplete_reasons.length ? "incomplete" : "pass";
 
   const arms = {};
   for (const arm of bar.arms) arms[arm] = armSummary(rows.filter((r) => r.arm === arm));
@@ -217,9 +263,11 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
     slice, tasks, rows_used: rows.length,
     headline, pass: headline.pass,
     constraints, constraints_failed: failed.length, constraints_unmeasured: unmeasured.length,
-    overall,
+    overall, incomplete_reasons,
+    void_runs: voided.length,
+    void_by_arm: Object.fromEntries(bar.arms.map((a) => [a, voided.filter((r) => r.arm === a).length])),
     cells, per_task, cost_per_arm: arms,
-    diagnostics: Object.fromEntries(bar.arms.map((a) => [a, { turns_mean: arms[a].turns_mean, tokens_mean: arms[a].tokens_mean, rules_not_loaded: arms[a].rules_not_loaded, fail_open: arms[a].fail_open, superseded_runs: arms[a].superseded_runs }])),
+    diagnostics: Object.fromEntries(bar.arms.map((a) => [a, { turns_mean: arms[a].turns_mean, tokens_mean: arms[a].tokens_mean, rules_not_loaded: arms[a].rules_not_loaded, fail_open: arms[a].fail_open, judge_cost_usd: arms[a].judge_cost_usd }])),
     overhead: overheadRows ? catalogOverhead(overheadRows, bar) : null,
   };
 }
@@ -229,7 +277,8 @@ const f_unsolved = (fwRows) => fwRows.filter((r) => !(isFinished(r) && r.solved 
 // Measured fixed catalog overhead: mean cost of framework runs minus solo's, on an empty task.
 export function catalogOverhead(overheadRows, bar = loadBar()) {
   const [soloArm, fwArm] = bar.arms;
-  const s = overheadRows.filter((r) => r.arm === soloArm), f = overheadRows.filter((r) => r.arm === fwArm);
+  const usable = overheadRows.filter((r) => !isVoid(r));
+  const s = usable.filter((r) => r.arm === soloArm), f = usable.filter((r) => r.arm === fwArm);
   if (!s.length || !f.length) return null;
   const raw = mean(f.map((r) => num(r.cost_usd) ?? 0)) - mean(s.map((r) => num(r.cost_usd) ?? 0));
   return { overhead_usd: r4(Math.max(0, raw)), raw_usd: r4(raw), n: [s.length, f.length] };
@@ -248,15 +297,16 @@ export function summarizeDecision(d) {
   for (const c of d.cells) L.push(`  ${c.task}/${c.component}: ` + (c.numbered ? `solo ${c.solo.mean} (n ${c.solo.n_runs}/${c.solo.n_finished} fin) framework ${c.framework.mean} (n ${c.framework.n_runs}/${c.framework.n_finished} fin) delta ${c.delta}${c.both_zero ? " [both zero]" : ""}` : `no number: ${c.excluded_reason}`));
   for (const c of d.constraints) L.push(`  constraint ${c.task}/${c.id}: ${c.status}${c.value != null ? ` (${c.value}${c.limit != null ? ` vs ${c.limit}` : ""})` : ""}${c.status === "unmeasured" ? ` - ${c.note}` : ""}`);
   for (const [a, s] of Object.entries(d.cost_per_arm)) L.push(`  cost ${a}: $${s.cost_total_usd} total, $${s.cost_mean_usd}/run over ${s.n_runs} runs`);
-  L.push(`overall: ${d.overall.toUpperCase()}${d.overall === "incomplete" ? " (headline passes; some constraints are unmeasured)" : ""}`);
+  L.push(`overall: ${d.overall.toUpperCase()}`);
+  for (const r of d.incomplete_reasons) L.push(`  incomplete: ${r}`);
   return L.join("\n");
 }
 
 // ---------- adopt ----------
 
-export function adopt(rawRows, { candidate, baseline, component, task = null, iterations = 10000 }) {
+export function adopt(rawRows, { candidate, baseline, component, task = null, iterations = 10000, allowDuplicateReps = false }) {
   if (!COMPONENTS.includes(component)) throw new NorthstarError(`component must be one of ${COMPONENTS.join("|")}`);
-  const rows = dedupe(rawRows).filter((r) => !task || r.task === task);
+  const rows = usableRows(rawRows, { allowDuplicateReps }).rows.filter((r) => !task || r.task === task);
   const sample = (arm) => rows.filter((r) => r.arm === arm).map((r) => runScore(r, component).value);
   const res = adoptionDecision(sample(candidate), sample(baseline), iterations);
   return { candidate, baseline, component, task, ...res, needs_holdout_confirmation: res.decision === "adopt" };
@@ -379,10 +429,11 @@ export function fakeRun(entry, bar = loadBar()) {
   const jitter = () => Math.min(1, Math.max(0, level + (rand() - 0.5) * 0.3));
   const components = {};
   for (const c of bar.matrix[entry.task] || []) components[c] = +jitter().toFixed(2);
-  const score = +Math.min(1, 0.85 + rand() * 0.15).toFixed(2);
+  const score = 1; // synthetic H is perfect for both arms: the dry run proves the pipeline, not the framework
   const cost = +((fw ? 1.25 : 1) * (0.4 + rand() * 0.1)).toFixed(4);
   return {
-    task: entry.task, arm: entry.arm, rep: entry.rep, model: entry.model, synthetic: true,
+    task: entry.task, arm: entry.arm, rep: entry.rep, model: entry.model, synthetic: true, builder_sandbox: "fake",
+    ...(fw ? { upstream_stages: [] } : {}),
     cost_usd: cost, wall_ms: Math.round((fw ? 1.15 : 1) * 60000 * (1 + rand() * 0.1)), turns: fw ? 30 : 12,
     hidden_pass: Math.round(score * 10), hidden_total: 10, score, solved: score === 1,
     ...(Object.keys(components).length ? { components } : {}),
@@ -391,12 +442,17 @@ export function fakeRun(entry, bar = loadBar()) {
   };
 }
 
+// Synthetic catalog-overhead rows (an empty task, both arms) so the dry run can reach "pass".
+export function syntheticOverhead(model, bar = loadBar()) {
+  return bar.arms.flatMap((arm) => [1, 2, 3].map((rep) => ({ task: "empty", arm, rep, model, synthetic: true, builder_sandbox: "fake", cost_usd: arm === "framework" ? 0.18 : 0.02 })));
+}
+
 export function dryRun(manifest, bar = loadBar()) {
   const rows = manifest.runs.map((e) => fakeRun(e, bar));
   const decisions = {};
   for (const slice of ["dev", "reserve"]) {
     const inSlice = rows.filter((r) => sliceTasks(bar, slice).includes(r.task));
-    if (inSlice.length) decisions[slice] = decide(inSlice, { slice, bar, overheadRows: null });
+    if (inSlice.length) decisions[slice] = decide(inSlice, { slice, bar, overheadRows: syntheticOverhead(manifest.model, bar) });
   }
   return { rows: rows.length, decisions };
 }
@@ -405,7 +461,7 @@ export function dryRun(manifest, bar = loadBar()) {
 
 export function parseArgs(argv) {
   const out = { _: [] };
-  const bool = new Set(["dry-run", "json"]);
+  const bool = new Set(["dry-run", "json", "allow-duplicate-reps"]);
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a.startsWith("--")) {
@@ -443,7 +499,7 @@ export function main(argv, io = { out: (s) => process.stdout.write(s + "\n"), er
     }
     if (cmd === "decide") {
       if (!args._.length) throw new NorthstarError("decide needs at least one results file");
-      const d = decide(loadRows(args._), { slice: args.slice, bar, overheadRows: args.overhead ? loadRows([args.overhead]) : null });
+      const d = decide(loadRows(args._), { slice: args.slice, bar, overheadRows: args.overhead ? loadRows([args.overhead]) : null, allowDuplicateReps: Boolean(args["allow-duplicate-reps"]) });
       io.out(JSON.stringify(d, null, 2));
       io.err(summarizeDecision(d));
       return 0;
@@ -451,7 +507,7 @@ export function main(argv, io = { out: (s) => process.stdout.write(s + "\n"), er
     if (cmd === "adopt") {
       if (!args._.length) throw new NorthstarError("adopt needs at least one results file");
       if (!args.candidate || !args.baseline || !args.component) throw new NorthstarError("adopt needs --candidate, --baseline and --component");
-      const a = adopt(loadRows(args._), { candidate: args.candidate, baseline: args.baseline, component: args.component, task: args.task ?? null });
+      const a = adopt(loadRows(args._), { candidate: args.candidate, baseline: args.baseline, component: args.component, task: args.task ?? null, allowDuplicateReps: Boolean(args["allow-duplicate-reps"]) });
       io.out(JSON.stringify(a, null, 2));
       io.err(`adoption: ${a.decision} (${a.reason})`);
       return 0;

@@ -1,3 +1,4 @@
+// @organism-suite
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -7,6 +8,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
   loadBar, loadRows, decide, adopt, buildManifest, assertBalanced, dryRun, main, NorthstarError, catalogOverhead,
+  isFinished, isVoid, fakeRun, syntheticOverhead,
 } from "../../scripts/northstar.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -175,7 +177,8 @@ test("typo cost: unmeasured without an overhead file, measured net of overhead w
   const ok = dev("dev-pass", { overheadRows: fx("overhead") });
   const t = con(ok, "typo-readme", "typo_cost");
   assert.equal(t.status, "pass"); near(t.overhead_usd, 0.16); near(t.net_usd, 0.04); near(t.value, 0.8);
-  assert.equal(ok.overall, "pass");
+  assert.equal(ok.constraints_unmeasured, 0);
+  assert.equal(ok.overall, "incomplete"); // the other registered tasks have no rows
 
   const small = dev("dev-pass", { overheadRows: fx("overhead-small") });
   assert.equal(con(small, "typo-readme", "typo_cost").status, "fail"); // 0.20 - 0.02 = 0.18 > 1.3 * 0.05
@@ -184,22 +187,115 @@ test("typo cost: unmeasured without an overhead file, measured net of overhead w
   assert.equal(catalogOverhead(fx("overhead").filter((r) => r.arm === "solo"), bar), null);
 });
 
-test("rules-not-loaded re-run supersedes the first row; first spend is kept", () => {
-  const d = dev("rerun");
+test("duplicate task/arm/rep rows are an input error naming them; the flag counts them as separate runs", () => {
+  assert.throws(() => dev("rerun"), (e) => e instanceof NorthstarError && /continuity-rules\/framework#2 x2/.test(e.message) && /--allow-duplicate-reps/.test(e.message));
+  const d = dev("rerun", { allowDuplicateReps: true });
   const k = cell(d, "continuity-rules", "K");
-  assert.equal(k.framework.n_runs, 3); near(k.framework.mean, 1);
+  assert.equal(k.framework.n_runs, 4); assert.equal(k.framework.n_finished, 4); // the flagged first attempt is its own run, graded K 0
+  near(k.framework.mean, 0.75);
   assert.equal(d.per_task["continuity-rules"].framework.cost_total_usd, 2.4);
-  assert.equal(d.per_task["continuity-rules"].framework.superseded_runs, 1);
-  assert.equal(d.per_task["continuity-rules"].framework.rules_not_loaded, 0);
-  assert.equal(d.headline.R.defined, false); // solo K is 0
-  assert.equal(d.headline.pass, true);
+  assert.equal(d.per_task["continuity-rules"].framework.rules_not_loaded, 1);
+  assert.equal(d.per_task["continuity-rules"].framework.fail_open, 2);
+  assert.throws(() => adopt(fx("rerun"), { candidate: "framework", baseline: "solo", component: "K" }), NorthstarError);
+});
+
+test("overall is never PASS while a registered task has no rows or a cell is excluded", () => {
+  const d = dev("dev-pass", { overheadRows: fx("overhead") });
+  assert.equal(d.pass, true); // the headline is still computed and passes
+  assert.equal(d.overall, "incomplete");
+  assert.ok(d.incomplete_reasons.some((r) => /no rows for registered task\(s\): ai-quest, waitlist-feature, bugfix-rootcause, security-payments/.test(r)));
+  assert.ok(d.incomplete_reasons.some((r) => /10 cell\(s\) excluded/.test(r)));
+  const thin = dev("two-finished");
+  assert.equal(thin.overall, "incomplete");
+  assert.ok(thin.incomplete_reasons.some((r) => /excluded without a number/.test(r)));
+  // a failing headline stays "fail", not "incomplete"
+  assert.equal(dev("tie").overall, "fail");
+});
+
+test("a complete, passing slice is the only way to overall PASS", () => {
+  const m = buildManifest({ model: "fake-model", maxUsd: 35, slice: "all", dryRun: true, bar });
+  const d = dryRun(m, bar);
+  for (const s of ["dev", "reserve"]) {
+    assert.equal(d.decisions[s].overall, "pass", JSON.stringify(d.decisions[s].incomplete_reasons));
+    assert.deepEqual(d.decisions[s].incomplete_reasons, []);
+  }
+  // remove one task's rows and it is no longer complete
+  const rows = m.runs.map((e) => fakeRun(e, bar)).filter((r) => r.task !== "ai-quest");
+  const part = decide(rows, { slice: "dev", bar, overheadRows: syntheticOverhead("fake-model", bar) });
+  assert.equal(part.overall, "incomplete");
+});
+
+test("runner termination is normalised: ok false and error/budget/turn caps are unfinished", () => {
+  const d = dev("termination");
+  const fw = d.per_task["yoga-studio"].framework;
+  // finished: stop "success" and "end_turn" only
+  assert.equal(fw.n_runs, 6); assert.equal(fw.n_finished, 2);
+  near(cell(d, "yoga-studio", "E").framework.mean, (0.8 * 2) / 6);
+  assert.equal(cell(d, "yoga-studio", "E").numbered, false); // 2 finished < 3
+  assert.equal(fw.cost_total_usd, 0.5 + 0.6 + 4 * 1.0); // spend stays
+  assert.equal(isFinished({ stop: "error_max_budget_usd" }), false);
+  assert.equal(isFinished({ stop: "error_during_execution" }), false);
+  assert.equal(isFinished({ stop: "error_max_turns" }), false);
+  assert.equal(isFinished({ stop: "max_turns" }), false);
+  assert.equal(isFinished({ stop: "timeout" }), false);
+  assert.equal(isFinished({ stopped_by: "turns" }), false);
+  assert.equal(isFinished({ ok: false }), false);
+  assert.equal(isFinished({ stop: "success" }), true);
+  assert.equal(isFinished({ stop: "end_turn", ok: true }), true);
+  assert.equal(isFinished({}), true);
+});
+
+test("a row without a builder sandbox is void: excluded from scores and costs, overall incomplete", () => {
+  const d = dev("void-sandbox");
+  assert.equal(d.void_runs, 2);
+  assert.deepEqual(d.void_by_arm, { solo: 0, framework: 2 });
+  const fw = d.per_task["yoga-studio"].framework;
+  assert.equal(fw.n_runs, 2); assert.equal(fw.cost_total_usd, 2); // the $7 and $9 void rows never count
+  assert.equal(cell(d, "yoga-studio", "E").numbered, false); // only 2 usable framework runs
+  assert.equal(d.overall, "incomplete");
+  assert.ok(d.incomplete_reasons.some((r) => /2 void run\(s\)/.test(r)));
+  assert.equal(d.cost_per_arm.framework.cost_total_usd, 2);
+  // skipped rows never ran, so no sandbox is expected of them
+  assert.equal(dev("budget-exhausted").void_runs, 0);
+  // adopt ignores void rows too
+  const nosb = [...fx("tie").map((r) => ({ ...r, builder_sandbox: null }))];
+  assert.equal(adopt(nosb, { candidate: "framework", baseline: "solo", component: "E" }).n[0], 0); // every row void: none counted
+  assert.equal(isVoid({ builder_sandbox: null }), true);
+  assert.equal(isVoid({}), true);
+  assert.equal(isVoid({ builder_sandbox: "bwrap" }), false);
+});
+
+test("judge cost stays out of arm cost and is reported separately per arm", () => {
+  const d = dev("judged");
+  assert.equal(d.cost_per_arm.solo.cost_total_usd, 1.5); assert.equal(d.cost_per_arm.solo.judge_cost_usd, 0.21);
+  assert.equal(d.cost_per_arm.framework.cost_total_usd, 1.8); assert.equal(d.cost_per_arm.framework.judge_cost_usd, 0.27);
+  assert.equal(d.per_task["continuity-rules"].framework.judge_cost_usd, 0.27);
+  assert.equal(d.diagnostics.framework.judge_cost_usd, 0.27);
+});
+
+test("typo task: H must not drop at all, upstream stages are a constraint", () => {
+  const d = dev("typo-fail");
+  const drop = con(d, "typo-readme", "h_drop");
+  assert.equal(drop.limit, 0); assert.equal(drop.status, "fail"); near(drop.value, 1 / 300, 1e-3); // 0.0033 < the general 0.05 allowance, still a fail
+  assert.equal(con(d, "typo-readme", "h_miss").status, "fail"); // solo solved every run, framework missed one
+  const up = con(d, "typo-readme", "upstream_stages");
+  assert.equal(up.status, "fail"); assert.match(up.note, /write-spec, design-ux/);
+  // framework rows without the field: unmeasured, not pass
+  const none = dev("typo-no-stages");
+  assert.equal(con(none, "typo-readme", "upstream_stages").status, "unmeasured");
+  assert.equal(con(none, "typo-readme", "h_drop").status, "pass");
+  // all listed empty: pass
+  assert.equal(con(dev("dev-pass"), "typo-readme", "upstream_stages").status, "pass");
+  // non-typo tasks keep the 0.05 allowance
+  assert.equal(con(dev("constraint-failures"), "waitlist-feature", "h_drop").limit, 0.05);
 });
 
 test("slices are judged separately and rows outside the slice are ignored", () => {
   const res = decide(fx("dev-pass"), { slice: "reserve", bar });
   assert.equal(res.headline.cells_numbered, 0);
   assert.equal(res.headline.pass, false);
-  assert.equal(res.overall, "fail");
+  assert.equal(res.overall, "incomplete"); // nothing numbered yet: not evidence of failure
+  assert.ok(res.incomplete_reasons.includes("no cell has a number"));
   assert.throws(() => decide([], { slice: "all", bar }), NorthstarError);
 });
 
@@ -209,7 +305,7 @@ test("decide is deterministic", () => {
 
 // ---- adopt ----
 test("adopt: n >= 5 per arm, p < .05, ci low > 0, else inconclusive", () => {
-  const mk = (arm, vals) => vals.map((v, i) => ({ task: "t", arm, rep: i + 1, score: v, hidden_total: 10, components: { E: v } }));
+  const mk = (arm, vals) => vals.map((v, i) => ({ task: "t", arm, rep: i + 1, builder_sandbox: "bwrap", score: v, hidden_total: 10, components: { E: v } }));
   const rows = [...mk("cand", [0.9, 0.95, 1, 0.85, 0.9, 1]), ...mk("base", [0.1, 0.2, 0.15, 0.1, 0.2, 0.1])];
   const a = adopt(rows, { candidate: "cand", baseline: "base", component: "E" });
   assert.equal(a.decision, "adopt"); assert.equal(a.needs_holdout_confirmation, true);
@@ -295,9 +391,13 @@ test("cli decide prints JSON and a human summary", () => {
   const r = cli("decide", path.join(FIX, "dev-pass.json"), "--slice", "dev", "--overhead", path.join(FIX, "overhead.json"));
   assert.equal(r.status, 0, r.stderr);
   const j = JSON.parse(r.stdout);
-  assert.equal(j.overall, "pass");
+  assert.equal(j.overall, "incomplete");
   assert.match(r.stderr, /headline pass: YES/);
-  assert.match(r.stderr, /overall: PASS/);
+  assert.match(r.stderr, /overall: INCOMPLETE/);
+  assert.match(r.stderr, /incomplete: no rows for registered task/);
+  const dup = cli("decide", path.join(FIX, "rerun.json"), "--slice", "dev");
+  assert.equal(dup.status, 1); assert.match(dup.stderr, /duplicate task\/arm\/rep/);
+  assert.equal(cli("decide", path.join(FIX, "rerun.json"), "--slice", "dev", "--allow-duplicate-reps").status, 0);
 });
 
 test("cli plan: refusal exits 1 with the message; success prints a manifest and forecast", () => {

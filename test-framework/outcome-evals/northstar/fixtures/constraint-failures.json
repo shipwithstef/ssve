@@ -25,6 +25,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.1,
         "S": 0.1,
@@ -54,6 +55,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.1,
         "S": 0.1,
@@ -83,6 +85,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.1,
         "S": 0.1,
@@ -112,6 +115,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.9,
         "S": 0.9,
@@ -141,6 +145,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.9,
         "S": 0.9,
@@ -170,6 +175,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.9,
         "S": 0.9,
@@ -199,6 +205,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.1,
         "S": 0.1,
@@ -228,6 +235,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.1,
         "S": 0.1,
@@ -257,6 +265,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.1,
         "S": 0.1,
@@ -286,6 +295,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.9,
         "S": 0.9,
@@ -315,6 +325,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.9,
         "S": 0.9,
@@ -344,6 +355,7 @@
       "rules_not_loaded": false,
       "stopped_by": null,
       "budget_usd": 1,
+      "builder_sandbox": "bwrap",
       "components": {
         "E": 0.9,
         "S": 0.9,

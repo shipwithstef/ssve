@@ -1,3 +1,4 @@
+// @organism-suite
 import test from "node:test";
 import assert from "node:assert/strict";
 import { compareSamples, stratifiedDelta, adoptionDecision } from "../../scripts/lib/stats.mjs";
@@ -84,4 +85,17 @@ test("stratifiedDelta keeps a run's components together: two identical cells of 
   // Independent draws per cell (different tasks) average out and narrow the interval.
   const apart = stratifiedDelta([{ task: "t1", framework: fw, solo: so }, { task: "t2", framework: fw, solo: so }], 4000);
   assert.ok(apart.ci95[1] - apart.ci95[0] < one.ci95[1] - one.ci95[0]);
+});
+
+test("adoptionDecision compares unrounded bounds; rounding is display only", async () => {
+  const { compareRaw } = await import("../../scripts/lib/stats.mjs");
+  const a = [1, 1.01, 1.02, 1, 1.01, 1.02, 1, 1.01];
+  const b = [0.99, 0.995, 1, 1.005, 0.99, 0.995, 1, 1.005];
+  const raw = compareRaw(a, b);
+  assert.ok(raw.ci95[0] > 0 && raw.ci95[0] < 0.005); // raw lower bound is positive
+  assert.equal(compareSamples(a, b).ci95[0], 0); // displayed rounds to 0
+  assert.notEqual(raw.p, compareSamples(a, b).p); // p is unrounded in the core
+  const r = adoptionDecision(a, b);
+  assert.equal(r.decision, "adopt"); // a rounded comparison (ci low 0) would have said inconclusive
+  assert.equal(r.stats.ci95[0], 0); // display stays rounded
 });
