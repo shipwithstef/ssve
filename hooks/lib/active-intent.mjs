@@ -148,7 +148,12 @@ function hasAffirmativePause(text) {
   if (!PAUSE_WORDS.test(withoutNegated)) return false;
   // "pause button/menu/screen/state" etc. name a feature rather than ask for a pause.
   const noFeature = withoutNegated.replace(/\b(?:pause|halt|abort)\s+(?:button|menu|screen|state|key|icon|overlay|logic|feature|function|handler|handling|signal|controller|error|request)s?\b/giu, "");
-  return PAUSE_WORDS.test(noFeature);
+  // Feature work that merely mentions pausing ("Implement pause and resume for the player",
+  // "add a pause/resume toggle") is a task description, not a request to pause this session.
+  const noTask = noFeature
+    .replace(/\b(?:implement|add|build|create|support|handle|fix|write|make|design|test|develop|wire|expose|document|refactor)\b[^.;!?\n]{0,60}?\b(?:pause|halt|abort)\b/giu, "")
+    .replace(/\b(?:pause|halt|abort)\s*[\/&]\s*resume\b/giu, "");
+  return PAUSE_WORDS.test(noTask);
 }
 
 export function detectReferencedWI(text) {
@@ -156,10 +161,16 @@ export function detectReferencedWI(text) {
   return match ? `WI-${match[1]}` : "";
 }
 
+const CONTINUE_WI = /\b(?:continue|resume|proceed|keep\s+going|carry\s+on|finish|complete)\s+(?:with\s+|on\s+|the\s+)?WI[-\s]?\d{2,5}\b/gi;
+const NEGATION_BEFORE = /(?:\b(?:do\s+not|don['’]?t|dont|never|no\s+need\s+to|not\s+to|without)(?:\s+[\p{L}\p{N}_'’-]+){0,2}\s*)$/iu;
+
 export function isExplicitContinueForWI(text) {
-  return /\b(?:continue|resume|proceed|keep\s+going|carry\s+on|finish|complete)\s+(?:with\s+|on\s+|the\s+)?WI[-\s]?\d{2,5}\b/i.test(
-    String(text || "")
-  );
+  const raw = String(text || "");
+  for (const match of raw.matchAll(CONTINUE_WI)) {
+    // "do not continue WI-123" is the opposite of a resume.
+    if (!NEGATION_BEFORE.test(raw.slice(Math.max(0, match.index - 40), match.index))) return true;
+  }
+  return false;
 }
 
 export function classifyActiveIntent(text) {
@@ -167,17 +178,12 @@ export function classifyActiveIntent(text) {
   const normalized = normalizeText(raw);
   const referencedWi = detectReferencedWI(raw);
 
-  if (isExplicitContinueForWI(raw)) {
-    return {
-      classification: "continue-wi",
-      suppress: false,
-      wi: referencedWi,
-      resumed_wi: referencedWi,
-      reason: referencedWi ? `explicit continue for ${referencedWi}` : "explicit WI continuation"
-    };
-  }
-
-  if (hasAffirmativeStop(raw)) {
+  // "stop asking/narrating ..." tells the agent how to behave, not to end the work, so it does
+  // not outrank an explicit resume.
+  const stopText = isExplicitContinueForWI(raw)
+    ? raw.replace(/\bstop\s+(?:asking|narrating|talking|explaining|summari[sz]ing|repeating|apologi[sz]ing|checking\s+in)\b/giu, "")
+    : raw;
+  if (hasAffirmativeStop(stopText)) {
     return {
       classification: "stop",
       suppress: true,
@@ -196,6 +202,16 @@ export function classifyActiveIntent(text) {
       reason: referencedWi
         ? `pause suppresses ${referencedWi}`
         : "pause suppresses stale WI continuation pressure"
+    };
+  }
+
+  if (isExplicitContinueForWI(raw)) {
+    return {
+      classification: "continue-wi",
+      suppress: false,
+      wi: referencedWi,
+      resumed_wi: referencedWi,
+      reason: referencedWi ? `explicit continue for ${referencedWi}` : "explicit WI continuation"
     };
   }
 

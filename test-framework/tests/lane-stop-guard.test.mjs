@@ -8,7 +8,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { test, before, after } from "node:test";
 import { fileURLToPath } from "node:url";
-import { missingEssential, chainSteps } from "../../scripts/lane-stop-guard.mjs";
+import { missingEssential, chainSteps, runnableGap } from "../../scripts/lane-stop-guard.mjs";
 import { classifyActiveIntent } from "../../hooks/lib/active-intent.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -300,4 +300,76 @@ test("R1-3: SVC_SUBAGENT=1 marks a child session that can always end", () => {
   const r = viaBoundary(dir, {}, baseEnv({ SVC_SUBAGENT: "1" }));
   assert.ok(!blocked(r), r.stdout + r.stderr);
   assert.ok(blocked(viaBoundary(dir, {}, baseEnv())));
+});
+
+test("R2-1: negated continuation is not a resume, and an explicit stop or pause wins", () => {
+  for (const [text, want] of [
+    ["Do not continue WI-123; pause everything", true],
+    ["don't continue WI-123, stop", true],
+    ["never resume WI-5, halt", true],
+    ["continue WI-123", false],
+    ["continue with WI-12 and stop asking questions", false],
+    ["resume WI-479", false],
+  ]) assert.equal(classifyActiveIntent(text).suppress, want, text);
+  const generic = project();
+  assert.ok(blocked(viaBoundary(generic, {}, baseEnv())));
+  spawnSync(process.execPath, [path.join(ROOT, "hooks", "lib", "active-intent.mjs"), "record"], {
+    cwd: generic, input: JSON.stringify({ prompt: "Do not continue, pause everything", session_id: "sess-1", cwd: generic }), encoding: "utf8",
+  });
+  const r = viaBoundary(generic, {}, baseEnv());
+  assert.ok(!blocked(r), r.stdout + r.stderr);
+});
+
+test("R2-2: only a runnable compiled task is ordered; blocked or prerequisite-pending chains allow Stop", () => {
+  const steps = (g) => missingEssential(g, REGISTRY, null);
+  // plan-changeset runnable
+  assert.equal(runnableGap(graph(), steps(graph())).skill, "plan-changeset");
+  // plan-changeset explicitly blocked and everything after it waits on it: nothing can run
+  const blockedPlan = graph();
+  blockedPlan.tasks.forEach((t, i) => { t.blocked_by = i === 0 ? [] : [i]; });
+  blockedPlan.tasks[0].status = "blocked";
+  assert.equal(runnableGap(blockedPlan, steps(blockedPlan)), null);
+  // plan done, review-plan pending but its prerequisite chain is intact -> review-plan
+  const chained = graph(["plan-changeset"]);
+  chained.tasks.forEach((t, i) => { t.blocked_by = i === 0 ? [] : [i]; });
+  assert.equal(runnableGap(chained, steps(chained)).skill, "review-plan");
+  // an upstream non-chain prerequisite still pending: plan-changeset is not startable yet
+  const upstream = graph();
+  upstream.tasks.unshift(task(99, "write-spec"));
+  upstream.tasks.find((t) => t.metadata.skill === "plan-changeset").blocked_by = [99];
+  upstream.tasks.forEach((t) => { if (t.metadata.skill !== "plan-changeset" && t.metadata.skill !== "write-spec") t.blocked_by = [99]; });
+  assert.equal(runnableGap(upstream, steps(upstream)), null);
+  const dir = project({ lane: upstream });
+  const r = viaBoundary(dir, {}, baseEnv());
+  assert.ok(!blocked(r), r.stdout + r.stderr);
+  const dir2 = project({ lane: blockedPlan });
+  assert.ok(!blocked(viaBoundary(dir2, {}, baseEnv())));
+});
+
+test("R2-3: lane discovery stops at the current Git worktree", () => {
+  const outer = project();
+  const inner = path.join(outer, "nested-project");
+  fs.mkdirSync(inner);
+  spawnSync("git", ["init", "-q"], { cwd: inner });
+  const r = viaBoundary(inner, { cwd: inner }, baseEnv());
+  assert.ok(!blocked(r), "an enclosing repository's lane is not ours: " + r.stdout);
+  // A plain subdirectory of the same worktree still finds its lane.
+  const sub = path.join(outer, "src");
+  fs.mkdirSync(sub);
+  assert.ok(blocked(viaBoundary(sub, { cwd: sub }, baseEnv())));
+  // Outside Git entirely, a parent directory's lane is not inherited either.
+  const loose = mk("loose");
+  fs.mkdirSync(path.join(loose, ".svc"));
+  fs.writeFileSync(path.join(loose, ".svc", "lane-tasks-WI-T1.json"), JSON.stringify(graph()));
+  const child = path.join(loose, "child");
+  fs.mkdirSync(child);
+  const out = spawnSync(process.execPath, [LANE_CLI, "--cwd", child], { env: { ...process.env, SVC_ROOT: emptySvcRoot() }, encoding: "utf8" });
+  assert.equal(JSON.parse(out.stdout).decision, "allow");
+});
+
+test("R2-4: feature work that mentions pause and resume is not a pause request", () => {
+  for (const t of ["Implement pause and resume for the video player", "add a pause/resume toggle", "build pause handling for the game loop"]) {
+    assert.equal(classifyActiveIntent(t).suppress, false, t);
+  }
+  for (const t of ["pause", "please pause now", "pause everything"]) assert.equal(classifyActiveIntent(t).suppress, true, t);
 });

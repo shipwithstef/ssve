@@ -46,6 +46,26 @@ export function chainSteps(registry) {
   return out;
 }
 
+// A gap is runnable when a compiled task for it can start now: pending or in progress, with
+// every blocked_by prerequisite completed. A gap whose task is already completed (it only lacks
+// its receipt) or that has no task at all (a missing receipt on HEAD) can always be redone.
+// Explicitly blocked, manual or skipped tasks are not runnable.
+export function runnableGap(graph, gaps) {
+  const tasks = Array.isArray(graph?.tasks) ? graph.tasks.filter(Boolean) : [];
+  const byId = new Map(tasks.map((t) => [String(t.id), t]));
+  for (const gap of gaps) {
+    const mine = tasks.filter((t) => taskSkill(t) === gap.skill);
+    if (mine.length === 0) return gap;
+    const startable = mine.some((t) => {
+      if (t.status === "completed") return true;
+      if (t.status !== "pending" && t.status !== "in_progress") return false;
+      return (Array.isArray(t.blocked_by) ? t.blocked_by : []).every((id) => byId.get(String(id))?.status === "completed");
+    });
+    if (startable) return gap;
+  }
+  return null;
+}
+
 export function graphMatchesWi(graph, wi) {
   const deps = Array.isArray(graph?.depends_on) ? graph.depends_on.map(String) : [];
   return String(graph?.wi || "") === wi || String(graph?.parent_wi || graph?.parent || "") === wi || deps.includes(wi);
@@ -127,13 +147,20 @@ function isActiveLaneFile(name) {
   return /^lane-tasks(?:-.+)?\.json$/.test(name) && !name.includes(".completed");
 }
 
+// Discovery is bounded to the current Git worktree: a lane belonging to an enclosing
+// repository (or a parent directory) is never this session's lane. Outside Git only the
+// start directory itself is examined.
 function findLaneFiles(start) {
-  let dir = path.resolve(start);
+  const begin = path.resolve(start);
+  const top = git(begin, ["rev-parse", "--show-toplevel"]);
+  const ceiling = top ? path.resolve(top) : begin;
+  let dir = begin;
   for (;;) {
     const svc = path.join(dir, ".svc");
     let names = [];
     try { names = fs.readdirSync(svc).filter(isActiveLaneFile); } catch { /* none here */ }
     if (names.length) return names.sort().map((n) => path.join(svc, n));
+    if (dir === ceiling) return [];
     const up = path.dirname(dir);
     if (up === dir) return [];
     dir = up;
@@ -257,9 +284,10 @@ export function decide({ cwd, session = "", graph = "", payload = null, checker 
     if (!registry) return allow;
     const index = receiptIndexFor(projectRoot, wi, checker || path.join(OWN_ROOT, "scripts", "check-chain-receipts.mjs"));
     const gaps = missingEssential(g, registry, index);
-    if (!gaps.length) return allow;
-    skill = gaps[0].skill;
-    missing = gaps[0].type ? [gaps[0].type] : [];
+    const first = runnableGap(g, gaps);
+    if (!first) return allow; // nothing owed, or nothing that can run now: do not order the impossible
+    skill = first.skill;
+    missing = first.type ? [first.type] : [];
     remaining = gaps.map((x) => x.type || x.skill);
   }
   void session;
