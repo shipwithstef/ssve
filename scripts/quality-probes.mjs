@@ -188,13 +188,38 @@ export function mutation(dir, { mutants = 30, timeoutMs = 120000 } = {}) {
   }
 }
 
-// Commit history of the build: how soon the first commit landed and how often the agent
-// committed. startedAt (ms) is when the build began; without it only the cadence is known.
+// Root commit that outcome-eval's prepare() writes into every task repo. It is not builder
+// work: same subject, author and author-date as that seed. History metrics skip it.
+export const EVAL_SEED = Object.freeze({
+  subject: "Initial commit",
+  author: "outcome-eval",
+  date: "2026-01-01T00:00:00Z",
+});
+const EVAL_SEED_UNIX = Math.floor(Date.parse(EVAL_SEED.date) / 1000);
+
+export function isEvalSeedCommit(epoch, author, subject) {
+  return Number(epoch) === EVAL_SEED_UNIX && author === EVAL_SEED.author && subject === EVAL_SEED.subject;
+}
+
+// Commit history of the build: how soon the first builder commit landed and how often the
+// agent committed. The prepare() seed commit is excluded. startedAt (ms) is when the build
+// began; without it only the cadence is known.
 export function history(dir, startedAt = null) {
-  if (!fs.existsSync(path.join(dir, ".git"))) return { commits: 0, reason: "no git history" };
-  const r = spawnSync("git", ["log", "--format=%ct"], { cwd: dir, encoding: "utf8" });
-  const ts = (r.stdout || "").trim().split("\n").filter(Boolean).map((t) => Number(t) * 1000).sort((a, b) => a - b);
-  if (!ts.length) return { commits: 0, reason: "no commits" };
+  if (!fs.existsSync(path.join(dir, ".git"))) return { commits: 0, first_commit_min: null, reason: "no git history" };
+  const r = spawnSync("git", ["log", "--format=%at%x1f%an%x1f%s"], { cwd: dir, encoding: "utf8" });
+  const ts = [];
+  for (const line of (r.stdout || "").split("\n")) {
+    if (!line) continue;
+    const parts = line.split("\x1f");
+    if (parts.length < 3) continue;
+    const epoch = Number(parts[0]);
+    const author = parts[1];
+    const subject = parts.slice(2).join("\x1f");
+    if (isEvalSeedCommit(epoch, author, subject)) continue;
+    if (Number.isFinite(epoch)) ts.push(epoch * 1000);
+  }
+  ts.sort((a, b) => a - b);
+  if (!ts.length) return { commits: 0, first_commit_min: null, commits_per_10_min: null, reason: "no commits" };
   const span = Math.max(1, (ts[ts.length - 1] - (startedAt ?? ts[0])) / 60000);
   return {
     commits: ts.length,
