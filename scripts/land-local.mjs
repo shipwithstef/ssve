@@ -5,9 +5,11 @@
 //
 //   node "$SVC_ROOT"/scripts/land-local.mjs --root <wi-worktree> --wi <WI> [--json] [--dry-run]
 //
-// Lands only when (1) the chain receipts for the WI branch tip validate for the LOCAL consumer
-// (`check-chain-receipts --consumer stop`, note-sourced; the full five-receipt envelope, or an
-// eligible quick-fix receipt), (2) the main checkout is clean and on the main branch, and
+// Lands only when (1) the chain receipts validate for the LOCAL consumer
+// (`check-chain-receipts --consumer stop`, note-sourced) for the WI tip as the full five-receipt
+// envelope with mandatory cross-family adversarial review evidence (schema v3 reviewer_evidence and
+// differing author/reviewer families; no same-host route exists), or for EVERY incoming commit
+// (main..tip) as an eligible tree-bound quick-fix receipt, (2) the main checkout is clean and on the main branch, and
 // (3) the merge cannot conflict. It fast-forwards main when possible, otherwise makes a merge
 // commit; it never rewrites history, never forces and never auto-resolves a conflict.
 // Receipts are git notes keyed by commit SHA in the shared object store, so they stay attached to
@@ -23,6 +25,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isMain } from "./lib/is-main.mjs";
+import { familyOf } from "./lib/cognitive-family.mjs";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const CHECKER = path.join(SCRIPT_DIR, "check-chain-receipts.mjs");
@@ -67,45 +70,130 @@ function mainBranchName(mainRoot) {
   throw new Refusal("NO_MAIN_BRANCH", "no main or master branch exists in this repository");
 }
 
-// Dirty = tracked changes or staged changes. Untracked files only matter when the incoming
-// change would overwrite them (handled separately), and .svc/ is workflow state, never work product.
+// Dirty = ANY tracked or staged change (including tracked .svc/ files: they are part of the commit).
+// Untracked files only matter when the incoming change would overwrite them (handled separately).
 function dirtyTracked(root) {
-  const lines = git(root, ["status", "--porcelain", "--untracked-files=no"]).out.split(/\r?\n/).filter(Boolean);
-  return lines.filter((l) => !/^\S{1,2}\s+\.svc\//.test(l));
+  return git(root, ["status", "--porcelain", "--untracked-files=no"]).out.split(/\r?\n/).filter(Boolean);
 }
 
-function checkReceipts(wtRoot, tip, wi) {
-  const run = (extra) => {
-    const r = spawnSync(process.execPath, [CHECKER, "--sha", tip, "--wi", wi, "--consumer", "stop", ...extra], { cwd: wtRoot, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
-    let parsed = null;
-    try { parsed = JSON.parse(r.stdout); } catch { /* checker printed no JSON */ }
-    return { status: r.status, parsed, stderr: (r.stderr || "").trim() };
-  };
-  // Strict: the whole five-receipt chain (note-sourced). Never weaker than the push consumer's full set.
-  const full = run(["--expected-stage", "audit"]);
-  if (full.status === 0 && full.parsed?.ok === true) return { type: full.parsed.results?.[0]?.type || "complete", sha: tip };
-  // An eligible, tree-bound, re-verified quick-fix receipt is the framework's only lighter lane.
-  const derived = run([]);
-  const row = derived.parsed?.results?.[0];
-  if (derived.status === 0 && derived.parsed?.ok === true && row?.type === "quick-fix") return { type: "quick-fix", sha: tip };
-  const missing = full.parsed?.results?.[0]?.missing || derived.parsed?.results?.[0]?.missing || [full.stderr || derived.stderr || "receipt check failed"];
-  throw new Refusal("RECEIPTS_MISSING", `chain receipts for ${tip.slice(0, 12)} do not validate for local landing`, { missing, sha: tip });
+function runChecker(wtRoot, sha, wi, extra) {
+  const r = spawnSync(process.execPath, [CHECKER, "--sha", sha, "--wi", wi, "--consumer", "stop", ...extra], { cwd: wtRoot, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  let parsed = null;
+  try { parsed = JSON.parse(r.stdout); } catch { /* checker printed no JSON */ }
+  const row = parsed?.results?.[0];
+  return { ok: r.status === 0 && parsed?.ok === true, type: row?.type, missing: row?.missing || [(r.stderr || "").trim() || "receipt check failed"] };
+}
+
+// Receipt bodies for a commit from the git note (the only authority; the checker already required a note source).
+function noteBodies(wtRoot, sha) {
+  const n = git(wtRoot, ["notes", "--ref=svc-receipts", "show", sha], { allowFail: true });
+  if (!n.ok) return [];
+  let env;
+  try { env = JSON.parse(n.out); } catch { return []; }
+  const out = [];
+  if (env && env.receipt_type) out.push(env);
+  for (const [k, v] of Object.entries(env || {})) if (k !== "digests" && v && typeof v === "object" && !Array.isArray(v) && v.receipt_type) out.push(v);
+  return out;
+}
+
+// Cross-family adversarial review is mandatory for the full chain. The shared checker grandfathers
+// v1/v2 review envelopes for commits it cannot find in the framework's own object store, which is
+// every commit of a user project, so require the verified v3 reviewer_evidence form here and
+// re-derive the author/reviewer families from the receipt. Same-family or unknown never passes.
+export function crossFamilyProblems(wtRoot, sha, wi) {
+  const problems = [];
+  for (const type of ["review-plan", "review-exec"]) {
+    const bodies = noteBodies(wtRoot, sha).filter((b) => b.receipt_type === type && (!b.wi || b.wi.toLowerCase() === wi.toLowerCase()));
+    if (!bodies.length) { problems.push(`${type}: no receipt in the note`); continue; }
+    for (const b of bodies) {
+      if (Number(b.schema_version) < 3 || !b.reviewer_evidence || typeof b.reviewer_evidence !== "object") {
+        problems.push(`${type}: cross-family reviewer evidence required (schema_version >= 3 with reviewer_evidence); a v1/v2 or self-declared review is not accepted`);
+        continue;
+      }
+      if (type === "review-exec") {
+        const ar = b.adversarial_review || {};
+        const reviewerHost = ar.fallback_used ? ar.fallback_host : ar.primary_reviewer_host;
+        const af = familyOf(b.self_review?.orchestrator), rf = familyOf(reviewerHost);
+        if (af === "unknown" || rf === "unknown" || af === rf) problems.push(`review-exec: not a cross-family review (author ${af}, reviewer ${rf})`);
+      }
+    }
+  }
+  return problems;
+}
+
+// Returns {mode, commits}. Full chain at the tip covers the whole branch (tree-bound reviews of the
+// cumulative change). Otherwise EVERY incoming commit must carry its own eligible quick-fix receipt,
+// so an unreviewed code commit cannot ride in under a later documentation-only commit.
+function checkReceipts(wtRoot, tip, wi, incoming) {
+  const full = runChecker(wtRoot, tip, wi, ["--expected-stage", "audit"]);
+  let fullProblems = null;
+  if (full.ok) {
+    fullProblems = crossFamilyProblems(wtRoot, tip, wi);
+    if (!fullProblems.length) return { type: full.type || "complete", sha: tip, commits: incoming.length };
+  }
+  const quickFailures = [];
+  const merges = incoming.filter((c) => git(wtRoot, ["rev-list", "--parents", "-n", "1", c]).out.split(" ").length > 2);
+  if (merges.length) quickFailures.push(`merge commit(s) ${merges.map((c) => c.slice(0, 12)).join(", ")} in the WI branch need the full reviewed chain`);
+  else {
+    for (const c of incoming) {
+      const q = runChecker(wtRoot, c, wi, []);
+      if (!(q.ok && q.type === "quick-fix")) quickFailures.push(`${c.slice(0, 12)}: ${(q.missing || []).join("; ")}`);
+    }
+  }
+  if (!quickFailures.length) return { type: "quick-fix", sha: tip, commits: incoming.length };
+  const missing = fullProblems ? fullProblems : full.missing;
+  throw new Refusal("RECEIPTS_MISSING", `chain receipts do not validate for local landing of ${incoming.length} incoming commit(s)`, { missing: [...missing, ...quickFailures], sha: tip });
 }
 
 function incomingCollisions(mainRoot, mainSha, tip) {
-  // Paths the merge would add that already exist as untracked files in the main checkout.
+  // Paths the merge would add that collide with untracked files/dirs already in the main checkout.
   const added = git(mainRoot, ["diff", "--name-only", "--diff-filter=AR", "-z", mainSha, tip]).out.split("\0").filter(Boolean);
   const same = [];
   const clash = [];
+  const tracked = (rel) => git(mainRoot, ["ls-files", "--error-unmatch", "--", rel], { allowFail: true }).ok;
   for (const rel of added) {
+    // an untracked FILE where a parent directory of the incoming path is needed
+    const parts = rel.split("/");
+    let blocked = false;
+    for (let i = 1; i < parts.length && !blocked; i++) {
+      const anc = parts.slice(0, i).join("/");
+      try { if (fs.lstatSync(path.join(mainRoot, anc)).isFile() && !tracked(anc)) blocked = true; } catch { break; }
+    }
+    if (blocked) { clash.push(rel); continue; }
     const abs = path.join(mainRoot, rel);
-    if (!fs.existsSync(abs) || git(mainRoot, ["ls-files", "--error-unmatch", "--", rel], { allowFail: true }).ok) continue;
+    let st;
+    try { st = fs.lstatSync(abs); } catch { continue; }
+    if (tracked(rel)) continue;
+    if (!st.isFile()) { clash.push(rel); continue; } // untracked directory (or link) where a file arrives
     const incoming = spawnSync("git", ["-C", mainRoot, "cat-file", "blob", `${tip}:${rel}`], { maxBuffer: 256 * 1024 * 1024 });
-    let equal = false;
-    try { equal = incoming.status === 0 && fs.statSync(abs).isFile() && Buffer.compare(incoming.stdout, fs.readFileSync(abs)) === 0; } catch { equal = false; }
+    const equal = incoming.status === 0 && Buffer.compare(incoming.stdout, fs.readFileSync(abs)) === 0;
     (equal ? same : clash).push(rel);
   }
   return { same, clash };
+}
+
+// Identical untracked copies are moved aside (never deleted) and restored on any failure.
+function setAside(mainRoot, rels) {
+  const dir = path.join(git(mainRoot, ["rev-parse", "--absolute-git-dir"]).out, `svc-land-local-aside-${process.pid}`);
+  const moved = [];
+  for (const rel of rels) {
+    const dest = path.join(dir, rel);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.renameSync(path.join(mainRoot, rel), dest);
+    moved.push(rel);
+  }
+  return {
+    restore() {
+      for (const rel of moved) {
+        const target = path.join(mainRoot, rel);
+        if (fs.existsSync(target)) continue;
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.renameSync(path.join(dir, rel), target);
+      }
+      fs.rmSync(dir, { recursive: true, force: true });
+    },
+    discard() { fs.rmSync(dir, { recursive: true, force: true }); },
+  };
 }
 
 function conflictCheck(mainRoot, mainSha, tip) {
@@ -118,17 +206,25 @@ function conflictCheck(mainRoot, mainSha, tip) {
   throw new Error(`git merge-tree failed: ${r.err || r.out}`);
 }
 
-function advanceLocalOrigin(mainRoot, newMain) {
+const ZERO_OID = "0".repeat(40);
+export function advanceLocalOrigin(mainRoot, newMain, seams = {}) {
   if (git(mainRoot, ["remote"]).out) return "skipped-has-remote";
   const ref = "refs/remotes/origin/main";
-  const current = resolveRef(mainRoot, ref);
-  if (current === newMain) return "unchanged";
-  if (current && !isAncestor(mainRoot, current, newMain)) return "skipped-diverged";
-  git(mainRoot, ["update-ref", ref, newMain]);
-  if (!git(mainRoot, ["symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"], { allowFail: true }).ok) {
+  let result = "unchanged";
+  // compare-and-swap on the observed value; on a lost race re-read and revalidate ancestry (never rewind)
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const current = resolveRef(mainRoot, ref);
+    if (current === newMain) break;
+    if (current && !isAncestor(mainRoot, current, newMain)) return "skipped-diverged";
+    if (seams.beforeCas) seams.beforeCas(attempt); // test seam only: simulates a concurrent writer
+    const cas = git(mainRoot, ["update-ref", ref, newMain, current || ZERO_OID], { allowFail: true });
+    if (cas.ok) { result = "advanced"; break; }
+    result = "skipped-concurrent";
+  }
+  if (result !== "skipped-concurrent" && !git(mainRoot, ["symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"], { allowFail: true }).ok) {
     git(mainRoot, ["symbolic-ref", "refs/remotes/origin/HEAD", ref]);
   }
-  return "advanced";
+  return result;
 }
 
 export function landLocal({ root, wi, dryRun = false }) {
@@ -152,10 +248,12 @@ export function landLocal({ root, wi, dryRun = false }) {
   const tracked = dirtyTracked(wtTop);
   if (tracked.length) throw new Refusal("WI_WORKTREE_DIRTY", "the WI worktree has uncommitted tracked changes that would not be delivered; commit them first", { paths: tracked });
 
-  // Receipts first: the same check also makes an already-landed repeat run honest (receipts persist).
-  const receipts = checkReceipts(wtTop, tip, wi);
-
   const mainSha = resolveRef(mainRoot, `refs/heads/${mainBranch}`);
+  // Receipts first: the same check also makes an already-landed repeat run honest (receipts persist).
+  // An already-landed branch has no incoming commits, so it is judged on its tip's full-chain/quick-fix receipt.
+  const incoming = git(wtTop, ["rev-list", "--reverse", `${mainSha}..${tip}`]).out.split(/\r?\n/).filter(Boolean);
+  const receipts = checkReceipts(wtTop, tip, wi, incoming.length ? incoming : [tip]);
+
   const common = { branch, main_branch: mainBranch, main_root: mainRoot, wi_sha: tip, receipts: receipts.type };
 
   if (isAncestor(mainRoot, tip, mainSha)) {
@@ -179,20 +277,25 @@ export function landLocal({ root, wi, dryRun = false }) {
   const method = ff ? "fast-forward" : "merge-commit";
   if (dryRun) return { landed: false, would_land: true, main_sha: mainSha, method, dry_run: true, ...common };
 
-  // Identical untracked copies (e.g. state files written into the main checkout earlier) are safe to drop.
-  for (const rel of same) fs.rmSync(path.join(mainRoot, rel), { force: true });
-
-  if (ff) {
-    git(mainRoot, ["merge", "--ff-only", "--quiet", tip]);
-  } else {
-    const hasIdent = git(mainRoot, ["config", "user.name"], { allowFail: true }).ok && git(mainRoot, ["config", "user.email"], { allowFail: true }).ok;
-    const ident = hasIdent ? [] : ["-c", "user.name=svc-land-local", "-c", "user.email=svc-land-local@localhost"];
-    const r = git(mainRoot, [...ident, "merge", "--no-ff", "--no-edit", "--quiet", "-m", `Land ${wi}: merge ${branch} into ${mainBranch}`, tip], { allowFail: true });
-    if (!r.ok) {
-      git(mainRoot, ["merge", "--abort"], { allowFail: true });
-      throw new Refusal("MERGE_FAILED", `git merge failed and was aborted; main is unchanged: ${r.err || r.out}`);
+  const aside = setAside(mainRoot, same);
+  try {
+    if (ff) {
+      const r = git(mainRoot, ["merge", "--ff-only", "--quiet", tip], { allowFail: true });
+      if (!r.ok) throw new Refusal("MERGE_FAILED", `git merge failed; main is unchanged: ${r.err || r.out}`);
+    } else {
+      const hasIdent = git(mainRoot, ["config", "user.name"], { allowFail: true }).ok && git(mainRoot, ["config", "user.email"], { allowFail: true }).ok;
+      const ident = hasIdent ? [] : ["-c", "user.name=svc-land-local", "-c", "user.email=svc-land-local@localhost"];
+      const r = git(mainRoot, [...ident, "merge", "--no-ff", "--no-edit", "--quiet", "-m", `Land ${wi}: merge ${branch} into ${mainBranch}`, tip], { allowFail: true });
+      if (!r.ok) {
+        git(mainRoot, ["merge", "--abort"], { allowFail: true });
+        throw new Refusal("MERGE_FAILED", `git merge failed and was aborted; main is unchanged: ${r.err || r.out}`);
+      }
     }
+  } catch (e) {
+    aside.restore();
+    throw e;
   }
+  aside.discard();
   const newMain = resolveRef(mainRoot, "HEAD");
   const origin = advanceLocalOrigin(mainRoot, newMain);
   return { landed: true, main_sha: newMain, previous_main_sha: mainSha, method, local_origin_ref: origin, ...common };

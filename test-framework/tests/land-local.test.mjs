@@ -7,6 +7,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { advanceLocalOrigin, crossFamilyProblems } from "../../scripts/land-local.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const LAND = path.join(ROOT, "scripts", "land-local.mjs");
@@ -43,15 +44,17 @@ function fixture() {
 }
 const commitInWt = (f, file, content, msg = "wi change") => {
   fs.writeFileSync(path.join(f.wt, file), content);
-  git(f.wt, "add", "-A");
+  git(f.wt, "add", "--", file);
   git(f.wt, "commit", "-qm", msg);
   return git(f.wt, "rev-parse", "HEAD");
 };
-// Stub receipt arrangement: an eligible quick-fix receipt bound to the tip tree, written as a git note.
-function stubReceipt(f) {
-  const body = { receipt_type: "quick-fix", schema_version: 1, tree_hash: git(f.wt, "rev-parse", "HEAD^{tree}"), eligible: true, reasons: [], files: ["spec.md"], timestamp: new Date().toISOString() };
-  const r = spawnSync(process.execPath, [EMIT, "--type", "quick-fix", "--wi", WI], { cwd: f.wt, input: JSON.stringify(body), encoding: "utf8", env: cleanEnv() });
-  assert.equal(r.status, 0, r.stderr);
+// Stub receipt arrangement: an eligible quick-fix receipt written as a git note on a commit.
+// By default it is bound to that commit's own tree; `tree` overrides it to simulate a stale receipt.
+function stubReceipt(f, { sha = "HEAD", tree = null } = {}) {
+  const body = { receipt_type: "quick-fix", schema_version: 1, tree_hash: tree || git(f.wt, "rev-parse", `${sha}^{tree}`), eligible: true, reasons: [], files: ["spec.md"], timestamp: new Date().toISOString() };
+  const args = [EMIT, "--type", "quick-fix", "--wi", WI, ...(sha === "HEAD" ? [] : ["--sha", git(f.wt, "rev-parse", sha)])];
+  const r = spawnSync(process.execPath, args, { cwd: f.wt, input: JSON.stringify(body), encoding: "utf8", env: cleanEnv() });
+  assert.equal(r.status, 0, r.stderr + JSON.stringify(r.json));
 }
 const land = (f, extra = []) => {
   const r = spawnSync(process.execPath, [LAND, "--root", f.wt, "--wi", WI, "--json", ...extra], { encoding: "utf8", env: cleanEnv() });
@@ -65,20 +68,21 @@ const read = (dir, file) => fs.readFileSync(path.join(dir, file), "utf8");
 test("lands a fast-forward into the main checkout, advances local origin/main, repeat run is a no-op", () => {
   const f = fixture();
   const tip = commitInWt(f, "spec.md", "line one\nline two\nline three\nadded by wi\n");
-  commitInWt(f, "extra.md", "new file\n", "second");
+  stubReceipt(f);
+  commitInWt(f, "spec.md", "line one\nline two\nline three\nadded by wi\nsecond edit\n", "second");
   const tip2 = git(f.wt, "rev-parse", "HEAD");
   stubReceipt(f);
   assert.notEqual(tip, tip2);
   assert.match(read(f.main, "spec.md"), /^line one\nline two\nline three\n$/);
 
   const r = land(f);
-  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.status, 0, r.stderr + JSON.stringify(r.json));
   assert.equal(r.json.landed, true);
   assert.equal(r.json.method, "fast-forward");
   assert.equal(r.json.main_sha, tip2);
   assert.equal(head(f.main), tip2);
   assert.match(read(f.main, "spec.md"), /added by wi/);
-  assert.equal(read(f.main, "extra.md"), "new file\n");
+  assert.match(read(f.main, "spec.md"), /second edit/);
   assert.equal(git(f.main, "status", "--porcelain"), "");
   assert.equal(git(f.main, "rev-parse", "refs/remotes/origin/main"), tip2);
   assert.equal(r.json.local_origin_ref, "advanced");
@@ -107,16 +111,75 @@ test("refuses without chain receipts and changes nothing", () => {
   assert.equal(git(f.main, "rev-parse", "refs/remotes/origin/main"), mainBefore);
 });
 
-test("refuses a receipt that is bound to a different tree", () => {
+test("refuses a receipt on the tip that is bound to a different tree", () => {
   const f = fixture();
-  commitInWt(f, "spec.md", "first\n");
-  stubReceipt(f);
+  const first = commitInWt(f, "spec.md", "first\n");
+  const staleTree = git(f.wt, "rev-parse", `${first}^{tree}`);
   commitInWt(f, "spec.md", "second, after the receipt\n");
+  stubReceipt(f, { tree: staleTree }); // a receipt IS on the tip, but its tree is the previous one
   const mainBefore = head(f.main);
   const r = land(f);
   assert.equal(r.status, 2);
   assert.equal(r.json.reason, "RECEIPTS_MISSING");
+  assert.ok(r.json.missing.some((m) => /tree mismatch/.test(m)), JSON.stringify(r.json.missing));
   assert.equal(head(f.main), mainBefore);
+});
+
+test("an unreviewed code commit followed by an eligible docs commit is refused", () => {
+  const f = fixture();
+  const code = commitInWt(f, "app.js", "export const secret = () => process.env.TOKEN;\n", "unreviewed code");
+  commitInWt(f, "spec.md", "line one\nline two edited\nline three\n", "docs only");
+  stubReceipt(f); // only the docs-only tip carries a quick-fix receipt
+  const mainBefore = head(f.main);
+  const r = land(f);
+  assert.equal(r.status, 2);
+  assert.equal(r.json.reason, "RECEIPTS_MISSING");
+  assert.ok(r.json.missing.some((m) => m.startsWith(code.slice(0, 12))), JSON.stringify(r.json.missing));
+  assert.equal(head(f.main), mainBefore);
+  assert.equal(fs.existsSync(path.join(f.main, "app.js")), false);
+  // the same branch lands once every commit carries its own eligible receipt (docs-only here)
+  const g = fixture();
+  commitInWt(g, "spec.md", "line one\nline two edited\nline three\n", "docs 1");
+  stubReceipt(g);
+  commitInWt(g, "spec.md", "line one\nline two edited again\nline three\n", "docs 2");
+  stubReceipt(g);
+  assert.equal(land(g).status, 0);
+});
+
+test("a merge commit inside the WI branch cannot ride on quick-fix receipts", () => {
+  const f = fixture();
+  commitInWt(f, "wi.md", "wi\n");
+  stubReceipt(f);
+  fs.writeFileSync(path.join(f.main, "m.md"), "main\n");
+  git(f.main, "add", "-A");
+  git(f.main, "commit", "-qm", "main moves");
+  git(f.wt, "merge", "-q", "--no-edit", "main");
+  stubReceipt(f);
+  const r = land(f);
+  assert.equal(r.status, 2);
+  assert.equal(r.json.reason, "RECEIPTS_MISSING");
+  assert.ok(r.json.missing.some((m) => /merge commit/.test(m)), JSON.stringify(r.json.missing));
+});
+
+test("cross-family adversarial review is mandatory: v1/v2, self-declared and same-family reviews are rejected", () => {
+  const f = fixture();
+  const sha = commitInWt(f, "spec.md", "x\n");
+  const note = (reviewExec, reviewPlan = reviewExec) => {
+    const env = { "review-plan": { receipt_type: "review-plan", wi: WI, ...reviewPlan }, "review-exec": { receipt_type: "review-exec", wi: WI, ...reviewExec } };
+    const r = spawnSync("git", ["-C", f.wt, "notes", "--ref=svc-receipts", "add", "-f", "-m", JSON.stringify(env), sha], { encoding: "utf8", env: cleanEnv() });
+    assert.equal(r.status, 0, r.stderr + JSON.stringify(r.json));
+  };
+  const ar = (host) => ({ primary_reviewer_host: host, primary_used: true, fallback_host: host, fallback_used: false, findings: [], iteration_count: 1 });
+  note({ schema_version: 2, self_review: { orchestrator: "claude" }, adversarial_review: ar("codex") });
+  assert.match(crossFamilyProblems(f.wt, sha, WI).join("|"), /cross-family reviewer evidence required/);
+  note({ schema_version: 3, reviewer_evidence: { independent: true }, self_review: { orchestrator: "claude" }, adversarial_review: ar("claude") });
+  assert.match(crossFamilyProblems(f.wt, sha, WI).join("|"), /not a cross-family review/);
+  note({ schema_version: 3, reviewer_evidence: { independent: true }, self_review: { orchestrator: "mystery" }, adversarial_review: ar("codex") });
+  assert.match(crossFamilyProblems(f.wt, sha, WI).join("|"), /not a cross-family review/);
+  note({ schema_version: 3, reviewer_evidence: { independent: true }, self_review: { orchestrator: "claude" }, adversarial_review: ar("codex") });
+  assert.deepEqual(crossFamilyProblems(f.wt, sha, WI), []);
+  const r = land(f);
+  assert.equal(r.status, 2); // the shared checker still has to accept the rest of the chain
 });
 
 test("refuses on a dirty main checkout", () => {
@@ -217,4 +280,77 @@ test("refuses when the main checkout is not on the main branch, and --dry-run la
   assert.equal(r.status, 2);
   assert.equal(r.json.reason, "MAIN_CHECKOUT_OFF_BRANCH");
   assert.equal(git(f.main, "rev-parse", "refs/heads/main"), mainBefore);
+});
+
+test("tracked .svc/ changes are dirty in both checkouts", () => {
+  const f = fixture();
+  fs.mkdirSync(path.join(f.main, ".svc"));
+  fs.writeFileSync(path.join(f.main, ".svc", "state.json"), "{}\n");
+  git(f.main, "add", "-f", ".svc/state.json");
+  git(f.main, "commit", "-qm", "track svc state");
+  git(f.wt, "merge", "-q", "--ff-only", "main");
+  commitInWt(f, "extra.md", "x\n");
+  stubReceipt(f);
+  fs.writeFileSync(path.join(f.wt, ".svc", "state.json"), '{"wip":true}\n');
+  const mainBefore = head(f.main);
+  const a = land(f);
+  assert.equal(a.status, 2);
+  assert.equal(a.json.reason, "WI_WORKTREE_DIRTY");
+  git(f.wt, "checkout", "--", ".svc/state.json");
+  fs.writeFileSync(path.join(f.main, ".svc", "state.json"), '{"wip":true}\n');
+  const b = land(f);
+  assert.equal(b.status, 2);
+  assert.equal(b.json.reason, "MAIN_DIRTY");
+  assert.equal(head(f.main), mainBefore);
+});
+
+test("a failed merge restores identical untracked files that were set aside", () => {
+  const f = fixture();
+  commitInWt(f, "state.md", "shared state\n");
+  stubReceipt(f);
+  fs.writeFileSync(path.join(f.main, "other.md"), "main\n");
+  git(f.main, "add", "-A");
+  git(f.main, "commit", "-qm", "main moves"); // forces a merge commit, which the hook then rejects
+  const hook = path.join(git(f.main, "rev-parse", "--absolute-git-dir"), "hooks", "pre-merge-commit");
+  fs.mkdirSync(path.dirname(hook), { recursive: true });
+  fs.writeFileSync(hook, "#!/bin/sh\nexit 1\n", { mode: 0o755 });
+  fs.writeFileSync(path.join(f.main, "state.md"), "shared state\n");
+  const mainBefore = head(f.main);
+  const r = land(f);
+  assert.equal(r.status, 2);
+  assert.equal(r.json.reason, "MERGE_FAILED");
+  assert.equal(head(f.main), mainBefore);
+  assert.equal(read(f.main, "state.md"), "shared state\n");
+  assert.equal(git(f.main, "status", "--porcelain"), "?? state.md");
+});
+
+test("an untracked directory where an incoming file lands is a collision, not a deletion", () => {
+  const f = fixture();
+  commitInWt(f, "docs", "now a file\n");
+  stubReceipt(f);
+  fs.mkdirSync(path.join(f.main, "docs"));
+  fs.writeFileSync(path.join(f.main, "docs", "keep.md"), "keep\n");
+  const r = land(f);
+  assert.equal(r.status, 2);
+  assert.equal(r.json.reason, "MAIN_UNTRACKED_COLLISION");
+  assert.equal(read(f.main, "docs/keep.md"), "keep\n");
+});
+
+test("origin/main update is compare-and-swap: a concurrent advance is never rewound", () => {
+  const f = fixture();
+  const base = head(f.main);
+  fs.writeFileSync(path.join(f.main, "a.md"), "a\n");
+  git(f.main, "add", "-A");
+  git(f.main, "commit", "-qm", "a");
+  const newMain = head(f.main);
+  // a concurrent writer moves origin/main to a descendant of the observed value that newMain does not contain
+  git(f.main, "checkout", "-q", "--detach", base);
+  fs.writeFileSync(path.join(f.main, "c.md"), "c\n");
+  git(f.main, "add", "-A");
+  git(f.main, "commit", "-qm", "concurrent");
+  const concurrent = head(f.main);
+  git(f.main, "checkout", "-q", "main");
+  const result = advanceLocalOrigin(f.main, newMain, { beforeCas: () => git(f.main, "update-ref", "refs/remotes/origin/main", concurrent) });
+  assert.match(result, /^skipped-/);
+  assert.equal(git(f.main, "rev-parse", "refs/remotes/origin/main"), concurrent);
 });
