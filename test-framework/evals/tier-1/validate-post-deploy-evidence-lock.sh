@@ -36,16 +36,16 @@ require_fixed "$REPO_ROOT/skills/route-workflow/references/intent-normalization.
 require_fixed "$REPO_ROOT/skills/route-workflow/references/intent-normalization.md" \
   "pre-deploy local evidence can only be supporting" \
   "normalization marks local evidence insufficient"
-require_fixed "$REPO_ROOT/skills/route-workflow/SKILL.md" \
+require_fixed "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md" \
   "## Post-Deployment Evidence Lock" \
   "route-workflow has post-deployment evidence lock"
-require_fixed "$REPO_ROOT/skills/route-workflow/SKILL.md" \
+require_fixed "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md" \
   "Run the named proof after deployment against the deployed production/live URL." \
   "route-workflow requires after-deploy proof target"
-require_fixed "$REPO_ROOT/skills/route-workflow/SKILL.md" \
+require_fixed "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md" \
   "local deployment and validation rules override generic assumptions" \
   "route-workflow respects project-local deployment rules"
-require_fixed "$REPO_ROOT/skills/route-workflow/SKILL.md" \
+require_fixed "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md" \
   "Post-deployment proof honored" \
   "route-workflow self-verify covers post-deploy proof"
 require_fixed "$REPO_ROOT/skills/base44-environment/SKILL.md" \

@@ -209,9 +209,9 @@ else
   fail "svc-inertia-check allows explicit foundation acknowledgement"
 fi
 
-check_contains "$REPO_ROOT/skills/route-workflow/SKILL.md" "diagnose-capability-blocker.mjs" "route-workflow invokes capability blocker diagnosis"
-check_contains "$REPO_ROOT/skills/route-workflow/SKILL.md" ".svc/capability-blockers.jsonl" "route-workflow writes capability blocker ledger"
-check_contains "$REPO_ROOT/skills/route-workflow/SKILL.md" "validate-capability-blocker-ledger.mjs" "route-workflow validates capability blocker ledger"
+check_contains "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md" "diagnose-capability-blocker.mjs" "route-workflow invokes capability blocker diagnosis"
+check_contains "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md" ".svc/capability-blockers.jsonl" "route-workflow writes capability blocker ledger"
+check_contains "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md" "validate-capability-blocker-ledger.mjs" "route-workflow validates capability blocker ledger"
 check_contains "$REPO_ROOT/skills/capability-registry/SKILL.md" 'Do not create a separate `capability-preflight` skill' "capability preflight decision extends capability skills"
 check_contains "$REPO_ROOT/skills/capability-concierge/SKILL.md" ".svc/capability-blockers.jsonl" "capability-concierge reads blocker ledger"
 check_contains "$REPO_ROOT/skills/design-tech/SKILL.md" "scan-deprecated-foundations.mjs" "design-tech invokes deprecated foundation scanner"

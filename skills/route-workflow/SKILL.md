@@ -6,10 +6,12 @@ description: >
   .svc yet. Sets up state and a worktree, classifies the lane, compiles the lane graph, and
   hands off to the first skill. Not needed for questions, explanations or read-only lookups.
 phases:
-  - { id: P1-Init, trigger: always, reads: [".svc/"], writes: [".svc/"], evidence_kind: command_output, required_for_completion: true }
-  - { id: P2-Classify, trigger: always, reads: ["user request"], writes: [".svc/route-record.json"], evidence_kind: file, required_for_completion: true }
-  - { id: P3-Compile, trigger: always, reads: [".svc/route-record.json"], writes: [".svc/lane-tasks-<WI>.json"], evidence_kind: file, required_for_completion: true }
-  - { id: P4-Handoff, trigger: always, reads: [".svc/lane-tasks-<WI>.json"], writes: [".svc/lane-tasks-<WI>.json"], evidence_kind: command_output, required_for_completion: true }
+  - { id: P1-SessionContextLoad, trigger: always, reads: [".svc/session-contract.jsonl", "docs/specs/project-state.md", "~/.svc/builder-profile.md", "docs/specs/domain-profile.md"], writes: [".svc/session-contract.jsonl when needed", ".svc/orchestrator-state.json when initializing"], evidence_kind: command_output, required_for_completion: true }
+  - { id: P2-IntentNormalizationAndCorrection, trigger: always, reads: ["user request", "references/intent-normalization.md", "references/intent-classification.md", ".svc/session-contract.jsonl"], writes: [".svc/pipeline-decisions.jsonl when route-relevant"], evidence_kind: command_output, required_for_completion: true }
+  - { id: P3-StateInitializationAndLaneRouting, trigger: always, reads: ["REPO_MODES.md", "skills-manifest.json", "skills/route-workflow/references/routing-rules.md", "skills/route-workflow/references/lane-model.md"], writes: [".svc/orchestrator-state.json", ".svc/lane-tasks-<WI>.json"], evidence_kind: file, required_for_completion: true }
+  - { id: P4-ConcernAndPreDispatchGate, trigger: mutating-or-wi-dispatch, reads: ["concerns/REGISTRY.json", ".svc/session-contract.jsonl", ".svc/lane-tasks-<WI>.json"], writes: [".svc/pipeline-decisions.jsonl", ".svc/concern-hits.jsonl"], evidence_kind: command_output, required_for_completion: true }
+  - { id: P5-TaskGraphDispatchAndEvidenceObligations, trigger: task-graph-mode, reads: [".svc/lane-tasks-<WI>.json", "target skill SKILL.md", "_shared/live-evidence.md"], writes: [".svc/lane-tasks-<WI>.json", "live evidence artifacts when visual-output skill"], evidence_kind: file, required_for_completion: true }
+  - { id: P6-SelfVerifyDecisionLogContinuation, trigger: always, reads: [".svc/pipeline-decisions.jsonl", ".svc/lane-tasks-<WI>.json", "skills/route-workflow/references/task-graph-protocol.md"], writes: [".svc/pipeline-decisions.jsonl", ".svc/lane-tasks-<WI>.json"], evidence_kind: command_output, required_for_completion: true }
 inputs:
   required: []
   optional:
@@ -39,23 +41,24 @@ Follow the steps in order. Do not write product code until step 7 hands you a sk
 1. Root. Run every script as `node "$SVC_ROOT"/scripts/<name>.mjs` from the project directory. If `$SVC_ROOT` is empty, use the path on the session line `SSVE framework root:`. If `skills-manifest.json` exists in this directory, this is the framework repo: stop here and follow `references/framework-and-host-route.md`.
 2. Init. If `.svc/` is missing, run `node "$SVC_ROOT"/scripts/init-project-state.mjs`.
 3. Bootstrap. Run `node "$SVC_ROOT"/scripts/svc-bootstrap-repo.mjs` from the project directory. It gives a repo with no commit a root commit and a local `origin/main`. Stop if it fails.
-4. Classify. Take the first row that fits, then write `.svc/route-record.json` with class, wi, lane, change_type, risk_flags, assumptions.
+4. Classify. Take the first row that fits. Decide the values now; write them in step 6. A new request gets a new WI id, `WI-PREFIX-` plus `$(date -u +%y%m%d%H%M%S)`; reuse an id only to continue work you were told to continue. SLUG is the WI id in lowercase.
 
-| Request | lane | change_type | wi | risk_flags |
+| Request | lane | change_type | PREFIX | risk_flags |
 |---|---|---|---|---|
-| continue earlier work: a `.svc/lane-tasks-*.json` task is pending or in_progress | that graph's lane | that graph's | that graph's WI | skip step 6, go to 5 |
-| docs or typo only | refactor | docs | WI-DOCS | none |
-| security review only (auth, payment, secrets) | bugfix if source exists, else greenfield | bugfix or feature | WI-SEC | auth-sensitive |
-| bug report, source exists | bugfix | bugfix | WI-FIX | none |
-| new behavior, source exists, `git rev-parse --verify HEAD` works | brownfield-feature | feature | WI-FEAT | user-facing if a person uses the result |
-| anything else, including "build what spec.md asks" | greenfield | feature | WI-1 | user-facing if a person uses the result |
+| continue earlier work: a `.svc/lane-tasks-*.json` task is pending or in_progress | that graph's lane | that graph's | that graph's WI id, as is | that graph's |
+| docs or typo only | refactor | docs | DOCS | none |
+| security review only (auth, payment, secrets) | bugfix if source exists, else greenfield | bugfix or feature | SEC | auth-sensitive |
+| bug report, source exists | bugfix | bugfix | FIX | none |
+| new behavior, source exists, `git rev-parse --verify HEAD` works | brownfield-feature | feature | FEAT | user-facing if a person uses the result |
+| anything else, including "build what spec.md asks" | greenfield | feature | NEW | user-facing if a person uses the result |
 
-5. Worktree. Get a session id once and keep it in `.svc/session-id`: `[ -s .svc/session-id ] || printf %s "${CLAUDE_SESSION_ID:-$(node -e 'console.log(crypto.randomUUID())')}" > .svc/session-id`. Shell state does not persist, so start every Bash call that runs a svc script with `export SVC_SESSION_ID=$(cat PROJECT/.svc/session-id);` where PROJECT is the original project directory. Then run `node "$SVC_ROOT"/scripts/svc-ensure-worktree.mjs --wi WI --branch SLUG --from origin/main --json` and `cd` to `absolute_worktree`. On any error, stop; never build in place.
-6. Compile, inside the worktree. The worktree starts with a one-task placeholder graph, so `--force` is right here and only here. Skip if `.svc/lane-tasks-WI.json` already has more than one task.
-   `node "$SVC_ROOT"/scripts/compile-delivery-graph.mjs --wi WI --lane LANE --change-type TYPE --intent "ONE LINE" --repo-mode MODE --risk-flags FLAGS --out .svc/lane-tasks-WI.json --force`
-   MODE is `bootstrap` for greenfield, else `convert`. Leave out `--risk-flags` when there are none. Never pass `--delivery-profile`.
+5. Worktree. The session id is the one already in your environment (`SVC_SESSION_ID`, `CLAUDE_SESSION_ID`, `CODEX_THREAD_ID` or the host's equivalent): check with `env | grep -E '_(SESSION|THREAD|CONVERSATION)_ID='`. If there is none, make one UUID for this session, remember it, and start every Bash call that runs a svc script with `export SVC_SESSION_ID=<uuid>;`. Never keep it in a file in the repo. Run `node "$SVC_ROOT"/scripts/svc-ensure-worktree.mjs --wi WI --branch SLUG --from origin/main --json` and `cd` to `absolute_worktree`. On any error, stop; never build in place.
+6. Record and compile, inside the worktree. Write `.svc/route-record.json` here with class, wi, lane, change_type, risk_flags, assumptions. The worktree starts with a one-task placeholder graph, so compile only when it is not yet compiled: `grep -q '"delivery_graph"' .svc/lane-tasks-WI.json || node "$SVC_ROOT"/scripts/compile-delivery-graph.mjs --wi WI --lane LANE --change-type TYPE --intent "ONE LINE" --repo-mode MODE --risk-flags FLAGS --out .svc/lane-tasks-WI.json --force`
+   MODE is `bootstrap` for greenfield, else `convert`. Leave out `--risk-flags` when there are none. Never pass `--delivery-profile`. Never compile a graph that is already compiled.
 7. Hand off. Run `node "$SVC_ROOT"/scripts/svc-next.mjs --root .` and read the card. Load exactly the SKILL on its `SKILL` line and follow it. When that skill ends, run the `CLOSEOUT` line it names, read the next card, and repeat.
 8. Finish only when `svc-next` prints `STATUS done`. `STATUS not_done` means a required receipt is missing: produce what `MISSING` lists. Nothing else ends the run, not a finished product and not a passing test.
+
+## Before ending
 
 ### Self-Verify
 
@@ -64,7 +67,7 @@ Before ending, check each row and mark PASS or FAIL.
 | # | Check | How | PASS/FAIL |
 |---|-------|-----|-----------|
 | 1 | Finished by the card | The last `svc-next` card printed `STATUS done` | |
-| 2 | Assumptions recorded | `.svc/route-record.json` lists every assumption; no stage, review or receipt was dropped | |
+| 2 | Assumptions recorded | the worktree's `.svc/route-record.json` lists every assumption; no stage, review or receipt was dropped | |
 | 3 | Stages in compiler order | Every skill the graph lists ran in the order `svc-next` gave | |
 
 **Terminal skill tagging:** none; this skill ends only when `svc-next` prints `STATUS done`.
