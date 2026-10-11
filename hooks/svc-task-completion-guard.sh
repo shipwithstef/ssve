@@ -163,10 +163,9 @@ enforce_canonical_receipt_barrier() {
     exit 0
   fi
   canonical_sha="$(git rev-parse --verify HEAD 2>/dev/null || true)"
-  if [[ ! "$canonical_sha" =~ ^[0-9a-f]{40}$ ]]; then
-    emit_block "SVC COMPLETION GUARD: stop blocked because HEAD is unresolved; canonical receipt validation requires an exact SHA for ${canonical_wi}."
-    exit 0
-  fi
+  # No commit yet (unborn HEAD): there is no SHA to validate receipts against. The lane
+  # guard (scripts/lane-stop-guard.mjs) names the next skill instead of this dead-end block.
+  [[ "$canonical_sha" =~ ^[0-9a-f]{40}$ ]] || return 0
   check_output="$(node "$checker" --sha "$canonical_sha" --wi "$canonical_wi" --consumer stop 2>&1 || true)"
   summary="$(printf '%s' "$check_output" | node -e '
 let raw = "";
@@ -479,7 +478,9 @@ function findSvc(start) {
   if (new Set(["reviewer", "adversarial", "research", "audit", "cross-model-review"]).has(role)) {
     out("allow", "", "", "", "non-execution role"); return;
   }
-  if (files.length === 0) { out("advisory", "", "", "", "worktree binding required but no binding exists"); return; }
+  // An empty bindings directory is the same as no bindings: legacy lane discovery applies
+  // (a fresh project whose bootstrap created .svc/bindings/ must not silence the lane guard).
+  if (files.length === 0) { out("legacy"); return; }
   const session = String(input.session_id || input.sessionId || input.thread_id || input.threadId ||
     process.env.CURSOR_CONVERSATION_ID || process.env.CURSOR_SESSION_ID || process.env.SVC_SESSION_ID || process.env.CODEX_THREAD_ID || process.env.CODEX_SESSION_ID ||
     process.env.CLAUDE_SESSION_ID || process.env.KIMI_SESSION_ID || process.env.GEMINI_SESSION_ID || "");
@@ -562,6 +563,110 @@ if ! command -v node >/dev/null 2>&1; then
   echo "svc completion guard: node not available, skipping check for $LANE_TASKS_LIST" >&2
   exit 0
 fi
+
+# ---- Lane continuation: an active lane graph that still owes chain work keeps the session going.
+# scripts/lane-stop-guard.mjs is read-only; it asks svc-next.mjs (when installed) or walks the
+# stage-registry chain over lane tasks + HEAD receipts. It is quiet when no lane graph exists, for
+# subagent / reviewer sessions, and for an ambiguous lane set. The payload it returns carries
+# laneContinue:true, which hooks/svc-hook-boundary.mjs passes through in advisory mode.
+# stop_hook_active does not exempt a lane: the cap below bounds it instead.
+lane_foreign_claim() {
+  local wi="$1" session="$2" claim
+  [[ -n "$wi" ]] || return 1
+  claim="$(dirname "$(first_lane_file)")/claims/${wi}.claim.json"
+  [[ -f "$claim" ]] || return 1
+  [[ "$(node --input-type=module - "$claim" "$session" "$HOOK_DIR" <<'NODE_LANE_CLAIM' 2>/dev/null || echo no
+import { pathToFileURL } from "node:url";
+const [claimPath, session, hookDir] = process.argv.slice(2);
+const claims = await import(pathToFileURL(`${hookDir}/lib/wi-claim.mjs`));
+const claim = claims.readClaimAbsolute(claimPath);
+const freshness = claims.claimFreshness(claim, claimPath);
+process.stdout.write(freshness.fresh && session && freshness.owner.session_id !== session ? "yes" : "no");
+NODE_LANE_CLAIM
+)" == "yes" ]]
+}
+
+lane_continue_gate() {
+  local guard="$HOOK_DIR/../scripts/lane-stop-guard.mjs" decision fields kind wi remaining session max runtime repo_hash sess_hash key_hash name file prev_key prev_count count
+  [[ -f "$guard" ]] || return 0
+  local -a args=(--stdin)
+  [[ -n "${BOUND_GRAPH:-}" ]] && args+=(--graph "$BOUND_GRAPH")
+  decision="$(printf '%s' "$INPUT" | node "$guard" "${args[@]}" 2>/dev/null | head -n 1 || true)"
+  [[ -n "$decision" ]] || return 0
+  fields="$(printf '%s' "$decision" | node -e '
+let raw = "";
+process.stdin.on("data", (c) => { raw += c; });
+process.stdin.on("end", () => {
+  try {
+    const j = JSON.parse(raw);
+    if (j.decision === "block" && j.laneContinue === true && String(j.reason || "").startsWith("SVC_LANE_CONTINUE ")) {
+      const rem = (Array.isArray(j.remaining) && j.remaining.length ? j.remaining : (Array.isArray(j.missing) ? j.missing : [])).join(",");
+      process.stdout.write(["block", String(j.wi || "none"), rem || String(j.next_skill || "")].join("\t"));
+    } else process.stdout.write("allow");
+  } catch { process.stdout.write("allow"); }
+});
+' 2>/dev/null || echo allow)"
+  IFS=$'\t' read -r kind wi remaining <<< "$fields"
+  [[ "$kind" == "block" ]] || return 0
+
+  # The user's own latest instruction ("stop", "pause", ...) outranks lane continuation: the
+  # legacy flow below reports it as an advisory instead.
+  if [[ -f "$HOOK_DIR/lib/active-intent.mjs" ]]; then
+    local intent
+    intent="$(printf '%s' "$INPUT" | LANE_TASKS_LIST="$LANE_TASKS_LIST" WI="${wi%%,*}" node "$HOOK_DIR/lib/active-intent.mjs" check 2>/dev/null || true)"
+    [[ "$intent" == suppress* ]] && return 0
+  fi
+
+  session="${BOUND_SESSION:-}"
+  if [[ -z "$session" ]]; then
+    session="$(printf '%s' "$INPUT" | node -e '
+let raw = "";
+process.stdin.on("data", (c) => { raw += c; });
+process.stdin.on("end", () => { try { const j = JSON.parse(raw); process.stdout.write(String(j.session_id || j.sessionId || "")); } catch {} });
+' 2>/dev/null || true)"
+  fi
+  [[ -n "$session" ]] || session="${SVC_SESSION_ID:-${CLAUDE_SESSION_ID:-nosession}}"
+
+  if lane_foreign_claim "${wi%%,*}" "$session"; then
+    echo "SVC COMPLETION GUARD: advisory only. lane ${wi} still owes chain work, but its absolute claim belongs to a DIFFERENT live session; leaving it to the owning session." >&2
+    exit 0
+  fi
+
+  max="${SVC_LANE_CONTINUE_MAX:-8}"
+  [[ "$max" =~ ^[0-9]+$ ]] || max=8
+  [[ "$max" -ge 1 ]] || max=1
+  [[ "$max" -le 8 ]] || max=8
+  if ! runtime="$(resolve_runtime_leaf "svc-lane-continue-$(id -u 2>/dev/null || echo user)" 2>/dev/null)" || [[ "$runtime" != /* || "$runtime" == *$'\n'* ]]; then
+    echo "SVC COMPLETION GUARD: advisory only. lane continuation counter root is unavailable or unsafe; lane continuation disabled." >&2
+    exit 0
+  fi
+  (umask 077; mkdir -p "$runtime")
+  repo_hash="$( { printf '%s' "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" | sha256sum 2>/dev/null || printf '%s' "$PWD" | shasum -a 256 2>/dev/null || echo nohash; } | awk '{print substr($1,1,24)}')"
+  sess_hash="$( { printf '%s' "$session" | sha256sum 2>/dev/null || printf '%s' "$session" | shasum -a 256 2>/dev/null || echo nohash; } | awk '{print substr($1,1,24)}')"
+  key_hash="$( { printf '%s' "${session}|${wi}|${remaining}" | sha256sum 2>/dev/null || printf '%s' "${session}|${wi}|${remaining}" | shasum -a 256 2>/dev/null || echo nohash; } | awk '{print substr($1,1,24)}')"
+  file="${runtime}/${repo_hash}-${sess_hash}.lane-count"
+  if [[ -e "$file" && ( -L "$file" || ! -f "$file" || ! -O "$file" ) ]]; then
+    echo "SVC COMPLETION GUARD: advisory only. lane continuation counter is insecure or foreign-owned; lane continuation disabled." >&2
+    exit 0
+  fi
+  prev_key=""; prev_count=0
+  if [[ -f "$file" ]]; then
+    read -r prev_key prev_count < "$file" || true
+    [[ "$prev_count" =~ ^(0|[1-9][0-9]{0,5})$ ]] || prev_count=0
+  fi
+  # Identical missing set -> count up. Any change (a smaller set, a different next step) resets.
+  if [[ "$prev_key" == "$key_hash" ]]; then count=$((10#$prev_count + 1)); else count=1; fi
+  (umask 077; printf '%s %s\n' "$key_hash" "$count" > "$file")
+  chmod 600 "$file" 2>/dev/null || true
+  if [[ "$count" -gt "$max" ]]; then
+    echo "SVC COMPLETION GUARD: advisory (lane continuation cap ${max} reached for ${wi}: the same missing set [${remaining}] was reported ${count} times). Not blocking Stop; tell the user what is blocking the lane instead of ending silently." >&2
+    exit 0
+  fi
+  printf '%s\n' "$decision"
+  exit 0
+}
+
+lane_continue_gate
 
 PARSED=""
 # WI-379: write the b64-framed envelope to a tmpfile so neither $INPUT nor
