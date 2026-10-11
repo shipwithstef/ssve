@@ -2,6 +2,10 @@
 
 Every svc skill SHOULD begin its work by checking what the project already knows. The goal is **complete relevant context**: read enough indexed and dependency-linked material to understand the affected surface, then stop. Do not read every project artifact by default, and do not stop at the minimum file list when the loaded artifact points to a dependency, spec, work item, validator, or decision that materially affects the task.
 
+## K preload for plan and execute
+
+Before planning or building, `plan-changeset` and `execute-changeset` run `node "$SVC_ROOT"/scripts/k-preload.mjs --root .` from the project directory and treat each printed fact as a requirement. Other skills skip this step. The execute-changeset contract stays in its skill file; this shared read is where that instruction lives.
+
 ## The context spine
 
 | # | Source | What it answers |
