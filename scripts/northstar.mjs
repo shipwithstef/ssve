@@ -362,6 +362,7 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   if (!numbered.length) incomplete_reasons.push("no cell has a number");
   const overall = headlineFailed || failed.length ? "fail" : incomplete_reasons.length ? "incomplete" : "pass";
 
+  const journey = journeySection(rows, tasks, fwArm);
   const arms = {};
   for (const arm of bar.arms) arms[arm] = armSummary(rows.filter((r) => r.arm === arm));
   return {
@@ -370,11 +371,38 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
     constraints, constraints_failed: failed.length, constraints_unmeasured: unmeasured.length,
     overall, incomplete_reasons,
     void_runs: voided.length,
+    journey,
+    void_nonconformant: journey.void_nonconformant,
     void_by_arm: Object.fromEntries(bar.arms.map((a) => [a, voided.filter((r) => r.arm === a).length])),
     cells, per_task, cost_per_arm: arms,
     diagnostics: Object.fromEntries(bar.arms.map((a) => [a, { turns_mean: arms[a].turns_mean, tokens_mean: arms[a].tokens_mean, rules_not_loaded: arms[a].rules_not_loaded, fail_open: arms[a].fail_open, judge_cost_usd: arms[a].judge_cost_usd }])),
     overhead: ov,
   };
+}
+
+// Journey conformance of framework runs (row.journey from scripts/lib/journey-conformance.mjs):
+// per task, how many framework runs carry a result, how many walked the intended journey, and
+// which required steps were missed. Reporting only; the headline math ignores it.
+export function journeySection(rows, tasks, fwArm) {
+  const per_task = {};
+  let nonconformant = 0;
+  for (const task of tasks) {
+    const withJ = rows.filter((r) => r.task === task && r.arm === fwArm && r.journey && typeof r.journey === "object");
+    if (!withJ.length) continue;
+    const scored = withJ.filter((r) => !r.journey.error);
+    const missing_steps = {};
+    for (const r of scored) for (const id of r.journey.missing || []) missing_steps[id] = (missing_steps[id] || 0) + 1;
+    const bad = scored.filter((r) => r.journey.conformant === false).length;
+    nonconformant += bad;
+    per_task[task] = {
+      framework_runs_with_journey: withJ.length,
+      conformant: scored.filter((r) => r.journey.conformant === true).length,
+      nonconformant: bad,
+      errored: withJ.length - scored.length,
+      missing_steps,
+    };
+  }
+  return { per_task, void_nonconformant: nonconformant };
 }
 
 const f_unsolved = (fwRows) => fwRows.filter((r) => !(isFinished(r) && solvedOf(r) === true)).length;
@@ -418,6 +446,7 @@ export function summarizeDecision(d) {
   for (const c of d.cells) L.push(`  ${c.task}/${c.component}: ` + (c.numbered ? `solo ${c.solo.mean} (n ${c.solo.n_runs}/${c.solo.n_finished} fin) framework ${c.framework.mean} (n ${c.framework.n_runs}/${c.framework.n_finished} fin) delta ${c.delta}${c.both_zero ? " [both zero]" : ""}` : `no number: ${c.excluded_reason}`));
   for (const c of d.constraints) L.push(`  constraint ${c.task}/${c.id}: ${c.status}${c.value != null ? ` (${c.value}${c.limit != null ? ` vs ${c.limit}` : ""})` : ""}${c.status === "unmeasured" ? ` - ${c.note}` : ""}`);
   for (const [a, s] of Object.entries(d.cost_per_arm)) L.push(`  cost ${a}: $${s.cost_total_usd} total, $${s.cost_mean_usd}/run over ${s.n_runs} runs`);
+  for (const [t, j] of Object.entries(d.journey?.per_task || {})) L.push(`  journey ${t}: ${j.conformant}/${j.framework_runs_with_journey} framework runs conformant${Object.keys(j.missing_steps).length ? `; missing ${Object.entries(j.missing_steps).map(([k, n]) => `${k} x${n}`).join(", ")}` : ""}`);
   L.push(`overall: ${d.overall.toUpperCase()}`);
   for (const r of d.incomplete_reasons) L.push(`  incomplete: ${r}`);
   return L.join("\n");

@@ -83,7 +83,13 @@ export function readOutcomes(files) {
       rows.push(row);
     }
   }
-  return rows;
+  // stage-close corrections append a new line and name the replaced id in
+  // `supersedes`. The replaced line stays in the file; it no longer counts.
+  const superseded = new Set();
+  for (const row of rows) {
+    if (typeof row.supersedes === "string" && row.supersedes) superseded.add(row.supersedes);
+  }
+  return superseded.size === 0 ? rows : rows.filter((row) => !(row.id && superseded.has(row.id)));
 }
 
 // Counts per arm, only for the model id currently behind each alias (legacy rows without model_id count).
@@ -93,6 +99,9 @@ export function tally(outcomes, models = null) {
     if (!o.task_type || !o.model || !o.effort || !["pass", "fail"].includes(o.outcome)) continue;
     if (o.failure_kind === "refusal" || o.failure_kind === "infra") continue; // not a capability signal
     if (models && o.model_id && models.models[o.model] && o.model_id !== models.models[o.model].id) continue;
+    // Claude-only posterior. Legacy rows omit harness and stay on this key.
+    // A named non-Claude harness must not share a model/effort count.
+    if (o.harness && o.harness !== "claude") continue;
     const k = armKey(o.task_type, o.model, o.effort);
     const cur = t.get(k) || { n: 0, pass: 0 };
     cur.n += 1;
