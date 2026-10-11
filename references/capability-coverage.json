@@ -3079,8 +3079,17 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-atomic-receipt-writes.sh",
-        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh",
-        "test-framework/evals/tier-1/validate-codex-first-task-activation.sh"
+        "test-framework/evals/tier-1/validate-check-selection.mjs",
+        "test-framework/evals/tier-1/validate-codex-execution-integrity.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/trace-check-deps.mjs",
+      "kind": "engine",
+      "source": "scripts/trace-check-deps.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-check-selection.mjs"
       ]
     },
     {
