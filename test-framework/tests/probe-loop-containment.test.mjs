@@ -1,3 +1,4 @@
+// @organism-suite
 /** probe-loop containment (organism plan 5.5 step 4): checks run in the worker sandbox,
  * ownership is inspected after the checks, results are hash-bound, apply is all-or-nothing
  * and never follows a destination symlink, and a broken checker stops the experiment.
@@ -10,7 +11,7 @@ import path from "node:path";
 import { run, apply, resolveSandbox, confines, hasBwrap, BWRAP, baseCheckProblem, resultHash } from "../../scripts/probe-loop.mjs";
 
 const LANES = { lanes: { max_parallel: 1, why: "t" } };
-const tmp = (p) => fs.mkdtempSync(path.join(os.tmpdir(), p));
+const tmp = (p) => fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), p));
 function base() {
   const dir = tmp("pl-base-");
   fs.mkdirSync(path.join(dir, "src"));
@@ -115,13 +116,22 @@ test("apply refuses an edited result record and a result with no hashes", async 
   assert.equal(read(target, "src/a.txt"), "orig\n");
 });
 
-test("apply refuses paths that leave the target or touch .git, even in a consistently rehashed result", async () => {
-  for (const f of ["../escape.txt", "/abs.txt", ".git/hooks/pre-commit", "src/../../x"]) {
+test("apply refuses bad paths even when the result and its hash are recomputed consistently", async () => {
+  const cases = [
+    ["../escape.txt", /refusing to write outside the target: \.\.\/escape\.txt \(not a plain relative path\)/],
+    ["/abs.txt", /refusing to write outside the target: \/abs\.txt \(not a plain relative path\)/],
+    [".git/hooks/pre-commit", /refusing to write outside the target: \.git\/hooks\/pre-commit \(not a plain relative path\)/],
+    ["src/../../x", /refusing to write outside the target: src\/\.\.\/\.\.\/x \(not a plain relative path\)/],
+    ["README.md", /does not match its recorded hashes: README\.md \(not in the owned set\)/],
+  ];
+  for (const [f, expected] of cases) {
     const { r, target } = await winner();
     const v = r.variants[0];
     v.changed.push(f); v.baseline[f] = null; v.files[f] = null;
-    r.owned = [".", "src", ".git", ".."];
-    assert.throws(() => apply(r, target), /refusing to write outside the target|does not match/, f);
+    if (f === "../escape.txt" || f === "/abs.txt" || f.startsWith(".git") || f.includes("..")) r.owned = [".", "src", ".git", ".."];
+    v.result_hash = resultHash(v, r.owned);
+    assert.throws(() => apply(r, target), expected, f);
+    assert.equal(read(target, "src/a.txt"), "orig\n", `${f}: nothing was written`);
   }
 });
 
@@ -160,24 +170,36 @@ test("apply replaces a destination symlink instead of writing through it", async
   assert.equal(read(external, "a.txt"), "outside\n");
 });
 
-test("a produced link that would leave the target is refused", async () => {
+test("produced symlinks are refused, including one whose referent passes through an existing link", async () => {
   const dir = base();
-  const r = await go(dir, { worker_cmd: "ln -s ../README.md src/inner-ok" });
-  assert.equal(r.variants[0].status, "pass");
+  const r = await go(dir, { worker_cmd: "ln -s ../README.md src/inner" });
+  assert.equal(r.variants[0].status, "pass", "the run itself keeps allowing links that stay in the copy");
   const target = tmp("pl-target-");
   fs.cpSync(dir, target, { recursive: true });
-  assert.deepEqual(apply(r, target), ["src/inner-ok"], "a link that stays inside the target is applied");
-  assert.equal(fs.readlinkSync(path.join(target, "src/inner-ok")), "../README.md");
-  // the same link text one level deeper would resolve outside; tamper-proof via result_hash, so
-  // exercise the check on a target that is nested one directory shallower
-  const shallow = tmp("pl-target-");
-  const r2 = await go(base(), { worker_cmd: "ln -s ../README.md src/inner-ok" });
-  const v = r2.variants[0];
-  v.changed = ["inner-ok"]; v.baseline = { "inner-ok": null }; v.files = { "inner-ok": "link:../README.md" };
-  fs.symlinkSync("../README.md", path.join(v.dir, "inner-ok"));
-  r2.owned = ["inner-ok"];
-  v.result_hash = resultHash(v, r2.owned);
-  assert.throws(() => apply(r2, shallow), /link leaves the target/);
+  assert.throws(() => apply(r, target), /src\/inner \(produced symlinks are not applied\)/);
+  assert.equal(fs.existsSync(path.join(target, "src/inner")), false);
+  // the lexically safe link would be redirected by README.md being a link to outside
+  const external = tmp("pl-external-");
+  fs.writeFileSync(path.join(external, "secret"), "s\n");
+  fs.rmSync(path.join(target, "README.md"));
+  fs.symlinkSync(path.join(external, "secret"), path.join(target, "README.md"));
+  assert.throws(() => apply(r, target), /produced symlinks are not applied/);
+  assert.equal(fs.existsSync(path.join(target, "src/inner")), false);
+});
+
+test("a symlinked target root, or a symlink above it, is refused (nothing written outside)", async () => {
+  const { r, target } = await winner();
+  const external = tmp("pl-external-");
+  fs.cpSync(target, external, { recursive: true });
+  const holder = tmp("pl-holder-");
+  const linkRoot = path.join(holder, "root");
+  fs.symlinkSync(external, linkRoot);
+  assert.throws(() => apply(r, linkRoot), /target root .*root is a symlink/);
+  assert.equal(read(external, "src/a.txt"), "orig\n");
+  const viaParent = path.join(holder, "parent");
+  fs.symlinkSync(path.dirname(external), viaParent);
+  assert.throws(() => apply(r, path.join(viaParent, path.basename(external))), /target root .*parent is a symlink/);
+  assert.equal(read(external, "src/a.txt"), "orig\n");
 });
 
 // 5. preflight before any write; rollback if a write still fails
@@ -218,7 +240,7 @@ test("a valid result applies completely and the target must be a directory", asy
   assert.deepEqual(apply(r, target), ["src/a.txt", "src/b.txt"]);
   assert.equal(read(target, "src/a.txt"), "new\n");
   assert.equal(read(target, "src/b.txt"), "new b\n");
-  assert.throws(() => apply(r, path.join(target, "missing")), /target is not a directory/);
+  assert.throws(() => apply(r, path.join(target, "missing")), /target root .* \(ENOENT\)/);
 });
 
 // 6. a broken checker stops the experiment
@@ -265,4 +287,64 @@ test("the CLI exits 3 and says so when the checker is broken", async () => {
   assert.equal(r.status, 3);
   assert.match(r.stderr, /checker broken/);
   assert.equal(JSON.parse(r.stdout).status, "checker broken");
+});
+
+// finding: contents are read once, then written
+test("the bytes that were hashed are the bytes written, even if the source changes after preflight", async () => {
+  const { r, target, w } = await winner();
+  apply(r, target, { beforeWrite: () => fs.writeFileSync(path.join(w.dir, "src/a.txt"), "swapped after the hash check\n") });
+  assert.equal(read(target, "src/a.txt"), "new\n");
+});
+
+// finding: backups survive until the end; failed rollbacks are reported
+test("an original is restored byte for byte when a later write fails", async () => {
+  const { r, target } = await winner();
+  fs.chmodSync(path.join(target, "src/a.txt"), 0o640);
+  assert.throws(() => apply(r, target, { onWrite: (f) => { if (f === "src/a.txt") throw new Error("boom"); } }), /rolled back: boom/);
+  assert.equal(read(target, "src/a.txt"), "orig\n");
+  assert.equal(read(target, "src/b.txt"), "orig b\n");
+  assert.equal(fs.statSync(path.join(target, "src/a.txt")).mode & 0o777, 0o640);
+  assert.deepEqual(fs.readdirSync(path.join(target, "src")).sort(), ["a.txt", "b.txt"], "no temp files left");
+});
+
+test("a rollback that fails is reported as failed, never as rolled back", async (t) => {
+  if (process.getuid?.() === 0) return t.skip("directory permissions do not bind root");
+  const { r, target } = await winner();
+  const srcDir = path.join(target, "src");
+  let err;
+  try {
+    apply(r, target, { onWrite: (f) => { if (f === "src/b.txt") { fs.chmodSync(srcDir, 0o500); throw new Error("disk full"); } } });
+  } catch (e) { err = e; } finally { fs.chmodSync(srcDir, 0o700); }
+  assert.ok(err, "apply threw");
+  assert.match(err.message, /rollback FAILED/);
+  assert.doesNotMatch(err.message, /was rolled back/);
+  assert.ok(err.rollbackFailed.length > 0);
+});
+
+// finding: file <-> directory changes
+test("a file replaced by a directory applies", async () => {
+  const dir = base();
+  fs.writeFileSync(path.join(dir, "src/x"), "a file\n");
+  const r = await go(dir, { worker_cmd: "rm src/x; mkdir src/x; echo y > src/x/y.txt" });
+  assert.equal(r.variants[0].status, "pass");
+  const target = tmp("pl-target-");
+  fs.cpSync(dir, target, { recursive: true });
+  apply(r, target);
+  assert.equal(read(target, "src/x/y.txt"), "y\n");
+});
+
+test("a directory replaced by a file applies, and refuses if the owner added to the directory", async () => {
+  const dir = base();
+  fs.mkdirSync(path.join(dir, "src/d"));
+  fs.writeFileSync(path.join(dir, "src/d/e.txt"), "e\n");
+  const r = await go(dir, { worker_cmd: "rm -r src/d; echo f > src/d" });
+  assert.equal(r.variants[0].status, "pass");
+  const target = tmp("pl-target-");
+  fs.cpSync(dir, target, { recursive: true });
+  fs.writeFileSync(path.join(target, "src/d/owner.txt"), "mine\n");
+  assert.throws(() => apply(r, target), /stale result: .*src\/d \(directory still holds src\/d\/owner\.txt\)/);
+  assert.equal(read(target, "src/d/owner.txt"), "mine\n");
+  fs.rmSync(path.join(target, "src/d/owner.txt"));
+  apply(r, target);
+  assert.equal(read(target, "src/d"), "f\n");
 });

@@ -297,87 +297,162 @@ export async function run(spec, { lanes, sandbox } = {}) {
 }
 
 // Copy the winner's changed files into the target and remove the ones it deleted.
-const hashOf = (file) => {
-  try {
-    const st = fs.lstatSync(file);
-    if (st.isSymbolicLink()) return `link:${fs.readlinkSync(file)}`;
-    return st.isFile() ? crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex") : null;
-  } catch { return null; }
-};
+const sha = (buf) => crypto.createHash("sha256").update(buf).digest("hex");
+
+// What is at file right now, read once and never followed: null (absent), a directory, a
+// link, or a regular file with its bytes, mode and hash.
+function readEntry(file) {
+  let st; try { st = fs.lstatSync(file); } catch (e) { if (e.code === "ENOENT" || e.code === "ENOTDIR") return null; throw e; }
+  if (st.isSymbolicLink()) { const target = fs.readlinkSync(file); return { kind: "link", target, hash: `link:${target}` }; }
+  if (st.isDirectory()) return { kind: "dir", hash: null };
+  if (!st.isFile()) return { kind: "other", hash: null };
+  const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+  try { const buf = fs.readFileSync(fd); return { kind: "file", buf, mode: fs.fstatSync(fd).mode & 0o777, hash: sha(buf) }; } finally { fs.closeSync(fd); }
+}
 
 const relProblem = (f) => typeof f !== "string" || !f || path.isAbsolute(f) || f.includes("\0") || f.split("/").some((seg) => seg === "" || seg === "." || seg === ".." || SKIP.has(seg));
 
-// Walk the directories above rel under root with lstat, never following a link. Returns a
-// reason when a component is a symlink (escaping or not) or not a directory; a component
-// that does not exist yet ends the walk cleanly (it will be created, below real
-// directories only).
-function ancestorProblem(root, rel) {
-  const parts = rel.split("/").slice(0, -1);
-  let cur = root;
-  for (const seg of parts) {
+// The target root and every directory above it are walked with lstat: a symlink anywhere
+// on the path could point the writes somewhere else, so none is accepted.
+function rootProblem(root) {
+  let cur = path.parse(root).root;
+  for (const seg of root.slice(cur.length).split(path.sep).filter(Boolean)) {
     cur = path.join(cur, seg);
-    let st;
-    try { st = fs.lstatSync(cur); } catch (e) { if (e.code === "ENOENT") return null; return `${path.relative(root, cur)} (${e.code})`; }
-    if (st.isSymbolicLink()) return `${path.relative(root, cur)} is a symlink`;
-    if (!st.isDirectory()) return `${path.relative(root, cur)} is not a directory`;
+    let st; try { st = fs.lstatSync(cur); } catch (e) { return `${cur} (${e.code})`; }
+    if (st.isSymbolicLink()) return `${cur} is a symlink`;
+    if (!st.isDirectory()) return `${cur} is not a directory`;
   }
   return null;
 }
 
+// Walk the directories above rel under root with lstat, never following a link. Returns a
+// reason when a component is a symlink or not a directory in the tree the apply will
+// leave: a component that is a file the result deletes counts as absent, one it writes
+// as a file is a conflict. A missing component ends the walk (created later, below real
+// directories only).
+function ancestorProblem(root, rel, planned = new Map(), linksOnly = false) {
+  const parts = rel.split("/");
+  let cur = root;
+  for (let i = 0; i < parts.length - 1; i++) {
+    cur = path.join(cur, parts[i]);
+    const here = parts.slice(0, i + 1).join("/");
+    if (planned.get(here) === "present") return `${here} is written as a file by the same result`;
+    let st; try { st = fs.lstatSync(cur); } catch (e) { if (e.code === "ENOENT") return null; return `${here} (${e.code})`; }
+    if (st.isSymbolicLink()) return `${here} is a symlink`;
+    if (!st.isDirectory()) { if (linksOnly || planned.get(here) === "deleted") return null; return `${here} is not a directory`; }
+  }
+  return null;
+}
+
+// Every file under dir; null when anything under it is a link or a special file.
+function filesUnder(dir, rel) {
+  const out = [];
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const r = `${rel}/${e.name}`;
+    if (e.isDirectory()) { const sub = filesUnder(path.join(dir, e.name), r); if (!sub) return null; out.push(...sub); }
+    else if (e.isFile()) out.push(r);
+    else return null;
+  }
+  return out;
+}
+
 // The whole result is validated before the first write, and a write that still fails
-// midway is rolled back, so a result lands completely or not at all. Validation:
-//   - the result carries its hashes and they match (result_hash, then every produced file
-//     in the work dir against its recorded hash): a tampered result or file is refused;
+// midway is rolled back from backups held until the apply completes, so a result lands
+// completely or not at all. If the rollback itself fails, the error says so, names the
+// paths, and has rollbackFailed set; it never claims a rollback that did not happen.
+// Validation:
+//   - the result carries its hashes and they match (result_hash); every produced file is
+//     read ONCE into memory, hashed, and those exact bytes are what gets written;
 //   - every path is relative, inside the target and the owned set, outside .git and
 //     node_modules;
-//   - no directory above a destination is a symlink (lstat walk, never realpath-then-trust)
-//     and a produced link must resolve inside the target;
+//   - the target root and its ancestry, and every directory above a destination, are
+//     walked with lstat: no symlink component (never realpath-then-trust), judged against
+//     the tree the result leaves (a file-to-directory change is valid);
+//   - produced symlinks are refused outright. A link's referent can pass through links
+//     that already exist in the target, so a lexical check cannot show it stays inside,
+//     and the experiments (rewrite, simplify, merge, remove) do not need to create links;
 //   - every destination still holds the content the probe started from (else stale).
-// options.onWrite (tests only) is called after each file is written.
-export function apply(result, to, { onWrite } = {}) {
+// options.beforeWrite / options.onWrite (tests only) run after preflight / after each step.
+export function apply(result, to, { beforeWrite, onWrite } = {}) {
   const w = result.variants.find((v) => v.variant === result.winner);
   if (!w) throw new Error("no passing variant to apply");
   if (!w.files || !w.baseline || !w.result_hash) throw new Error("unbound result: it has no recorded file hashes; run the probe again");
   const root = path.resolve(to);
-  let rootSt; try { rootSt = fs.statSync(root); } catch { rootSt = null; }
-  if (!rootSt?.isDirectory()) throw new Error(`target is not a directory: ${to}`);
+  const rp = rootProblem(root);
+  if (rp) throw new Error(`refusing to write outside the target: target root ${rp}`);
   const tampered = [], escaping = [], stale = [];
   if (resultHash(w, result.owned ?? []) !== w.result_hash) tampered.push("result record (changed/baseline/files/owned)");
+  const planned = new Map();
+  for (const f of w.changed) if (typeof f === "string" && Object.hasOwn(w.files, f)) planned.set(f, w.files[f] === null ? "deleted" : "present");
   const plan = [];
   for (const f of w.changed) {
     if (relProblem(f)) { escaping.push(`${f} (not a plain relative path)`); continue; }
     if (!insideOwned(f, result.owned ?? [])) { tampered.push(`${f} (not in the owned set)`); continue; }
-    const src = path.join(w.dir, f), dst = path.join(root, f);
     if (!Object.hasOwn(w.files, f) || !Object.hasOwn(w.baseline, f)) { tampered.push(`${f} (no recorded hash)`); continue; }
-    if (ancestorProblem(w.dir, f) || hashOf(src) !== w.files[f]) { tampered.push(f); continue; }
-    const why = ancestorProblem(root, f);
-    if (why) { escaping.push(`${f} (${why})`); continue; }
-    let dstSt = null; try { dstSt = fs.lstatSync(dst); } catch {}
-    if (dstSt?.isDirectory()) { escaping.push(`${f} (destination is a directory)`); continue; }
     const want = w.files[f];
-    if (want?.startsWith("link:") && path.resolve(path.dirname(dst), want.slice(5)) !== root && !path.resolve(path.dirname(dst), want.slice(5)).startsWith(root + path.sep)) { escaping.push(`${f} (link leaves the target)`); continue; }
-    if (hashOf(dst) !== w.baseline[f]) stale.push(f);
-    plan.push({ f, src, dst, want });
+    if (want?.startsWith("link:")) { escaping.push(`${f} (produced symlinks are not applied)`); continue; }
+    const srcFile = path.join(w.dir, f);
+    let item = { f, dst: path.join(root, f), want };
+    if (ancestorProblem(w.dir, f, undefined, true)) { tampered.push(f); continue; }
+    let src; try { src = readEntry(srcFile); } catch { src = { kind: "other" }; }
+    if (want === null ? src?.kind === "file" || src?.kind === "link" || src?.kind === "other" : src?.kind !== "file" || src.hash !== want) { tampered.push(f); continue; }
+    if (want !== null) item = { ...item, buf: src.buf, mode: src.mode };
+    const why = ancestorProblem(root, f, want === null ? new Map() : planned);
+    if (why) { escaping.push(`${f} (${why})`); continue; }
+    let prev; try { prev = readEntry(item.dst); } catch (e) { escaping.push(`${f} (${e.code || e.message})`); continue; }
+    if (prev?.kind === "other") { escaping.push(`${f} (destination is not a regular file)`); continue; }
+    if (prev?.kind === "dir") {
+      // A directory may give way to a file only when the result deletes everything in it.
+      const inside = want === null ? null : filesUnder(item.dst, f);
+      if (want === null || !inside) { escaping.push(`${f} (destination is a directory)`); continue; }
+      const left = inside.filter((x) => planned.get(x) !== "deleted");
+      if (left.length) { stale.push(`${f} (directory still holds ${left[0]})`); continue; }
+    }
+    if ((prev?.hash ?? null) !== w.baseline[f]) stale.push(f);
+    plan.push({ ...item, prev });
   }
   if (tampered.length) throw new Error(`result does not match its recorded hashes: ${tampered.join(", ")}`);
   if (escaping.length) throw new Error(`refusing to write outside the target: ${escaping.join(", ")}`);
   if (stale.length) throw new Error(`stale result: changed in the target since the probe started: ${stale.join(", ")}`);
+  beforeWrite?.();
+  // Deletions first (deepest first), then writes, so a directory-for-file swap can land.
+  const ordered = [...plan.filter((x) => x.want === null).sort((a, b) => b.f.length - a.f.length), ...plan.filter((x) => x.want !== null)];
   const undo = [];
+  const tmpName = (dst) => `${dst}.probe-apply-${process.pid}-${crypto.randomBytes(4).toString("hex")}`;
+  const recheck = (x) => { if ((readEntry(x.dst)?.hash ?? null) !== (x.prev?.hash ?? null) && x.prev?.kind !== "dir") throw new Error(`${x.f} changed during apply`); };
+  const restore = (x) => () => {
+    fs.rmSync(x.dst, { force: true });
+    if (x.prev?.kind === "link") fs.symlinkSync(x.prev.target, x.dst);
+    else if (x.prev?.kind === "file") { fs.mkdirSync(path.dirname(x.dst), { recursive: true }); fs.writeFileSync(x.dst, x.prev.buf, { mode: x.prev.mode }); }
+    else if (x.prev?.kind === "dir") fs.mkdirSync(x.dst, { recursive: true });
+  };
   try {
-    for (const { f, src, dst, want } of plan) {
-      let prev = null; try { const st = fs.lstatSync(dst); prev = st.isSymbolicLink() ? { link: fs.readlinkSync(dst) } : { data: fs.readFileSync(dst), mode: st.mode }; } catch {}
-      let top = null; for (let d = path.dirname(dst); d !== root && !fs.existsSync(d); d = path.dirname(d)) top = d;
-      if (top) { fs.mkdirSync(path.dirname(dst), { recursive: true }); undo.push(() => fs.rmSync(top, { recursive: true, force: true })); }
-      undo.push(() => { fs.rmSync(dst, { force: true }); if (prev?.link != null) fs.symlinkSync(prev.link, dst); else if (prev) fs.writeFileSync(dst, prev.data, { mode: prev.mode }); });
-      // unlink first: copying onto an existing link would write through it
-      fs.rmSync(dst, { force: true });
-      if (want === null) { onWrite?.(f); continue; }
-      if (want.startsWith("link:")) fs.symlinkSync(fs.readlinkSync(src), dst);
-      else fs.copyFileSync(src, dst, fs.constants.COPYFILE_EXCL);
-      onWrite?.(f);
+    for (const x of ordered) {
+      recheck(x);
+      if (x.want === null) {
+        undo.push({ f: x.f, run: restore(x) });
+        fs.rmSync(x.dst, { force: true });
+        onWrite?.(x.f);
+        continue;
+      }
+      let top = null; for (let d = path.dirname(x.dst); d !== root && !fs.existsSync(d); d = path.dirname(d)) top = d;
+      if (x.prev?.kind === "dir") { undo.push({ f: x.f, run: restore(x) }); fs.rmSync(x.dst, { recursive: true, force: true }); }
+      if (top) { fs.mkdirSync(path.dirname(x.dst), { recursive: true }); undo.push({ f: top, run: () => fs.rmSync(top, { recursive: true, force: true }) }); }
+      // write beside the destination and rename over it: the original stays until the new
+      // bytes are complete, and a destination link is replaced, never written through.
+      const tmp = tmpName(x.dst);
+      try { fs.writeFileSync(tmp, x.buf, { flag: "wx", mode: x.mode }); fs.renameSync(tmp, x.dst); } catch (e) { fs.rmSync(tmp, { force: true }); throw e; }
+      if (x.prev?.kind !== "dir") undo.push({ f: x.f, run: restore(x) });
+      onWrite?.(x.f);
     }
   } catch (e) {
-    for (const u of undo.reverse()) { try { u(); } catch {} }
+    const failed = [];
+    for (const u of undo.reverse()) { try { u.run(); } catch (err) { failed.push(`${u.f} (${err.code || err.message})`); } }
+    if (failed.length) {
+      const err = new Error(`apply failed (${e.message}) and the rollback FAILED for ${failed.join(", ")}: the target is in an inconsistent state, inspect it before continuing`);
+      err.rollbackFailed = failed;
+      throw err;
+    }
     throw new Error(`apply failed and was rolled back: ${e.message}`);
   }
   return w.changed;
