@@ -9,15 +9,31 @@ export function rng(seed = SEED) {
 }
 export const avg = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
-// The one bootstrap core. `cells` is [{ a, b }]: per iteration, resample a and b within
-// each cell (draw order: a then b, cell by cell), take the cell's difference of means, and
-// average the differences over cells. Returns the sorted bootstrap distribution.
+// The one bootstrap core. `cells` is [{ a, b, group? }]. Per iteration, runs are resampled
+// once per (group, arm): every cell of one group (one task) reuses the same drawn run
+// indices, so a run's components stay together, as "resampling runs within task and arm"
+// requires. Draw order is group by group, a then b. A cell without a group is its own
+// group, so a single cell draws a then b exactly as compareSamples always has. Each cell
+// contributes its difference of means; the iteration's value is their average.
 export function bootstrapDeltas(cells, iterations, rand) {
-  const pick = (xs) => xs[Math.floor(rand() * xs.length)];
+  const groups = [];
+  const byKey = new Map();
+  cells.forEach((c, i) => {
+    const key = c.group ?? `\u0000cell${i}`;
+    if (!byKey.has(key)) { byKey.set(key, { na: c.a.length, nb: c.b.length, cells: [] }); groups.push(byKey.get(key)); }
+    const g = byKey.get(key);
+    if (g.na !== c.a.length || g.nb !== c.b.length) throw new Error(`bootstrap group ${String(key)}: cells must hold the same runs per arm`);
+    g.cells.push(c);
+  });
+  const draw = (n) => Array.from({ length: n }, () => Math.floor(rand() * n));
+  const meanAt = (xs, idx) => idx.reduce((s, k) => s + xs[k], 0) / idx.length;
   const boots = [];
   for (let i = 0; i < iterations; i++) {
     let sum = 0;
-    for (const { a, b } of cells) sum += avg(a.map(() => pick(a))) - avg(b.map(() => pick(b)));
+    for (const g of groups) {
+      const ia = draw(g.na), ib = draw(g.nb);
+      for (const c of g.cells) sum += meanAt(c.a, ia) - meanAt(c.b, ib);
+    }
     boots.push(sum / cells.length);
   }
   return boots.sort((x, y) => x - y);
@@ -42,8 +58,8 @@ export function compareSamples(a, b, iterations = 10000) {
   return { diff: +diff.toFixed(2), ci95: [+lo.toFixed(2), +hi.toFixed(2)], p: +((extreme + 1) / (iterations + 1)).toFixed(4), n: [a.length, b.length] };
 }
 
-// Stratified delta: each cell is { framework: [run scores], solo: [run scores] } for one
-// task x component. delta = mean over cells of (framework mean - solo mean); the 95%
+// Stratified delta: each cell is { task, framework: [run scores], solo: [run scores] } for one
+// task x component, with scores in the same run order for every component of a task. delta = mean over cells of (framework mean - solo mean); the 95%
 // interval resamples runs within task x arm and recomputes it. Cells with an empty arm
 // are skipped; returns null when no cell is usable. Values are rounded to 6 places.
 export function stratifiedDelta(cells, iterations = 10000) {
@@ -51,7 +67,7 @@ export function stratifiedDelta(cells, iterations = 10000) {
   if (!usable.length) return null;
   const rand = rng();
   const delta = avg(usable.map((c) => avg(c.framework) - avg(c.solo)));
-  const boots = bootstrapDeltas(usable.map((c) => ({ a: c.framework, b: c.solo })), iterations, rand);
+  const boots = bootstrapDeltas(usable.map((c) => ({ a: c.framework, b: c.solo, group: c.task })), iterations, rand);
   const [lo, hi] = bounds(boots, iterations);
   const r = (x) => +x.toFixed(6);
   return { delta: r(delta), ci95: [r(lo), r(hi)], cells: usable.length, iterations };

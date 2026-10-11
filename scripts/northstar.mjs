@@ -139,7 +139,7 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
     } else {
       cell.delta = r4(mean(fv.map((x) => x.value)) - mean(sv.map((x) => x.value)));
       cell.both_zero = mean(sv.map((x) => x.value)) === 0 && mean(fv.map((x) => x.value)) === 0;
-      cell._values = { solo: sv.map((x) => x.value), framework: fv.map((x) => x.value) };
+      cell._values = { task, solo: sv.map((x) => x.value), framework: fv.map((x) => x.value) };
     }
     cells.push(cell);
   }

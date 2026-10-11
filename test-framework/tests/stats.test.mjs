@@ -75,3 +75,13 @@ test("adoptionDecision needs n >= 5 per arm, p < .05 and ci95 low > 0", () => {
   assert.match(r.reason, /n >= 5/);
   assert.equal(adoptionDecision([], big).decision, "inconclusive");
 });
+
+test("stratifiedDelta keeps a run's components together: two identical cells of one task give the one-cell interval", () => {
+  const fw = [0.9, 0.2, 0.7], so = [0.1, 0.4, 0.0];
+  const one = stratifiedDelta([{ task: "t", framework: fw, solo: so }], 4000);
+  const two = stratifiedDelta([{ task: "t", framework: fw, solo: so }, { task: "t", framework: fw, solo: so }], 4000);
+  assert.deepEqual(two.ci95, one.ci95);
+  // Independent draws per cell (different tasks) average out and narrow the interval.
+  const apart = stratifiedDelta([{ task: "t1", framework: fw, solo: so }, { task: "t2", framework: fw, solo: so }], 4000);
+  assert.ok(apart.ci95[1] - apart.ci95[0] < one.ci95[1] - one.ci95[0]);
+});
