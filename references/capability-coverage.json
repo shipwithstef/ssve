@@ -2668,7 +2668,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
-        "test-framework/evals/tier-1/validate-route-model.mjs"
+        "test-framework/evals/tier-1/validate-route-model.mjs",
+        "test-framework/tests/stage-close.test.mjs"
       ]
     },
     {
@@ -2824,6 +2825,15 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-planning-signals.mjs",
         "test-framework/evals/tier-1/validate-stage-registry-single-source.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/stage-close.mjs",
+      "kind": "engine",
+      "source": "scripts/stage-close.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/stage-close.test.mjs"
       ]
     },
     {
