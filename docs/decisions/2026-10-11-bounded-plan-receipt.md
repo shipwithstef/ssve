@@ -1,6 +1,6 @@
 # Bounded plan receipt: a third planning contract
 
-Status: proposed, for owner review. No enforcement code changes until this design is accepted.
+Status: rejected as written by adversarial review (2026-10-11, below); revised direction proposed for the owner. No enforcement code changes until the revision is accepted.
 Ledger row 61. Context: `docs/decisions/2026-10-10-bounded-delivery.md`.
 
 ## Problem
@@ -67,5 +67,48 @@ Each row becomes a tier-1 negative test, next to the existing receipt validators
 3. Issue a live bounded receipt in a scratch repository in refuse mode.
 4. Only then let route-workflow issue bounded receipts.
 
-## Review
-See the review section below: findings and dispositions are recorded there before any code.
+## Review (2026-10-11)
+
+Reviewer: the repository's locked `plan-reviewer` agent, in a fresh context.
+- It read the design and the code it names.
+- It did not run tests.
+- The paid external launcher (`scripts/run-external-review.mjs`) could not run here: it needs the owner's `~/.svc/dispatch-policy.json`.
+
+**Verdict: reject as written, not on concept.**
+
+Blockers (all three accepted):
+- **B-1: review receipts record no depth.**
+  - `review_depth` lives only in graph task metadata (`compile-delivery-graph.mjs`, `validate-delivery-graph.mjs:276-288`).
+  - No receipt schema carries it, so rule 2 cannot be enforced.
+  - **Disposition:** a prerequisite. Review receipts need a `review_depth` derived from what actually ran, such as lens count or the external launcher's receipt. Until then, a bounded receipt is refused whenever any zone is present, and the full chain applies.
+- **B-2: the profile is self-declared.**
+  - `delivery_profile` and the graph's `planning.mode` are author input with no anchor.
+  - **Disposition:** the profile must come from a committed, repo-owned declaration in the sealed tree (an allowlist of bounded roots such as `prototypes/**`), or from owner policy. The default is contract.
+- **B-3: two claims about current code were false.**
+  - Exec-record and audit-implementation receipts do not bind a plan digest. Only review-plan's `reviewed_plan_digest` does.
+  - `two_box`-style consumer handling verifies against the live checkout, not the commit under test. In a pre-push range check it would check the wrong tree.
+  - **Disposition:** bounded must reuse `lightweight`'s committed-candidate machinery (`candidateSha`, `readCommitUtf8`, the special cases at `check-chain-receipts.mjs:964` and `receipt-issuance-epoch.mjs:491-507`).
+  - Exec and audit receipts gain a plan digest, or the design stops claiming they bind it.
+
+Majors (accepted, folded into the revision):
+- **M-1: path-only zones miss real surfaces.** For example `authz.js`, `oauth`, `main.tf`, workflows, compose files, Prisma schemas, renames out of `auth/`, deleted migrations and generated files. Self-declared `flag:*` zones can't be checked by equality.
+  - **Fix:** compute zones over `git diff-tree --no-renames` old and new paths, and extend and unit-test the patterns. Treat any path outside an allowlist of owned roots as a zone.
+- **M-2: no single tree binds the brief digest, the index and HEAD.**
+  - **Fix:** add `candidate_tree`, as `lightweight` has `eligibility_tree`. Replace re-parsing the Markdown table with a canonical-JSON `done_when` digest. Exec-record `files_touched` must sit inside the scope.
+- **M-3: amendment has no mechanism.**
+  - **Fix:** a `supersedes` chain on plan bodies, failing on forks. `reviewed_plan_digest` must equal the selected plan. Any amendment that adds a path or zone re-runs review-plan.
+- **M-4: the v5 body's required fields were not addressed, so the problem may not be solved.**
+  - **Fix:** state which v5 fields bounded drops or derives from the brief. Add the `validatePlanSchema` branch list and `assertV5LiveBindings` to the change list. Drop the unneeded emit-receipt row (`mode: inline` is already exempt from blueprints).
+- **M-5: older consumers hard-fail on an unknown kind.**
+  - **Fix:** gate the kind in `packageCapabilities` (a `planning_kinds` list) and test old-package rejection and unchanged v4/v5 history.
+
+Minors m-1 to m-3 (owned-path prefix rules, mutual-exclusion tests, reuse of `validation_plan`) are accepted. The reviewer's 16 missing negative tests join the threat-model list.
+
+## Revised direction (for the owner)
+
+The smallest change is not a new trust model. It is **`lightweight` plus a brief**: a kind that reuses `assertLightweight`'s committed-tree replay, staged-tree binding and scope equality, and adds `brief_ref` and a canonical `done_when`.
+1. Review-depth receipts (B-1) come first; until they exist, any zone means the full chain.
+2. Bounded is allowed only under a committed allowlist of bounded roots (B-2).
+3. Zones are computed over old and new paths with tested patterns, and unknown paths count as zones (M-1).
+
+The bounded path stays usable today outside refuse-mode repos. In refuse mode it waits for this revision.
