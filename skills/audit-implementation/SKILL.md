@@ -154,7 +154,7 @@ Read everything the pipeline has produced:
 | Solution decision | What paradigm was chosen and why — check if implementation matches |
 | Domain profile | Domain conventions — check if respected |
 
-**Build the verification contract:** for each AC, write what the code must do to satisfy it. This becomes the audit checklist.
+**Build the verification contract:** for each AC, write what the code must do to satisfy it. This becomes the audit checklist. When the plan includes a Done means checklist, verify every acceptance criterion maps to a check that proves it, that hidden-behaviour edge cases (bad input, failure paths) are listed, and that done means every check passes.
 
 ### Phase 0.5: Scope Drift Check
 
