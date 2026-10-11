@@ -1,0 +1,177 @@
+{
+  "task": "bugfix-rootcause",
+  "version": 1,
+  "steps": [
+    {
+      "id": "route",
+      "kind": "skill",
+      "name": "route-workflow",
+      "must": "MUST",
+      "evidence": {
+        "skill": "route-workflow"
+      },
+      "cite": "skills/route-workflow/references/lane-model.md:114"
+    },
+    {
+      "id": "init",
+      "kind": "state",
+      "name": "svc-init",
+      "must": "MUST",
+      "evidence": {
+        "file": ".svc/**"
+      },
+      "cite": "scripts/init-project-state.mjs:5"
+    },
+    {
+      "id": "diagnose-bug",
+      "kind": "skill",
+      "name": "diagnose-bug",
+      "must": "MUST",
+      "evidence": {
+        "skill": "diagnose-bug"
+      },
+      "cite": "scripts/compile-delivery-graph.mjs:56"
+    },
+    {
+      "id": "plan-changeset",
+      "kind": "skill",
+      "name": "plan-changeset",
+      "must": "MUST",
+      "evidence": {
+        "skill": "plan-changeset"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "review-plan",
+      "kind": "skill",
+      "name": "review-plan",
+      "must": "MUST",
+      "evidence": {
+        "skill": "review-plan"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "execute-changeset",
+      "kind": "skill",
+      "name": "execute-changeset",
+      "must": "MUST",
+      "evidence": {
+        "skill": "execute-changeset"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "test-journeys",
+      "kind": "skill",
+      "name": "test-journeys",
+      "must": "MUST",
+      "evidence": {
+        "skill": "test-journeys"
+      },
+      "cite": "scripts/compile-delivery-graph.mjs:256"
+    },
+    {
+      "id": "review-gate",
+      "kind": "skill",
+      "name": "review-gate",
+      "must": "MUST",
+      "evidence": {
+        "skill": "review-gate"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "review-exec",
+      "kind": "skill",
+      "name": "review-exec",
+      "must": "MUST",
+      "evidence": {
+        "skill": "review-exec"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "audit-implementation",
+      "kind": "skill",
+      "name": "audit-implementation",
+      "must": "MUST",
+      "evidence": {
+        "skill": "audit-implementation"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "land-changeset",
+      "kind": "skill",
+      "name": "land-changeset",
+      "must": "MUST",
+      "evidence": {
+        "skill": "land-changeset"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "verify-promotion",
+      "kind": "skill",
+      "name": "verify-promotion",
+      "must": "MUST",
+      "evidence": {
+        "skill": "verify-promotion"
+      },
+      "cite": "scripts/lib/mandatory-delivery-chain.mjs:2"
+    },
+    {
+      "id": "svc-next",
+      "kind": "check",
+      "name": "svc-next",
+      "must": "MUST",
+      "evidence": {
+        "bash": "svc-next\\.mjs"
+      },
+      "cite": "docs/analysis/2026-10-11-organism-plan.md:243"
+    },
+    {
+      "id": "receipts",
+      "kind": "receipt",
+      "name": "receipts",
+      "must": "MUST",
+      "evidence": {
+        "any": [
+          {
+            "git_notes": {
+              "ref": "refs/notes/svc-receipts"
+            }
+          },
+          {
+            "file": ".svc/receipts/**"
+          }
+        ]
+      },
+      "cite": "references/chain-receipt-contract.md:13"
+    },
+    {
+      "id": "commit",
+      "kind": "check",
+      "name": "commit-beyond-seed",
+      "must": "MUST",
+      "evidence": {
+        "commits": {
+          "min": 2
+        }
+      },
+      "cite": "scripts/emit-receipt.mjs:360"
+    },
+    {
+      "id": "tests",
+      "kind": "check",
+      "name": "node-test",
+      "must": "MUST",
+      "evidence": {
+        "bash": "node --test"
+      },
+      "cite": "skills/route-workflow/references/lane-model.md:22"
+    }
+  ]
+}
