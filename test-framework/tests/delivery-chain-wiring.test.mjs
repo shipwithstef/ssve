@@ -398,6 +398,60 @@ test("executable code under docs/ is not documentation and cannot skip security"
   assert.deepEqual(skills(helper), TAIL);
 });
 
+test("prose-only classification keeps review-security for secrets, UI, and security flags", () => {
+  const base = {
+    wi: "WI-T",
+    lane: "bugfix",
+    delivery_profile: "production",
+    user_intent: "touch a protected file checked in under docs",
+  };
+  const sensitive = ["docs/secrets/.env", "docs/auth/login.html", "docs/payments/checkout.vue"];
+  for (const file of sensitive) {
+    assert.throws(
+      () => compileDeliveryGraph({ ...base, change_type: "docs", planned_files: [file], risk_flags: ["docs-only", "auth-sensitive"] }),
+      /contradictory documentation classification/,
+      file,
+    );
+    assert.throws(
+      () => compileDeliveryGraph({ ...base, change_type: "docs", planned_files: [file], risk_flags: ["docs-only"] }),
+      /contradictory documentation classification/,
+      file,
+    );
+    const live = compileDeliveryGraph({ ...base, change_type: "bugfix", planned_files: [file], risk_flags: [] });
+    assert.equal(live.delivery_graph.activation.security, true, file);
+    assert.equal(appearances(live, "review-security"), 1, file);
+    assert.equal(beforeLand(live, "review-security"), true, file);
+  }
+  const flagged = compileDeliveryGraph({
+    ...base,
+    change_type: "bugfix",
+    user_intent: "flag a plain file",
+    planned_files: ["src/game.js"],
+    risk_flags: ["security-sensitive"],
+  });
+  assert.equal(flagged.delivery_graph.activation.security, true);
+  assert.equal(appearances(flagged, "review-security"), 1);
+  const prose = compileDeliveryGraph({
+    ...base,
+    change_type: "docs",
+    user_intent: "prose only",
+    planned_files: ["docs/payments/guide.md"],
+    risk_flags: ["docs-only", "auth-sensitive"],
+  });
+  assert.equal(prose.delivery_graph.activation.security, false);
+  assert.equal(appearances(prose, "review-security"), 0);
+  assert.throws(
+    () => compileDeliveryGraph({
+      ...base,
+      change_type: "docs",
+      user_intent: "script under docs",
+      planned_files: ["docs/notes/payload.js"],
+      risk_flags: ["docs-only", "auth-sensitive"],
+    }),
+    /contradictory documentation classification/,
+  );
+});
+
 test("feature to docs archives completed research whose requester was deactivated", () => {
   const question = {
     id: "design-q",
@@ -455,6 +509,125 @@ test("feature to docs archives completed research whose requester was deactivate
   assert.ok(docs.delivery_graph.archived_compiler_tasks.some((row) => row.task.metadata.skill === "design-tech"));
   assert.equal(docs.delivery_graph.research.questions.some((item) => item.id === question.id), false);
   assert.deepEqual(validateResearchGraph(docs), []);
+});
+
+test("research is archived or remapped when its requester disappears, at any status", () => {
+  const question = {
+    id: "design-q",
+    claim: "Does the booking API need a new client?",
+    evidence: [],
+    consequential: true,
+    external_resolvable: true,
+    confidence: 6,
+    explicit_request: false,
+    freshness_required: false,
+    requesting_skill: "design-tech",
+  };
+  for (const status of ["pending", "in_progress"]) {
+    const feature = compileDeliveryGraph({
+      wi: "WI-T",
+      user_intent: "add a booking screen",
+      lane: "brownfield-feature",
+      delivery_profile: "production",
+      change_type: "feature",
+      planned_files: ["src/app/page.tsx"],
+      risk_flags: ["user-facing"],
+      questions: [question],
+    });
+    skillTask(feature, "research").status = status;
+    const docs = compileDeliveryGraph({
+      wi: "WI-T",
+      user_intent: "fix typo in README",
+      lane: "brownfield-feature",
+      delivery_profile: "production",
+      change_type: "docs",
+      planned_files: ["README.md"],
+      risk_flags: ["docs-only"],
+      existing_graph: feature,
+    });
+    assert.equal(docs.tasks.some((task) => task.metadata.skill === "research"), false, status);
+    const archivedResearch = docs.delivery_graph.archived_compiler_tasks.find((row) => row.task.metadata.skill === "research");
+    assert.equal(archivedResearch.disposition, "research requester deactivated; archived, not executable", status);
+    assert.equal(archivedResearch.question.id, question.id, status);
+    assert.equal(docs.delivery_graph.research.questions.some((item) => item.id === question.id), false, status);
+    assert.deepEqual(validateResearchGraph(docs), [], status);
+  }
+
+  const uiQuestion = { ...question, id: "ui-q", requesting_skill: "design-ui", claim: "Which control owns the booking field?" };
+  const ui = compileDeliveryGraph({
+    wi: "WI-T",
+    user_intent: "add a booking screen",
+    lane: "brownfield-feature",
+    delivery_profile: "production",
+    change_type: "feature",
+    planned_files: ["src/app/page.tsx"],
+    risk_flags: ["user-facing"],
+    questions: [uiQuestion],
+  });
+  const uiResearch = skillTask(ui, "research");
+  const designUi = skillTask(ui, "design-ui");
+  assert.equal(uiResearch.metadata.requesting_task_id, designUi.id);
+  uiResearch.status = "pending";
+  const backend = compileDeliveryGraph({
+    wi: "WI-T",
+    user_intent: "move booking to the API",
+    lane: "brownfield-feature",
+    delivery_profile: "production",
+    change_type: "feature",
+    planned_files: ["src/api/orders.ts"],
+    risk_flags: ["user-facing"],
+    questions: [uiQuestion],
+    existing_graph: ui,
+  });
+  assert.equal(backend.tasks.some((task) => task.metadata.skill === "design-ui"), false);
+  const rebound = skillTask(backend, "research");
+  const requester = backend.tasks.find((task) => task.id === rebound.metadata.requesting_task_id);
+  assert.ok(requester, "research has a live requester");
+  assert.equal(requester.metadata.skill, "design-tech");
+  assert.equal(backend.delivery_graph.research.questions.some((item) => item.id === uiQuestion.id), true);
+  assert.deepEqual(validateResearchGraph(backend), []);
+});
+
+test("repeated feature and docs recompilation reserves archived task ids", () => {
+  const featureInput = {
+    wi: "WI-T",
+    user_intent: "add a booking screen",
+    lane: "brownfield-feature",
+    delivery_profile: "production",
+    change_type: "feature",
+    planned_files: ["src/app/page.tsx"],
+    risk_flags: ["user-facing", "browser-visible"],
+  };
+  const docsInput = {
+    wi: "WI-T",
+    user_intent: "fix typo in README",
+    lane: "brownfield-feature",
+    delivery_profile: "production",
+    change_type: "docs",
+    planned_files: ["README.md"],
+    risk_flags: ["docs-only"],
+  };
+  let graph = compileDeliveryGraph(featureInput);
+  graph = compileDeliveryGraph({ ...docsInput, existing_graph: graph });
+  graph = compileDeliveryGraph({ ...featureInput, existing_graph: graph });
+  const first = skillTask(graph, "write-journeys");
+  first.status = "completed";
+  first.metadata.evidence_marker = "later-completed";
+  graph = compileDeliveryGraph({ ...docsInput, existing_graph: graph });
+  graph = compileDeliveryGraph({ ...featureInput, existing_graph: graph });
+  const archivedIds = new Set(graph.delivery_graph.archived_compiler_tasks.map((row) => row.task.id));
+  for (const task of graph.tasks) {
+    assert.equal(archivedIds.has(task.id), false, task.metadata.skill);
+  }
+  const second = skillTask(graph, "write-journeys");
+  second.status = "completed";
+  second.metadata.evidence_marker = "second-later";
+  const docs = compileDeliveryGraph({ ...docsInput, existing_graph: graph });
+  const markers = docs.delivery_graph.archived_compiler_tasks
+    .filter((row) => row.task.metadata.skill === "write-journeys")
+    .map((row) => row.task.metadata.evidence_marker);
+  assert.ok(markers.includes("later-completed"));
+  assert.ok(markers.includes("second-later"));
 });
 
 test("checkLaneLayers reads delivery lane data, so a missing refactor design-tech is visible", () => {

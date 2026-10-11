@@ -64,16 +64,20 @@ export function irreversibleZones(plannedFiles = [], riskFlags = []) {
   ]);
 }
 
-// A docs/ directory holds prose, but a source or config file there is still code.
-// Classifying docs/payments/webhook.js as documentation would hide it from the
-// security condition and from the contradictory-docs check.
+// Documentation is prose only. A docs/ prefix does not make a file prose.
+// Extensionless secrets (.env) and executable or UI files (.html, .vue, .js)
+// stay on the code path, including when they live under docs/, so a security
+// path or flag cannot be hidden by a documentation claim.
 function isExecutablePath(file) {
   return EXECUTABLE_PATHS.some((pattern) => pattern.test(String(file)));
 }
 
 function isDocPath(file) {
-  if (isExecutablePath(file)) return false;
-  return DOC_PATHS.some((pattern) => pattern.test(String(file)));
+  const value = String(file);
+  // Prose wins over a secret-shaped basename (id_rsa.md is still a document).
+  if (/\.(md|mdx|txt|rst|adoc)$/i.test(value)) return true;
+  if (isExecutablePath(value)) return false;
+  return DOC_PATHS.some((pattern) => pattern.test(value));
 }
 
 function isDocsOnly(changeType, riskFlags) {
@@ -631,7 +635,13 @@ function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrat
     queues.get(key).push(task);
   }
   const migratedIds = (existingGraph?.delivery_graph?.migrated_prerequisites || []).map((row) => row?.task?.id).filter(Number.isInteger);
-  let nextId = Math.max(...reserved, ...migratedIds) + 1;
+  // Archived rows are not live tasks. Their ids stay reserved so a later
+  // feature↔docs recompile cannot reuse one and then drop the newer evidence
+  // in the archived-id dedupe.
+  const archivedIds = (existingGraph?.delivery_graph?.archived_compiler_tasks || [])
+    .map((row) => row?.task?.id)
+    .filter((id) => Number.isInteger(id) && id >= 1);
+  let nextId = Math.max(0, ...reserved, ...migratedIds, ...archivedIds) + 1;
   const remap = new Map(), matched = new Set(), pairs = [];
   for (const task of tasks) {
     const prev = queues.get(taskMatchKey(task))?.shift();
@@ -672,12 +682,16 @@ function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrat
   reopenBehindMovedPrerequisites(out, pairs, position, notes);
   const deactivated = new Set();
   const retained = [];
+  const unmatchedResearch = [];
   for (const prev of existing) {
     if (matched.has(prev.id)) continue;
-    // Retain completed evidence and unrelated work. Unstarted research that is
-    // no longer needed is archived separately, never marked completed.
+    // Retain completed evidence and unrelated work. Research whose requester
+    // disappeared is archived below for every status, including pending.
     const skill = prev.metadata?.skill || prev.skill;
-    if (skill === "research" && prev.status !== "completed") continue;
+    if (skill === "research") {
+      unmatchedResearch.push(prev);
+      continue;
+    }
     // E2E and journey tasks from an older graph are now process steps of
     // execute-changeset. Their runnable tasks go; what they recorded is kept as history
     // only, because a task-level status is not a digest-bound process receipt.
@@ -695,17 +709,20 @@ function applyExistingGraph(tasks, existingGraph, notes = { reopened: [], migrat
     }
     retained.push(prev);
   }
-  for (const prev of retained) {
-    const skill = prev.metadata?.skill || prev.skill;
+  for (const prev of retained) out.push(structuredClone(prev));
+  // Archive or keep research only after deactivation is known. A pending
+  // feature→docs task used to be dropped while its question stayed live, which
+  // left an invalid graph. Status and whether this compile still emits the
+  // research task do not matter: a missing requester archives the task.
+  const liveIds = new Set(out.map((task) => task.id));
+  for (const prev of unmatchedResearch) {
     const requesterId = prev.metadata?.requesting_task_id;
-    // A completed research task whose requester was just deactivated has nobody
-    // to block. Archiving it avoids "research has no valid requesting task".
-    if (skill === "research" && requesterId != null && deactivated.has(requesterId)) {
+    if (requesterId != null && !liveIds.has(requesterId)) {
       notes.archived ||= [];
       notes.archived.push({ task: structuredClone(prev), disposition: "research requester deactivated; archived, not executable" });
       continue;
     }
-    out.push(structuredClone(prev));
+    if (prev.status === "completed") out.push(structuredClone(prev));
   }
   const ids = new Set(out.map(task => task.id));
   const retired = new Set(existing.filter(task => !ids.has(task.id)).map(task => task.id));
@@ -838,15 +855,26 @@ function attachResearchRequestors(tasks, questions, remap = {}) {
     // A stage folded into execute-changeset (e2e, journey proof) no longer has its own task;
     // research it asked for is requested by execute-changeset. The remapping is stored in
     // the graph, so a later resume resolves the same old id the same way.
+    // A requester that left the graph (design-ui dropped on a backend recompile, any
+    // status, matched or not) remaps onto a live stage instead of failing the compile.
     const remappedSkill = requestedId != null ? remap[String(requestedId)] : undefined;
-    let requestor = remappedSkill ? tasks.find(item => item.metadata?.skill === remappedSkill)
+    const named = (skill) => tasks.find(item => item !== task && item.metadata?.skill === skill);
+    let requestor = remappedSkill ? named(remappedSkill)
       : requestedId != null ? tasks.find(item => item.id === requestedId)
-      : question?.requesting_skill ? tasks.find(item => item.metadata?.skill === question.requesting_skill) : defaultRequestor;
+      : question?.requesting_skill ? named(question.requesting_skill) : defaultRequestor;
+    if (requestor === task) requestor = undefined;
+    if (!requestor && question?.requesting_skill) requestor = named(question.requesting_skill);
     if (!requestor && EXECUTION_PREREQUISITES.includes(question?.requesting_skill)) {
-      requestor = tasks.find(item => item.metadata?.skill === "execute-changeset");
+      requestor = named("execute-changeset");
     }
+    if (!requestor) requestor = defaultRequestor && defaultRequestor !== task ? defaultRequestor : undefined;
     if (!requestor || requestor === task) throw new Error("research has no valid requesting task");
+    // Rebind the task only. The question record stays byte-stable so a completed
+    // research snapshot still matches; the live requesting_task_id is the binding.
+    // Research runs before its requester. A remap onto a stage that used to precede
+    // this task must drop that back-edge or the two tasks block each other.
     task.metadata.requesting_task_id = requestor.id;
+    task.blocked_by = (task.blocked_by || []).filter((id) => id !== requestor.id);
     if (task.status === "completed" && !researchInputMatches(question, task) && researchDecision(question) === EXTERNAL_RESEARCH_REQUIRED) {
       const archived = structuredClone(task);
       delete archived.metadata.research_history;
