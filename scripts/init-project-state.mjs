@@ -271,7 +271,8 @@ try {
   if (boot.ok && boot.created_root_commit) console.log(`BOOTSTRAP: root commit ${boot.head.slice(0, 12)} on ${boot.branch}${boot.identity_assumed ? " (repo-local identity assumed)" : ""}`);
   else if (!boot.ok) console.log(`SKIP: repository bootstrap (${boot.reason})`);
 } catch (error) {
-  console.log(`WARN: repository bootstrap failed (${error.message}); run node scripts/svc-bootstrap-repo.mjs`);
+  console.error(`ERROR: repository bootstrap failed: ${error.message}\nFix the cause (commit hook, signing, identity) and re-run node scripts/svc-bootstrap-repo.mjs.`);
+  process.exitCode = 1;
 }
 
 console.log(`\nProject state initialized at: ${targetSvc}`);

@@ -9,10 +9,11 @@
  *   node scripts/svc-bootstrap-repo.mjs [--repo <path>] [--json]
  *
  * What it does, in order:
- *   1. Unborn HEAD  -> point it at refs/heads/main, set a repo-local identity only if
+ *   1. Entirely unborn repository (no commit, no refs) -> point HEAD at refs/heads/main, set a repo-local identity only if
  *      none is configured, `git add -A` and commit "Initialize repository" (run it after
  *      init-project-state has written .gitignore, so ignored files stay untracked).
- *      If HEAD already resolves nothing is committed.
+ *      Owner commit hooks and signing apply; a refusal is reported (exit 2), not bypassed. If HEAD
+ *      already resolves, or the repository already has refs (an orphan branch), nothing is committed.
  *   2. Chain policy -> when nothing else decides the mode (no env override, no shared
  *      file, no owner-home file), write {"schema_version":1,"mode":"refuse"} to
  *      $(git-common-dir)/svc-chain-policy.json. Never writes .svc/chain-policy.json.
@@ -35,8 +36,11 @@ function run(repo, args, options = {}) {
       encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: options.env || process.env,
     }).trim();
   } catch (error) {
-    if (options.throws) throw error;
-    return null;
+    if (!options.throws) return null;
+    const detail = `${error.stderr || ""}${error.stdout || ""}`.trim() || error.message;
+    const wrapped = new Error(`git ${args[0]} failed: ${detail}`);
+    wrapped.cause = error;
+    throw wrapped;
   }
 }
 
@@ -73,16 +77,24 @@ export function bootstrapRepo({ repo = process.cwd(), env = process.env } = {}) 
     baseline_sha: null, identity_assumed: false,
   };
 
-  // 1. Root commit on an unborn repository.
+  // 1. Root commit, but only for an ENTIRELY unborn repository: no commit on HEAD and no branch, tag,
+  //    remote ref or stash. An orphan branch inside an established repository also has an unresolved HEAD; its
+  //    contents are the owner's to commit, so HEAD is left alone there. The commit honors the owner's
+  //    hooks and signing configuration; if they refuse it, the failure is reported, never bypassed.
   if (!resolveCommit(root, "HEAD")) {
-    run(root, ["symbolic-ref", "HEAD", "refs/heads/main"], { throws: true });
-    const haveName = run(root, ["config", "--get", "user.name"]);
-    const haveEmail = run(root, ["config", "--get", "user.email"]);
-    if (!haveName) { run(root, ["config", "--local", "user.name", "project"], { throws: true }); result.identity_assumed = true; }
-    if (!haveEmail) { run(root, ["config", "--local", "user.email", "project@localhost"], { throws: true }); result.identity_assumed = true; }
-    run(root, ["add", "-A"], { throws: true });
-    run(root, ["-c", "commit.gpgsign=false", "commit", "--no-verify", "--allow-empty", "-q", "-m", "Initialize repository"], { throws: true });
-    result.created_root_commit = true;
+    const anyRef = run(root, ["for-each-ref", "--count=1", "--format=%(refname)", "refs/heads", "refs/tags", "refs/remotes", "refs/stash"]);
+    if (anyRef) {
+      result.unborn_head_in_established_repository = true;
+    } else {
+      run(root, ["symbolic-ref", "HEAD", "refs/heads/main"], { throws: true });
+      const haveName = run(root, ["config", "--get", "user.name"]);
+      const haveEmail = run(root, ["config", "--get", "user.email"]);
+      if (!haveName) { run(root, ["config", "--local", "user.name", "project"], { throws: true }); result.identity_assumed = true; }
+      if (!haveEmail) { run(root, ["config", "--local", "user.email", "project@localhost"], { throws: true }); result.identity_assumed = true; }
+      run(root, ["add", "-A"], { throws: true });
+      run(root, ["commit", "--allow-empty", "-q", "-m", "Initialize repository"], { throws: true });
+      result.created_root_commit = true;
+    }
   }
   result.head = resolveCommit(root, "HEAD");
   result.branch = run(root, ["symbolic-ref", "--quiet", "--short", "HEAD"]) || null;

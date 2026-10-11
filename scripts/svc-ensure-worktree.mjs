@@ -151,6 +151,17 @@ function resolveBase(repoRoot, from) {
   return sha;
 }
 
+// Bootstrap is best effort on an established repository, but when it fails and no commit exists the
+// real cause (a commit hook, signing, identity) must be what the caller reads, not a bare NO_COMMITS.
+function bootstrapOrReport(repoRoot, env) {
+  try { bootstrapRepo({ repo: repoRoot, env }); return; }
+  catch (error) {
+    let hasCommit = true;
+    try { git(["rev-parse", "--verify", "--quiet", "--end-of-options", "HEAD^{commit}"], repoRoot, { stderr: false }); } catch { hasCommit = false; }
+    if (!hasCommit) throw new Error(`NO_COMMITS: svc-bootstrap-repo could not create the root commit: ${error.message}`);
+  }
+}
+
 function worktreeRows(repoRoot) {
   const rows = [];
   let current = null;
@@ -730,7 +741,7 @@ export function ensureWorktree(options = {}, env = process.env) {
 function transaction({ repo, wi, branch, from, owner, host, env }) {
   // A fresh `git init` repository has no commit, no chain policy and no origin/main; give it
   // those once, before any base is resolved. Idempotent and a no-op on an established repo.
-  try { bootstrapRepo({ repo: repo.root, env }); } catch { /* resolveBase reports NO_COMMITS if it mattered */ }
+  bootstrapOrReport(repo.root, env);
   resolveApprovedRoots(repo.root, env);
   const worktreesRoot = resolveWorktreesRoot(repo.root, env);
   assertIgnored(repo.root, worktreesRoot);
@@ -1187,7 +1198,7 @@ async function main() {
   if (!authorityHost) throw new Error("trusted host identity is missing or unsupported");
   if (args.handoff) {
     const invocationRepo = repository(process.cwd()).root;
-    try { bootstrapRepo({ repo: invocationRepo }); } catch { /* resolveBase reports NO_COMMITS if it mattered */ }
+    bootstrapOrReport(invocationRepo, process.env);
     const requestedBase = resolveBase(invocationRepo, args.from || "origin/main");
     const handoff = consumeBootstrapHandoff(args.handoff, { host: authorityHost, repo_root: invocationRepo, wi: args.wi, branch: args.branch, base: requestedBase }, { env: process.env });
     // The session id crosses the hook/child boundary only through the private

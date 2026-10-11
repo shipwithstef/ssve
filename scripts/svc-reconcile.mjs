@@ -179,7 +179,7 @@ function reconcileRef(main) {
   // Without an origin remote, origin/<main> is only a local stand-in written by svc-bootstrap-repo and
   // can lag the real branch; the local branch is then the authority.
   const hasOrigin = run("git", ["remote", "get-url", "origin"]).ok;
-  const order = hasOrigin ? [`origin/${main}`, main, "HEAD"] : [main, `origin/${main}`, "HEAD"];
+  const order = hasOrigin ? [`origin/${main}`, main, "HEAD"] : [main, "master", "HEAD", `origin/${main}`];
   for (const ref of order) {
     const probe = run("git", ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`]);
     if (probe.ok) return { ref };

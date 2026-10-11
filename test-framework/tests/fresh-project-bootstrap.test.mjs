@@ -207,3 +207,77 @@ test("an empty-but-unbootstrappable base still refuses to work in place", () => 
   assert.equal(r.status, 2);
   assert.equal(JSON.parse(out(r)).reason, "not_a_git_repository");
 });
+
+// ---- Round 2 regressions (Codex review of b1187a5f) ----
+
+test("R1. --bind-staging refuses a hand-written schema-v1 review receipt (same safeguards as direct emission)", () => {
+  const dir = freshProject();
+  assert.equal(node(dir, "init-project-state.mjs").status, 0);
+  const head = sha(dir, "HEAD");
+  const tree = out(git(dir, "rev-parse", "HEAD^{tree}"));
+  const staging = path.join(dir, ".svc", "receipts", "staging", tree);
+  fs.mkdirSync(staging, { recursive: true });
+  fs.writeFileSync(path.join(staging, "review-exec--WI-3.json"), JSON.stringify({
+    receipt_type: "review-exec", schema_version: 1, wi: "WI-3", diff_hash: "x", self_review: {}, adversarial_review: {}, verdict: "pass", timestamp: new Date().toISOString(),
+  }));
+  // The direct path refuses the same body.
+  const direct = spawnSync(process.execPath, [script("emit-receipt.mjs"), "--type", "review-exec", "--wi", "WI-3", "--sha", head], { cwd: dir, env: baseEnv(), input: fs.readFileSync(path.join(staging, "review-exec--WI-3.json"), "utf8"), encoding: "utf8" });
+  assert.equal(direct.status, 1);
+  const bound = node(dir, "emit-receipt.mjs", "--bind-staging", "--sha", head);
+  assert.equal(bound.status, 1, bound.stdout);
+  const report = JSON.parse(bound.stdout);
+  assert.equal(report.bound.length, 0);
+  assert.match(report.refused[0].reason, /candidate_digest|reviewer evidence/);
+  assert.equal(git(dir, "notes", "--ref=svc-receipts", "show", head).status === 0 && /review-exec/.test(out(git(dir, "notes", "--ref=svc-receipts", "show", head))), false, "no review-exec note was written");
+});
+
+test("R2. an existing remote-less master repository keeps being reconciled after bootstrap", () => {
+  const dir = tmp("svc-fresh-master-");
+  git(dir, "init", "-q", "-b", "master");
+  git(dir, "config", "user.name", "Owner"); git(dir, "config", "user.email", "o@example.invalid");
+  git(dir, "commit", "-q", "--allow-empty", "-m", "one");
+  assert.equal(node(dir, "init-project-state.mjs").status, 0);
+  assert.equal(out(git(dir, "symbolic-ref", "--short", "HEAD")), "master", "an existing default branch is not renamed");
+  assert.equal(node(dir, "svc-reconcile.mjs").status, 0);
+  git(dir, "commit", "-q", "--allow-empty", "-m", "two, no receipt");
+  const r = node(dir, "svc-reconcile.mjs");
+  assert.equal(r.status, 1, `the new master commit must be seen: ${r.stderr}`);
+  assert.match(r.stderr, /1 unaccounted commits/);
+});
+
+test("R3. an orphan branch in an established repository is not committed onto main", () => {
+  const dir = tmp("svc-fresh-orphan-");
+  git(dir, "init", "-q", "-b", "main");
+  git(dir, "config", "user.name", "Owner"); git(dir, "config", "user.email", "o@example.invalid");
+  git(dir, "commit", "-q", "--allow-empty", "-m", "base");
+  const mainTip = sha(dir, "main");
+  assert.equal(git(dir, "checkout", "-q", "--orphan", "scratch").status, 0);
+  fs.writeFileSync(path.join(dir, "draft.txt"), "private draft\n");
+  const r = JSON.parse(out(node(dir, "svc-bootstrap-repo.mjs", "--json")));
+  assert.equal(r.created_root_commit, false);
+  assert.equal(r.unborn_head_in_established_repository, true);
+  assert.equal(sha(dir, "main"), mainTip, "main did not move");
+  assert.equal(out(git(dir, "symbolic-ref", "--short", "HEAD")), "scratch", "HEAD still on the orphan branch");
+  assert.equal(git(dir, "cat-file", "-e", "main:draft.txt").status === 0, false);
+});
+
+test("R4. bootstrap honors owner commit hooks and reports a refusal instead of bypassing it", () => {
+  const dir = freshProject();
+  const marker = path.join(dir, ".git", "hook-ran");
+  const hook = path.join(dir, ".git", "hooks", "pre-commit");
+  fs.mkdirSync(path.dirname(hook), { recursive: true });
+  fs.writeFileSync(hook, `#!/bin/sh\ntouch "${marker}"\necho "owner hook says no" >&2\nexit 1\n`, { mode: 0o755 });
+  const r = node(dir, "svc-bootstrap-repo.mjs", "--json");
+  assert.equal(r.status, 2);
+  assert.ok(fs.existsSync(marker), "the owner's pre-commit hook ran");
+  assert.match(r.stderr, /owner hook says no/);
+  assert.equal(sha(dir, "HEAD"), null, "no commit was forced through");
+  const init = node(dir, "init-project-state.mjs");
+  assert.equal(init.status, 1);
+  assert.match(init.stderr, /bootstrap failed/);
+  const w = node(dir, "svc-ensure-worktree.mjs", "--wi", "WI-4", "--branch", "feature-wi-4");
+  assert.notEqual(w.status, 0);
+  assert.match(w.stderr, /owner hook says no/);
+  fs.writeFileSync(hook, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+  assert.equal(JSON.parse(out(node(dir, "svc-bootstrap-repo.mjs", "--json"))).created_root_commit, true, "a passing hook lets bootstrap commit");
+});
