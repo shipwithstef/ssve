@@ -264,6 +264,7 @@ test("seven sources: haiku alias disagreement is reported and nothing is written
   assert.ok(joined.disagreements.some((d) => d.kind === "baseline" && d.host === "codex" && d.status === "unverified"));
   assert.ok(joined.disagreements.some((d) => d.kind === "model" && d.id === "grok-4.7"));
   assert.equal(joined.disagreements.some((d) => d.kind === "model" && d.id === "mimo-code"), false);
+  assert.equal(joined.disagreements.some((d) => d.kind === "model" && d.id === "600"), false);
   assert.ok(joined.disagreements.some((d) => d.kind === "dispatch" && d.host === "kimi"));
   assert.equal(joined.disagreements.some((d) => d.kind === "dispatch" && (d.host === "gemini" || d.host === "mimo-code")), false);
   assert.ok(joined.facts.prior_aliases.includes("haiku"));
@@ -427,6 +428,36 @@ test("model ids come only from model fields and model arguments", () => {
     fs.writeFileSync(path.join(dir, "scripts", "orch", "dispatch.mjs"), `${dispatch}\n`);
     const ids = compareSources(dir).disagreements.filter((d) => d.kind === "model").map((d) => d.id).sort();
     assert.deepEqual(ids, ["claude-field-9", "gpt-arg-9", "gpt-short-9", "grok-4.7"]);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("mkfifo mode argument is not a model id", () => {
+  const mkfifo = "const made = spawnSync('mkfifo', ['-m', '600', task.stdin_fifo]);";
+  const harness = "return ['codex', '-m', 'gpt-short-9', '--host', 'mimo-code'];";
+  const spawned = "spawnSync('codex', ['-m', 'gpt-spawned-9']);";
+  assert.deepEqual(referencedModelIds(mkfifo), []);
+  assert.deepEqual(referencedModelIds(`${harness}\n${spawned}\n${mkfifo}`).sort(), ["gpt-short-9", "gpt-spawned-9"]);
+
+  const repo = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../..");
+  const dispatch = fs.readFileSync(path.join(repo, "scripts/orch/dispatch.mjs"), "utf8");
+  assert.match(dispatch, /mkfifo',\s*\['-m',\s*'600'/);
+  assert.equal(referencedModelIds(dispatch).includes("600"), false);
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "model-intel-mkfifo-"));
+  try {
+    fs.mkdirSync(path.join(dir, "references", "model-intel"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "references", "model-intel", "models.json"), JSON.stringify({
+      models: { haiku: { id: "claude-haiku-5-5", price_out: 1 } },
+    }));
+    fs.writeFileSync(path.join(dir, "references", "model-registry.json"), JSON.stringify({
+      harnesses: { claude: { models: { haiku: { id: "claude-haiku-5-5" } } } },
+    }));
+    fs.mkdirSync(path.join(dir, "scripts", "orch"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "scripts", "orch", "dispatch.mjs"), `${harness}\n${mkfifo}\n`);
+    const ids = compareSources(dir).disagreements.filter((d) => d.kind === "model").map((d) => d.id);
+    assert.deepEqual(ids, ["gpt-short-9"]);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

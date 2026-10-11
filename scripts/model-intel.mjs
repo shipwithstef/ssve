@@ -46,8 +46,13 @@ const SUBCOMMAND = /^[a-z][a-z0-9_-]{0,40}$/;
 const CLI_EQ = /cli === ['"]([a-z0-9_-]+)['"]/g;
 const MODEL_FIELD = /["'](model|model_id|modelId|default_model|requested_model|resolved_model)["']\s*:\s*["']([^"']+)["']/g;
 const MODEL_FLAG = /--model(?:\s+|=)([A-Za-z0-9][A-Za-z0-9._:-]*)/g;
-const MODEL_ARGV = /["'](?:--model|-m)["']\s*,\s*["']([^"']+)["'](?!\s*:)/g;
+const MODEL_ARGV = /["']--model["']\s*,\s*["']([^"']+)["'](?!\s*:)/g;
+const MODEL_SHORT = /["']-m["']\s*,\s*["']([^"']+)["'](?!\s*:)/g;
 const MODEL_BOUND = /\bmodel\s*===\s*["']([^"']+)["']/g;
+/** argv0 of a harness CLI. Short `-m` is a model flag only in that argv, not mkfifo/git mode. */
+const HARNESS_ARGV0 = new Set([
+  "agy", "claude", "codex", "cursor", "cursor-agent", "gemini", "grok", "kimi", "mimocode", "opencode",
+]);
 
 export const SEVEN_SOURCES = [
   ["model-registry", "references/model-registry.json"],
@@ -140,12 +145,31 @@ function collectModelIds(ids, re, text, group) {
   for (const m of text.matchAll(re)) addModelId(ids, m[group]);
 }
 
+/**
+ * Short `-m` is a model argument only inside harness argv:
+ * the array starts with a harness binary, or it is the argv of a harness command
+ * (`spawnSync('codex', ['-m', 'gpt'])`). mkfifo `['-m', '600']` is a mode, not a model.
+ */
+function collectHarnessShortModelIds(ids, text) {
+  for (const m of text.matchAll(/\[([^\[\]]*)\]/g)) {
+    const body = m[1];
+    MODEL_SHORT.lastIndex = 0;
+    const shorts = [...body.matchAll(MODEL_SHORT)];
+    if (shorts.length === 0) continue;
+    const head = /^\s*["']([^"']+)["']/.exec(body);
+    const invoked = /["']([A-Za-z0-9_.-]+)["']\s*,\s*$/.exec(text.slice(Math.max(0, m.index - 180), m.index));
+    if (!HARNESS_ARGV0.has(head?.[1]) && !HARNESS_ARGV0.has(invoked?.[1])) continue;
+    for (const s of shorts) addModelId(ids, s[1]);
+  }
+}
+
 export function referencedModelIds(text) {
   const ids = new Set();
   const src = String(text);
   collectModelIds(ids, MODEL_FIELD, src, 2);
   collectModelIds(ids, MODEL_FLAG, src, 1);
   collectModelIds(ids, MODEL_ARGV, src, 1);
+  collectHarnessShortModelIds(ids, src);
   collectModelIds(ids, MODEL_BOUND, src, 1);
   return [...ids];
 }
