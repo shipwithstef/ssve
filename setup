@@ -705,8 +705,19 @@ PY_REGISTRY
   # WI-361 (Claude host ONLY): the rule-injector hook delivers signal/lazy
   # rules on demand — install only auto_inject==always into the global dir,
   # and trim stale non-always leftovers (incl. historical twin pairs) with a
-  # timestamped backup. Other hosts have no injector yet: full install stays.
+  # timestamped backup. Other hosts have no injector: they get progressive
+  # disclosure instead (INDEX_MODE) — the always rules plus ONE generated
+  # index (svc-rules-index.md) naming every signal/lazy universal rule, its
+  # load-when trigger and the absolute path of its full body, which is linked
+  # under $SKILLS_TARGET/rules/universal/ (not auto-loaded, read on demand).
   TRIM_TO_ALWAYS=0
+  INDEX_MODE=0
+  RULES_INDEX_NAME="svc-rules-index.md"
+  INDEXED_DIR="$SKILLS_TARGET/rules/universal"
+  indexed_count=0
+  if [ "$HOST" != "claude" ]; then
+    INDEX_MODE=1
+  fi
   if [ "$HOST" = "claude" ]; then
     TRIM_TO_ALWAYS=1
     if [ -d "$RULES_DIR" ] && [ -n "$(ls -A "$RULES_DIR" 2>/dev/null)" ]; then
@@ -724,6 +735,21 @@ PY_REGISTRY
     [ -f "$src" ] || continue
     if [ "$TRIM_TO_ALWAYS" = "1" ] && [ "$rule_inject" != "always" ]; then
       continue   # signal/lazy rules arrive via svc-rule-injector on this host
+    fi
+    if [ "$INDEX_MODE" = "1" ] && [ "$rule_stack" = "universal" ] && [ "$rule_inject" != "always" ]; then
+      # Progressive disclosure: link the full body outside the auto-loaded
+      # location; svc-rules-index.md (generated below) points at it.
+      rel="${rule_path#rules/}"
+      slug="$(echo "$rel" | tr '/' '-')"
+      mkdir -p "$INDEXED_DIR"
+      dst="$INDEXED_DIR/svc-$slug"
+      if [ "$FULL_REBUILD" -eq 0 ] && [ -L "$dst" ] && [ "$(resolve_path "$dst")" = "$(resolve_path "$src")" ]; then
+        continue
+      fi
+      { [ -e "$dst" ] || [ -L "$dst" ]; } && rm -rf -- "$dst"
+      ln -sf "$src" "$dst"
+      indexed_count=$((indexed_count + 1))
+      continue
     fi
 
     if [ "$rule_stack" = "universal" ]; then
@@ -765,6 +791,138 @@ PY_REGISTRY
       steering_count=$((steering_count + 1))
     fi
   done <<< "$REGISTRY"
+
+  # Progressive disclosure (non-Claude hosts): generate the rules index into
+  # the auto-loaded location, @-import it when the target is a file, drop
+  # stale @-imports of signal/lazy bodies, and unlink stale svc-owned rule
+  # symlinks from the auto-loaded dir. Every write is change-only so an
+  # unchanged re-run stays a byte-stable no-op.
+  if [ "$INDEX_MODE" = "1" ]; then
+    index_dst="$RULES_DIR/$RULES_INDEX_NAME"
+    EXPECTED_ALWAYS="$EXPECTED_ALWAYS $RULES_INDEX_NAME"
+    index_tmp="$(mktemp)"
+    python3 - "$SCRIPT_DIR" "$INDEXED_DIR" > "$index_tmp" <<'PY_RULES_INDEX'
+import json, os, re, sys
+
+root, indexed_dir = sys.argv[1], sys.argv[2]
+with open(os.path.join(root, "skills-manifest.json"), "r", encoding="utf-8") as f:
+    m = json.load(f)
+
+def show(rx):
+    return re.sub(r"\\([^A-Za-z0-9])", r"\1", rx)
+
+def pats(xs, limit=2):
+    xs = [show(x) for x in (xs or [])]
+    more = "" if len(xs) <= limit else ", …"
+    return ", ".join("`%s`" % x for x in xs[:limit]) + more
+
+def title_of(path):
+    desc, h1, fm = "", "", 0
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for i, line in enumerate(f):
+                line = line.rstrip("\n")
+                if i == 0 and line == "---":
+                    fm = 1
+                    continue
+                if fm == 1:
+                    if line == "---":
+                        fm = 2
+                    elif line.startswith("description:"):
+                        desc = line.split(":", 1)[1].strip().strip("'\"")
+                    continue
+                if line.startswith("# "):
+                    h1 = re.sub(r"^(Rule|RULE):\s*", "", line[2:].strip())
+                    break
+                if i > 40:
+                    break
+    except OSError:
+        pass
+    return desc or h1
+
+rows = []
+for e in m.get("rulesRegistry", {}).get("entries", []):
+    if e.get("stack") != "universal" or e.get("auto_inject", "always") == "always":
+        continue
+    rp = e.get("path", "")
+    if not os.path.isfile(os.path.join(root, rp)):
+        continue
+    slug = rp[len("rules/"):].replace("/", "-") if rp.startswith("rules/") else rp.replace("/", "-")
+    name = slug[:-3] if slug.endswith(".md") else slug
+    sig = e.get("signals") or {}
+    when = []
+    if sig.get("paths"):
+        when.append("paths ~ " + pats(sig["paths"]))
+    if sig.get("bash"):
+        when.append("commands ~ " + pats(sig["bash"]))
+    kw = (sig.get("keywords") or []) + (sig.get("content") or [])
+    if kw:
+        when.append("content ~ " + pats(kw))
+    if not when:
+        when.append("the topic is relevant")
+    title = (title_of(os.path.join(root, rp)) or name).rstrip(".")
+    if len(title) > 64:
+        title = title[:61].rstrip() + "…"
+    rows.append("- %s%s When: %s → `%s`" % (
+        title, "" if title.endswith("…") else ".", "; ".join(when), os.path.join(indexed_dir, "svc-" + slug)))
+
+print("# SVC Rules Index (load on demand)")
+print()
+print("These svc rules are NOT pre-loaded. Before acting where a rule's trigger "
+      "matches (file paths touched, commands run, content written; regexes) or its "
+      "topic applies, read the full file at its path and follow it. If unsure, read it.")
+print()
+for r in rows:
+    print(r)
+PY_RULES_INDEX
+    if [ ! -f "$index_dst" ] || [ -L "$index_dst" ] || ! cmp -s "$index_tmp" "$index_dst"; then
+      rm -f -- "$index_dst"
+      cp "$index_tmp" "$index_dst"
+      chmod 644 "$index_dst"
+    fi
+    rm -f -- "$index_tmp"
+    if [ ! -d "$RULES_TARGET" ]; then
+      python3 - "$RULES_TARGET" "$RULES_DIR" "$EXPECTED_ALWAYS" <<'PY_RULES_IMPORTS'
+import os, sys
+target, rules_dir, expected = sys.argv[1], sys.argv[2], set(sys.argv[3].split())
+try:
+    with open(target, "r", encoding="utf-8") as f:
+        text = f.read()
+except FileNotFoundError:
+    text = ""
+prefix = "@" + rules_dir.rstrip("/") + "/"
+out = []
+for line in text.splitlines(keepends=True):
+    s = line.strip()
+    if s.startswith(prefix) and s.endswith(".md"):
+        base = s[len(prefix):]
+        if "/" not in base and base.startswith("svc-") and base not in expected:
+            continue
+    out.append(line)
+new = "".join(out)
+want = "@" + os.path.join(rules_dir, "svc-rules-index.md")
+if want not in [l.strip() for l in new.splitlines()]:
+    if new and not new.endswith("\n"):
+        new += "\n"
+    new += want + "\n"
+if new != text:
+    with open(target, "w", encoding="utf-8") as f:
+        f.write(new)
+PY_RULES_IMPORTS
+    fi
+    unlinked=0
+    for f in "$RULES_DIR"/*.md; do
+      [ -L "$f" ] || continue
+      base="$(basename "$f")"
+      case " $EXPECTED_ALWAYS " in *" $base "*) continue ;; esac
+      tgt="$(resolve_path "$f" 2>/dev/null || true)"
+      case "$base|$tgt" in
+        svc-*.md\|*|*\|"$SCRIPT_DIR/rules/"*) rm -f -- "$f"; unlinked=$((unlinked + 1)) ;;
+      esac
+    done
+    [ "$unlinked" -gt 0 ] && echo "  ✓ rules index: unlinked $unlinked pre-loaded signal/lazy rule symlink(s) from $RULES_DIR"
+    echo "Rules:  index → $index_dst ($indexed_count newly linked on-demand body/bodies → $INDEXED_DIR)"
+  fi
 
   # WI-361 (Claude only): trim stale files in the global rules dir — anything
   # not in the expected always-set (covers historical twin pairs + all
