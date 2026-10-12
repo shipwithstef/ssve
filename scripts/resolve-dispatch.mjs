@@ -485,8 +485,26 @@ function isAgyStation(station) {
   return station.tuple.host === 'agy' || /(?:^|-)agy(?:-|$)|gemini/i.test(station.id);
 }
 
+// Single-provider hosts attest a family by name (claude → anthropic). Cursor and
+// OpenCode map to `multi`: that label does not attest a provider, so an Anthropic
+// author would otherwise accept an Anthropic external station as independent.
+// The author family is the inline-self tuple's resolved family. A missing or
+// unattested (`multi`) self family fails closed.
 function inferOrchestratorFamily(orchestrator, stations) {
-  return HOST_FAMILY[orchestrator] || stations.find((station) => station.kind === 'inline-self')?.tuple?.family || null;
+  const mapped = HOST_FAMILY[orchestrator];
+  if (mapped && mapped !== 'multi') return mapped;
+  if (mapped === 'multi') {
+    const self = stations.find((station) => station.kind === 'inline-self');
+    const family = resolvedStationFamily(self?.tuple);
+    if (!family || family === 'multi') {
+      fail(
+        `orchestrator "${orchestrator}" family is unknown: a multi-model harness must declare an attested provider family on the inline-self tuple`,
+        'dispatch_policy_invalid',
+      );
+    }
+    return family;
+  }
+  return stations.find((station) => station.kind === 'inline-self')?.tuple?.family || null;
 }
 
 // Family an independent station actually resolves to. A named single-provider
