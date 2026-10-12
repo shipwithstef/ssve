@@ -438,7 +438,9 @@ export function bwrapArgv({ dir = null, jobHome, credentials = null, hideRoots =
 // home, not the orchestrator's session.
 export function builderEnvBase(env = process.env) {
   const out = {};
-  for (const [k, v] of Object.entries(env)) if (!/^SVC_/.test(k) && !/^XDG_/.test(k) && k !== "CLAUDE_CONFIG_DIR") out[k] = v;
+  // CODEX_HOME is the runner's (or a relay's per-job) path: it does not exist in the sandbox, and
+  // the real codex always runs on the runner, which sets its own.
+  for (const [k, v] of Object.entries(env)) if (!/^SVC_/.test(k) && !/^XDG_/.test(k) && k !== "CLAUDE_CONFIG_DIR" && k !== "CODEX_HOME") out[k] = v;
   return out;
 }
 
@@ -529,6 +531,15 @@ export function builderWrap(dir, { jobHome = null, framework = null, model = nul
 // so it is hidden WHOLE by an empty tmpfs and the only thing brought back is the release
 // directory of the codex binary being run. Every hidden path is checked for existence when the
 // call is built, not when the job started.
+// The install root of the node interpreter a script-launched codex needs (<root>/bin/node), or null.
+function runtimeRoot(bin) {
+  try {
+    const head = fs.readFileSync(fs.realpathSync(bin)).subarray(0, 200).toString("latin1");
+    if (!/^#!.*\bnode\b/.test(head)) return null;
+    const exe = fs.realpathSync(process.execPath), d = path.dirname(exe);
+    return path.basename(d) === "bin" ? path.dirname(d) : d;
+  } catch { return null; }
+}
 export function reviewerConfinement({ dir, jobHome, workRoot = path.dirname(dir), hideRoots = [], framework = null, extraMaskRoots = [], realHome = os.homedir(), realCodexHome = process.env.CODEX_HOME || path.join(os.homedir(), ".codex"), repoRoot = ROOT, northstar = NORTHSTAR }) {
   const masks = sandboxMasks({ dir, framework, extraMaskRoots, exposeRoot: false, role: "build", northstar, keepRo: [], realHome: "/nonexistent-oe-home", repoRoot, kept: path.join(realHome, ".svc", "outcome-eval-artifacts") }).maskRoots;
   const statOf = (x) => { try { return fs.statSync(x); } catch { return null; } };
@@ -543,12 +554,24 @@ export function reviewerConfinement({ dir, jobHome, workRoot = path.dirname(dir)
     const a = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent"];
     for (const t of tmpRoots) a.push("--tmpfs", t);
     const hidden = [];
-    for (const m of dirCandidates) { const st = statOf(m); if (!st) continue; if (st.isDirectory()) { a.push("--tmpfs", m); hidden.push(m); } else a.push("--ro-bind", "/dev/null", m); }
+    // The ENTIRE real home is hidden by an empty tmpfs (not a list of known-sensitive entries: an
+    // unlisted dotfile, repo or key under it would otherwise be readable through the host-root bind).
+    // Only what the call needs comes back: the codex binary's release directory, the runtime a
+    // script launcher needs, the job paths and the call's own directories.
+    const homeSt = realHome && realHome !== "/" ? statOf(realHome) : null;
+    if (homeSt?.isDirectory()) { a.push("--tmpfs", realHome); hidden.push(realHome); }
+    for (const m of dirCandidates) {
+      if (hidden.some((h) => isUnder(m, h))) continue;
+      const st = statOf(m); if (!st) continue; if (st.isDirectory()) { a.push("--tmpfs", m); hidden.push(m); } else a.push("--ro-bind", "/dev/null", m);
+    }
     // The codex binary, when it lives under a hidden directory (normally ~/.codex/packages) or in host temp space.
     const rel = codexBin ? releaseDir(codexBin) : null;
     // A review reads the job's tree. A planning role or a probe sees none of it.
     if (phase === "review") a.push("--ro-bind", dir, dir, "--ro-bind", jobHome, jobHome, "--ro-bind", jobHome, SANDBOX_HOME);
     if (rel && (hidden.some((h) => isUnder(rel, h)) || tmpRoots.some((t) => isUnder(rel, t)))) a.push("--ro-bind", rel, rel);
+    // A script launcher needs its interpreter; bring back that interpreter's install root only.
+    const rt = codexBin ? runtimeRoot(codexBin) : null;
+    if (rt && rt !== rel && hidden.some((h) => isUnder(rt, h))) a.push("--ro-bind", rt, rt);
     if (codexHome && fs.existsSync(codexHome)) a.push("--bind", codexHome, codexHome);
     a.push("--bind", scratch, scratch);
     // A neutral working directory is empty and stays read-only to codex.
@@ -582,7 +605,16 @@ export function reviewPolicies(src) {
   const j = (f) => pathToFileURL(path.join(src, f)).href;
   const code = `
 import crypto from "node:crypto";
-const out = { review: null, roles: {} };
+import fs from "node:fs";
+const out = { review: null, roles: {}, capture: null };
+try {
+  const src = fs.readFileSync(${JSON.stringify(path.join(src, "scripts", "lib", "native-planning-request-capture.mjs"))}, "utf8");
+  const cap = await import(${JSON.stringify(j("scripts/lib/native-planning-request-capture.mjs"))});
+  const prov = /const PROVIDER = "([^"]+)"/.exec(src)?.[1], key = /const CAPTURE_KEY = "([^"]+)"/.exec(src)?.[1];
+  const body = /function captureFlags\\(port, nonce\\) \\{([\\s\\S]*?)\\n\\}/.exec(src)?.[1];
+  const flags = body && prov && key ? [...body.matchAll(/\x60([^\x60]*)\x60/g)].map((m) => m[1].split("\\x24{PROVIDER}").join(prov).split("\\x24{CAPTURE_KEY}").join(key).split("\\x24{port}").join("{PORT}").split("\\x24{nonce}").join("{NONCE}")) : [];
+  out.capture = flags.length && typeof cap.NATIVE_PROFILE_PROBE === "string" ? { flags, probe: cap.NATIVE_PROFILE_PROBE } : null;
+} catch (e) { out.capture_error = String(e.message).slice(0, 200); }
 try { const m = await import(${JSON.stringify(j("scripts/run-external-review.mjs"))}); out.review = [1, 2, null].map((r) => m.agenticReviewInstructions(${JSON.stringify(CTX_SENTINEL)}, r)); } catch (e) { out.review_error = String(e.message).slice(0, 200); }
 try {
   const proto = await import(${JSON.stringify(j("scripts/lib/two-box-protocol.mjs"))});
@@ -599,15 +631,15 @@ try {
   for (const role of proto.PLANNING_ROLES) {
     const prompt = launch.renderRolePrompt({ role, payload: stubs[role] });
     const instruction = prompt.slice(0, prompt.indexOf("\\n\\n"));
-    out.roles[role] = { instruction, schemaHash: crypto.createHash("sha256").update(Buffer.from(JSON.stringify(proto.outputSchemaForCall(role)) + "\\n")).digest("hex") };
+    out.roles[role] = { instruction, allowedKeys: Object.keys(stubs[role]), schemaHash: crypto.createHash("sha256").update(Buffer.from(JSON.stringify(proto.outputSchemaForCall(role)) + "\\n")).digest("hex") };
   }
 } catch (e) { out.roles_error = String(e.message).slice(0, 200); }
 process.stdout.write(JSON.stringify(out));`;
   const r = spawnSync(process.execPath, ["--input-type=module", "-e", code], { cwd: src, env: { PATH: process.env.PATH }, encoding: "utf8", timeout: 60000 });
   let got = null; try { got = r.status === 0 ? JSON.parse(r.stdout) : null; } catch { /* none */ }
   if (findings && got?.review) add({ label: "external-review", phase: "review", schemaHash: findings, prefixes: got.review, templateSha256: digest(got.review) });
-  for (const [role, v] of Object.entries(got?.roles || {})) add({ label: `two-box:${role}`, phase: "plan", schemaHash: v.schemaHash, prefixes: [`${v.instruction}\n\n`], templateSha256: sha256Hex(Buffer.from(v.instruction)) });
-  return { policies, labels, errors: [got?.review_error, got?.roles_error].filter(Boolean) };
+  for (const [role, v] of Object.entries(got?.roles || {})) add({ label: `two-box:${role}`, phase: "plan", schemaHash: v.schemaHash, prefixes: [`${v.instruction}\n\n`], allowedKeys: Array.isArray(v.allowedKeys) ? v.allowedKeys : null, templateSha256: sha256Hex(Buffer.from(v.instruction)) });
+  return { policies, labels, capture: got?.capture ?? null, errors: [got?.review_error, got?.roles_error].filter(Boolean) };
 }
 
 // Reviewer (Codex) token prices. The model table above is Anthropic-only, so reviewer usage is
@@ -1614,7 +1646,11 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
       relay = await startRelay({
         jobHome, buildDir: dir, maxCalls: ctx.reviewerMaxCalls, callTimeoutMs: ctx.reviewerCallTimeoutMs,
         deadlineAt: Date.now() + cfg.timeout_ms * lim.time * prompts.length,
-        policies: reviewPolicies(fw.src).policies,
+        ...(() => { const rp = reviewPolicies(fw.src); return { policies: rp.policies, capture: rp.capture }; })(),
+        // Requests are built on this side, bound to this job: its id, the installed framework tree
+        // the framework context blocks must equal, and a ceiling on the job's total reviewer spend.
+        jobId: `${job.task}/${job.arm}#${job.rep}`, frameworkRoot: fw.src,
+        ...(claim.usd != null ? { maxJobUsd: +claim.usd.toFixed(2) } : {}),
         // The most one call may cost; while a call has reported nothing, all of it counts against the job.
         maxCallUsd: claim.usd != null ? Math.max(0.05, Math.min(2, +(claim.usd * 0.25).toFixed(2))) : 2,
         price: (id, u) => priceReviewerUsage(id || "unknown", u),

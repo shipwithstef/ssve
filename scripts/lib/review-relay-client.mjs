@@ -8,7 +8,11 @@
 // Frames (both ways): 1 type byte, u32 big-endian length, payload.
 //   client to server  R request JSON {argv, cwd, schema}   I stdin bytes   Z end of stdin
 //   server to client  O stdout bytes   E stderr bytes   F final JSON {exit, last_message}
+//                     C capture-preflight result JSON {port, nonce, models_hits, bodies[base64]}:
+//                       the runner ran the capture itself; this client replays what codex wrote to the
+//                       capture server the sandbox-side framework opened (127.0.0.1:port), as codex would
 import fs from "node:fs";
+import http from "node:http";
 import net from "node:net";
 import path from "node:path";
 
@@ -45,6 +49,17 @@ const lastPath = optionValueShort(argv, "--output-last-message", "-o");
 const sock = net.createConnection(SOCK);
 let buf = Buffer.alloc(0);
 let done = false;
+let capture = null;
+// Replay a capture result to the sandbox-side capture server, in order: /models once, then each request body.
+async function replayCapture(c) {
+  const base = `/ssve-capture/${c.nonce}/v1`;
+  const call = (method, p, body) => new Promise((resolve) => {
+    const rq = http.request({ hostname: "127.0.0.1", port: c.port, path: base + p, method, headers: body ? { "content-type": "application/json", "content-length": body.length } : {} }, (rs) => { rs.resume(); rs.on("end", resolve); });
+    rq.on("error", resolve); rq.end(body);
+  });
+  if (c.models_hits > 0) await call("GET", "/models");
+  for (const b of c.bodies || []) await call("POST", "/responses", Buffer.from(b, "base64"));
+}
 sock.on("error", (e) => { if (!done) fail(`reviewer relay unavailable (${e.code || e.message})`); });
 sock.on("connect", () => {
   sock.write(frame("R", JSON.stringify({ argv, cwd: process.cwd(), schema })));
@@ -63,6 +78,7 @@ sock.on("data", (chunk) => {
     buf = buf.subarray(5 + len);
     if (type === "O") process.stdout.write(body);
     else if (type === "E") process.stderr.write(body);
+    else if (type === "C") { try { capture = JSON.parse(body.toString("utf8")); } catch { /* ignored */ } }
     else if (type === "F") {
       done = true;
       let fin = {};
@@ -73,7 +89,8 @@ sock.on("data", (chunk) => {
       }
       sock.end();
       // Let stdout and stderr drain before exiting with the relayed code.
-      process.stdout.write("", () => process.stderr.write("", () => process.exit(Number.isInteger(fin.exit) ? fin.exit : 1)));
+      const exitNow = () => process.stdout.write("", () => process.stderr.write("", () => process.exit(Number.isInteger(fin.exit) ? fin.exit : 1)));
+      if (capture) replayCapture(capture).then(exitNow, exitNow); else exitNow();
     }
   }
 });

@@ -104,6 +104,11 @@ export const isVoid = (r) => !isSkipped(r) && !r.builder_sandbox;
 // reaches no score or cost. Only framework rows carry row.journey; a checker error is not a verdict.
 export const isNonconformant = (r) => !isSkipped(r) && Boolean(r.builder_sandbox) && Boolean(r.journey) && typeof r.journey === "object" && r.journey.conformant === false;
 
+// A framework-arm row counts only with positive journey evidence: journey.conformant === true.
+// Missing journey evidence or a checker error is unverified, not a pass: the row is excluded and
+// the decision is marked incomplete (with a count).
+export const isJourneyUnverified = (r, fwArm) => !isSkipped(r) && Boolean(r.builder_sandbox) && r.arm === fwArm && !isNonconformant(r) && !(r.journey && typeof r.journey === "object" && !r.journey.error && r.journey.conformant === true);
+
 // H evidence on a row: the graded score, else hidden_pass / hidden_total. A finished run with
 // neither has no H evidence (null), never a measured 0.
 export function hScore(r) {
@@ -142,13 +147,14 @@ export function checkDuplicates(rows, { allowDuplicateReps = false } = {}) {
 }
 
 // Void-evidence split plus the duplicate check: the rows every decision is computed from.
-export function usableRows(rawRows, { allowDuplicateReps = false } = {}) {
+export function usableRows(rawRows, { allowDuplicateReps = false, fwArm = null } = {}) {
   const voided = rawRows.filter(isVoid);
   const sandboxed = rawRows.filter((r) => !isVoid(r));
   const nonconformant = sandboxed.filter(isNonconformant);
-  const rows = sandboxed.filter((r) => !isNonconformant(r));
+  const unverified = fwArm == null ? [] : sandboxed.filter((r) => isJourneyUnverified(r, fwArm));
+  const rows = sandboxed.filter((r) => !isNonconformant(r) && !unverified.includes(r));
   checkDuplicates(sandboxed, { allowDuplicateReps });
-  return { rows, voided, nonconformant };
+  return { rows, voided, nonconformant, unverified };
 }
 
 function tokensOf(usage) {
@@ -236,7 +242,7 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   const minFin = bar.min_finished_runs_per_cell_arm;
   const [soloArm, fwArm] = bar.arms;
   const inSlice = rawRows.filter((r) => tasks.includes(r.task) && bar.arms.includes(r.arm));
-  const { rows, voided, nonconformant } = usableRows(inSlice, { allowDuplicateReps });
+  const { rows, voided, nonconformant, unverified } = usableRows(inSlice, { allowDuplicateReps, fwArm });
   requireCommonPins(rows, bar);
   if (slice === "reserve" && verifyReserve) verifyReserveRows(rows, bar);
   const of = (task, arm) => rows.filter((r) => r.task === task && r.arm === arm);
@@ -365,6 +371,7 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   if (incEv) incomplete_reasons.push(`${incEv} cell(s) with incomplete evidence (finished runs lack a component score)`);
   if (voided.length) incomplete_reasons.push(`${voided.length} void run(s) (no builder sandbox) excluded from scores and costs`);
   if (nonconformant.length) incomplete_reasons.push(`${nonconformant.length} framework run(s) did not walk the task's intended journey: void, excluded from scores and costs (${nonconformant.map((r) => `${r.task}#${r.rep}`).join(", ")})`);
+  if (unverified.length) incomplete_reasons.push(`${unverified.length} framework run(s) with missing or errored journey evidence (journey.conformant must be true): excluded from scores and costs (${unverified.map((r) => `${r.task}#${r.rep}`).join(", ")})`);
   if (unmeasured.length) incomplete_reasons.push(`${unmeasured.length} constraint(s) unmeasured`);
   // A failing headline is a "fail" only when numbered cells back it; with no numbered cell
   // there is nothing to fail on yet, so the slice is "incomplete".
@@ -372,7 +379,7 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
   if (!numbered.length) incomplete_reasons.push("no cell has a number");
   const overall = headlineFailed || failed.length ? "fail" : incomplete_reasons.length ? "incomplete" : "pass";
 
-  const journey = journeySection([...rows, ...nonconformant], tasks, fwArm);
+  const journey = journeySection([...rows, ...nonconformant, ...unverified], tasks, fwArm);
   const arms = {};
   for (const arm of bar.arms) arms[arm] = armSummary(rows.filter((r) => r.arm === arm));
   return {
@@ -380,10 +387,11 @@ export function decide(rawRows, { slice, bar = loadBar(), overheadRows = null, i
     headline, pass: headline.pass,
     constraints, constraints_failed: failed.length, constraints_unmeasured: unmeasured.length,
     overall, incomplete_reasons,
-    void_runs: voided.length + nonconformant.length,
+    void_runs: voided.length + nonconformant.length + unverified.length,
+    journey_unverified_runs: unverified.length,
     journey,
     void_nonconformant: journey.void_nonconformant,
-    void_by_arm: Object.fromEntries(bar.arms.map((a) => [a, [...voided, ...nonconformant].filter((r) => r.arm === a).length])),
+    void_by_arm: Object.fromEntries(bar.arms.map((a) => [a, [...voided, ...nonconformant, ...unverified].filter((r) => r.arm === a).length])),
     cells, per_task, cost_per_arm: arms,
     diagnostics: Object.fromEntries(bar.arms.map((a) => [a, { turns_mean: arms[a].turns_mean, tokens_mean: arms[a].tokens_mean, rules_not_loaded: arms[a].rules_not_loaded, fail_open: arms[a].fail_open, judge_cost_usd: arms[a].judge_cost_usd }])),
     overhead: ov,
@@ -634,7 +642,7 @@ export function fakeRun(entry, bar = loadBar()) {
   const cost = +((fw ? 1.25 : 1) * (0.4 + rand() * 0.1)).toFixed(4);
   return {
     task: entry.task, arm: entry.arm, rep: entry.rep, model: entry.model, framework_sha: entry.isolation.framework_sha, synthetic: true, builder_sandbox: "fake",
-    ...(fw ? { upstream_stages: [] } : {}),
+    ...(fw ? { upstream_stages: [], journey: { conformant: true } } : {}),
     cost_usd: cost, wall_ms: Math.round((fw ? 1.15 : 1) * 60000 * (1 + rand() * 0.1)), turns: fw ? 30 : 12,
     hidden_pass: Math.round(score * 10), hidden_total: 10, score, solved: score === 1,
     ...(Object.keys(components).length ? { components } : {}),
@@ -646,7 +654,7 @@ export function fakeRun(entry, bar = loadBar()) {
 // Synthetic catalog-overhead rows (an empty task, both arms) so the dry run can reach "pass".
 export function syntheticOverhead(model, bar = loadBar(), frameworkSha = null) {
   return bar.arms.flatMap((arm) => [1, 2, 3].map((rep) => ({
-    task: bar.overhead_task, arm, rep, model, framework_sha: arm === "framework" ? frameworkSha : null, synthetic: true, builder_sandbox: "fake",
+    task: bar.overhead_task, arm, rep, model, framework_sha: arm === "framework" ? frameworkSha : null, synthetic: true, builder_sandbox: "fake", ...(arm === "framework" ? { journey: { conformant: true } } : {}),
     cost_usd: arm === "framework" ? 0.18 : 0.02, wall_ms: 10000, model_usage: { [model]: { inputTokens: 1000, outputTokens: 100 } },
   })));
 }
