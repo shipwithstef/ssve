@@ -2191,7 +2191,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-chain-position.sh",
-        "test-framework/evals/tier-1/validate-framework-coherence.mjs"
+        "test-framework/evals/tier-1/validate-framework-coherence.mjs",
+        "test-framework/tests/delivery-chain-wiring.test.mjs"
       ]
     },
     {
@@ -3763,8 +3764,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
-        "test-framework/tests/delivery-graph-ordering.test.mjs",
-        "test-framework/tests/research-decision.test.mjs"
+        "test-framework/tests/delivery-chain-wiring.test.mjs",
+        "test-framework/tests/delivery-graph-ordering.test.mjs"
       ]
     },
     {
