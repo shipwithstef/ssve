@@ -3588,6 +3588,7 @@
       "source": "scripts/lib/claude-plan-transport.mjs",
       "status": "tested",
       "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/tests/two-box-claude-transport.test.mjs",
         "test-framework/tests/two-box-plan.test.mjs"
       ]
