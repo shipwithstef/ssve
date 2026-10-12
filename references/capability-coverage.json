@@ -2214,6 +2214,15 @@
       ]
     },
     {
+      "id": "engine:scripts/harden.mjs",
+      "kind": "engine",
+      "source": "scripts/harden.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/harden.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/harness-drift.mjs",
       "kind": "engine",
       "source": "scripts/harness-drift.mjs",
@@ -3580,6 +3589,7 @@
       "source": "scripts/lib/claude-plan-transport.mjs",
       "status": "tested",
       "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/tests/two-box-claude-transport.test.mjs",
         "test-framework/tests/two-box-plan.test.mjs"
       ]
