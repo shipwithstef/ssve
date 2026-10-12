@@ -491,8 +491,55 @@ function isAgyStation(station) {
   return station.tuple.host === 'agy' || /(?:^|-)agy(?:-|$)|gemini/i.test(station.id);
 }
 
+// Single-provider hosts attest a family by name (claude → anthropic). Cursor and
+// OpenCode map to `multi`: that label does not attest a provider, so an Anthropic
+// author would otherwise accept an Anthropic external station as independent.
+// The author family is the inline-self tuple's resolved family. A missing or
+// unattested (`multi`) self family fails closed.
 function inferOrchestratorFamily(orchestrator, stations) {
-  return HOST_FAMILY[orchestrator] || stations.find((station) => station.kind === 'inline-self')?.tuple?.family || null;
+  const mapped = HOST_FAMILY[orchestrator];
+  if (mapped && mapped !== 'multi') return mapped;
+  if (mapped === 'multi') {
+    const self = stations.find((station) => station.kind === 'inline-self');
+    const family = resolvedStationFamily(self?.tuple);
+    if (!family || family === 'multi') {
+      fail(
+        `orchestrator "${orchestrator}" family is unknown: a multi-model harness must declare an attested provider family on the inline-self tuple`,
+        'dispatch_policy_invalid',
+      );
+    }
+    return family;
+  }
+  // Unmapped hosts (no HOST_FAMILY entry) attest nothing by name either: with an
+  // independent external station the author family must resolve, or the fence
+  // has nothing to compare against.
+  const family = stations.find((station) => station.kind === 'inline-self')?.tuple?.family || null;
+  if ((!family || family === 'multi') && stations.some((station) => station.kind === 'external' && station.authority === 'independent')) {
+    fail(
+      `orchestrator "${orchestrator}" family is unknown: declare an attested provider family on the inline-self tuple before an independent station can be checked`,
+      'dispatch_policy_invalid',
+    );
+  }
+  return family;
+}
+
+// Family an independent station actually resolves to. A named single-provider
+// host (claude → anthropic) wins over a rewritten tuple.family, so a policy
+// rewriter cannot keep authority=independent by mislabeling the family.
+// Multi-model harnesses stay on the tuple family: the host name does not
+// attest a provider.
+function resolvedStationFamily(tuple) {
+  const mapped = HOST_FAMILY[tuple?.host];
+  if (mapped && mapped !== 'multi') return mapped;
+  return tuple?.family || null;
+}
+
+function sameFamilyIndependentCollision(tuple, orchestratorFamily) {
+  if (!orchestratorFamily || !tuple) return null;
+  if (tuple.family === orchestratorFamily) return tuple.family;
+  const resolved = resolvedStationFamily(tuple);
+  if (resolved === orchestratorFamily) return resolved;
+  return null;
 }
 
 function selectExternalStation(topology, {
@@ -677,6 +724,19 @@ export function resolveDispatchReviewTopology(options = {}) {
     return { order: index + 1, ...station };
   });
   const orchestratorFamily = inferOrchestratorFamily(orchestrator, stations);
+  // authority=independent means cross-family. release_authority is not required
+  // for the fence: a rewriter can keep authority=independent while pinning the
+  // station onto the orchestrator's own family (default policy leaves
+  // release_authority false). Fail closed before that station can be selected.
+  for (const station of stations) {
+    if (station.kind !== 'external' || station.authority !== 'independent') continue;
+    const collision = sameFamilyIndependentCollision(station.tuple, orchestratorFamily);
+    if (!collision) continue;
+    fail(
+      `review.${phase} station "${station.id}" independent external authority must be different-family: resolved family ${collision} equals orchestrator family ${orchestratorFamily}`,
+      'dispatch_policy_invalid',
+    );
+  }
   if (phaseConfig.release_authority === true && orchestratorFamily) {
     const hasDifferentFamilyIndependent = stations.some((station) =>
       station.kind === 'external'
