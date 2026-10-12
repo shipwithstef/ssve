@@ -332,7 +332,7 @@ fi
 
 grep -qE 'REQUIRED_SLOTS.*25-impact-triad' scripts/install-git-hooks.mjs && bad "installer still pins retired impact slot" || ok "installer no longer pins retired impact slot"
 grep -q 'Universal Assurance Floor: Change Impact Triad' DOCTRINE.md && ok "doctrine carries universal assurance floor" || bad "doctrine carries universal assurance floor"
-grep -q 'Universal change-impact routing' skills/route-workflow/SKILL.md && ok "router carries impact classification" || bad "router carries impact classification"
+grep -q 'Universal change-impact routing' skills/route-workflow/references/framework-and-host-route.md && ok "router carries impact classification" || bad "router carries impact classification"
 grep -q 'impact-triad subsumption receipt' skills/diagnose-bug/SKILL.md && ok "diagnose-bug carries subsumption" || bad "diagnose-bug carries subsumption"
 node -e 'JSON.parse(require("fs").readFileSync("schemas/change-impact-triad.schema.json"))' && ok "receipt schema parses" || bad "receipt schema parses"
 

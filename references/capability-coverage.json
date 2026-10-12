@@ -2224,6 +2224,15 @@
       ]
     },
     {
+      "id": "engine:scripts/harden.mjs",
+      "kind": "engine",
+      "source": "scripts/harden.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/harden.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/harness-drift.mjs",
       "kind": "engine",
       "source": "scripts/harness-drift.mjs",
@@ -2961,7 +2970,8 @@
       "source": "scripts/svc-bootstrap-repo.mjs",
       "status": "tested",
       "evidence": [
-        "test-framework/tests/fresh-project-bootstrap.test.mjs"
+        "test-framework/tests/fresh-project-bootstrap.test.mjs",
+        "test-framework/tests/route-workflow-entry.test.mjs"
       ]
     },
     {
@@ -3072,7 +3082,7 @@
       "evidence": [
         "test-framework/tests/lane-stop-guard.test.mjs",
         "test-framework/tests/owning-task-schedule.test.mjs",
-        "test-framework/tests/svc-next-plan-sequence.test.mjs"
+        "test-framework/tests/route-workflow-entry.test.mjs"
       ]
     },
     {

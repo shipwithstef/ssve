@@ -3,7 +3,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-SKILL="$REPO_ROOT/skills/route-workflow/SKILL.md"
+SKILL="$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md"
 REF="$REPO_ROOT/skills/route-workflow/references/prompt-composer.md"
 
 PASS=0

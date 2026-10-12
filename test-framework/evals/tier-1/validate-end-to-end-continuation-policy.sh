@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 HELPER="$REPO_ROOT/scripts/validate-end-to-end-continuation.mjs"
-ROUTER="$REPO_ROOT/skills/route-workflow/SKILL.md"
+ROUTER="$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md"
 REF="$REPO_ROOT/skills/route-workflow/references/end-to-end-continuation.md"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT

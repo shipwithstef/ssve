@@ -93,7 +93,7 @@ for lane in greenfield bugfix framework; do
 done
 
 grep -qi "Human Checkpoint Behavior in Autorun" "$REPO_ROOT/skills/route-workflow/references/autorun-orchestrator.md" && pass "autorun human-checkpoint behavior documented" || fail "autorun human-checkpoint behavior documented"
-grep -qi "closeout classification" "$REPO_ROOT/skills/route-workflow/SKILL.md" && pass "autorun terminal closeout classification required" || fail "autorun terminal closeout classification required"
+grep -qi "closeout classification" "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md" && pass "autorun terminal closeout classification required" || fail "autorun terminal closeout classification required"
 grep -qi "WI-302" "$REPO_ROOT/docs/specs/work-items/WI-194.md" && pass "WI-194 cross-linked to WI-302 replay coverage" || fail "WI-194 cross-linked to WI-302 replay coverage"
 
 echo

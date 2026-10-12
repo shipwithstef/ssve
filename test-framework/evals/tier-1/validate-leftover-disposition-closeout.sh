@@ -50,7 +50,7 @@ echo "=== Tier 1: Leftover Disposition Closeout ==="
 node --check "$REPO_ROOT/scripts/validate-leftover-disposition.mjs" >/dev/null
 pass "validator syntax valid"
 
-for file in skills/route-workflow/SKILL.md skills/verify-promotion/SKILL.md skills/land-changeset/SKILL.md; do
+for file in skills/route-workflow/references/framework-and-host-route.md skills/verify-promotion/SKILL.md skills/land-changeset/SKILL.md; do
   if grep -Fq "references/leftover-disposition.md" "$REPO_ROOT/$file"; then
     pass "$file references shared leftover-disposition rule"
   else
@@ -74,7 +74,7 @@ expect_pass "reference explains tracked-vs-ignored rule" \
   bash -c "grep -Fq 'Tracked-Vs-Ignored Rule' '$REPO_ROOT/references/leftover-disposition.md' && grep -Fq 'git rm --cached .svc/loop-guard-state.json' '$REPO_ROOT/references/leftover-disposition.md'"
 
 expect_pass "route-workflow enforces universal local residue closeout" \
-  bash -c "grep -Fq 'Universal Local Residue Closeout' '$REPO_ROOT/skills/route-workflow/SKILL.md' && grep -Fq 'not a substitute' '$REPO_ROOT/skills/route-workflow/SKILL.md' && grep -Fq 'actually cleaning the repo' '$REPO_ROOT/skills/route-workflow/SKILL.md' && grep -Fq 'do not treat \`.gitignore\` as a disposition' '$REPO_ROOT/skills/route-workflow/SKILL.md'"
+  bash -c "grep -Fq 'Universal Local Residue Closeout' '$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md' && grep -Fq 'not a substitute' '$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md' && grep -Fq 'actually cleaning the repo' '$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md' && grep -Fq 'do not treat \`.gitignore\` as a disposition' '$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md'"
 
 BAD="$TMP/bad"
 make_repo "$BAD"

@@ -3,7 +3,8 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-SKILL="$REPO_ROOT/skills/route-workflow/SKILL.md"
+ENTRY="$REPO_ROOT/skills/route-workflow/SKILL.md"
+SKILL="$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md"
 DETAIL="$REPO_ROOT/skills/route-workflow/references/hot-path-operational-details.md"
 WRITE_SPEC="$REPO_ROOT/skills/write-spec/SKILL.md"
 AUTO_DRIVE="$REPO_ROOT/scripts/svc-auto-drive.mjs"
@@ -14,10 +15,24 @@ failures=0
 
 echo "=== Tier 1: route-workflow hot-path size ==="
 
-if (( total_lines <= 220 )); then
-  echo "  PASS - skills/route-workflow/SKILL.md is compact ($total_lines lines <= 220)"
+entry_body="$(awk '/^---$/{c++; next} c>=2' "$ENTRY" | wc -l | tr -d ' ')"
+if (( entry_body <= 60 )); then
+  echo "  PASS - user-project entry body is compact ($entry_body lines <= 60)"
 else
-  echo "  FAIL - skills/route-workflow/SKILL.md is too large ($total_lines lines > 220)"
+  echo "  FAIL - user-project entry body is too large ($entry_body lines > 60)"
+  failures=$((failures + 1))
+fi
+if grep -Fq 'references/framework-and-host-route.md' "$ENTRY"; then
+  echo "  PASS - entry points the framework repo at the relocated procedure"
+else
+  echo "  FAIL - entry does not reference references/framework-and-host-route.md"
+  failures=$((failures + 1))
+fi
+
+if (( total_lines <= 220 )); then
+  echo "  PASS - framework-and-host-route.md is compact ($total_lines lines <= 220)"
+else
+  echo "  FAIL - framework-and-host-route.md is too large ($total_lines lines > 220)"
   failures=$((failures + 1))
 fi
 

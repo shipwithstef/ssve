@@ -299,7 +299,7 @@ check("AC-5/AC-6 incident replay passes post-fix invariants", () => {
 });
 
 check("route-workflow forbids paste/agy escape on this path", () => {
-  const skill = fs.readFileSync(path.join(ROOT, "skills/route-workflow/SKILL.md"), "utf8");
+  const skill = fs.readFileSync(path.join(ROOT, "skills/route-workflow/references/framework-and-host-route.md"), "utf8");
   assert.match(skill, /svc-orchestrate\.mjs migrate/);
   assert.match(skill, /do \*\*not\*\* emit a prompt-composer paste package/);
   const composer = fs.readFileSync(path.join(ROOT, "skills/route-workflow/references/prompt-composer.md"), "utf8");

@@ -14,7 +14,7 @@ MANIFEST="$REPO_ROOT/skills-manifest.json"
 CUTOFF="2026-04-28"
 SHARED_CONTRACT="$REPO_ROOT/_shared/before-starting.md"
 CONVENTIONS="$REPO_ROOT/references/skill-conventions.md"
-ROUTE_WORKFLOW="$REPO_ROOT/skills/route-workflow/SKILL.md"
+ROUTE_WORKFLOW="$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md"
 CONTEXT_REGISTRY="$REPO_ROOT/references/context-loading-registry.json"
 CONTEXT_MAP="$(mktemp)"
 trap 'rm -f "$CONTEXT_MAP"' EXIT
