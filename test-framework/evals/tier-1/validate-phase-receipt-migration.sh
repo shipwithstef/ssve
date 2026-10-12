@@ -43,7 +43,10 @@ for skill in "${SKILLS[@]}"; do
     fail "$skill declares at least 3 required completion phases"
   fi
 
-  if grep -q 'record-phase .svc/lane-tasks-<WI>.json' "skills/$skill/SKILL.md"; then
+  doc="skills/$skill/SKILL.md"
+  # route-workflow's Phase Receipt Contract lives in the relocated framework procedure.
+  [[ "$skill" == "route-workflow" ]] && doc="skills/route-workflow/references/framework-and-host-route.md"
+  if grep -q 'record-phase .svc/lane-tasks-<WI>.json' "$doc"; then
     pass "$skill documents record-phase emission"
   else
     fail "$skill documents record-phase emission"

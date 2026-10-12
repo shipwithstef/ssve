@@ -36,7 +36,7 @@ const CONTRACTS = [
     "skills/plan-changeset/SKILL.md",
     "skills/plan-changeset/references/manifest-templates.md",
     "skills/review-plan/SKILL.md",
-    "skills/route-workflow/SKILL.md",
+    "skills/route-workflow/SKILL.md", "skills/route-workflow/references/framework-and-host-route.md",
     "skills/verify-promotion/SKILL.md",
     "skills/write-spec/SKILL.md",
     "test-framework/evals/tier-1/validate-delivery-planning.sh",
@@ -71,7 +71,7 @@ const CONTRACTS = [
       "skills/manage-finops/references/finops-spec-template.md",
       "skills/plan-changeset/SKILL.md",
       "skills/review-gate/SKILL.md",
-      "skills/route-workflow/SKILL.md",
+      "skills/route-workflow/SKILL.md", "skills/route-workflow/references/framework-and-host-route.md",
       "skills/strategic-decision/SKILL.md",
       "skills/strategic-decision/references/phases-5-6-ev-and-adversarial.md",
       "skills/svc-advisor/SKILL.md",
@@ -180,7 +180,7 @@ const CONTRACTS = [
   },
   {
     validator: "validate-owner-decision-v2.mjs",
-    inputs: ["schemas/owner-decision-v2.schema.json", "scripts/lib/runtime-owner-decision-v2.mjs", "references/owner-decision-runtime-v2.md", "skills/route-workflow/SKILL.md", "skills/decide/SKILL.md", "skills/strategic-decision/SKILL.md", "skills/research/SKILL.md", "test-framework/evals/tier-1/validate-owner-decision-v2.mjs"]
+    inputs: ["schemas/owner-decision-v2.schema.json", "scripts/lib/runtime-owner-decision-v2.mjs", "references/owner-decision-runtime-v2.md", "skills/route-workflow/SKILL.md", "skills/route-workflow/references/framework-and-host-route.md", "skills/decide/SKILL.md", "skills/strategic-decision/SKILL.md", "skills/research/SKILL.md", "test-framework/evals/tier-1/validate-owner-decision-v2.mjs"]
   },
   {
     validator: "validate-skill-runtime-contracts-v2.mjs",

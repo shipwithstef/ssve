@@ -1302,7 +1302,7 @@
     {
       "skill": "plan-changeset",
       "path": "skills/plan-changeset/SKILL.md",
-      "content_hash": "592463d9ced85bd788d8e9f91a8ee775ad56d1564ea8a0d710173c60215b1abd",
+      "content_hash": "ce2859f31e2d0cb840fd0b733cfa66cfc58fe3a25489ae39de49ee01927f7409",
       "description": "Turn a baselined feature spec with technical design into an implementation plan for branch-first execution: task graph, file set, validation plan, checkpoints, AC-to-test mapping. Use before execute-changeset.",
       "aliases": [],
       "positive_triggers": [],
@@ -1672,8 +1672,8 @@
     {
       "skill": "route-workflow",
       "path": "skills/route-workflow/SKILL.md",
-      "content_hash": "e3ebd6a32f6d0e5bf8ca529772cb441af4cbfea551581d11c87545ea33b44a30",
-      "description": "Routes a work request in an svc-onboarded repo to the right lane and next svc skill from repo state and artifacts. Use for 'build this', 'fix this', 'ship this', 'I want to', 'which skill do I run', 'what lane is this'. Not needed for questions, explanations or read-only lookups.",
+      "content_hash": "bacf343e831a6df28898ac88058ab587cc35e6fa0d183c8629322a7c2f53b13f",
+      "description": "Entry for any build, fix, or review request in a user project, including a project with no .svc yet. Sets up state and a worktree, classifies the lane, compiles the lane graph, and hands off to the first skill. Not needed for questions, explanations or read-only lookups.",
       "aliases": [
         "what should I do next",
         "which skill",

@@ -29,6 +29,8 @@ REQUIRED_SKILLS=(
 
 for skill in "${REQUIRED_SKILLS[@]}"; do
   SKILL_FILE="$REPO_ROOT/skills/$skill/SKILL.md"
+  # route-workflow's decision-log procedure lives in the relocated framework procedure.
+  [ "$skill" = "route-workflow" ] && SKILL_FILE="$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md"
   if [ ! -f "$SKILL_FILE" ]; then
     ERRORS+="  FAIL: $skill/SKILL.md does not exist\n"
     FAIL=$((FAIL + 1))

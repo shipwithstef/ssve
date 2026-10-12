@@ -108,6 +108,7 @@ export function testHygiene(dir) {
   };
 }
 
+// The grader's runner: unchanged so eval scores stay comparable across framework versions.
 function runTests(dir, timeoutMs) {
   // NODE_TEST_CONTEXT (set when the probe itself runs under node --test) would make the
   // child report to the parent instead of printing its summary.
@@ -117,6 +118,16 @@ function runTests(dir, timeoutMs) {
   const pass = Number(/^# pass (\d+)/m.exec(out)?.[1] ?? 0);
   const fail = Number(/^# fail (\d+)/m.exec(out)?.[1] ?? 0) + Number(/^# cancelled (\d+)/m.exec(out)?.[1] ?? 0);
   return { ok: r.status === 0 && pass > 0, pass, fail, timedOut: r.error?.code === "ETIMEDOUT" };
+}
+
+// harden's production profile passes --project-runner: the project's own declared test
+// command, file selection and local-bin PATH (harden.mjs runProjectTests).
+async function projectRunner() {
+  const { runProjectTests } = await import("./harden.mjs");
+  return (dir, timeoutMs) => {
+    const r = runProjectTests(dir, { timeoutMs });
+    return { ok: Boolean(r.ok), pass: r.pass || 0, fail: r.fail || 0, timedOut: Boolean(r.timedOut) };
+  };
 }
 
 // Mutation sites: one operator change per site, never inside a string or a comment line.
@@ -155,13 +166,17 @@ function seededPick(xs, n, seed = 20261010) {
   return a.slice(0, n);
 }
 
-export function mutation(dir, { mutants = 30, timeoutMs = 120000 } = {}) {
+export function mutation(dir, { mutants = 30, timeoutMs = 120000, runner = runTests } = {}) {
   const work = fs.mkdtempSync(path.join(os.tmpdir(), "qp-"));
   fs.cpSync(dir, work, { recursive: true, filter: (s) => !s.includes(`${path.sep}node_modules`) });
+  const modules = path.join(dir, "node_modules");
+  if (fs.existsSync(modules) && !fs.existsSync(path.join(work, "node_modules"))) {
+    fs.symlinkSync(modules, path.join(work, "node_modules"), "dir");
+  }
   for (const f of fs.readdirSync(work)) if (f.startsWith("__hidden")) fs.rmSync(path.join(work, f), { force: true });
   try {
     if (!listFiles(work).some((f) => CODE.test(f) && isTestFile(f))) return { score: null, reason: "no tests" };
-    const base = runTests(work, timeoutMs);
+    const base = runner(work, timeoutMs);
     if (!base.ok) return { score: null, reason: `own tests do not pass as shipped (${base.pass} pass, ${base.fail} fail)` };
     const chosen = seededPick(mutationSites(work), mutants);
     let killed = 0, valid = 0;
@@ -177,7 +192,7 @@ export function mutation(dir, { mutants = 30, timeoutMs = 120000 } = {}) {
       const parses = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" }).status === 0;
       if (parses) {
         valid++;
-        const r = runTests(work, timeoutMs);
+        const r = runner(work, timeoutMs);
         if (!r.ok) killed++; else survivors.push(`${site.file}:${site.line + 1}: ${lines[site.line].trim().slice(0, 100)}`);
       }
       fs.writeFileSync(file, original);
@@ -253,8 +268,9 @@ async function main(argv) {
     return 0;
   }
   const dir = argv.find((a) => !a.startsWith("--") && a !== String(mutants));
-  if (!dir) { process.stderr.write("usage: quality-probes.mjs <dir> [--mutants 30] | --results <results.json>\n"); return 2; }
-  process.stdout.write(JSON.stringify(probe(dir, { mutants }), null, 2) + "\n");
+  if (!dir) { process.stderr.write("usage: quality-probes.mjs <dir> [--mutants 30] [--project-runner] | --results <results.json>\n"); return 2; }
+  const runner = argv.includes("--project-runner") ? await projectRunner() : undefined;
+  process.stdout.write(JSON.stringify(probe(dir, { mutants, ...(runner ? { runner } : {}) }), null, 2) + "\n");
   return 0;
 }
 

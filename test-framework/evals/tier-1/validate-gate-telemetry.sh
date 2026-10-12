@@ -63,7 +63,7 @@ if git check-ignore -q .svc/gate-stats.json; then pass ".svc/gate-stats.json git
 am="$(git check-attr merge -- .svc/rule-hits.jsonl 2>/dev/null | sed 's#.*merge: ##')"
 if [ "$am" = "union" ]; then pass ".svc/rule-hits.jsonl is union-merge append-only (WI-398)"; else fail ".svc/rule-hits.jsonl merge attr '$am' (expected union — append-only event log)"; fi
 # route-workflow only ACTS on compression behind an explicit opt-in (default OFF).
-if grep -q "ceremony_tiering" skills/route-workflow/SKILL.md; then pass "route-workflow gates compression behind ceremony_tiering opt-in (default OFF)"; else fail "route-workflow does not gate compression behind an opt-in"; fi
+if grep -q "ceremony_tiering" skills/route-workflow/references/framework-and-host-route.md; then pass "route-workflow gates compression behind ceremony_tiering opt-in (default OFF)"; else fail "route-workflow does not gate compression behind an opt-in"; fi
 
 # ---- C. Append-only ledger discipline (AC5) --------------------------------
 # Gemini G6 #4: append-only is enforced by the union-merge driver (section B) +

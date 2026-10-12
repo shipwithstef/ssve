@@ -102,7 +102,7 @@ echo "=== Tier 1: Wave Closeout Validation ==="
 node --check "$REPO_ROOT/scripts/validate-wave-closeout.mjs" >/dev/null
 pass "validator syntax valid"
 
-if grep -Fq "## Wave Closeout Validation" "$REPO_ROOT/skills/route-workflow/SKILL.md"; then
+if grep -Fq "## Wave Closeout Validation" "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md"; then
   pass "route-workflow documents wave closeout validation"
 else
   fail "route-workflow documents wave closeout validation"
@@ -114,7 +114,7 @@ else
   fail "dispatch-waves documents wave closeout gate"
 fi
 
-if grep -Fq "latest zero-fail runtime evidence" "$REPO_ROOT/skills/route-workflow/SKILL.md"; then
+if grep -Fq "latest zero-fail runtime evidence" "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md"; then
   pass "route-workflow names latest zero-fail runtime evidence"
 else
   fail "route-workflow names latest zero-fail runtime evidence"

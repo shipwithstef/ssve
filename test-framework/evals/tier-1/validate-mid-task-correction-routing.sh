@@ -5,7 +5,8 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-ROUTER="$REPO_ROOT/skills/route-workflow/SKILL.md"
+ROUTER="$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md"
+ENTRY="$REPO_ROOT/skills/route-workflow/SKILL.md"
 REF="$REPO_ROOT/skills/route-workflow/references/intent-classification.md"
 PASS=0
 FAIL=0
@@ -32,6 +33,12 @@ require_fixed() {
 }
 
 echo "=== Tier 1: route-workflow mid-task correction routing ==="
+
+# User-project path: the short entry must keep correction handling too.
+require_fixed "$ENTRY" "method-correction" "entry names method-correction class"
+require_fixed "$ENTRY" "A correction keeps its WI, branch and graph" "entry keeps the WI, branch and graph on a correction"
+require_fixed "$ENTRY" "do not start a new lane" "entry blocks rerouting method corrections"
+require_fixed "$ENTRY" "Only a new goal gets a new WI" "entry gives only a new goal a new WI"
 
 require_fixed "$ROUTER" "### Mid-Task Correction Classification" "route-workflow has mid-task classification section"
 require_fixed "$ROUTER" "references/intent-classification.md" "route-workflow links classification reference"

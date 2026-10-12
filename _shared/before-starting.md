@@ -76,3 +76,7 @@ The pattern was imported from coreyhaines/marketingskills v1.9.0 and adapted fro
 ## Validation
 
 Skills authored on or after 2026-04-28 are validated by `test-framework/evals/tier-1/validate-skill-before-starting.sh`. Older skills are exempt (advisory mode) until they receive a substantive edit; at that point the validator becomes blocking for them as well.
+
+## Harden before execute-changeset finishes
+
+Before `execute-changeset` reports done, read the task's delivery profile and run `node "$SVC_ROOT"/scripts/harden.mjs --root . --profile <delivery_profile>` from the project directory. `<delivery_profile>` is `delivery_graph.planning.profile` on `.svc/lane-tasks-<WI>.json` (`prototype`, `mvp`, or `production`), the field `scripts/compile-delivery-graph.mjs` writes. There is no top-level `delivery_profile` on the compiled graph. When `delivery_graph.planning.profile` is absent or null, use `mvp` (`references/delivery-profiles.json`). Apply that default only when no profile is recorded. Do not omit `--profile`: the script default is `prototype`, which applies only when the task's delivery profile is prototype. Fix or justify each finding. execute-changeset's own bytes are bound to its Two-Box executor key (plan X7), so this step lives here.
