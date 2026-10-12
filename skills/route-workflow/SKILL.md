@@ -36,7 +36,7 @@ chain:
 
 # User-project entry
 
-Follow the steps in order. Do not write product code until step 7 hands you a skill. An assumption is one line under `assumptions` in `.svc/route-record.json`; it never drops a stage, review or receipt. A small task still runs the lane the compiler gives: the compiler, not you, decides what is short.
+Follow the steps in order. Write product code and tests only while the card's `SKILL` is `execute-changeset`: every earlier stage writes specs, plans and `.svc` records only, and the plan is made against the untouched base. Code written before the plan is reviewed bypasses the plan review and blocks the planner. An assumption is one line under `assumptions` in `.svc/route-record.json`; it never drops a stage, review or receipt. A small task still runs the lane the compiler gives: the compiler, not you, decides what is short.
 
 1. Root. Run every script as `node "$SVC_ROOT"/scripts/<name>.mjs` from the project directory. If `$SVC_ROOT` is empty, use the path on the session line `SSVE framework root:`. If `skills-manifest.json` exists in this directory, this is the framework repo: stop here and follow `references/framework-and-host-route.md`.
 2. Init. If `.svc/` is missing, run `node "$SVC_ROOT"/scripts/init-project-state.mjs`.
