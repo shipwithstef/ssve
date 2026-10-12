@@ -32,7 +32,7 @@ test("clean files of each type produce no findings", () => {
   });
   const report = hardenProject({ root: dir });
   assert.equal(report.ok, true);
-  assert.equal(report.mode, "static");
+  assert.equal(report.mode, "static+own-tests+smoke");
   assert.deepEqual(report.findings, []);
   assert.deepEqual(report.selection.find((row) => row.file === "server.js").categories, ["http", "js"]);
   assert.deepEqual(report.selection.find((row) => row.file === "billing.js").categories, ["money", "js"]);
@@ -254,9 +254,16 @@ test("commas inside a then callback object are not a rejection handler", () => {
 test("harden runs before execute-changeset finishes, without changing execute-changeset's bound bytes (X7)", () => {
   const shared = fs.readFileSync(new URL("../../_shared/before-starting.md", import.meta.url), "utf8");
   assert.match(shared, /node "\$SVC_ROOT"\/scripts\/harden\.mjs --root \./);
-  assert.match(shared, /fix or justify each finding/);
+  assert.match(shared, /fix or justify each finding/i);
   const skill = fs.readFileSync(new URL("../../skills/execute-changeset/SKILL.md", import.meta.url), "utf8");
   assert.doesNotMatch(skill, /harden\.mjs/, "execute-changeset stays byte-identical (plan X7)");
+});
+
+test("the harden command passes the task delivery profile", () => {
+  const shared = fs.readFileSync(new URL("../../_shared/before-starting.md", import.meta.url), "utf8");
+  assert.match(shared, /node "\$SVC_ROOT"\/scripts\/harden\.mjs --root \. --profile <delivery_profile>/);
+  assert.match(shared, /task's delivery profile/);
+  assert.match(shared, /delivery_profile/);
 });
 
 test("JSON.parse inside a template is flagged and a regex literal is not", () => {
@@ -279,18 +286,23 @@ test("JSON.parse inside a template is flagged and a regex literal is not", () =>
   assert.equal(report.findings.some((f) => f.line === 2), false);
 });
 
-test("prototype runs static smoke only", () => {
+test("prototype runs the project's own tests plus a smoke walk, not mutation probes", () => {
   const dir = project({
     "util.js": "export const n = 1;\n",
     "util.test.js": "import test from 'node:test'; import assert from 'node:assert/strict'; test('no', () => { assert.equal(1, 2); });\n",
   });
   const report = hardenProject({ root: dir, profile: "prototype" });
-  assert.equal(report.mode, "static");
-  assert.deepEqual(report.checks, ["static-smoke"]);
-  assert.equal(report.tests, null);
+  assert.equal(report.mode, "static+own-tests+smoke");
+  assert.deepEqual(report.checks, ["static-smoke", "smoke-walk", "ui-check", "own-tests"]);
+  assert.equal(report.tests.ran, true);
+  assert.equal(report.tests.ok, false);
   assert.equal(report.probes, null);
-  assert.equal(report.ok, true);
-  assert.equal(rulesOf(report, "own-tests").length, 0);
+  assert.equal(report.smoke.ran, false);
+  assert.equal(report.smoke.reason, "not-applicable");
+  assert.equal(report.ui.ran, false);
+  assert.equal(report.ui.reason, "not-applicable");
+  assert.equal(report.ok, false);
+  assert.deepEqual(rulesOf(report, "own-tests").map((f) => f.file), ["util.test.js"]);
   assert.equal(rulesOf(report, "mutation-threshold").length, 0);
 });
 
@@ -300,11 +312,14 @@ test("mvp runs node --test when tests are present and skips when they are not", 
     "util.test.js": "import test from 'node:test'; import assert from 'node:assert/strict'; test('no', () => { assert.equal(1, 2); });\n",
   });
   const bad = hardenProject({ root: failing, profile: "mvp" });
-  assert.deepEqual(bad.checks, ["static-smoke", "own-tests"]);
-  assert.equal(bad.mode, "static+own-tests");
+  assert.deepEqual(bad.checks, ["static-smoke", "smoke-walk", "ui-check", "own-tests", "runtime-probes"]);
+  assert.equal(bad.mode, "static+own-tests+smoke+probes");
   assert.equal(bad.tests.ran, true);
   assert.equal(bad.tests.ok, false);
-  assert.equal(bad.probes, null);
+  assert.equal(bad.probes.kind, "runtime");
+  assert.equal(bad.probes.ran, true);
+  assert.equal(bad.probes.ok, true);
+  assert.equal(rulesOf(bad, "mutation-threshold").length, 0);
   assert.deepEqual(rulesOf(bad, "own-tests").map((f) => f.file), ["util.test.js"]);
 
   const passing = project({
@@ -332,7 +347,10 @@ test("production runs quality-probes when the probe script is present", () => {
   const low = hardenProject({ root: weak, profile: "production" });
   assert.ok(low.checks.includes("quality-probes"));
   assert.ok(low.checks.includes("own-tests"));
-  assert.equal(low.mode, "static+own-tests+probes");
+  assert.ok(low.checks.includes("runtime-probes"));
+  assert.ok(low.checks.includes("smoke-walk"));
+  assert.ok(low.checks.includes("ui-check"));
+  assert.equal(low.mode, "static+own-tests+smoke+probes");
   assert.equal(low.probes.ran, true);
   assert.equal(low.probes.ok, false);
   assert.equal(low.tests.ok, true);
@@ -353,4 +371,110 @@ test("production runs quality-probes when the probe script is present", () => {
   const prototype = hardenProject({ root: weak, profile: "prototype" });
   assert.equal(prototype.probes, null);
   assert.equal(rulesOf(prototype, "mutation-threshold").length, 0);
+});
+
+test("a non-function rejection handler and an empty catch stay unhandled", () => {
+  const dir = project({
+    "util.js": [
+      "export function go(p) {",
+      "  p.then(v => v, false);",
+      "  p.then(v => v).catch();",
+      "  p.then(v => v, () => null);",
+      "  p.then(v => v).catch(() => null);",
+      "  p.then(v => v, handler);",
+      "}",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "unhandled-promise").map((f) => f.line), [2, 3]);
+});
+
+test("an uncalled expression arrow or method does not authorize later routes", () => {
+  const dir = project({
+    "server.js": [
+      "const setup = () => app.use(requireAuth);",
+      "app.get(\"/open\", (req, res) => { res.end(\"nope\"); });",
+      "const api = { setup() { app.use(requireAuth); } };",
+      "app.get(\"/also\", (req, res) => { res.end(\"a\"); });",
+      "app.use(requireAuth);",
+      "app.get(\"/in\", (req, res) => { res.end(\"i\"); });",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "http-authz").map((f) => f.line), [2, 4]);
+});
+
+test("idempotency needs a usable key, not a mention or null", () => {
+  const dir = project({
+    "billing.js": [
+      "export function chargeCustomer(sku) {",
+      "  stripe.paymentIntents.create({ amount: 100, currency: \"usd\", description: idempotencyNote });",
+      "  stripe.paymentIntents.create({ amount: 200, currency: \"usd\", idempotencyKey: null });",
+      "  stripe.paymentIntents.create({ amount: 300, currency: \"usd\", idempotencyKey: sku });",
+      "}",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "money-idempotency").map((f) => f.line), [2, 3]);
+});
+
+test("a regex literal after if () is not an unsafe JSON.parse", () => {
+  const dir = project({
+    "util.js": [
+      "export function read(raw, ok) {",
+      "  if (ok) /JSON.parse/.test(raw);",
+      "  return JSON.parse(raw);",
+      "}",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "json-parse-without-try").map((f) => f.line), [3]);
+});
+
+test("a string that mentions console.log(password) is not secret logging", () => {
+  const dir = project({
+    "server.js": [
+      "const note = \"console.log(password)\";",
+      "console.log(password);",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "http-secret-in-log").map((f) => f.line), [2]);
+});
+
+test("own tests execute the declared scripts.test command", () => {
+  const dir = project({
+    "package.json": JSON.stringify({ scripts: { test: "node --test only.test.js" } }),
+    "only.test.js": "import test from 'node:test'; test('yes', () => {});\n",
+    "other.test.js": "import test from 'node:test'; import assert from 'node:assert/strict'; test('no', () => { assert.equal(1, 2); });\n",
+  });
+  const report = hardenProject({ root: dir, profile: "prototype" });
+  assert.equal(report.tests.ran, true);
+  assert.equal(report.tests.command, "node --test only.test.js");
+  assert.equal(report.tests.ok, true);
+  assert.equal(rulesOf(report, "own-tests").length, 0);
+});
+
+test("mvp runs runtime probes and every profile walks routes and checks ui", () => {
+  const boom = project({
+    "boom.mjs": "throw new Error('load failed');\n",
+    "ok.test.mjs": "import test from 'node:test'; test('yes', () => {});\n",
+  });
+  const failed = hardenProject({ root: boom, profile: "mvp" });
+  assert.equal(failed.probes.ran, true);
+  assert.equal(failed.probes.ok, false);
+  assert.deepEqual(rulesOf(failed, "runtime-probe").map((f) => f.file), ["boom.mjs"]);
+  assert.equal(rulesOf(failed, "mutation-threshold").length, 0);
+
+  const ui = project({
+    "server.js": "app.get(\"/home\", (req, res) => { res.end(\"ok\"); });\n",
+    "App.jsx": "export function App() { return <div><a href=\"/home\">Home</a><a href=\"/missing\">Go</a></div>; }\n",
+  });
+  for (const profile of ["prototype", "mvp", "production"]) {
+    const report = hardenProject({ root: ui, profile });
+    assert.equal(report.smoke.ran, true, profile);
+    assert.equal(report.ui.ran, true, profile);
+    assert.equal(report.ui.ok, true, profile);
+    assert.deepEqual(rulesOf(report, "smoke-dead-end").map((f) => f.file), ["App.jsx"], profile);
+  }
 });
