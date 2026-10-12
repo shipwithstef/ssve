@@ -489,6 +489,25 @@ function inferOrchestratorFamily(orchestrator, stations) {
   return HOST_FAMILY[orchestrator] || stations.find((station) => station.kind === 'inline-self')?.tuple?.family || null;
 }
 
+// Family an independent station actually resolves to. A named single-provider
+// host (claude → anthropic) wins over a rewritten tuple.family, so a policy
+// rewriter cannot keep authority=independent by mislabeling the family.
+// Multi-model harnesses stay on the tuple family: the host name does not
+// attest a provider.
+function resolvedStationFamily(tuple) {
+  const mapped = HOST_FAMILY[tuple?.host];
+  if (mapped && mapped !== 'multi') return mapped;
+  return tuple?.family || null;
+}
+
+function sameFamilyIndependentCollision(tuple, orchestratorFamily) {
+  if (!orchestratorFamily || !tuple) return null;
+  if (tuple.family === orchestratorFamily) return tuple.family;
+  const resolved = resolvedStationFamily(tuple);
+  if (resolved === orchestratorFamily) return resolved;
+  return null;
+}
+
 function selectExternalStation(topology, {
   stationId = null,
   explicitAsk = false,
@@ -671,6 +690,19 @@ export function resolveDispatchReviewTopology(options = {}) {
     return { order: index + 1, ...station };
   });
   const orchestratorFamily = inferOrchestratorFamily(orchestrator, stations);
+  // authority=independent means cross-family. release_authority is not required
+  // for the fence: a rewriter can keep authority=independent while pinning the
+  // station onto the orchestrator's own family (default policy leaves
+  // release_authority false). Fail closed before that station can be selected.
+  for (const station of stations) {
+    if (station.kind !== 'external' || station.authority !== 'independent') continue;
+    const collision = sameFamilyIndependentCollision(station.tuple, orchestratorFamily);
+    if (!collision) continue;
+    fail(
+      `review.${phase} station "${station.id}" independent external authority must be different-family: resolved family ${collision} equals orchestrator family ${orchestratorFamily}`,
+      'dispatch_policy_invalid',
+    );
+  }
   if (phaseConfig.release_authority === true && orchestratorFamily) {
     const hasDifferentFamilyIndependent = stations.some((station) =>
       station.kind === 'external'
