@@ -2862,7 +2862,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-planning-signals.mjs",
-        "test-framework/evals/tier-1/validate-stage-registry-single-source.sh"
+        "test-framework/evals/tier-1/validate-stage-registry-single-source.sh",
+        "test-framework/tests/fresh-project-bootstrap.test.mjs"
       ]
     },
     {
@@ -2942,6 +2943,15 @@
         "test-framework/evals/tier-1/validate-promotion-authority.sh",
         "test-framework/evals/tier-1/validate-route-workflow-hot-path-size.sh",
         "test-framework/evals/tier-1/validate-svc-reconcile-consumer-routing.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-bootstrap-repo.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-bootstrap-repo.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/fresh-project-bootstrap.test.mjs"
       ]
     },
     {
@@ -3559,7 +3569,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-shared-chain-policy.sh",
-        "test-framework/evals/tier-1/validate-svc-reconcile-legacy-binary.sh"
+        "test-framework/evals/tier-1/validate-svc-reconcile-legacy-binary.sh",
+        "test-framework/tests/fresh-project-bootstrap.test.mjs"
       ]
     },
     {
