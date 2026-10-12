@@ -932,13 +932,24 @@ const LIGHT = new Set(["single-pass", "single-lens"]);
 // Sets each stage's depth for the current planning mode. A stage that was completed at a
 // lighter depth than it now needs (risk rose into an irreversible zone, or the work moved
 // from a bounded to a contract plan) is reopened, not relabelled: relabelling would claim
-// a full review that never happened. Returns the reopened tasks for mutation_history.
+// a full review that never happened. An unmet process obligation may already have moved
+// that same stage to pending (review-security on an auth path). That reopen stores the
+// status as previous; the lighter review depth still has to be recorded, and the
+// obligation reason stays. Returns the reopened tasks for mutation_history.
 function applyPlanningDepth(tasks, planning) {
   const reopened = [];
   const reopen = (task, why, from) => {
-    if (task.status !== "completed") return;
-    task.status = "pending";
-    task.metadata.reopened = { reason: why, previous: from, at: new Date().toISOString() };
+    if (task.status === "completed") {
+      task.status = "pending";
+      task.metadata.reopened = { reason: why, previous: from, at: new Date().toISOString() };
+      reopened.push({ id: task.id, skill: task.metadata.skill, reason: why });
+      return;
+    }
+    const already = task.metadata?.reopened;
+    if (!already || !["completed", "in_progress"].includes(already.previous)) return;
+    if (already.reason && !String(already.reason).includes(why)) already.reason = `${already.reason}; ${why}`;
+    else if (!already.reason) already.reason = why;
+    already.previous = from;
     reopened.push({ id: task.id, skill: task.metadata.skill, reason: why });
   };
   const depths = planning.mode === "bounded" ? boundedDepths(planning) : {};
