@@ -3050,8 +3050,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/tests/lane-stop-guard.test.mjs",
-        "test-framework/tests/svc-next-plan-sequence.test.mjs",
-        "test-framework/tests/svc-next.test.mjs"
+        "test-framework/tests/route-workflow-entry.test.mjs",
+        "test-framework/tests/svc-next-plan-sequence.test.mjs"
       ]
     },
     {
