@@ -2507,6 +2507,7 @@
       "status": "tested",
       "evidence": [
         "test-framework/tests/delivery-plan-contract.test.mjs",
+        "test-framework/tests/svc-next.test.mjs",
         "test-framework/tests/two-box-receipts.test.mjs"
       ]
     },
@@ -3040,6 +3041,17 @@
         "test-framework/evals/tier-1/validate-all-host-install-migration.sh",
         "test-framework/evals/tier-1/validate-runtime-root-portability.sh",
         "test-framework/evals/tier-1/validate-task-state-compatibility.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-next.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-next.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/lane-stop-guard.test.mjs",
+        "test-framework/tests/svc-next-plan-sequence.test.mjs",
+        "test-framework/tests/svc-next.test.mjs"
       ]
     },
     {
@@ -3954,7 +3966,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
-        "test-framework/tests/two-box-receipts.test.mjs"
+        "test-framework/tests/svc-next-plan-sequence.test.mjs"
       ]
     },
     {
