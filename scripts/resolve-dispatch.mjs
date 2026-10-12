@@ -504,7 +504,17 @@ function inferOrchestratorFamily(orchestrator, stations) {
     }
     return family;
   }
-  return stations.find((station) => station.kind === 'inline-self')?.tuple?.family || null;
+  // Unmapped hosts (no HOST_FAMILY entry) attest nothing by name either: with an
+  // independent external station the author family must resolve, or the fence
+  // has nothing to compare against.
+  const family = stations.find((station) => station.kind === 'inline-self')?.tuple?.family || null;
+  if ((!family || family === 'multi') && stations.some((station) => station.kind === 'external' && station.authority === 'independent')) {
+    fail(
+      `orchestrator "${orchestrator}" family is unknown: declare an attested provider family on the inline-self tuple before an independent station can be checked`,
+      'dispatch_policy_invalid',
+    );
+  }
+  return family;
 }
 
 // Family an independent station actually resolves to. A named single-provider

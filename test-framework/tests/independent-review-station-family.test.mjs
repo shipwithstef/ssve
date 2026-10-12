@@ -240,3 +240,31 @@ test("cursor and opencode take the author family from the inline-self tuple", ()
     }
   });
 });
+
+test("an unmapped orchestrator without an attested self family cannot use an independent station", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "svc-unmapped-family-"));
+  const openaiExternal = { host: "codex", family: "openai", model: "gpt-5.6-sol", effort: "high" };
+  withCleanEnv(() => {
+    try {
+      const noSelf = writePolicy(dir, "kimi-noself.json", multiHarnessPolicy({ self: null, independent: openaiExternal }));
+      const attested = writePolicy(dir, "kimi-attested.json", multiHarnessPolicy({
+        self: { host: "kimi", family: "moonshot", model: "kimi-k3", effort: "high" },
+        independent: openaiExternal,
+      }));
+      for (const phase of ["plan", "exec"]) {
+        assert.throws(
+          () => resolveDispatchReviewTopology({ orchestrator: "kimi", cwd: dir, phase, configPath: noSelf }),
+          (error) => {
+            assert.equal(error.code, "dispatch_policy_invalid");
+            assert.match(error.message, /orchestrator "kimi" family is unknown/);
+            return true;
+          },
+        );
+        const ok = resolveDispatchReviewTopology({ orchestrator: "kimi", cwd: dir, phase, configPath: attested });
+        assert.ok(ok);
+      }
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
