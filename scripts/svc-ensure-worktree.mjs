@@ -30,6 +30,8 @@ import { authorityJson, resolveAuthorityHost, resolveWI } from "../hooks/lib/res
 import { markerPathFor, readMarker, secureAncestors } from "../hooks/codex/lib/bootstrap-marker.mjs";
 import { consumeBootstrapHandoff } from "../hooks/codex/lib/session-handoff.mjs";
 import { resolveChainPolicy } from "./lib/chain-policy.mjs";
+import { bootstrapRepo } from "./svc-bootstrap-repo.mjs";
+import { sessionShaped } from "../hooks/lib/claim-owner.mjs";
 import { validateTaskGraphShape, selectRecoveryTask, taskSkillForLoad } from "../hooks/lib/validate-task-graph-shape.mjs";
 
 import { WI_ID_RE as WI_RE } from "../hooks/lib/wi-id.mjs";
@@ -68,8 +70,13 @@ function repository(start) {
 
 function sessionId(env) {
   return String(env.CURSOR_CONVERSATION_ID || env.CURSOR_SESSION_ID || env.SVC_SESSION_ID || env.GROK_SESSION_ID || env.CODEX_THREAD_ID || env.CODEX_SESSION_ID ||
-    env.CLAUDE_SESSION_ID || env.KIMI_SESSION_ID || env.GEMINI_SESSION_ID || "");
+    env.CLAUDE_SESSION_ID || env.KIMI_SESSION_ID || env.GEMINI_SESSION_ID || env.CLAUDE_CODE_SESSION_ID || "");
 }
+
+const SESSION_ID_HELP = "a host session id is required to create or resume a mutating worktree. " +
+  "Provide the host's real session id as the environment variable SVC_SESSION_ID (the SessionStart hook exports it on Claude Code; " +
+  "CLAUDE_CODE_SESSION_ID, CLAUDE_SESSION_ID, CODEX_THREAD_ID, CURSOR_CONVERSATION_ID, GROK_SESSION_ID, KIMI_SESSION_ID and GEMINI_SESSION_ID are also read) " +
+  "or pass --session-id <id> on this command. The id must be a UUID (what Claude Code reports) or <thread|session|sess|codex|claude|kimi|gemini|agy|svc>-<8+ characters>. Use the id the host reports for this session, not an invented one: hooks bind the worktree to it.";
 
 // WI-486 (EXEC-004): the owner process identity persisted in the claim. Only a
 // STABLE, long-lived owner pid is meaningful (the ephemeral bootstrap CLI pid is
@@ -125,22 +132,34 @@ export function assertIgnored(repoRoot, worktreesRoot) {
 // precondition; it is left byte-for-byte unchanged. Only the immutable base commit
 // is validated.
 function resolveBase(repoRoot, from) {
-  // A project with no remote (a new local project) bases on its own default branch; one with
-  // a remote must have fetched it. A project with no commits has nothing to isolate yet.
+  const tryRev = (ref) => { try { return git(["rev-parse", "--verify", "--quiet", "--end-of-options", ref], repoRoot, { stderr: false }) || null; } catch { return null; } };
   let hasOrigin = true;
-  try { git(["remote", "get-url", "origin"], repoRoot); } catch { hasOrigin = false; }
-  if (!hasOrigin && from === "origin/main") {
-    for (const ref of ["main", "master", "HEAD"]) {
-      try { return git(["rev-parse", "--verify", `${ref}^{commit}`], repoRoot); } catch {}
-    }
-    throw new Error("NO_COMMITS: this repository has no commits yet, so there is nothing to isolate. Work in place on a new branch (git checkout -b <branch>); worktree isolation applies after the first commit.");
+  try { git(["remote", "get-url", "origin"], repoRoot, { stderr: false }); } catch { hasOrigin = false; }
+  const local = ["main", "master", "HEAD"].map((ref) => tryRev(`${ref}^{commit}`)).find(Boolean) || null;
+  if (from === "origin/main" || from === "HEAD") {
+    // With a real origin remote the fetched origin/main is the base. Without one (a local project)
+    // or before the first fetch, the local default branch is. svc-bootstrap-repo guarantees a
+    // commit, so a missing commit here is a bootstrap failure, never a reason to skip isolation.
+    const origin = from === "HEAD" ? tryRev("HEAD^{commit}") : (hasOrigin ? tryRev("origin/main^{commit}") : null);
+    if (origin) return origin;
+    if (local) return local;
+    throw new Error("NO_COMMITS: svc-bootstrap-repo did not produce a commit. Do not implement on the default checkout; run node scripts/svc-bootstrap-repo.mjs and read its error.");
   }
-  try { git(["rev-parse", "--verify", "origin/main^{commit}"], repoRoot); }
-  catch { throw new Error("origin/main is missing; fetch origin before ensuring a worktree"); }
-  const explicitSha = SHA_RE.test(from);
-  if (from !== "origin/main" && !explicitSha) throw new Error("--from must be origin/main or an immutable 40-character commit SHA");
-  try { return git(["rev-parse", "--verify", `${from}^{commit}`], repoRoot); }
-  catch { throw new Error(`base does not resolve to a commit: ${from}`); }
+  if (!SHA_RE.test(from)) throw new Error("--from must be origin/main, HEAD, or a 40-character commit SHA");
+  const sha = tryRev(`${from}^{commit}`);
+  if (!sha) throw new Error(`base does not resolve to a commit: ${from}`);
+  return sha;
+}
+
+// Bootstrap is best effort on an established repository, but when it fails and no commit exists the
+// real cause (a commit hook, signing, identity) must be what the caller reads, not a bare NO_COMMITS.
+function bootstrapOrReport(repoRoot, env) {
+  try { bootstrapRepo({ repo: repoRoot, env }); return; }
+  catch (error) {
+    let hasCommit = true;
+    try { git(["rev-parse", "--verify", "--quiet", "--end-of-options", "HEAD^{commit}"], repoRoot, { stderr: false }); } catch { hasCommit = false; }
+    if (!hasCommit) throw new Error(`NO_COMMITS: svc-bootstrap-repo could not create the root commit: ${error.message}`);
+  }
 }
 
 function worktreeRows(repoRoot) {
@@ -712,7 +731,7 @@ export function ensureWorktree(options = {}, env = process.env) {
   const branchCheck = validateLiteralBranchName(branch);
   if (!branchCheck.ok) throw new Error(`--branch must be a Git-valid literal ref (BRANCH_REF_INVALID: ${branchCheck.reason})`);
   const owner = sessionId(env);
-  if (!owner) throw new Error("a host session id is required to create or resume a mutating worktree");
+  if (!owner) throw new Error(SESSION_ID_HELP);
   const host = resolveAuthorityHost({}, env);
   if (!host) throw new Error("trusted host identity is missing or unsupported");
   const repo = repository(options.cwd || process.cwd());
@@ -720,6 +739,9 @@ export function ensureWorktree(options = {}, env = process.env) {
 }
 
 function transaction({ repo, wi, branch, from, owner, host, env }) {
+  // A fresh `git init` repository has no commit, no chain policy and no origin/main; give it
+  // those once, before any base is resolved. Idempotent and a no-op on an established repo.
+  bootstrapOrReport(repo.root, env);
   resolveApprovedRoots(repo.root, env);
   const worktreesRoot = resolveWorktreesRoot(repo.root, env);
   assertIgnored(repo.root, worktreesRoot);
@@ -1160,13 +1182,24 @@ function parseArgs(argv) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.wi || !args.branch) {
-    throw new Error("Usage: node scripts/svc-ensure-worktree.mjs --wi WI-N --branch NAME [--from origin/main] [--authority-v2] [--print-cd] [--json]");
+    throw new Error("Usage: node scripts/svc-ensure-worktree.mjs --wi WI-N --branch NAME [--from origin/main] [--session-id ID] [--authority-v2] [--print-cd] [--json]");
+  }
+  if (args.session_id !== undefined) {
+    if (!sessionShaped(args.session_id)) throw new Error(`--session-id is not session-shaped. ${SESSION_ID_HELP}`);
+    process.env.SVC_SESSION_ID = String(args.session_id);
+  }
+  // Claude Code exposes CLAUDE_CODE_SESSION_ID to Bash; without SVC_HOST the host would default to
+  // another family and the claim principal would not match the hooks' (SVC_HOST=claude).
+  if (!process.env.SVC_HOST && (process.env.CLAUDE_CODE_SESSION_ID || process.env.CLAUDECODE) &&
+      !["CURSOR_CONVERSATION_ID", "CURSOR_AGENT", "GROK_SESSION_ID", "CODEX_THREAD_ID", "CODEX_SESSION_ID", "CLAUDE_SESSION_ID", "KIMI_SESSION_ID", "GEMINI_SESSION_ID", "OPENCODE_SESSION_ID"].some((k) => process.env[k])) {
+    process.env.SVC_HOST = "claude";
   }
   const authorityHost = resolveAuthorityHost({}, process.env);
   if (!authorityHost) throw new Error("trusted host identity is missing or unsupported");
   if (args.handoff) {
     const invocationRepo = repository(process.cwd()).root;
-    const requestedBase = (args.from || "origin/main") === "origin/main" ? git(["rev-parse", "origin/main"], invocationRepo) : args.from;
+    bootstrapOrReport(invocationRepo, process.env);
+    const requestedBase = resolveBase(invocationRepo, args.from || "origin/main");
     const handoff = consumeBootstrapHandoff(args.handoff, { host: authorityHost, repo_root: invocationRepo, wi: args.wi, branch: args.branch, base: requestedBase }, { env: process.env });
     // The session id crosses the hook/child boundary only through the private
     // one-use handoff, never as a shell argument. Existing callers may still
