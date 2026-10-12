@@ -321,6 +321,8 @@ echo "$NEW_ENV" | git notes --ref=svc-receipts add -f -F - <sha>
 
 ## Pipeline Continuation
 
+**Lane graph driven by `svc-next`.** When `.svc/lane-tasks-<WI>.json` was compiled for this work, `svc-next` alone completes this stage and picks the successor: do not mark the task completed, start or load the next task or skill, or follow a next-skill default from this section; finish through `## Handback` at the end of this file. The rules below apply only without a compiled lane graph.
+
 After review-exec emits its receipt with verdict=`pass`:
 
 | Next phase | Trigger condition |
@@ -384,3 +386,7 @@ A zero-invocation verified cache replay retains its signed issuance history but 
 Run launcher `--preflight --plan-file <validated-v4-json>` with the actual review arguments before paid dispatch; retain `--plan-file` for the real invocation. Stage the frozen source before preflight: declared tracked input bytes must match the candidate index. Explicit extra dependencies use `--context-files <json-array-file>`. The launcher packages those actual files, including available planned source and bound producers. Missing executed files require an explicit recorded base version for a deletion.
 
 Unscored Loading/Reviewing responses containing no findings, certifications, rubric failures or unread dependencies receive at most the existing one completion attempt, within the original budget. Preserve both raw attempts; substantive negative evidence is never erased. Scope certifications to observed current-phase obligations. Installation remains downstream.
+
+## Handback
+
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `EMIT` command `svc-next` printed for this stage; it prints `review-exec:<sha256>`. Then run the `CLOSEOUT` command `svc-next` printed, verbatim, with that value in place of `review-exec:<sha256>`. Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above.
