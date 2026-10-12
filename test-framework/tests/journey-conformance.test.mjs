@@ -263,11 +263,13 @@ test("the shipped journeys directory validates (every spec present is well forme
 });
 
 // ---- decide ----
-test("decide reports a journey section and counts non-conformant runs without touching the headline", () => {
+test("decide reports a journey section; a non-conformant framework run is void: out of the headline, and the decision is incomplete", () => {
   const bar = loadBar();
   const rows = loadRows([path.join(HERE, "../outcome-evals/northstar/fixtures/dev-pass.json")]);
   const base = decide(rows, { slice: "dev", bar });
-  assert.deepEqual(base.journey, { per_task: {}, void_nonconformant: 0 });
+  // the fixture marks its framework rows journey-conformant (a framework row counts only with journey.conformant === true)
+  assert.equal(base.journey.void_nonconformant, 0);
+  assert.equal(base.journey_unverified_runs, 0);
   assert.equal(base.void_nonconformant, 0);
   const fwYoga = rows.filter((r) => r.task === "yoga-studio" && r.arm === "framework");
   assert.ok(fwYoga.length >= 3);
@@ -287,9 +289,14 @@ test("decide reports a journey section and counts non-conformant runs without to
   assert.equal(y.errored, fwYoga.length - 3);
   assert.deepEqual(y.missing_steps, { plan: 1, review: 2 });
   assert.equal(d.void_nonconformant, 2);
-  assert.deepEqual(d.headline, base.headline, "headline math unchanged");
-  assert.equal(d.overall, base.overall);
-  assert.equal(d.rows_used, base.rows_used);
+  const E = fwYoga.length - 3;
+  assert.equal(d.rows_used, base.rows_used - 2 - E, "non-conformant and errored-journey runs are excluded before any score or cost");
+  assert.equal(d.journey_unverified_runs, E);
+  assert.notDeepEqual(d.headline, base.headline, "the headline is computed without them");
+  assert.equal(d.void_runs, 2 + E);
+  assert.equal(d.void_by_arm.framework, 2 + E);
+  assert.equal(d.overall === "pass", false);
+  assert.ok(d.incomplete_reasons.some((m) => /2 framework run\(s\) did not walk the task's intended journey: void/.test(m)), d.incomplete_reasons.join("; "));
 });
 
 test("an existing spec file holding null, false, 0, \"\" or an array is refused, not treated as absent", () => {

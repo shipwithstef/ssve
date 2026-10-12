@@ -1,0 +1,21 @@
+{
+  "$comment": "Token prices for the cross-family reviewer (Codex) used by the eval's review relay, USD per million tokens, from the provider's published list. scripts/outcome-eval.mjs prices relayed reviewer calls from this table. A model listed here is priced at list price; a model NOT listed is priced at `fallback`, a deliberate ceiling, flagged unknown, and the row's reviewer accounting becomes `unmeasured` so its cost cannot be compared. Re-verify against the source before each northstar decision: prices change.",
+  "updated": "2026-10-11",
+  "models": {
+    "gpt-5.6-sol": {
+      "input_per_m": 4,
+      "cached_input_per_m": 0.4,
+      "output_per_m": 20,
+      "cache_write_multiplier": 1.25,
+      "long_context": { "threshold_tokens": 272000, "input_multiplier": 2, "output_multiplier": 1.5 },
+      "source": "https://developers.openai.com/api/docs/models/GPT-5.6",
+      "verified": "2026-10-11",
+      "note": "Promotional price, available at least through 2026-11-21 per the source page."
+    }
+  },
+  "fallback": {
+    "input_per_m": 5,
+    "cached_input_per_m": 0.5,
+    "output_per_m": 30
+  }
+}

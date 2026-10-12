@@ -3654,7 +3654,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
-        "test-framework/tests/two-box-large-request.test.mjs"
+        "test-framework/tests/review-relay.test.mjs"
       ]
     },
     {
@@ -3676,7 +3676,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
-        "test-framework/tests/two-box-large-request.test.mjs"
+        "test-framework/tests/review-relay.test.mjs"
       ]
     },
     {
@@ -3695,7 +3695,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/tests/journey-conformance.test.mjs",
-        "test-framework/tests/journey-intended-specs.test.mjs"
+        "test-framework/tests/journey-intended-specs.test.mjs",
+        "test-framework/tests/review-relay.test.mjs"
       ]
     },
     {
@@ -3726,7 +3727,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
-        "test-framework/tests/two-box-large-request.test.mjs"
+        "test-framework/tests/review-relay.test.mjs"
       ]
     },
     {
@@ -3840,6 +3841,24 @@
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
         "test-framework/tests/review-launch-preflight.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/review-relay-client.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/review-relay-client.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/review-relay.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/review-relay.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/review-relay.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/review-relay.test.mjs"
       ]
     },
     {
@@ -4021,7 +4040,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
-        "test-framework/tests/two-box-claude-transport.test.mjs"
+        "test-framework/tests/review-relay.test.mjs"
       ]
     },
     {

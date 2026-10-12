@@ -260,7 +260,7 @@ test("plan refuses a reserve task with a null, mismatched or missing hash and ac
 
 test("decide on the reserve slice refuses rows whose recorded task hash is missing or differs", () => {
   const { frozen } = reserveFixture();
-  const row = (task, arm, rep, extra = {}) => ({ task, arm, rep, model: "m", framework_sha: arm === "framework" ? "s" : null, builder_sandbox: "bwrap", solved: true, hidden_pass: 1, hidden_total: 1, cost_usd: 1, wall_ms: 1000, stop: "end_turn", model_usage: { m: { inputTokens: 1, outputTokens: 1 } }, components: { E: 1, S: 1, P: 1, K: 1 }, ...extra });
+  const row = (task, arm, rep, extra = {}) => ({ task, arm, rep, model: "m", framework_sha: arm === "framework" ? "s" : null, builder_sandbox: "bwrap", solved: true, hidden_pass: 1, hidden_total: 1, cost_usd: 1, wall_ms: 1000, stop: "end_turn", model_usage: { m: { inputTokens: 1, outputTokens: 1 } }, components: { E: 1, S: 1, P: 1, K: 1 }, ...(arm === "framework" ? { journey: { conformant: true } } : {}), ...extra });
   const rows = (h1, h2) => ["R1", "R2"].flatMap((t) => ["solo", "framework"].flatMap((arm) => [1, 2, 3].map((rep) => row(t, arm, rep, { task_sha256: t === "R1" ? h1 : h2 }))));
   const [h1, h2] = frozen.reserve.map((r) => r.grader_sha256);
   assert.doesNotThrow(() => decide(rows(h1, h2), { slice: "reserve", bar: frozen }));
@@ -283,7 +283,7 @@ test("budget-skipped rows carry the task hash; decide on the reserve accepts the
     assert.equal(skipped.task_sha256, frozen.reserve[0].grader_sha256);
   } finally { oe.resetTaskRoots(); }
   const [h1, h2] = frozen.reserve.map((r) => r.grader_sha256);
-  const row = (task, arm, rep, extra = {}) => ({ task, arm, rep, model: "m", framework_sha: arm === "framework" ? "s" : null, builder_sandbox: "bwrap", solved: true, hidden_pass: 1, hidden_total: 1, cost_usd: 1, wall_ms: 1000, stop: "end_turn", model_usage: { m: { inputTokens: 1, outputTokens: 1 } }, components: { E: 1, S: 1, P: 1, K: 1 }, ...extra });
+  const row = (task, arm, rep, extra = {}) => ({ task, arm, rep, model: "m", framework_sha: arm === "framework" ? "s" : null, builder_sandbox: "bwrap", solved: true, hidden_pass: 1, hidden_total: 1, cost_usd: 1, wall_ms: 1000, stop: "end_turn", model_usage: { m: { inputTokens: 1, outputTokens: 1 } }, components: { E: 1, S: 1, P: 1, K: 1 }, ...(arm === "framework" ? { journey: { conformant: true } } : {}), ...extra });
   const ran = ["R1", "R2"].flatMap((t) => ["solo", "framework"].flatMap((arm) => [1, 2].map((rep) => row(t, arm, rep, { task_sha256: t === "R1" ? h1 : h2 }))));
   const skip = (t, arm, h) => ({ task: t, arm, rep: 3, error: "skipped: budget", spent_before_usd: 30, ...(h ? { task_sha256: h } : {}) });
   const withSkips = (h) => [...ran, ...["R1", "R2"].flatMap((t) => ["solo", "framework"].map((arm) => skip(t, arm, h?.[t])))];
@@ -307,7 +307,7 @@ test("decide on the reserve refuses when any frozen grader_sha256 in bar.json is
 test("regrade records the hash of the task it rescored with: a changed reserve task no longer decides", () => {
   const { root, frozen } = reserveFixture();
   const [h1, h2] = frozen.reserve.map((r) => r.grader_sha256);
-  const row = (task, arm, rep, extra = {}) => ({ task, arm, rep, model: "m", framework_sha: arm === "framework" ? "s" : null, builder_sandbox: "bwrap", solved: true, hidden_pass: 1, hidden_total: 1, cost_usd: 1, wall_ms: 1000, stop: "end_turn", model_usage: { m: { inputTokens: 1, outputTokens: 1 } }, components: { E: 1, S: 1, P: 1, K: 1 }, ...extra });
+  const row = (task, arm, rep, extra = {}) => ({ task, arm, rep, model: "m", framework_sha: arm === "framework" ? "s" : null, builder_sandbox: "bwrap", solved: true, hidden_pass: 1, hidden_total: 1, cost_usd: 1, wall_ms: 1000, stop: "end_turn", model_usage: { m: { inputTokens: 1, outputTokens: 1 } }, components: { E: 1, S: 1, P: 1, K: 1 }, ...(arm === "framework" ? { journey: { conformant: true } } : {}), ...extra });
   const rows = () => ["R1", "R2"].flatMap((t) => ["solo", "framework"].flatMap((arm) => [1, 2, 3].map((rep) => row(t, arm, rep, { task_sha256: t === "R1" ? h1 : h2 }))));
   oe.resetTaskRoots();
   try {

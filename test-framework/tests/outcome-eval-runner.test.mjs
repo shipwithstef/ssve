@@ -175,12 +175,20 @@ test("wall-time forecast from the first wave", () => {
   assert.deepEqual(oe.forecastWall({ firstWaveMs: [60000, 120000], remaining: 5, parallel: 2 }), { mean_job_ms: 90000, waves_left: 3, forecast_ms: 270000 });
 });
 
-test("dispatch policy pins every slot to the arm model and still validates", () => {
+test("dispatch policy pins same-family slots to the arm model, keeps cross-family roles, and still validates", () => {
   const def = JSON.parse(fs.readFileSync(path.join(root, "references", "default-dispatch-policy.json"), "utf8"));
   const pinned = oe.pinDispatchPolicy(def, "haiku");
-  const models = [];
-  JSON.stringify(pinned, (k, v) => { if (k === "model") models.push(v); return v; });
-  assert.ok(models.length >= 7 && models.every((m) => m === "haiku" || m === "web_search"), models.join());
+  const tuples = [];
+  const collect = (v) => { if (Array.isArray(v)) v.forEach(collect); else if (v && typeof v === "object") { if (typeof v.model === "string" && ("host" in v || "family" in v)) tuples.push(v); Object.values(v).forEach(collect); } };
+  collect(pinned);
+  const same = tuples.filter((t) => t.host === "claude" || t.family === "anthropic");
+  const cross = tuples.filter((t) => !(t.host === "claude" || t.family === "anthropic"));
+  assert.ok(same.length >= 7 && same.every((t) => t.model === "haiku" || t.model === "web_search"), same.map((t) => t.model).join());
+  // Cross-family roles are untouched: adversarial review stays cross-family (owner directive).
+  const origCross = []; const collectOrig = (v) => { if (Array.isArray(v)) v.forEach(collectOrig); else if (v && typeof v === "object") { if (typeof v.model === "string" && ("host" in v || "family" in v) && ((typeof v.host === "string" && v.host !== "claude") || (typeof v.family === "string" && v.family !== "anthropic"))) origCross.push(v); Object.values(v).forEach(collectOrig); } };
+  collectOrig(def);
+  assert.deepEqual(cross, origCross);
+  assert.ok(cross.some((t) => t.host === "codex"), "the default policy has Codex cross-family roles");
   const home = tmp("oe-pol-");
   fs.mkdirSync(path.join(home, ".claude", "skills"), { recursive: true });
   const w = oe.writeFrameworkPolicies(home, root, "haiku");
@@ -276,7 +284,7 @@ function runEval(args, { mode = "ok", counter = "", extraEnv = {}, workBase = nu
   const bin = path.join(base, "bin"); fs.mkdirSync(bin);
   fakeClaude(bin);
   const out = path.join(base, "out.json");
-  const env = { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, OE_CREDENTIALS: creds(), FAKE_MODE: mode, FAKE_REAL_HOME: os.homedir(), SVC_ROOT: "/should/not/leak", ...(counter !== "" ? { FAKE_COUNTER: counter } : {}), ...extraEnv };
+  const env = { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, OE_CREDENTIALS: creds(), OE_NO_REVIEW_RELAY: "1", FAKE_MODE: mode, FAKE_REAL_HOME: os.homedir(), SVC_ROOT: "/should/not/leak", ...(counter !== "" ? { FAKE_COUNTER: counter } : {}), ...extraEnv };
   const r = spawnSync(process.execPath, [script, "run", "--judge", "none", "--reps", "1", "--model", "haiku", "--keep", path.join(base, "kept"), "--work-root", workBase || path.join(base, "work"), "--out", out, ...args], { env, encoding: "utf8", timeout: 240000 });
   const result = fs.existsSync(out) ? JSON.parse(fs.readFileSync(out, "utf8")) : null;
   return { r, result, base };

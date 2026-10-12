@@ -15,7 +15,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIX = path.join(HERE, "../outcome-evals/northstar/fixtures");
 const CLI = path.join(HERE, "../../scripts/northstar.mjs");
 const bar = loadBar();
-const fx = (n) => loadRows([path.join(FIX, `${n}.json`)]);
+// Fixtures predate journey evidence; a framework row counts only with journey.conformant === true.
+const fx = (n) => loadRows([path.join(FIX, `${n}.json`)]).map((r) => (r.arm === "framework" && r.journey === undefined ? { ...r, journey: { conformant: true } } : r));
 const dev = (n, extra = {}) => decide(fx(n), { slice: "dev", bar, ...extra });
 const cell = (d, task, comp) => d.cells.find((c) => c.task === task && c.component === comp);
 const con = (d, task, id) => d.constraints.find((c) => c.task === task && c.id === id);
@@ -444,7 +445,7 @@ test("cli adopt and usage errors", () => {
 const runRow = (task, arm, rep, o = {}) => ({
   task, arm, rep, builder_sandbox: "bwrap", model: "m", framework_sha: arm === "framework" ? "sha1" : null,
   model_usage: { m: { inputTokens: 100, outputTokens: 100 } }, cost_usd: 1, wall_ms: 1000, turns: 5,
-  score: 1, solved: true, hidden_total: 10, hidden_pass: 10, ...o,
+  score: 1, solved: true, hidden_total: 10, hidden_pass: 10, ...(arm === "framework" ? { journey: { conformant: true } } : {}), ...o,
 });
 // yoga-studio rows from per-component arrays: { E: [..3], S: [..], P: [..], H: [..] } per arm
 const yoga = (solo, fw, extra = {}) => ["solo", "framework"].flatMap((arm) => [0, 1, 2].map((i) => {
@@ -643,4 +644,23 @@ test("catalog overhead rows get the same task/arm/rep uniqueness check", () => {
   assert.throws(() => dev("dev-pass", { overheadRows: dup }), /duplicate task\/arm\/rep/);
   assert.equal(catalogOverhead(dup, bar, null, { allowDuplicateReps: true }).n[0], 3); // explicit opt-in counts them separately
   assert.equal(catalogOverhead(oh, bar).n[0], 3);
+});
+
+// ---- framework rows need positive journey evidence ----
+test("framework rows with missing or errored journey evidence are excluded and the decision is incomplete (counted)", () => {
+  const base = dev("dev-pass");
+  const rows = fx("dev-pass");
+  const strip = (r) => { const { journey, ...rest } = r; return rest; };
+  const missing = rows.map((r) => (r.arm === "framework" && r.task === "yoga-studio" && r.rep === 1 ? strip(r) : r));
+  const d1 = decide(missing, { slice: "dev", bar });
+  assert.equal(d1.journey_unverified_runs, 1);
+  assert.notEqual(d1.overall, "pass");
+  assert.ok(d1.incomplete_reasons.some((x) => /1 framework run\(s\) with missing or errored journey evidence/.test(x)), JSON.stringify(d1.incomplete_reasons));
+  assert.ok(d1.rows_used < base.rows_used);
+  const errored = rows.map((r) => (r.arm === "framework" && r.task === "yoga-studio" && r.rep === 1 ? { ...r, journey: { error: "checker crashed" } } : r));
+  const d2 = decide(errored, { slice: "dev", bar });
+  assert.equal(d2.journey_unverified_runs, 1);
+  assert.equal(d2.rows_used, d1.rows_used);
+  // a solo row without journey is unaffected
+  assert.equal(decide(rows, { slice: "dev", bar }).journey_unverified_runs, 0);
 });

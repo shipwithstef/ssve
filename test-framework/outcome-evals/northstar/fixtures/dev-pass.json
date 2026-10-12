@@ -128,7 +128,10 @@
         "P": 0.9
       },
       "model": "claude-haiku-4-5",
-      "framework_sha": "dc358c0"
+      "framework_sha": "dc358c0",
+      "journey": {
+        "conformant": true
+      }
     },
     {
       "task": "yoga-studio",
@@ -160,7 +163,10 @@
         "P": 0.9
       },
       "model": "claude-haiku-4-5",
-      "framework_sha": "dc358c0"
+      "framework_sha": "dc358c0",
+      "journey": {
+        "conformant": true
+      }
     },
     {
       "task": "yoga-studio",
@@ -191,7 +197,10 @@
         "P": 0.9
       },
       "model": "claude-haiku-4-5",
-      "framework_sha": "dc358c0"
+      "framework_sha": "dc358c0",
+      "journey": {
+        "conformant": true
+      }
     },
     {
       "task": "continuity-rules",
@@ -311,7 +320,10 @@
         "K": 1
       },
       "model": "claude-haiku-4-5",
-      "framework_sha": "dc358c0"
+      "framework_sha": "dc358c0",
+      "journey": {
+        "conformant": true
+      }
     },
     {
       "task": "continuity-rules",
@@ -341,7 +353,10 @@
         "K": 1
       },
       "model": "claude-haiku-4-5",
-      "framework_sha": "dc358c0"
+      "framework_sha": "dc358c0",
+      "journey": {
+        "conformant": true
+      }
     },
     {
       "task": "continuity-rules",
@@ -371,7 +386,10 @@
         "K": 1
       },
       "model": "claude-haiku-4-5",
-      "framework_sha": "dc358c0"
+      "framework_sha": "dc358c0",
+      "journey": {
+        "conformant": true
+      }
     },
     {
       "task": "typo-readme",
@@ -480,7 +498,10 @@
       "builder_sandbox": "bwrap",
       "upstream_stages": [],
       "model": "claude-haiku-4-5",
-      "framework_sha": "dc358c0"
+      "framework_sha": "dc358c0",
+      "journey": {
+        "conformant": true
+      }
     },
     {
       "task": "typo-readme",
@@ -508,7 +529,10 @@
       "builder_sandbox": "bwrap",
       "upstream_stages": [],
       "model": "claude-haiku-4-5",
-      "framework_sha": "dc358c0"
+      "framework_sha": "dc358c0",
+      "journey": {
+        "conformant": true
+      }
     },
     {
       "task": "typo-readme",
@@ -536,7 +560,10 @@
       "builder_sandbox": "bwrap",
       "upstream_stages": [],
       "model": "claude-haiku-4-5",
-      "framework_sha": "dc358c0"
+      "framework_sha": "dc358c0",
+      "journey": {
+        "conformant": true
+      }
     }
   ]
 }
