@@ -1,0 +1,100 @@
+{
+  "$comment": "Lane lists and activation conditions for scripts/compile-delivery-graph.mjs. The lane arrays are the lists the compiler ran before the data switch (a no-op move). Conditions are committed with the stages that point at them. A docs-only change keeps the invariant tail and nothing lane-upstream of it. review-security runs only when the security condition matches, including on the prototype keep-list.",
+  "invariant_tail": [
+    "plan-changeset",
+    "review-plan",
+    "execute-changeset",
+    "review-gate",
+    "review-exec",
+    "audit-implementation",
+    "land-changeset",
+    "verify-promotion"
+  ],
+  "lanes": {
+    "greenfield": [
+      "write-vision", "analyze-domain", "analyze-competitors", "build-personas",
+      "validate-feature", "write-spec", "audit-ac", "write-journeys",
+      "design-ux", "design-ui", "design-tech", "plan-changeset",
+      "review-plan", "execute-changeset", "review-gate", "audit-implementation",
+      "land-changeset", "verify-promotion"
+    ],
+    "brownfield-feature": [
+      "validate-feature", "write-spec", "audit-ac", "write-journeys",
+      "design-ux", "design-ui", "design-tech", "plan-changeset",
+      "review-plan", "execute-changeset", "review-gate", "audit-implementation",
+      "land-changeset", "verify-promotion"
+    ],
+    "bugfix": ["diagnose-bug", "execute-changeset", "review-gate", "audit-implementation", "land-changeset", "verify-promotion"],
+    "drift": ["sync-spec-code", "plan-changeset", "execute-changeset", "review-gate", "audit-implementation", "land-changeset", "verify-promotion"],
+    "refactor": ["sync-spec-code", "design-tech", "plan-changeset", "review-plan", "execute-changeset", "review-gate", "audit-implementation", "land-changeset", "verify-promotion"],
+    "framework": ["improve-framework", "plan-changeset", "execute-changeset", "review-gate", "audit-implementation", "land-changeset", "verify-promotion", "test-framework"],
+    "brownfield-conversion": ["onboard-repo", "plan-capabilities", "review-gate", "verify-promotion"]
+  },
+  "bounded_upstream": {
+    "greenfield": ["analyze-domain", "plan-changeset"],
+    "brownfield-feature": ["analyze-domain", "plan-changeset"]
+  },
+  "doc_paths": [
+    "\\.(md|mdx|txt|rst|adoc)$",
+    "(^|/)README$"
+  ],
+  "executable_paths": [
+    "\\.(js|jsx|mjs|cjs|ts|tsx|vue|svelte|html?|css|scss|py|go|rs|rb|java|kt|php|sh|bash|sql|prisma|graphql|json|ya?ml|toml)$",
+    "(^|/)\\.env(\\.[^/]*)?$",
+    "(^|/)(id_rsa|id_dsa|id_ecdsa|id_ed25519)(\\.[^/]*)?$"
+  ],
+  "conditions": {
+    "ui": {
+      "match": "code-and-config-only",
+      "patterns": [
+        "\\.(tsx|jsx|vue|css|scss|svelte|html)$",
+        "(^|/)(components|pages|screens)(/|$)",
+        "(^|/)app/[^/]+\\.(tsx|jsx|vue|html)$"
+      ]
+    },
+    "user-flow": {
+      "match": "code-and-config-only",
+      "patterns": [
+        "\\.(tsx|jsx|vue|html)$",
+        "(^|/)(pages|screens|routes)(/|$)",
+        "(^|/)app/[^/]+\\.(tsx|jsx|vue|html)$"
+      ]
+    },
+    "security": {
+      "match": "code-and-config-only",
+      "flags": ["auth", "auth-sensitive", "security-sensitive", "payments", "money", "secrets", "data-migration", "data-deletion", "destructive-migration"],
+      "zone_classes": {
+        "auth": ["(^|/)(auth|login|session|oauth|jwt|rbac)(/|\\.|-|_|$)"],
+        "payments": ["(^|/)(payments?|billing|checkout|stripe|wallet|ledger)(/|\\.|-|_|$)"],
+        "secrets": ["(^|/)secrets?(/|\\.|-|_|$)", "(^|/)\\.env"],
+        "migrations": ["(^|/)migrations?(/|\\.|-|_|$)", "(^|/)schema\\.(sql|prisma|graphql)$"],
+        "release": ["(^|/)\\.github/workflows/[^/]*release[^/]*\\.(yml|yaml)$"]
+      }
+    },
+    "live-proof": {
+      "match": "code-and-config-only",
+      "patterns": ["(^|/)\\.github/workflows(/|$)", "(^|/)release(/|\\.)"]
+    },
+    "compliance": {
+      "match": "code-and-config-only",
+      "patterns": ["(^|/)(privacy|gdpr|consent)(/|\\.|-|_|$)"]
+    },
+    "marketing": {
+      "match": "code-and-config-only",
+      "patterns": [
+        "(^|/)(landing|marketing)(/|$)",
+        "(^|/)(pages|app)/(pricing|landing|marketing)\\.(tsx|jsx|html|vue)$"
+      ]
+    }
+  },
+  "stages": {
+    "design-ux": { "activation_condition": "ui" },
+    "design-ui": { "activation_condition": "ui" },
+    "review-security": { "activation_condition": "security", "insert": "pre-land-process" },
+    "landing-page": { "activation_condition": "marketing" },
+    "benchmark-landing": { "activation_condition": "marketing" }
+  },
+  "profile_keeps": {
+    "prototype": ["pricing", "security"]
+  }
+}
