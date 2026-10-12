@@ -136,6 +136,7 @@ async function setup({ maxCalls, callTimeoutMs, price = (id, u) => oe.priceRevie
 // Run the real client against a relay socket from a host cwd.
 function client(sock, args, { cwd, input = "" } = {}) {
   return new Promise((resolve) => {
+    // relay.CLIENT_SOURCE is scripts/lib/review-relay-client.mjs, the shim the job home installs as `codex`.
     const c = spawn(process.execPath, [relay.CLIENT_SOURCE, ...args], { cwd, env: { ...process.env, OE_RELAY_SOCK: sock }, stdio: ["pipe", "pipe", "pipe"] });
     let out = "", err = "";
     c.stdout.on("data", (d) => { out += d; }); c.stderr.on("data", (d) => { err += d; });

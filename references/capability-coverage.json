@@ -3847,8 +3847,10 @@
       "id": "engine:scripts/lib/review-relay-client.mjs",
       "kind": "engine",
       "source": "scripts/lib/review-relay-client.mjs",
-      "status": "untested",
-      "evidence": []
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/review-relay.test.mjs"
+      ]
     },
     {
       "id": "engine:scripts/lib/review-relay.mjs",
