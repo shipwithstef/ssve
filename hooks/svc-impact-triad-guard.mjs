@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import { findSvcDir, resolveWI } from "./lib/resolve-wi.mjs";
 import { classifyFromGit } from "../scripts/classify-change-risk.mjs";
+import { selectSchedule } from "../scripts/svc-next.mjs";
 import { WI_ID_RE } from "./lib/wi-id.mjs";
 import { resolveOperationScope } from "./lib/operation-scope.mjs";
 import { isShellTool } from "./lib/shell-tools.mjs";
@@ -137,13 +138,34 @@ export function validateImpactReceiptContract(receipt, graph) {
   }
   return { valid: errors.length === 0, errors };
 }
-function receiptTask(graph) {
-  const active = (graph.tasks || []).filter((task) => task.status === "in_progress");
-  if (active.length > 1) return { error: "multiple in-progress tasks make impact ownership ambiguous" };
-  if (active.length === 1) return { task: active[0] };
-  const completed = (graph.tasks || []).filter((task) => task.status === "completed");
-  if (completed.length) return { task: completed.at(-1), closeout: true };
+// The lane graph owns a staged mutation when svc-next's schedule names one
+// stage. Runnable stages (pending, blockers satisfied, evidence live) are
+// checked before closeout. Closeout is only the last completed task of a
+// terminal graph that has nothing left to repair. More than one runnable
+// stage, and more than one in-progress task, fail closed. A skipped or
+// completed chain stage with a missing receipt is repair, the same task
+// svc-next prints, and does not satisfy a downstream blocker.
+export function selectOwningTask(graph, root = process.cwd()) {
+  const tasks = graph?.tasks || [];
+  const inProgress = tasks.filter((task) => task.status === "in_progress");
+  if (inProgress.length > 1) return { error: "multiple in-progress tasks make impact ownership ambiguous" };
+  const body = graph && typeof graph === "object" ? { ...graph, tasks } : { tasks };
+  const schedule = selectSchedule(root, body);
+  if (inProgress.length === 1 && schedule.active && String(schedule.active.id) === String(inProgress[0].id)) {
+    return { task: inProgress[0] };
+  }
+  if (schedule.runnable.length > 1) return { error: "multiple runnable tasks make impact ownership ambiguous" };
+  if (schedule.runnable.length === 1) return { task: schedule.runnable[0], scheduled: true };
+  if (schedule.repair) return { task: schedule.repair, repair: true };
+  if (schedule.terminal) {
+    const completed = tasks.filter((task) => task.status === "completed");
+    if (completed.length) return { task: completed.at(-1), closeout: true };
+  }
   return { error: "no in-progress or completed task owns the staged mutation" };
+}
+
+function receiptTask(graph, root) {
+  return selectOwningTask(graph, root);
 }
 
 function artifactExists(artifact, worktree) {
@@ -188,7 +210,7 @@ export function evaluateImpactTriad({ cwd = process.cwd(), env = process.env, pa
   const graphPath = path.join(worktree, ".svc", `lane-tasks-${resolved.wi}.json`);
   const graph = readJsonRegular(graphPath);
   if (!graph) return { ok: false, reason: "owned task graph missing or insecure" };
-  const selection = receiptTask(graph);
+  const selection = receiptTask(graph, worktree);
   if (selection.error) return { ok: false, reason: selection.error };
   const task = selection.task;
   const classification = classifyFromGit({ cwd: worktree, staged: true });

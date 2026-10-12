@@ -1807,6 +1807,16 @@
       ]
     },
     {
+      "id": "engine:scripts/auto-receipt.mjs",
+      "kind": "engine",
+      "source": "scripts/auto-receipt.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-impact-triad.sh",
+        "test-framework/tests/owning-task-schedule.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/blind-floor-check.mjs",
       "kind": "engine",
       "source": "scripts/blind-floor-check.mjs",
@@ -3071,8 +3081,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/tests/lane-stop-guard.test.mjs",
-        "test-framework/tests/route-workflow-entry.test.mjs",
-        "test-framework/tests/svc-next-plan-sequence.test.mjs"
+        "test-framework/tests/owning-task-schedule.test.mjs",
+        "test-framework/tests/route-workflow-entry.test.mjs"
       ]
     },
     {

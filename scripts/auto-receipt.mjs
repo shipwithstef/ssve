@@ -12,17 +12,22 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { writeJsonAtomic } from "./state-io.mjs";
+import { selectOwningTask } from "../hooks/svc-impact-triad-guard.mjs";
 
+function main() {
 const wi = process.argv[process.argv.indexOf("--wi") + 1] || process.env.SVC_WI || null;
 if (!wi) { console.error("Usage: auto-receipt.mjs --wi WI-NNN"); process.exit(1); }
 
-// Find owning task from lane graph (in_progress preferred, else last completed)
+// Same owner as the impact guard: svc-next's runnable stage, else its repair
+// stage, else closeout of a terminal graph. A completed predecessor does not
+// hide a runnable stage, and a skipped chain stage with no receipt is repair.
 const graphPath = path.join(".svc", `lane-tasks-${wi}.json`);
 const graph = JSON.parse(fs.readFileSync(graphPath, "utf8"));
-const active = graph.tasks.filter(t => t.status === "in_progress");
-const task = active.length === 1 ? active[0] : graph.tasks.filter(t => t.status === "completed").at(-1);
-if (!task) { console.error("no owning task found"); process.exit(1); }
+const selection = selectOwningTask(graph, process.cwd());
+const task = selection.task;
+if (!task) { console.error(selection.error || "no owning task found"); process.exit(1); }
 
 // Classify staged diff
 const cls = JSON.parse(execFileSync("node", ["scripts/classify-change-risk.mjs"], 
@@ -98,3 +103,11 @@ const dir = path.join(".svc", "impact-triad", wi);
 fs.mkdirSync(dir, { recursive: true });
 writeJsonAtomic(path.join(dir, `task-${task.id}.json`), receipt);
 console.log(`auto-receipt: wrote ${dir}/task-${task.id}.json (task=${task.id}, tier=${cls.tier}, hash=${cls.sha256.slice(0,12)})`);
+}
+
+const isMain = (() => {
+  try {
+    return Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
+  } catch { return false; }
+})();
+if (isMain) main();

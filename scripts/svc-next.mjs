@@ -217,8 +217,14 @@ function blockerSatisfied(root, graph, task) {
   return (task.status === "completed" || isSkipped(task)) && !needsRepair(root, graph, task);
 }
 
-function findCardTask(root, graph) {
-  const tasks = graph.tasks;
+/**
+ * The same stage partition the card uses. `runnable` is every pending stage whose
+ * blockers are satisfied under receipt and process evidence, in graph order.
+ * `repair` is the first completed or skipped stage whose evidence is missing.
+ * Ownership selectors import this so they cannot drift from the card.
+ */
+export function selectSchedule(root, graph) {
+  const tasks = Array.isArray(graph?.tasks) ? graph.tasks : [];
   const byId = new Map(tasks.map((t) => [String(t.id), t]));
   // A finished stage whose receipt or process evidence is gone or changed holds back everything downstream.
   const stale = tasks.filter((t) => (t.status === "completed" || t.status === "skipped") && needsRepair(root, graph, t));
@@ -239,13 +245,17 @@ function findCardTask(root, graph) {
     const b = byId.get(String(id));
     return b && blockerSatisfied(root, graph, b);
   });
-  const active = tasks.find((t) => t.status === "in_progress" && !downstreamOfStale(t) && blockersOk(t));
-  if (active) return { task: active, kind: "active" };
-  for (const t of tasks) {
-    if (t.status !== "pending" || downstreamOfStale(t) || !blockersOk(t)) continue;
-    return { task: t, kind: "runnable" };
-  }
-  if (stale.length) return { task: stale[0], kind: "repair" };
+  const active = tasks.find((t) => t.status === "in_progress" && !downstreamOfStale(t) && blockersOk(t)) || null;
+  const runnable = tasks.filter((t) => t.status === "pending" && !downstreamOfStale(t) && blockersOk(t));
+  const terminal = tasks.length > 0 && tasks.every((t) => t.status === "completed" || isSkipped(t));
+  return { active, runnable, repair: stale[0] || null, terminal };
+}
+
+function findCardTask(root, graph) {
+  const schedule = selectSchedule(root, graph);
+  if (schedule.active) return { task: schedule.active, kind: "active" };
+  if (schedule.runnable.length) return { task: schedule.runnable[0], kind: "runnable" };
+  if (schedule.repair) return { task: schedule.repair, kind: "repair" };
   return null;
 }
 
