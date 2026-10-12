@@ -413,6 +413,8 @@ When invoked with `--audit` to review existing journeys:
 
 ## Pipeline Continuation
 
+**Lane graph driven by `svc-next`.** When `.svc/lane-tasks-<WI>.json` was compiled for this work, `svc-next` alone completes this stage and picks the successor: do not mark the task completed, start or load the next task or skill, or follow a next-skill default from this section; finish through `## Handback` at the end of this file. The rules below apply only without a compiled lane graph.
+
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`)
 
 Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. Follow `references/task-graph-chaining-protocol.md`: treat `Invoke: /skill-name` and `metadata.skill` as routing instructions, mark this skill's task `completed` before leaving, then load the next runnable task's skill (marking it `in_progress`) or mark it `completed` with a skip reason. Mirror status to the host UI only from the parent session (Claude `TaskList`/`TaskUpdate`; Kimi `/task` observation; in Codex, mirror only the active step in `update_plan`); a subagent (`SVC_SUBAGENT=1`) leaves mirroring to the parent, because a failed mirror call silently drifts from the file.
@@ -434,6 +436,8 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
+**Under a compiled lane graph (`.svc/lane-tasks-*.json`) `svc-next` chooses the next stage: do not invoke or suggest the next skill from this section; follow `## Handback` at the end of this file. The standalone guidance below applies only when no lane graph exists.**
+
 Apply the task-graph protocol above, then:
 
 **If `--progressive` flag is present AND self-verify passed:**
@@ -451,3 +455,7 @@ Apply the task-graph protocol above, then:
 If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.json` is the sole source of truth: resume the first `in_progress` task (else the first `pending` task with blockers satisfied), re-load its skill with `node scripts/task-graph.mjs load-skill <path> <task-id> <skill>`, re-read this SKILL.md, and continue. Never ghost-complete: verify `skill_receipt` exists before marking any task complete. If `.svc/.checkpoint-<WI>.checkpoint.json` names a different `next_task`, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
 
 **Boilerplate rationale:** references/phase-receipts.md supersedes duplicate task-graph boilerplate cleanup for journey skills. Chaining now points at `references/task-graph-chaining-protocol.md` instead of carrying host-specific copies; future changes update the shared phase-receipt/task-graph references first and rely on validators rather than hand-maintained journey-skill copies.
+
+## Handback
+
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `CLOSEOUT` command `svc-next` printed for this stage, verbatim (it ends in `--receipt load-skill`). Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above.

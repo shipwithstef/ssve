@@ -66,6 +66,18 @@ export function isPolicyDenial(result) {
   });
 }
 
+// A Stop payload from the completion guard that continues an already-active lane
+// (scripts/lane-stop-guard.mjs: laneContinue:true + an SVC_LANE_CONTINUE reason) is the one
+// Stop block that advisory mode passes through. It is not a tool denial; it keeps a lane
+// that still owes chain work from ending silently. Every other Stop block stays stripped.
+export function preserveLaneContinue(spec, payload) {
+  return spec?.event === "Stop"
+    && String(spec.command).includes("svc-task-completion-guard")
+    && payload?.laneContinue === true
+    && payload?.decision === "block"
+    && String(payload?.reason || "").startsWith("SVC_LANE_CONTINUE ");
+}
+
 export function advisoryPayload(payload, message, { rewritten = false } = {}) {
   const clean = structuredClone(payload);
   delete clean.decision;
@@ -367,6 +379,11 @@ async function main() {
     } else {
       process.stdout.write(result.stdout);
     }
+    process.stderr.write(result.stderr);
+    return;
+  }
+  if (payload && typeof payload === "object" && preserveLaneContinue(spec, payload)) {
+    process.stdout.write(result.stdout);
     process.stderr.write(result.stderr);
     return;
   }

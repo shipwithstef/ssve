@@ -2275,6 +2275,15 @@
       ]
     },
     {
+      "id": "engine:scripts/k-preload.mjs",
+      "kind": "engine",
+      "source": "scripts/k-preload.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/k-preload.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/kimi-e2e-test.mjs",
       "kind": "engine",
       "source": "scripts/kimi-e2e-test.mjs",
@@ -2291,6 +2300,24 @@
       "status": "untested",
       "evidence": [],
       "next_eval": "Add a tier-1 test, or archive if unused (value audit)"
+    },
+    {
+      "id": "engine:scripts/land-local.mjs",
+      "kind": "engine",
+      "source": "scripts/land-local.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/land-local.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lane-stop-guard.mjs",
+      "kind": "engine",
+      "source": "scripts/lane-stop-guard.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/lane-stop-guard.test.mjs"
+      ]
     },
     {
       "id": "engine:scripts/learning-eval.mjs",
@@ -2384,6 +2411,15 @@
       ]
     },
     {
+      "id": "engine:scripts/model-intel.mjs",
+      "kind": "engine",
+      "source": "scripts/model-intel.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/model-intel-check.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/no-loss-verify.mjs",
       "kind": "engine",
       "source": "scripts/no-loss-verify.mjs",
@@ -2398,9 +2434,9 @@
       "source": "scripts/northstar.mjs",
       "status": "tested",
       "evidence": [
+        "test-framework/tests/journey-conformance.test.mjs",
         "test-framework/tests/northstar-spec-root.test.mjs",
-        "test-framework/tests/northstar.test.mjs",
-        "test-framework/tests/p11-ready.test.mjs"
+        "test-framework/tests/northstar.test.mjs"
       ]
     },
     {
@@ -2471,6 +2507,7 @@
       "status": "tested",
       "evidence": [
         "test-framework/tests/delivery-plan-contract.test.mjs",
+        "test-framework/tests/svc-next.test.mjs",
         "test-framework/tests/two-box-receipts.test.mjs"
       ]
     },
@@ -2511,6 +2548,7 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-quality-probes.mjs",
+        "test-framework/tests/outcome-eval-budget-watch.test.mjs",
         "test-framework/tests/p11-ready.test.mjs"
       ]
     },
@@ -2667,7 +2705,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-cli-symlink-invocation.mjs",
-        "test-framework/evals/tier-1/validate-route-model.mjs"
+        "test-framework/evals/tier-1/validate-route-model.mjs",
+        "test-framework/tests/stage-close.test.mjs"
       ]
     },
     {
@@ -2827,6 +2866,15 @@
       ]
     },
     {
+      "id": "engine:scripts/stage-close.mjs",
+      "kind": "engine",
+      "source": "scripts/stage-close.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/stage-close.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/stage-segment.mjs",
       "kind": "engine",
       "source": "scripts/stage-segment.mjs",
@@ -2835,6 +2883,15 @@
         "test-framework/evals/tier-1/validate-stage-isolation.sh",
         "test-framework/evals/tier-1/validate-stage-registry-single-source.sh",
         "test-framework/tests/two-box-receipts.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/standing-rules.mjs",
+      "kind": "engine",
+      "source": "scripts/standing-rules.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/standing-rules.test.mjs"
       ]
     },
     {
@@ -2994,6 +3051,17 @@
         "test-framework/evals/tier-1/validate-all-host-install-migration.sh",
         "test-framework/evals/tier-1/validate-runtime-root-portability.sh",
         "test-framework/evals/tier-1/validate-task-state-compatibility.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-next.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-next.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/lane-stop-guard.test.mjs",
+        "test-framework/tests/svc-next-plan-sequence.test.mjs",
+        "test-framework/tests/svc-next.test.mjs"
       ]
     },
     {
@@ -3599,6 +3667,16 @@
       ]
     },
     {
+      "id": "engine:scripts/lib/journey-conformance.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/journey-conformance.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/journey-conformance.test.mjs",
+        "test-framework/tests/journey-intended-specs.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/lib/json-schema-validator.mjs",
       "kind": "engine",
       "source": "scripts/lib/json-schema-validator.mjs",
@@ -3899,7 +3977,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
-        "test-framework/tests/two-box-receipts.test.mjs"
+        "test-framework/tests/svc-next-plan-sequence.test.mjs"
       ]
     },
     {
