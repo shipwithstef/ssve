@@ -2213,6 +2213,15 @@
       ]
     },
     {
+      "id": "engine:scripts/harden.mjs",
+      "kind": "engine",
+      "source": "scripts/harden.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/harden.test.mjs"
+      ]
+    },
+    {
       "id": "engine:scripts/harness-drift.mjs",
       "kind": "engine",
       "source": "scripts/harness-drift.mjs",
