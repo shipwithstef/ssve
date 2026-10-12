@@ -137,13 +137,34 @@ export function validateImpactReceiptContract(receipt, graph) {
   }
   return { valid: errors.length === 0, errors };
 }
-function receiptTask(graph) {
-  const active = (graph.tasks || []).filter((task) => task.status === "in_progress");
+function blockerSatisfied(task, byId) {
+  return (task.blocked_by || []).every((id) => {
+    const blocker = byId.get(String(id));
+    return Boolean(blocker && (blocker.status === "completed" || blocker.status === "skipped"));
+  });
+}
+
+// The lane graph owns a staged mutation when one task is in progress, or when
+// svc-next has already scheduled the single runnable stage. compile-delivery-graph
+// writes every task pending, and svc-next (findCardTask) prints that stage without
+// flipping it to in_progress. A pending task that is not that stage does not own
+// anything: zero runnable stages, and more than one, still fail closed.
+export function selectOwningTask(graph) {
+  const tasks = graph?.tasks || [];
+  const active = tasks.filter((task) => task.status === "in_progress");
   if (active.length > 1) return { error: "multiple in-progress tasks make impact ownership ambiguous" };
   if (active.length === 1) return { task: active[0] };
-  const completed = (graph.tasks || []).filter((task) => task.status === "completed");
+  const completed = tasks.filter((task) => task.status === "completed");
   if (completed.length) return { task: completed.at(-1), closeout: true };
+  const byId = new Map(tasks.map((task) => [String(task.id), task]));
+  const runnable = tasks.filter((task) => task.status === "pending" && blockerSatisfied(task, byId));
+  if (runnable.length === 1) return { task: runnable[0], scheduled: true };
+  if (runnable.length > 1) return { error: "multiple runnable tasks make impact ownership ambiguous" };
   return { error: "no in-progress or completed task owns the staged mutation" };
+}
+
+function receiptTask(graph) {
+  return selectOwningTask(graph);
 }
 
 function artifactExists(artifact, worktree) {

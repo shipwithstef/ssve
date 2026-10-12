@@ -17,11 +17,22 @@ import { writeJsonAtomic } from "./state-io.mjs";
 const wi = process.argv[process.argv.indexOf("--wi") + 1] || process.env.SVC_WI || null;
 if (!wi) { console.error("Usage: auto-receipt.mjs --wi WI-NNN"); process.exit(1); }
 
-// Find owning task from lane graph (in_progress preferred, else last completed)
+// Find owning task from lane graph. in_progress wins, else the last completed
+// closeout. svc-next also schedules the single pending stage whose blockers are
+// completed or skipped and does not mark it in_progress; that stage owns the
+// mutation too. Anything else (no runnable stage, several) fails closed.
 const graphPath = path.join(".svc", `lane-tasks-${wi}.json`);
 const graph = JSON.parse(fs.readFileSync(graphPath, "utf8"));
 const active = graph.tasks.filter(t => t.status === "in_progress");
-const task = active.length === 1 ? active[0] : graph.tasks.filter(t => t.status === "completed").at(-1);
+let task = active.length === 1 ? active[0] : graph.tasks.filter(t => t.status === "completed").at(-1);
+if (!task && active.length === 0) {
+  const byId = new Map(graph.tasks.map((t) => [String(t.id), t]));
+  const runnable = graph.tasks.filter((t) => t.status === "pending" && (t.blocked_by || []).every((id) => {
+    const blocker = byId.get(String(id));
+    return Boolean(blocker && (blocker.status === "completed" || blocker.status === "skipped"));
+  }));
+  if (runnable.length === 1) task = runnable[0];
+}
 if (!task) { console.error("no owning task found"); process.exit(1); }
 
 // Classify staged diff
