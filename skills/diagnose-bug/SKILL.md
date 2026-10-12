@@ -420,6 +420,8 @@ Common root-cause patterns (race, null access, state-machine violation, stale ca
 
 ## Pipeline Continuation
 
+**Lane graph driven by `svc-next`.** When `.svc/lane-tasks-<WI>.json` was compiled for this work, `svc-next` alone completes this stage and picks the successor: do not mark the task completed, start or load the next task or skill, or follow a next-skill default from this section; finish through `## Handback` at the end of this file. The rules below apply only without a compiled lane graph.
+
 ### Task-graph mode (when authorized; source of truth: `.svc/lane-tasks-<WI>.json`)
 
 Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume. In the parent Codex session, mirror only the active step in `update_plan`. These instructions apply only when a task graph is authorized; report-only and terminal-answer boundaries below remain controlling. Complete the diagnosis only after the brief and actual required phase evidence are ready. Follow `references/task-graph-chaining-protocol.md` for task status, conditions, skill loading and parent-only UI mirroring; subagents do not call TaskUpdate. Preserve the explicit owner diagnosis-only/no-edit boundary and the mode-specific handoffs below.
@@ -451,6 +453,8 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
+**Under a compiled lane graph (`.svc/lane-tasks-*.json`) `svc-next` chooses the next stage: do not invoke or suggest the next skill from this section; follow `## Handback` at the end of this file. The standalone guidance below applies only when no lane graph exists.**
+
 Apply the canonical task-graph protocol above. If the owner requested diagnosis only or no edits, return the requested diagnosis and stop before implementation; the platform-routing branch below does not override that scope.
 
 **`--diagnose-only` mode (after self-verify passes):**
@@ -476,3 +480,7 @@ If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.jso
 
 When this skill discovers new delivery-graph signals, emit `skill_outcome` per
 `references/skill-outcome-contract.md` before completing the task.
+
+## Handback
+
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `CLOSEOUT` command `svc-next` printed for this stage, verbatim (it ends in `--receipt load-skill`). Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above.

@@ -38,8 +38,9 @@ import { dirSha } from "./lib/dir-sha.mjs";
 import { ARM_TOOLS, armTools } from "./lib/arm-tools.mjs";
 import { reserveFrozenCheck } from "./lib/reserve-frozen.mjs";
 import { writeJsonAtomic } from "./state-io.mjs";
-import { probe } from "./quality-probes.mjs";
+import { probe, EVAL_SEED } from "./quality-probes.mjs";
 import { probe as chaosProbe } from "./chaos-probe.mjs";
+import { checkJourney, validateSpec } from "./lib/journey-conformance.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const TASKS = path.join(ROOT, "test-framework", "outcome-evals", "tasks");
@@ -275,6 +276,8 @@ export const promptSha = (arm, task) => crypto.createHash("sha256").update(task 
 
 // A task is either greenfield (ref.mjs is the reference solution.mjs) or brownfield
 // (repo/ is the starting codebase and ref/ overlays the reference change on it).
+export const SEED_MESSAGE = EVAL_SEED.subject;
+const SEED_DATE = EVAL_SEED.date;
 export function prepare(task, root = os.tmpdir()) {
   fs.mkdirSync(root, { recursive: true });
   const dir = fs.mkdtempSync(path.join(root, `oe-${task}-`));
@@ -283,11 +286,18 @@ export function prepare(task, root = os.tmpdir()) {
   const files = taskConfig(task).copy_spec ? ["spec.md", "visible.test.mjs"] : ["visible.test.mjs"];
   for (const f of files) if (fs.existsSync(path.join(taskDir(task), f))) fs.copyFileSync(path.join(taskDir(task), f), path.join(dir, f));
   fs.writeFileSync(path.join(dir, "package.json"), '{"type":"module"}\n');
-  // A git repository with no commits, so the probes can read when and how often the
-  // agent committed (time to first runnable, commit cadence).
-  spawnSync("git", ["init", "-q"], { cwd: dir });
-  spawnSync("git", ["config", "user.name", "outcome-eval"], { cwd: dir });
-  spawnSync("git", ["config", "user.email", "outcome-eval@local"], { cwd: dir });
+  // Both arms get an ordinary checkout: branch main, one root commit holding the task
+  // files, and origin/main pointing at it (no network remote). A brand-new empty repo is
+  // not what a user's project looks like, and the framework's worktree step needs a base.
+  const g = (...a) => spawnSync("git", a, { cwd: dir, encoding: "utf8", env: { ...process.env, GIT_AUTHOR_DATE: SEED_DATE, GIT_COMMITTER_DATE: SEED_DATE } });
+  g("init", "-q", "-b", "main");
+  g("config", "user.name", "outcome-eval");
+  g("config", "user.email", "outcome-eval@local");
+  g("add", "-A");
+  const c = g("commit", "-q", "--no-verify", "-m", SEED_MESSAGE);
+  if (c.status !== 0) throw new Error(`seeding the task repo failed: ${(c.stderr || "").slice(-200)}`);
+  g("update-ref", "refs/remotes/origin/main", "HEAD");
+  g("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main");
   return dir;
 }
 
@@ -483,6 +493,32 @@ export function cloneHome(from, to) {
   fs.mkdirSync(to, { recursive: true });
   const r = spawnSync("cp", ["-a", `${from}${path.sep}.`, to], { encoding: "utf8" });
   if (r.status !== 0) throw new Error(`cloning the framework home failed: ${(r.stderr || "").slice(-200)}`);
+  // `cp -a src/. dst` copies src's own mode onto dst; the framework's preflight refuses a
+  // HOME that is not private, so the clone is as private as a fresh mkdtemp home.
+  fs.chmodSync(to, 0o700);
+}
+
+// Journey specs: what a framework run is expected to do for a task (see journeys/README.md).
+const JOURNEYS = path.join(NORTHSTAR, "journeys");
+export function journeySpecPath(task, dir = JOURNEYS) { return path.join(dir, `${task}.json`); }
+export function loadJourneySpec(task, dir = JOURNEYS) {
+  const f = journeySpecPath(task, dir);
+  if (!fs.existsSync(f)) return null;
+  const spec = JSON.parse(fs.readFileSync(f, "utf8"));
+  // A file that exists is a spec: a non-object is an error, never "no spec".
+  if (spec === null || typeof spec !== "object" || Array.isArray(spec)) throw new Error(`journey spec for ${task} is not a JSON object`);
+  return spec;
+}
+export function journeyProblems(tasks, dir = JOURNEYS) {
+  const out = [];
+  for (const task of new Set(tasks)) {
+    let spec;
+    try { spec = loadJourneySpec(task, dir); } catch (e) { out.push(`journey spec for ${task} is invalid: ${e.message}`); continue; }
+    if (!spec) continue;
+    if (spec.task !== task) out.push(`journey spec for ${task} names task ${JSON.stringify(spec.task)}`);
+    for (const p of validateSpec(spec)) out.push(`journey spec ${task}: ${p}`);
+  }
+  return out;
 }
 
 // Every entry under <home>/.claude/skills that is a symlink must resolve inside the archive
@@ -722,6 +758,76 @@ export function nestedUsage(home, knownIds = new Set(), table) {
   return { model_usage, usd: +usd.toFixed(6), sessions: sessions.size, unpriced };
 }
 
+// Complete JSON lines from a CLI stream (or a single result object). Assistant usage is priced
+// with modelRates; a result line's total_cost_usd replaces that price for the same buffer so
+// the envelope is not added twice. A trailing partial line is ignored.
+export function parseUsageLines(text, table) {
+  const raw = String(text || "");
+  const lines = raw.split("\n");
+  if (!raw.endsWith("\n")) lines.pop();
+  const msgs = new Map();
+  const sessionIds = new Set();
+  let result = null;
+  let totalCost = null;
+  const take = (j) => {
+    if (!j || typeof j !== "object") return;
+    const sid = j.sessionId || j.session_id || null;
+    if (sid) sessionIds.add(sid);
+    if (j.type === "result" || typeof j.total_cost_usd === "number") {
+      result = j;
+      if (typeof j.total_cost_usd === "number") totalCost = j.total_cost_usd;
+    }
+    const m = j.message;
+    if (j.type !== "assistant" || !m?.usage || !m.model || m.model === "<synthetic>") return;
+    const key = `${sid || ""}:${m.id || j.requestId || j.uuid || "anon"}`;
+    const prev = msgs.get(key);
+    const outTok = m.usage.output_tokens ?? m.usage.outputTokens ?? 0;
+    if (!prev || outTok >= (prev.usage.output_tokens ?? prev.usage.outputTokens ?? 0)) msgs.set(key, { model: m.model, usage: m.usage });
+  };
+  for (const line of lines) {
+    const s = line.trim();
+    if (!s.startsWith("{")) continue;
+    try { take(JSON.parse(s)); } catch { /* partial or noise */ }
+  }
+  const model_usage = {};
+  for (const { model, usage } of msgs.values()) {
+    const t = (model_usage[model] ??= { inputTokens: 0, outputTokens: 0, cacheReadInputTokens: 0, cacheCreationInputTokens: 0, costUSD: 0 });
+    t.inputTokens += usage.input_tokens ?? usage.inputTokens ?? 0;
+    t.outputTokens += usage.output_tokens ?? usage.outputTokens ?? 0;
+    t.cacheReadInputTokens += usage.cache_read_input_tokens ?? usage.cacheReadInputTokens ?? 0;
+    t.cacheCreationInputTokens += usage.cache_creation_input_tokens ?? usage.cacheCreationInputTokens ?? 0;
+  }
+  let priced = 0;
+  for (const [id, u] of Object.entries(model_usage)) {
+    const pr = priceUsage(id, u, table);
+    u.costUSD = +pr.usd.toFixed(6);
+    priced += pr.usd;
+  }
+  const usd = totalCost != null ? totalCost : priced;
+  return { usd: +usd.toFixed(6), priced: +priced.toFixed(6), totalCost, sessionIds, model_usage, result };
+}
+
+// Outer stream cost plus transcript sessions the stream does not already cover.
+export function jobLiveUsd(streamText, home, knownIds = new Set(), table) {
+  const parsed = parseUsageLines(streamText, table);
+  const known = new Set(knownIds);
+  for (const id of parsed.sessionIds) known.add(id);
+  let extra = 0;
+  if (home) {
+    try { extra = nestedUsage(home, known, table).usd; } catch { extra = 0; }
+  }
+  return { usd: +((parsed.usd || 0) + extra).toFixed(6), parsed, extra };
+}
+
+// A result envelope is the CLI's final JSON, not an assistant usage line that happens to parse.
+function resultEnvelope(text) {
+  const parsed = parseUsageLines(text);
+  let whole = null;
+  try { whole = JSON.parse(text); } catch { /* ndjson, or still incomplete */ }
+  const looksResult = whole && (whole.total_cost_usd != null || whole.num_turns != null || typeof whole.result === "string" || whole.is_error != null);
+  return { j: looksResult ? whole : parsed.result, parsed };
+}
+
 // "timeout" when the safety timeout killed the run, "max_turns" when it ended at its turn
 // limit, "budget" when the CLI stopped it on its spending cap (all three score 0 downstream).
 export function stoppedBy({ timedOut = false, stop = null } = {}) {
@@ -730,29 +836,85 @@ export function stoppedBy({ timedOut = false, stop = null } = {}) {
   return /max[_-]?budget/i.test(String(stop || "")) ? "budget" : null;
 }
 
-export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40, effort = null, extraArgs = [], wrap = null) {
+// Kill the CLI and every child it spawned. detached:true makes the child a process-group
+// leader; signalling the negative pid reaches that group. Never signal this process.
+export function killProcessGroup(child, signal = "SIGKILL") {
+  const pid = child?.pid;
+  if (!Number.isInteger(pid) || pid <= 1 || pid === process.pid) return false;
+  try { process.kill(-pid, signal); return true; }
+  catch {
+    try { child.kill(signal); return true; } catch { return false; }
+  }
+}
+
+// How often a running builder's live spend is re-read. Tests pass a shorter interval.
+export const BUDGET_POLL_MS = 3000;
+
+// "run-budget" when this job's live spend would put settled + every running job over the
+// run cap, or when the job itself has passed 3× its claim. A job that has not reported
+// any spend yet is left alone so a sibling's overshoot does not stamp it.
+export function runBudgetStop({ cap, spent = 0, live = new Map(), key, jobUsd, ceiling }) {
+  if (ceiling != null && jobUsd > ceiling) return "run-budget";
+  if (cap == null || !(jobUsd > 0)) return null;
+  let others = spent;
+  for (const [k, v] of live) if (k !== key) others += Number(v) || 0;
+  return others + jobUsd > cap ? "run-budget" : null;
+}
+
+export function runAgent(dir, prompt, model, timeoutMs, tools = "Read,Write,Edit,Glob,Grep,Bash(node:*),Bash(ls:*),Bash(cat:*),Bash(curl:*),Bash(mkdir:*)", maxTurns = 40, effort = null, extraArgs = [], wrap = null, watch = null) {
   return new Promise((resolve) => {
     // The model guides tell you to sweep effort on your own evals rather than assume a level.
     const args = ["-p", "--model", model, "--output-format", "json", "--max-turns", String(maxTurns), ...(effort ? ["--effort", effort] : []), ...extraArgs, "--allowedTools", tools];
     // The prompt goes on stdin: --allowedTools is variadic and would swallow it.
     // wrap: an OS sandbox the claude command runs inside, as an argument list (builders) or
     // a shell prefix (probe-loop's sandbox_cmd, which callers write as shell).
-    const [bin, argv] = wrap?.argv ? [wrap.argv[0], [...wrap.argv.slice(1), "claude", ...args]] : wrap ? ["sh", ["-c", `${wrap.prefix} "$@"`, "sh", "claude", ...args]] : ["claude", args];
+    const [bin, argv] = wrap?.argv ? [wrap.argv[0], [...wrap.argv.slice(1), "claude", ...args]] : wrap?.prefix ? ["sh", ["-c", `${wrap.prefix} "$@"`, "sh", "claude", ...args]] : ["claude", args];
     const base = wrap?.argv ? builderEnvBase() : process.env;
-    const child = spawn(bin, argv, { cwd: dir, stdio: ["pipe", "pipe", "pipe"], env: { ...base, OE_PLAYWRIGHT: playwrightEntry(), ...(wrap?.env || {}) } });
+    // detached: the child is its own process-group leader so a budget kill reaches grandchildren.
+    const child = spawn(bin, argv, { cwd: dir, detached: true, stdio: ["pipe", "pipe", "pipe"], env: { ...base, OE_PLAYWRIGHT: playwrightEntry(), ...(wrap?.env || {}) } });
     child.stdin.end(prompt);
     let out = "";
     child.stdout.on("data", (c) => { out += c; });
-    let timedOut = false;
-    const timer = setTimeout(() => { timedOut = true; child.kill("SIGKILL"); }, timeoutMs);
+    const stop = { reason: null };
+    const mark = (reason) => {
+      if (stop.reason || child.exitCode != null || child.signalCode != null) return;
+      stop.reason = reason;
+      killProcessGroup(child);
+    };
+    const liveKey = watch?.key || (child.pid ? `pid-${child.pid}` : "job");
+    const noteLive = () => {
+      if (!watch?.budget || watch.claimUsd == null) return null;
+      const part = jobLiveUsd(out, watch.home || null, watch.knownSessionIds || new Set());
+      const jobUsd = +((watch.priorUsd || 0) + (part.usd || 0)).toFixed(6);
+      watch.budget.noteLive(liveKey, jobUsd);
+      return jobUsd;
+    };
+    const poll = () => {
+      const jobUsd = noteLive();
+      if (jobUsd == null || stop.reason) return;
+      const ceiling = watch.claimUsd * 3;
+      const reason = runBudgetStop({ cap: watch.budget.cap, spent: watch.budget.spent, live: watch.budget.live, key: liveKey, jobUsd, ceiling });
+      if (reason) mark(reason);
+    };
+    const watchTimer = watch?.budget && watch.claimUsd != null
+      ? setInterval(poll, watch.intervalMs > 0 ? watch.intervalMs : BUDGET_POLL_MS)
+      : null;
+    if (watchTimer?.unref) watchTimer.unref();
+    const timer = setTimeout(() => mark("timeout"), timeoutMs);
     child.on("close", (code) => {
       clearTimeout(timer);
-      let j = null; try { j = JSON.parse(out); } catch {}
-      const acct = j ? { cost_usd: j.total_cost_usd ?? null, turns: j.num_turns ?? null, duration_ms: j.duration_ms ?? null, model_id: Object.keys(j.modelUsage || {})[0] || null, model_usage: j.modelUsage || {}, session_id: j.session_id ?? null } : {};
-      if (timedOut) return resolve({ ...acct, ok: false, error: `timeout after ${Math.round(timeoutMs / 1000)}s`, stopped_by: "timeout", model_usage: acct.model_usage || {} });
-      const stop = j ? j.subtype || j.terminal_reason || null : null;
-      resolve(j ? { ok: !j.is_error, ...acct, stop, stopped_by: stoppedBy({ stop }), text: typeof j.result === "string" ? j.result : "" }
-        : { ok: false, error: `exit ${code}; no JSON result` });
+      if (watchTimer) clearInterval(watchTimer);
+      noteLive();
+      const { j, parsed } = resultEnvelope(out);
+      const sessionFromStream = j?.session_id || j?.sessionId || [...(parsed.sessionIds || [])][0] || null;
+      const modelUsage = j?.modelUsage && Object.keys(j.modelUsage).length ? j.modelUsage : (parsed.model_usage || {});
+      const cost = j && j.total_cost_usd != null ? j.total_cost_usd : (parsed.priced > 0 ? parsed.priced : null);
+      const acct = (j || cost != null) ? { cost_usd: cost, turns: j?.num_turns ?? null, duration_ms: j?.duration_ms ?? null, model_id: Object.keys(modelUsage)[0] || null, model_usage: modelUsage, session_id: sessionFromStream } : {};
+      if (stop.reason === "timeout") return resolve({ ...acct, ok: false, error: `timeout after ${Math.round(timeoutMs / 1000)}s`, stopped_by: "timeout", model_usage: acct.model_usage || {} });
+      if (stop.reason === "run-budget") return resolve({ ...acct, ok: false, error: "stopped: run budget", stopped_by: "run-budget", model_usage: acct.model_usage || {}, text: typeof j?.result === "string" ? j.result : "" });
+      const why = j ? j.subtype || j.terminal_reason || null : null;
+      resolve(j ? { ok: !j.is_error, ...acct, stop: why, stopped_by: stoppedBy({ stop: why }), text: typeof j.result === "string" ? j.result : "" }
+        : { ...acct, ok: false, error: `exit ${code}; no JSON result`, stopped_by: null, model_usage: acct.model_usage || {} });
     });
   });
 }
@@ -850,17 +1012,17 @@ export async function pool(items, n, fn) {
 }
 
 // A spending cap for a whole run. Each job is offered an equal share of what is not yet
-// spent or promised to a job in flight; the builder's share goes to the CLI as
-// --max-budget-usd, with JUDGE_SHARE kept for the judge. That flag is soft (measured
-// 2026-10-11: a $0.003 cap ran all 21 turns and spent $0.0097, flagged only at the end), so
-// actual spend is charged when a job settles: an overspend shrinks every later share, and no
-// job starts once the money is gone. The total can still exceed the cap by what the jobs in
-// flight overspend. A job whose share is below the floor is skipped and recorded.
+// spent or promised to a job in flight. That share is NOT passed to the CLI: --max-budget-usd
+// is printed to the model. While a builder runs, a watchdog (runAgent's watch) polls its
+// live spend and kills the process group when settled spend + every running job's live
+// spend would pass the cap, or when that job passes 3× its claim. The killed job's spend
+// still settles. A poll can overshoot by what arrived since the previous read. No job
+// starts once the remaining share is below the floor.
 export const JUDGE_SHARE = 0.15;
 export class Budget {
   // judgeShare is the part of a job's share kept for the judge; with no judge (--judge none) it is 0
   // and the builder gets the whole share.
-  constructor(capUsd, jobs, floorUsd = 0.5, judgeShare = JUDGE_SHARE) { this.cap = capUsd; this.left = jobs; this.floor = floorUsd; this.judgeShare = judgeShare; this.spent = 0; this.promised = 0; }
+  constructor(capUsd, jobs, floorUsd = 0.5, judgeShare = JUDGE_SHARE) { this.cap = capUsd; this.left = jobs; this.floor = floorUsd; this.judgeShare = judgeShare; this.spent = 0; this.promised = 0; this.live = new Map(); }
   claim() {
     if (this.cap == null) { this.left--; return { usd: null }; }
     const share = (this.cap - this.spent - this.promised) / Math.max(1, this.left);
@@ -869,6 +1031,10 @@ export class Budget {
     this.promised += share;
     return { usd: share, builder: +(share * (1 - this.judgeShare)).toFixed(2), judge: +(share * this.judgeShare).toFixed(2) };
   }
+  noteLive(key, usd) { this.live.set(key, Math.max(0, Number(usd) || 0)); }
+  clearLive(key) { this.live.delete(key); }
+  liveSpend() { let n = 0; for (const v of this.live.values()) n += v; return n; }
+  projectedSpend() { return this.spent + this.liveSpend(); }
   settle(claim, actualUsd) { if (claim?.usd != null) this.promised -= claim.usd; this.spent += actualUsd || 0; }
 }
 
@@ -1016,7 +1182,7 @@ export function reserveProblems(tasks, bar, dirOf = taskDir) {
 }
 
 // { error } (exit 2) or { line, jobs, share } for the one line printed before the run starts.
-export function preflightRun({ tasks, arms, reps, maxUsd, bar = readBar(), dirOf = taskDir }) {
+export function preflightRun({ tasks, arms, reps, maxUsd, bar = readBar(), dirOf = taskDir, journeysDir = JOURNEYS }) {
   const bp = barProblem(bar);
   if (bp) return { error: `refusing to start: ${bp}` };
   const jobs = tasks.length * arms.length * reps;
@@ -1032,6 +1198,9 @@ export function preflightRun({ tasks, arms, reps, maxUsd, bar = readBar(), dirOf
   const promptErrors = [];
   for (const task of new Set(tasks)) for (const arm of new Set(arms)) { try { armPrompts(task, arm); } catch (e) { promptErrors.push(e.message); } }
   if (promptErrors.length) return { error: `refusing to start: ${promptErrors.join("; ")}` };
+  // A malformed journey spec would make every framework row of its task unscorable.
+  const jp = journeyProblems(tasks, journeysDir);
+  if (jp.length) return { error: `refusing to start: ${jp.join("; ")}` };
   const line = `plan: tasks ${tasks.join(",")}; ${jobs} jobs; ${share != null ? `$${share.toFixed(3)} per job` : "no cap"}; arms ${arms.join(",")}`;
   return { line, jobs, share };
 }
@@ -1175,7 +1344,7 @@ async function runAll({ argv, opt, parallel, workRoot, workBase, keepRoot, tasks
   const budget = new Budget(maxUsd, jobs.length, barFloor(readBar()), judgeModel ? JUDGE_SHARE : 0);
   process.stderr.write(`running ${jobs.length} jobs on ${model}, ${parallel} in parallel${maxUsd != null ? ` within $${maxUsd}` : ""}\n`);
   const t0Run = Date.now();
-  const ctx = { model, effort, judgeModel, workRoot, keepRoot, framework, hide: [workBase, keepRoot], sealed, progress: { done: 0, total: jobs.length } };
+  const ctx = { model, effort, judgeModel, workRoot, keepRoot, framework, hide: [workBase, keepRoot], sealed, progress: { done: 0, total: jobs.length }, budget };
   const settled = [];
   const rows = await pool(jobs, parallel, async (job) => {
     const t0 = Date.now();
@@ -1225,11 +1394,22 @@ async function runJob(job, budget, ctx) {
     prior += (r.cost_usd || 0) + (r.judge_cost_usd || 0);
     return r;
   }, { model: ctx.model });
+  const liveKey = `${job.task}/${job.arm}#${job.rep}`;
+  budget.clearLive(liveKey);
   budget.settle(claim, (row.cost_usd || 0) + (row.judge_cost_usd || 0));
   const sealedMsg = tick(`${row.error ? "error row (see --out)" : "done"}, $${row.cost_usd}, ${Math.round((row.wall_ms || 0) / 1000)}s`);
   if (sealedMsg) { process.stderr.write(sealedMsg + "\n"); return row; }
   process.stderr.write(`${job.task}/${job.arm}#${job.rep}: ${row.error ? "ERROR " + row.error : `${row.hidden_pass}/${row.hidden_total}${row.solved ? " solved" : ""} $${row.cost_usd}`}${row.fail_open_rerun ? " (re-run after fail-open)" : ""}\n`);
   return row;
+}
+
+// Copy <jobHome>/.claude/projects to `to`; returns `to`, or null when the run left none.
+export function keepTranscripts(jobHome, to) {
+  const src = jobHome ? path.join(jobHome, ".claude", "projects") : null;
+  if (!src || !fs.existsSync(src)) return null;
+  fs.rmSync(to, { recursive: true, force: true });
+  fs.cpSync(src, to, { recursive: true });
+  return to;
 }
 
 async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
@@ -1258,9 +1438,11 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
   const sha = crypto.createHash("sha256").update(prompts.join("\n\0\n")).digest("hex").slice(0, 12);
   const lim = armLimits(job.arm);
   for (const prompt of prompts) {
-    const left = claim.builder != null ? claim.builder - spentBefore - (agent.cost_usd || 0) : null;
-    const stepCap = left != null ? Math.max(0.01, +left.toFixed(2)) : null;
-    const step = await runAgent(dir, prompt, model, cfg.timeout_ms * lim.time, isPillarArm(job.arm) ? cfg.tools : armTools(cfg.tools, job.arm), cfg.max_turns * lim.turns, effort, stepCap != null ? ["--max-budget-usd", String(stepCap)] : [], wrap);
+    // No --max-budget-usd: the CLI shows it to the model ("USD budget: $0.71"), and runs
+    // quoted it as the reason to skip the framework's stages. The run cap and a per-job
+    // ceiling of 3× the claim are enforced outside the model, by the spend watchdog.
+    const watch = ctx.budget && claim?.usd != null ? { budget: ctx.budget, key: `${job.task}/${job.arm}#${job.rep}`, claimUsd: claim.usd, priorUsd: spentBefore + (agent.cost_usd || 0), knownSessionIds: outerIds, home: jobHome, intervalMs: ctx.budgetPollMs } : null;
+    const step = await runAgent(dir, prompt, model, cfg.timeout_ms * lim.time, isPillarArm(job.arm) ? cfg.tools : armTools(cfg.tools, job.arm), cfg.max_turns * lim.turns, effort, [], wrap, watch);
     replies.push(String(step.text || "").slice(-400));
     usage = mergeModelUsage(usage, step.model_usage);
     if (step.session_id) outerIds.add(step.session_id);
@@ -1303,6 +1485,15 @@ async function attemptJob(job, claim, ctx, attemptNo, spentBefore) {
   fs.rmSync(path.join(dir, "__hidden.test.mjs"), { force: true });
   fs.cpSync(dir, keep, { recursive: true, filter: (src) => !src.includes(`${path.sep}node_modules`) });
   row.artifact = keep;
+  // Claude Code's session transcripts, kept beside (never inside) the build: graders and
+  // regrade read the build dir.
+  row.transcripts = keepTranscripts(jobHome, `${keep}.transcripts`);
+  if (fw) {
+    try {
+      const spec = loadJourneySpec(job.task, ctx.journeysDir || JOURNEYS);
+      if (spec) row.journey = checkJourney(spec, { transcriptsDir: row.transcripts, buildDir: keep });
+    } catch (e) { row.journey = { error: e.message }; }
+  }
   cleanup();
   return row;
 }

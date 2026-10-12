@@ -112,6 +112,8 @@ Framework learnings are loaded at every **SessionStart** by the `svc-learning-pr
 hook. They appear in the agent's context before any work begins, turning passive
 logs into active guardrails.
 
+Standing owner rules for everything we build, now and later, are recorded with `node "$SVC_ROOT"/scripts/standing-rules.mjs add --text "<rule>"` into `.svc/standing-rules.md` (≤2 KB, never CLAUDE.md) and printed at SessionStart via `print-for-session`.
+
 **When to log a framework learning:**
 - A framework skill was invoked incorrectly and caused degradation
 - A host API assumption was wrong (training data staleness)

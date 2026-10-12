@@ -2,6 +2,10 @@
 
 Every svc skill SHOULD begin its work by checking what the project already knows. The goal is **complete relevant context**: read enough indexed and dependency-linked material to understand the affected surface, then stop. Do not read every project artifact by default, and do not stop at the minimum file list when the loaded artifact points to a dependency, spec, work item, validator, or decision that materially affects the task.
 
+## K preload for plan and execute
+
+Before planning or building, `plan-changeset` and `execute-changeset` run `node "$SVC_ROOT"/scripts/k-preload.mjs --root .` from the project directory and treat each printed fact as a requirement. Other skills skip this step. The execute-changeset contract stays in its skill file; this shared read is where that instruction lives.
+
 ## The context spine
 
 | # | Source | What it answers |
@@ -17,8 +21,8 @@ Every svc skill SHOULD begin its work by checking what the project already knows
 
 A rule the owner states for future work (money units, refund or pricing policy, limits, naming, "never do X") must reach every later session, including a fresh one that never saw this conversation.
 
-1. **Record it now.** In the same session, add the rule to the project's `CLAUDE.md` under `## Standing rules`, with its exact numbers and boundaries (for example "an unpaid cart holds stock for 15 minutes, then releases it" or "invoices show prices excluding VAT, rounded half up"). Mirror the section in `AGENTS.md` when the project has one. Claude Code loads `CLAUDE.md` at the start of every session; a rule kept only in chat, in a code comment or in a docs file nobody opens is lost.
-2. **Read before acting.** Before changing code, read `## Standing rules` and follow it. A rule there outranks your defaults.
+1. **Record it now.** In the same session, run `node "$SVC_ROOT"/scripts/standing-rules.mjs add --text "<exact rule>"` so the rule lands in `.svc/standing-rules.md`, with its exact numbers and boundaries (for example "an unpaid cart holds stock for 15 minutes, then releases it" or "invoices show prices excluding VAT, rounded half up"). The session block is capped at 2 KB. Never append the rule to `CLAUDE.md` or `AGENTS.md`.
+2. **Read before acting.** Session start prints the block before any build. Follow it. A recorded rule outranks your defaults. If the block is not in context, run `node "$SVC_ROOT"/scripts/standing-rules.mjs print-for-session`.
 3. **Never invent a missing rule.** If the work needs a rule that is not recorded, ask the owner. Do not ship an assumed policy for money, refunds, security or legal terms.
 
 
