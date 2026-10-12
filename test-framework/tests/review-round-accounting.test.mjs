@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { acquireLock } from '../../scripts/state-lock.mjs';
 import { boundEvidenceBytes, roundOutputDigest } from '../../scripts/lib/reviewer-evidence.mjs';
 import { admitExternalReviewRound, externalReviewCycleCapacity, reserveExternalReviewRound } from '../../scripts/lib/external-review-provenance.mjs';
-import { invoke } from '../../scripts/run-external-review.mjs';
+import { invoke, runProcess, AGY_REVIEWER_SPAWNED_MARKER } from '../../scripts/run-external-review.mjs';
 
 function storeOpts(root) {
   const env = { ...process.env, SVC_REVIEW_EVIDENCE_STORE: path.join(root, 'store') };
@@ -225,36 +225,99 @@ test('an earlier round verifies from preserved objects after a later round reuse
   }
 });
 
-test('admission is reserved before spawn: lock contention aborts with nothing spawned, concurrent launchers respect the cap', async () => {
+test('admission is reserved before spawn: lock contention aborts with nothing spawned, pending holds a slot, released frees it', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rvround-admit-'));
   try {
     await withAuthority(root, async () => {
       const anchor = roundReceipt('WI-RVADMIT');
-      const authority = path.join(root, 'authority');
       externalReviewCycleCapacity(anchor);
-      const release = acquireLock(path.join(authority, 'feature-bindings'), { staleMs: 60_000 });
-      try {
-        assert.throws(() => admitExternalReviewRound(anchor), /held by pid/, 'contention fails before any spawn');
-      } finally { release(); }
+      const release = acquireLock(path.join(root, 'authority', 'feature-bindings'), { staleMs: 60_000 });
+      try { assert.throws(() => admitExternalReviewRound(anchor), /held by pid/); } finally { release(); }
       assert.equal(externalReviewCycleCapacity(anchor).issued, 0, 'a failed admission records nothing');
-
       const first = admitExternalReviewRound(roundReceipt('WI-RVADMIT'));
       const second = admitExternalReviewRound(roundReceipt('WI-RVADMIT'));
-      assert.equal(externalReviewCycleCapacity(anchor).issued, 2, 'pending admissions hold slots, so concurrent launchers cannot exceed the cap');
+      assert.equal(externalReviewCycleCapacity(anchor).issued, 2);
       assert.throws(() => admitExternalReviewRound(roundReceipt('WI-RVADMIT')), /hard cap/);
       first.release();
-      assert.equal(externalReviewCycleCapacity(anchor).issued, 1, 'a never-spawned admission frees its slot');
-      second.markInvoked();
       assert.equal(externalReviewCycleCapacity(anchor).issued, 1);
-      const third = admitExternalReviewRound(roundReceipt('WI-RVADMIT'));
-      third.markInvoked();
-      third.release();
-      assert.equal(externalReviewCycleCapacity(anchor).issued, 2, 'an invoked round is permanent and cannot be released');
-      assert.throws(() => admitExternalReviewRound(roundReceipt('WI-RVADMIT')), /hard cap/);
+      second.markInvoked();
+      second.release();
+      assert.equal(externalReviewCycleCapacity(anchor).issued, 1, 'an invoked admission is never released');
     });
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+const PROVENANCE_URL = new URL('../../scripts/lib/external-review-provenance.mjs', import.meta.url).href;
+function childAdmit(root, { failRewrite = false } = {}) {
+  const script = `
+    import(${JSON.stringify(PROVENANCE_URL)}).then(async (m) => {
+      const fs = (await import('node:fs')).default;
+      const crypto = (await import('node:crypto')).default;
+      const receipt = { request_id: crypto.randomUUID(), phase_guard: { wi: 'WI-RVCONC' }, protocol: { feature_id: 'WI-RVCONC' }, review_kind: 'plan', candidate_digest: 'c'.repeat(64), effective_tuple: { orchestrator: 'codex', host: 'cursor', family: 'xai' } };
+      let admission = null;
+      for (let attempt = 0; attempt < 200 && !admission; attempt += 1) {
+        try { admission = m.admitExternalReviewRound(receipt); }
+        catch (error) {
+          if (/hard cap/.test(error.message)) { console.log('denied'); return; }
+          await new Promise((resolve) => setTimeout(resolve, 10 + Math.random() * 20));
+        }
+      }
+      if (!admission) { console.log('gaveup'); return; }
+      ${failRewrite ? 'fs.renameSync = () => { throw new Error("ledger rewrite failed"); };' : ''}
+      admission.markInvoked();
+      ${failRewrite ? '' : 'await new Promise((resolve) => setTimeout(resolve, 300)); admission.release();'}
+      console.log('invoked');
+    });`;
+  const env = { ...process.env, SVC_EXTERNAL_REVIEW_PROVENANCE_FIXTURE: '1', SVC_EXTERNAL_REVIEW_ISSUANCE_ROOT: path.join(root, 'authority') };
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ['--input-type=module', '-e', script], { env, stdio: ['ignore', 'pipe', 'inherit'] });
+    let out = '';
+    child.stdout.on('data', (chunk) => { out += chunk; });
+    child.on('exit', (code) => (code === 0 ? resolve(out.trim()) : reject(new Error(`child exited ${code}`))));
+  });
+}
+
+test('competing launcher processes admit at most two invoked reviewers', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rvround-race-'));
+  try {
+    await withAuthority(root, async () => {
+      const outcomes = await Promise.all(Array.from({ length: 4 }, () => childAdmit(root)));
+      assert.equal(outcomes.filter((o) => o === 'invoked').length, 2, `outcomes: ${outcomes}`);
+      assert.equal(outcomes.filter((o) => o === 'denied').length, 2);
+      assert.equal(externalReviewCycleCapacity(roundReceipt('WI-RVCONC')).issued, 2);
+    });
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a spawned round survives a failed ledger rewrite and launcher death', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'rvround-final-'));
+  try {
+    await withAuthority(root, async () => {
+      assert.equal(await childAdmit(root, { failRewrite: true }), 'invoked');
+      // The launcher has exited with its record still "pending"; the O_EXCL marker keeps the round.
+      assert.equal(externalReviewCycleCapacity(roundReceipt('WI-RVCONC')).issued, 1);
+      assert.equal(await childAdmit(root, { failRewrite: true }), 'invoked');
+      assert.equal(externalReviewCycleCapacity(roundReceipt('WI-RVCONC')).allowed, false);
+    });
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('AGY spawn marker is found when diagnostics share its stderr chunk', async () => {
+  let admitted = 0;
+  const noisy = `process.stderr.write('x'.repeat(4000) + ${JSON.stringify(AGY_REVIEWER_SPAWNED_MARKER)} + '\\n' + 'y'.repeat(4000))`;
+  await runProcess(process.execPath, ['-e', noisy], Buffer.alloc(0), 10000, process.env, undefined, () => { admitted += 1; }, AGY_REVIEWER_SPAWNED_MARKER);
+  assert.equal(admitted, 1);
+  let split = 0;
+  const half = AGY_REVIEWER_SPAWNED_MARKER.length >> 1;
+  const chunks = `process.stderr.write(${JSON.stringify(AGY_REVIEWER_SPAWNED_MARKER.slice(0, half))}); setTimeout(() => process.stderr.write(${JSON.stringify(AGY_REVIEWER_SPAWNED_MARKER.slice(half))}), 150)`;
+  await runProcess(process.execPath, ['-e', chunks], Buffer.alloc(0), 10000, process.env, undefined, () => { split += 1; }, AGY_REVIEWER_SPAWNED_MARKER);
+  assert.equal(split, 1, 'a marker split across chunks is still found');
 });
 
 test('AGY admission follows the reviewer process, not the Node dispatcher', async () => {

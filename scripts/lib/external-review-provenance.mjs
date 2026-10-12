@@ -72,10 +72,13 @@ function reservedRounds(root, cycleId, key) {
     const {authority_hmac_sha256, ...row} = JSON.parse(secureFile(path.join(dir, name), 'external review round reservation'));
     const expected = crypto.createHmac('sha256', key).update(canonical(row)).digest('hex');
     if (authority_hmac_sha256 !== expected || row.cycle_id !== cycleId) throw new Error('external review round ledger authentication failed');
-    return row;
+    return {...row, invoked_marker: fs.existsSync(path.join(dir, name.replace(/\.json$/, '.invoked')))};
   });
 }
 function roundCounts(row) {
+  // The O_EXCL invoked marker is written first on spawn and is authoritative:
+  // a spawned reviewer counts even if the ledger rewrite failed or the launcher died.
+  if (row.invoked_marker) return true;
   if (row.status === 'released') return false;
   if (row.status === 'pending') {
     // A pending admission holds a slot only while its launcher is alive. A
@@ -132,11 +135,22 @@ export function admitExternalReviewRound(receipt, {receiptPath = null} = {}) {
     try {fs.writeFileSync(fd, JSON.stringify(signedRound(key,next)));fs.fsyncSync(fd);} finally {fs.closeSync(fd);}
     try {fs.renameSync(tmp, file);} catch (error) {try {fs.unlinkSync(tmp);} catch {} throw error;}
   };
+  const marker = file.replace(/\.json$/, '.invoked');
   let state = 'pending';
   return {
     row,
-    markInvoked() { if (state === 'invoked') return; rewrite({status:'invoked', reviewer_invoked:true}); state = 'invoked'; },
-    release() { if (state !== 'pending') return; rewrite({status:'released', reviewer_invoked:false}); state = 'released'; },
+    markInvoked() {
+      if (state === 'invoked') return;
+      // Never release a spawned admission, whatever happens next.
+      state = 'invoked';
+      try {
+        const fd = fs.openSync(marker, fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_WRONLY, 0o600);
+        try {fs.writeFileSync(fd, JSON.stringify({request_id:row.request_id, invoked_at:new Date().toISOString()}));fs.fsyncSync(fd);} finally {fs.closeSync(fd);}
+      } catch (error) { if (error.code !== 'EEXIST') throw error; }
+      // Best effort: the marker already carries the accounting.
+      try { rewrite({status:'invoked', reviewer_invoked:true}); } catch { /* marker is authoritative */ }
+    },
+    release() { if (state !== 'pending' || fs.existsSync(marker)) return; rewrite({status:'released', reviewer_invoked:false}); state = 'released'; },
   };
 }
 function markerReceiptBytes(payload,label){

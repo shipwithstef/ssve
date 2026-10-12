@@ -38,7 +38,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema.json');
 const RECEIPT_SCHEMA = path.join(ROOT, 'schemas/external-review-receipt.schema.json');
 const MODEL_REGISTRY = path.join(ROOT, 'references/model-registry.json');
-const AGY_REVIEWER_SPAWNED_MARKER = 'svc-agy-reviewer-spawned';
+export const AGY_REVIEWER_SPAWNED_MARKER = 'svc-agy-reviewer-spawned';
 const AGY_DISPATCHER = path.join(ROOT, 'skills/research/scripts/dispatch-agy.mjs');
 const REVIEW_HOST_TRANSPORTS = Object.freeze({
   codex: { env: 'SVC_EXTERNAL_REVIEW_CODEX_BIN', binary: 'codex' },
@@ -743,7 +743,7 @@ function fixtureBinary(variable, fallback, fixtureRoot) {
   });
 }
 
-async function runProcess(binary, args, input, timeoutMs, env = process.env, cwd = undefined, onReviewerSpawned = null, spawnMarker = null) {
+export async function runProcess(binary, args, input, timeoutMs, env = process.env, cwd = undefined, onReviewerSpawned = null, spawnMarker = null) {
   return new Promise((resolve, reject) => {
     const child = spawn(binary, args, { env, cwd, stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
     const stdout = [];
@@ -810,8 +810,9 @@ async function runProcess(binary, args, input, timeoutMs, env = process.env, cwd
       let tail = '';
       child.stderr.on('data', (chunk) => {
         if (admitted) return;
-        tail = (tail + chunk.toString('utf8')).slice(-(spawnMarker.length * 2));
-        if (tail.includes(spawnMarker)) admit();
+        const searchable = tail + chunk.toString('utf8');
+        if (searchable.includes(spawnMarker)) admit();
+        tail = searchable.slice(-(spawnMarker.length - 1));
       });
     } else child.on('spawn', admit);
     child.stdin.end(input);
