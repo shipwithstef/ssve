@@ -38,15 +38,15 @@ grep -Eq "Outcome Coverage" references/solution-confidence-protocol.md \
 grep -Eq "A missing approval packet blocks approval requests" references/solution-confidence-protocol.md \
   || fail "protocol does not block approval/planning when packet is missing"
 
-grep -Eq "references/solution-confidence-protocol.md" skills/route-workflow/SKILL.md \
+grep -Eq "references/solution-confidence-protocol.md" skills/route-workflow/references/framework-and-host-route.md \
   || fail "route-workflow does not load protocol"
-grep -Eq "solution_confidence_required" skills/route-workflow/SKILL.md \
+grep -Eq "solution_confidence_required" skills/route-workflow/references/framework-and-host-route.md \
   || fail "route-workflow does not set confidence flag"
-grep -Eq "design_auto" skills/route-workflow/SKILL.md \
+grep -Eq "design_auto" skills/route-workflow/references/framework-and-host-route.md \
   || fail "route-workflow does not route design auto mode"
-grep -Eq "post_design_human_gate" skills/route-workflow/SKILL.md \
+grep -Eq "post_design_human_gate" skills/route-workflow/references/framework-and-host-route.md \
   || fail "route-workflow does not route post-design gate mode"
-grep -Eq "action-by-action approval packet" skills/route-workflow/SKILL.md \
+grep -Eq "action-by-action approval packet" skills/route-workflow/references/framework-and-host-route.md \
   || fail "route-workflow does not require approval packet before plan/approval"
 grep -Eq "best solution.*right design.*all cards" skills/route-workflow/references/intent-routing.md \
   || fail "intent routing lacks confidence trigger row"

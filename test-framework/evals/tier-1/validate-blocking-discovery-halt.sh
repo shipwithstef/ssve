@@ -138,7 +138,7 @@ assert_node_graph "mutation history records blocking discovery" "$TMP/lane-tasks
 
 assert_file_contains "reference defines BLOCKING_DISCOVERY" "references/blocking-discovery-format.md" "BLOCKING_DISCOVERY"
 assert_file_contains "WI state lexicon defines BLOCKED_ON_DISCOVERY" "references/wi-state-lexicon.md" "BLOCKED_ON_DISCOVERY"
-assert_file_contains "route-workflow links blocking discovery protocol" "skills/route-workflow/SKILL.md" "blocking-discovery-format.md"
+assert_file_contains "route-workflow links blocking discovery protocol" "skills/route-workflow/references/framework-and-host-route.md" "blocking-discovery-format.md"
 assert_file_contains "skill outcome schema supports block_on_discovery" "references/schemas/skill-outcome.schema.json" "block_on_discovery"
 assert_file_contains "skill outcome contract documents block_on_discovery" "references/skill-outcome-contract.md" "block_on_discovery"
 

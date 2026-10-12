@@ -83,8 +83,8 @@ else
   fail "hook documents scoped emergency bypass"
 fi
 
-if grep -Fq "router fail-opens for unrelated/user-request sessions" "$REPO_ROOT/skills/route-workflow/SKILL.md" &&
-  grep -Fq "malformed registered SDKG registry" "$REPO_ROOT/skills/route-workflow/SKILL.md"; then
+if grep -Fq "router fail-opens for unrelated/user-request sessions" "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md" &&
+  grep -Fq "malformed registered SDKG registry" "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md"; then
   pass "route-workflow documents scoped fail-closed behavior"
 else
   fail "route-workflow documents scoped fail-closed behavior"

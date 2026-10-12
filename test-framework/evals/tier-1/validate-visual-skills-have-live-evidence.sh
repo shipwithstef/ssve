@@ -49,31 +49,31 @@ LIVE_SECTION="$(awk '
     in_section = ($0 ~ /visual-evidence obligation for visual-output skills/)
   }
   in_section { print }
-' skills/route-workflow/SKILL.md)"
+' skills/route-workflow/references/framework-and-host-route.md)"
 
 if [[ -z "$LIVE_SECTION" ]]; then
-  echo "FAIL: skills/route-workflow/SKILL.md missing visual-evidence obligation for visual-output skills"
+  echo "FAIL: skills/route-workflow/references/framework-and-host-route.md missing visual-evidence obligation for visual-output skills"
   FAILED=$((FAILED + 1))
 else
   echo "PASS: route-workflow has visual-evidence task-graph obligation"
 fi
 
 if grep -qE "Post-skill hook.*Live evidence|this hook|host-installed hook enforcement" <<<"$LIVE_SECTION"; then
-  echo "FAIL: skills/route-workflow/SKILL.md live-evidence section claims hook enforcement without a wired host hook"
+  echo "FAIL: skills/route-workflow/references/framework-and-host-route.md live-evidence section claims hook enforcement without a wired host hook"
   FAILED=$((FAILED + 1))
 else
   echo "PASS: route-workflow live-evidence wording does not claim fake hook enforcement"
 fi
 
 if ! grep -q "not a host-installed hook" <<<"$LIVE_SECTION"; then
-  echo "FAIL: skills/route-workflow/SKILL.md must explicitly say live-evidence is not a host-installed hook"
+  echo "FAIL: skills/route-workflow/references/framework-and-host-route.md must explicitly say live-evidence is not a host-installed hook"
   FAILED=$((FAILED + 1))
 else
   echo "PASS: route-workflow explicitly distinguishes task-graph obligation from host hook"
 fi
 
-if ! grep -q "artifact: live-page-screenshots" skills/route-workflow/SKILL.md; then
-  echo "FAIL: skills/route-workflow/SKILL.md does not resolve visual evidence from declared live-page-screenshots outputs"
+if ! grep -q "artifact: live-page-screenshots" skills/route-workflow/references/framework-and-host-route.md; then
+  echo "FAIL: skills/route-workflow/references/framework-and-host-route.md does not resolve visual evidence from declared live-page-screenshots outputs"
   FAILED=$((FAILED + 1))
 else
   echo "PASS: route-workflow resolves visual evidence from declared output paths"

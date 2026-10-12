@@ -59,7 +59,7 @@ echo "=== Tier 1: Delivery Graph Closeout Classification ==="
 node --check "$REPO_ROOT/scripts/classify-delivery-graph-closeout.mjs" >/dev/null
 pass "classifier syntax valid"
 grep -q "updateJsonAtomic" "$REPO_ROOT/scripts/classify-delivery-graph-closeout.mjs" && pass "classifier write mode uses locked state writer" || fail "classifier write mode uses locked state writer"
-grep -q "closeout classification" "$REPO_ROOT/skills/route-workflow/SKILL.md" && pass "route-workflow requires closeout classification" || fail "route-workflow requires closeout classification"
+grep -q "closeout classification" "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md" && pass "route-workflow requires closeout classification" || fail "route-workflow requires closeout classification"
 grep -q "closeout classification" "$REPO_ROOT/skills/verify-promotion/SKILL.md" && pass "verify-promotion requires closeout classification" || fail "verify-promotion requires closeout classification"
 
 compile_graph framework-complete

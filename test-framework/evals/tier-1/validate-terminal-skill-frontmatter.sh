@@ -33,7 +33,7 @@ for (const skill of requiredTerminal) {
   }
 }
 
-const routeWorkflow = fs.readFileSync(path.join(root, "skills", "route-workflow", "SKILL.md"), "utf8");
+const routeWorkflow = fs.readFileSync(path.join(root, "skills", "route-workflow", "references", "framework-and-host-route.md"), "utf8");
 if (!routeWorkflow.includes("Terminal skills may declare `terminal: true`")) {
   failures.push("route-workflow: terminal advisory behavior is undocumented");
 }

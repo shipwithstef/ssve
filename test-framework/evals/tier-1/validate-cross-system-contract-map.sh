@@ -145,7 +145,7 @@ check_fail "confirmation-only probe fails" node "$ROOT/scripts/validate-cross-sy
 check "third diagnose-bug invocation with escalation passes" node "$ROOT/scripts/check-cross-system-iteration-cap.mjs" --lane-tasks "$TMP/good-lane-tasks.json"
 check_fail "third diagnose-bug invocation without escalation fails" node "$ROOT/scripts/check-cross-system-iteration-cap.mjs" --lane-tasks "$TMP/bad-lane-tasks.json"
 
-check "route-workflow wires cross-system contract map" grep -q "Cross-System Contract Map Gate" "$ROOT/skills/route-workflow/SKILL.md"
+check "route-workflow wires cross-system contract map" grep -q "Cross-System Contract Map Gate" "$ROOT/skills/route-workflow/references/framework-and-host-route.md"
 check "diagnose-bug requires cross-system falsification probes" grep -q "Cross-System Falsification Mode" "$ROOT/skills/diagnose-bug/SKILL.md"
 check "design-tech requires system contract map for cross-system flows" grep -q "System Contract Map" "$ROOT/skills/design-tech/SKILL.md"
 check "test-journeys validates cross-system contract map handoffs" grep -q "Cross-System Journey Validation" "$ROOT/skills/test-journeys/SKILL.md"

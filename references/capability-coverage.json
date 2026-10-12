@@ -2191,7 +2191,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-chain-position.sh",
-        "test-framework/evals/tier-1/validate-framework-coherence.mjs"
+        "test-framework/evals/tier-1/validate-framework-coherence.mjs",
+        "test-framework/tests/delivery-chain-wiring.test.mjs"
       ]
     },
     {
@@ -2210,6 +2211,15 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-generated-mirrors.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/harden.mjs",
+      "kind": "engine",
+      "source": "scripts/harden.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/harden.test.mjs"
       ]
     },
     {
@@ -2861,7 +2871,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-planning-signals.mjs",
-        "test-framework/evals/tier-1/validate-stage-registry-single-source.sh"
+        "test-framework/evals/tier-1/validate-stage-registry-single-source.sh",
+        "test-framework/tests/fresh-project-bootstrap.test.mjs"
       ]
     },
     {
@@ -2941,6 +2952,16 @@
         "test-framework/evals/tier-1/validate-promotion-authority.sh",
         "test-framework/evals/tier-1/validate-route-workflow-hot-path-size.sh",
         "test-framework/evals/tier-1/validate-svc-reconcile-consumer-routing.sh"
+      ]
+    },
+    {
+      "id": "engine:scripts/svc-bootstrap-repo.mjs",
+      "kind": "engine",
+      "source": "scripts/svc-bootstrap-repo.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/tests/fresh-project-bootstrap.test.mjs",
+        "test-framework/tests/route-workflow-entry.test.mjs"
       ]
     },
     {
@@ -3050,8 +3071,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/tests/lane-stop-guard.test.mjs",
-        "test-framework/tests/svc-next-plan-sequence.test.mjs",
-        "test-framework/tests/svc-next.test.mjs"
+        "test-framework/tests/route-workflow-entry.test.mjs",
+        "test-framework/tests/svc-next-plan-sequence.test.mjs"
       ]
     },
     {
@@ -3558,7 +3579,19 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-shared-chain-policy.sh",
-        "test-framework/evals/tier-1/validate-svc-reconcile-legacy-binary.sh"
+        "test-framework/evals/tier-1/validate-svc-reconcile-legacy-binary.sh",
+        "test-framework/tests/fresh-project-bootstrap.test.mjs"
+      ]
+    },
+    {
+      "id": "engine:scripts/lib/claude-plan-transport.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/claude-plan-transport.mjs",
+      "status": "tested",
+      "evidence": [
+        "test-framework/evals/tier-1/validate-external-review-launcher.sh",
+        "test-framework/tests/two-box-claude-transport.test.mjs",
+        "test-framework/tests/two-box-plan.test.mjs"
       ]
     },
     {
@@ -3580,7 +3613,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
-        "test-framework/tests/two-box-plan.test.mjs"
+        "test-framework/tests/two-box-claude-transport.test.mjs"
       ]
     },
     {
@@ -3621,7 +3654,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
-        "test-framework/tests/two-box-large-request.test.mjs"
+        "test-framework/tests/review-relay.test.mjs"
       ]
     },
     {
@@ -3694,7 +3727,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
-        "test-framework/tests/two-box-large-request.test.mjs"
+        "test-framework/tests/review-relay.test.mjs"
       ]
     },
     {
@@ -3764,8 +3797,8 @@
       "status": "tested",
       "evidence": [
         "test-framework/evals/tier-1/validate-tier1-selector-v2.mjs",
-        "test-framework/tests/delivery-graph-ordering.test.mjs",
-        "test-framework/tests/research-decision.test.mjs"
+        "test-framework/tests/delivery-chain-wiring.test.mjs",
+        "test-framework/tests/delivery-graph-ordering.test.mjs"
       ]
     },
     {
@@ -3809,6 +3842,13 @@
         "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
         "test-framework/tests/review-launch-preflight.test.mjs"
       ]
+    },
+    {
+      "id": "engine:scripts/lib/review-relay-client.mjs",
+      "kind": "engine",
+      "source": "scripts/lib/review-relay-client.mjs",
+      "status": "untested",
+      "evidence": []
     },
     {
       "id": "engine:scripts/lib/review-relay.mjs",
@@ -4009,7 +4049,7 @@
       "evidence": [
         "test-framework/evals/tier-1/validate-external-review-launcher.sh",
         "test-framework/evals/tier-1/validate-retroactive-attestation.sh",
-        "test-framework/tests/two-box-plan.test.mjs"
+        "test-framework/tests/two-box-claude-transport.test.mjs"
       ]
     },
     {

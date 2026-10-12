@@ -38,6 +38,9 @@ run("git", ["config", "user.email", "svc@example.invalid"]);
 fs.writeFileSync(path.join(repo, "fixture.txt"), "consumer\n");
 run("git", ["add", "fixture.txt"]);
 run("git", ["commit", "-m", "consumer fixture"]);
+// A history of exactly one note-less commit is the pre-svc baseline and is not debt; use two.
+fs.writeFileSync(path.join(repo, "fixture.txt"), "consumer 2\n");
+run("git", ["commit", "-q", "-am", "consumer fixture 2"]);
 const head = run("git", ["rev-parse", "HEAD"]);
 run("git", ["remote", "add", "origin", "git@github.com:test/consumer.git"]);
 run("git", ["update-ref", "refs/remotes/origin/main", head]);
