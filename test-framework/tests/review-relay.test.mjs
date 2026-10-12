@@ -79,6 +79,9 @@ const at = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : nul
 const schema = at("--output-schema"), last = at("--output-last-message");
 const inp = fs.readFileSync(0, "utf8");
 const has = (w) => inp.includes(w);
+if (has("FAILEARLY")) { console.error("boom at /home/someone/.codex/x token sk-abcdefghijklmnopqrstuvwxyz0123 Bearer abcdefghijklmnop1234 " + "z".repeat(60) + " " + process.env.HOME); console.error("tail-marker-end"); process.exit(1); }
+if (has("DROPPED")) { console.log(JSON.stringify({ type: "thread.started", thread_id: "t" })); console.log(JSON.stringify({ type: "turn.started" })); console.error("stream disconnected"); process.exit(1); }
+if (has("REJECT400")) { const m = JSON.stringify({ type: "error", status: 400, error: { type: "invalid_request_error", message: "model not supported" } }); console.log(JSON.stringify({ type: "thread.started", thread_id: "t" })); console.log(JSON.stringify({ type: "turn.started" })); console.log(JSON.stringify({ type: "error", message: m })); console.log(JSON.stringify({ type: "turn.failed", error: { message: m } })); process.exit(1); }
 if (has("SLEEP")) { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 30000); }
 const diag = { stdin: inp.slice(0, 120), cwd: cwd(), schema_bytes: schema ? fs.statSync(schema).size : null };
 if (has("LS")) diag.ls = fs.readdirSync(".");
@@ -589,6 +592,63 @@ test("F3 (round 2) a non-conformant framework journey is void before the headlin
   const dc = decide(cost, { slice: "dev", bar });
   assert.ok(dc.per_task["yoga-studio"] || dc.cost_per_arm.framework.missing_cost_runs >= 1, "the framework arm reports a run with no comparable cost");
   assert.ok(dc.cost_per_arm.framework.missing_cost_runs >= 1);
+});
+
+// ---- failed calls: what the row records and what they cost -------------------------------------
+
+test("W9 every call records its FULL argv and a redacted stderr tail (at most 2 KB)", async () => {
+  const s = await setup();
+  try {
+    const long = `skills.config=[${Array.from({ length: 30 }, (_, i) => `{path="/some/long/skill/path/${i}/SKILL.md",enabled=false}`).join(",")}]`;
+    assert.ok(long.length > 1500);
+    const args = ["exec", "--ephemeral", "-c", 'model_reasoning_effort="high"', "-c", "project_doc_max_bytes=0", "-c", "web_search=\"disabled\"", "-c", 'developer_instructions=""', "-c", long, ...Array.from({ length: 20 }, (_, i) => ["-c", `features.f${i}=false`]).flat(), "--output-schema", REVIEW_SCHEMA, "--json", "-"];
+    const res = await client(s.r.socketPath, args, { cwd: s.buildDir, input: reviewPrompt(s.buildDir, "FAILEARLY") });
+    assert.equal(res.code, 1);
+    const rec = s.r.calls().find((c) => !c.rejected && !c.probe);
+    assert.equal(rec.argv_sanitized.length, args.length, "no truncation of the list");
+    assert.equal(rec.argv_sanitized[rec.argv_sanitized.indexOf("-c", 8) + 1].length > 0, true);
+    assert.ok(rec.argv_sanitized.includes(long), "a long -c value is kept whole");
+    assert.equal(rec.argv_sanitized.at(-1), "-", "the list ends with its real last argument, not a bare -c");
+    assert.ok(rec.stderr_tail.length <= 2048 + 3, `stderr tail was ${rec.stderr_tail.length}`);
+    assert.match(rec.stderr_tail, /tail-marker-end/);
+    assert.doesNotMatch(rec.stderr_tail, /sk-abcdefghij|abcdefghijklmnop1234|z{40}/, "token-like strings are removed");
+    assert.doesNotMatch(rec.stderr_tail, new RegExp(os.homedir().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), "the home path is shortened");
+    // the tail is the END of a long stderr
+    const noisy = await review(s, "STDERRBIG FAILEARLY");
+    assert.equal(noisy.code, 1);
+    const last = s.r.calls().filter((c) => !c.rejected && !c.probe).at(-1);
+    assert.ok(last.stderr_tail.length <= 2051);
+  } finally { await s.r.close(); }
+  assert.equal(relay.redactTail("word ".repeat(1000)).length, 2051);
+  assert.equal(relay.redactTail("x".repeat(5000)), "<redacted>");
+  assert.equal(relay.redactTail("a/home/u/b", { homes: ["/home/u"] }), "a~/b");
+});
+
+test("W9 a failed call is priced honestly: zero before any model turn or on an API rejection; the estimate only when a turn began and no usage came", async () => {
+  const s = await setup({ maxCallUsd: 2 });
+  try {
+    const early = await review(s, "FAILEARLY");
+    assert.equal(early.code, 1);
+    const e = s.r.calls().at(-1);
+    assert.equal(e.cost_usd, 0); assert.equal(e.failed_before_turn, true); assert.equal(e.priced.basis, "failed before a model turn"); assert.equal(e.unmeasured, undefined);
+    assert.equal(s.r.costUsd(), 0, "nothing is charged for it");
+    const rejected = await review(s, "REJECT400");
+    assert.equal(rejected.code, 1);
+    const r4 = s.r.calls().at(-1);
+    assert.equal(r4.cost_usd, 0); assert.match(r4.priced.basis, /rejected by the API \(status 400\)/);
+    assert.match(r4.error_events[0], /model not supported/, "codex's own error is kept");
+    assert.equal(s.r.summary().reviewer_accounting, "measured", "a call that cost nothing does not make the row unmeasured");
+    const dropped = await review(s, "DROPPED");
+    assert.equal(dropped.code, 1);
+    const d = s.r.calls().at(-1);
+    assert.equal(d.cost_usd, 2); assert.equal(d.unmeasured, true); assert.equal(d.priced.basis, "estimate: no usage reported");
+    assert.equal(s.r.summary().reviewer_accounting, "unmeasured");
+    assert.equal(s.r.summary().reviewer_cost_usd, 2, "only the call whose turn began is charged the estimate");
+    // a call that succeeds is still priced from its usage
+    const ok = await review(s);
+    assert.equal(ok.code, 0);
+    assert.ok(s.r.calls().at(-1).cost_usd > 0 && s.r.calls().at(-1).cost_usd < 1);
+  } finally { await s.r.close(); }
 });
 
 // ---- two-box planner and the real framework text ------------------------------------------

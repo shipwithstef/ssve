@@ -172,16 +172,32 @@ function vetPromptInput(argv) {
   return infoCall(out);
 }
 
-// What the row keeps of a call: flags and values, but no prompt text.
+// What the row keeps of a call: the whole argv (flag values included: an argv carries no
+// secrets, the prompt travels on stdin), except a trailing prompt argument, which is replaced by
+// its length. Never truncated: a failed call must be reproducible from its record.
+const VALUE_TAKING = new Set(["-c", "--config", "-m", "--model", "-s", "--sandbox", "-C", "--cd", "--output-schema", "-o", "--output-last-message", "--color"]);
 export function sanitizeArgv(argv) {
   if (!Array.isArray(argv)) return [];
-  let seenCommand = false;
-  return argv.slice(0, 60).map((a) => {
+  return argv.map((a, i) => {
     const s = String(a);
-    if (s === "exec" || s === "debug") seenCommand = true;
-    if (seenCommand && !s.startsWith("-") && s.length > 60) return `<${s.length} chars>`;
-    return s.length > 200 ? `${s.slice(0, 200)}...` : s;
+    const isValue = i > 0 && VALUE_TAKING.has(String(argv[i - 1]));
+    if (!isValue && !s.startsWith("-") && s.length > 60 && i > 0) return `<${s.length} chars>`;
+    return s.length > 8000 ? `${s.slice(0, 8000)}...[${s.length} chars]` : s;
   });
+}
+
+// A short tail of what codex wrote to stderr, safe to keep on a row: the user's home and temp
+// paths are shortened, long token-like strings and bearer values are removed.
+export function redactTail(text, { max = 2048, homes = [os.homedir(), process.env.HOME] } = {}) {
+  let t = String(text ?? "");
+  for (const h of homes) if (h && h.length > 1) t = t.split(h).join("~");
+  t = t.replace(/\/(?:tmp|var\/tmp)\/[A-Za-z0-9._-]*[A-Za-z0-9_-]{6,}/g, "/tmp/<tmp>")
+    .replace(/(Bearer|Basic)\s+[A-Za-z0-9._~+\/=-]{8,}/gi, "$1 <redacted>")
+    .replace(/\b(sk|rk|pk|ghp|gho|ghs|xox[a-z])-?[A-Za-z0-9_-]{16,}/g, "<redacted>")
+    .replace(/\b[A-Za-z0-9_-]{40,}\b/g, "<redacted>")
+    .replace(/\u001b\[[0-9;]*[A-Za-z]/g, "");
+  t = t.trim();
+  return t.length > max ? `...${t.slice(t.length - max)}` : t;
 }
 
 // --- usage ----------------------------------------------------------------------------
@@ -527,6 +543,9 @@ export async function startRelay({ jobHome, buildDir, policies = [], codexBin = 
       let timedOut = false, stopped = null;
       const limit = Math.max(1, Math.min(callTimeoutMs, deadlineAt != null ? deadlineAt - Date.now() : Infinity));
       const usageLines = []; let partial = "", sentOut = 0, sentErr = 0, truncatedOut = false, captured = 0;
+      let errTail = "", sawTurn = false;
+      const errorEvents = [];   // codex's own error / turn.failed messages (--json prints them on stdout)
+      let apiRejected = null;   // HTTP status (4xx) of an API rejection codex reported
       const chunks = [];
       // A running exec call counts its whole ceiling until it reports usage.
       const cur = vet.info ? null : { cost: maxCallUsd };
@@ -540,6 +559,18 @@ export async function startRelay({ jobHome, buildDir, policies = [], codexBin = 
       const timer = setTimeout(() => { timedOut = true; stop("timeout"); }, limit);
       // Usage lines are priced as they arrive, so the watchdog sees a running call's spend.
       const noteLine = (l) => {
+        // Did a model turn begin? Codex says so with thread.started / turn.started / turn.completed.
+        if (!sawTurn && /"type"\s*:\s*"(thread\.started|turn\.started|turn\.completed)"/.test(l)) sawTurn = true;
+        if (errorEvents.length < 3 && /"type"\s*:\s*"(error|turn\.failed)"/.test(l)) {
+          try {
+            const e = JSON.parse(l); const m = e.message ?? e.error?.message;
+            if (typeof m === "string") {
+              errorEvents.push(redactTail(m, { max: 500 }));
+              // codex wraps the API's reply as JSON text: {"type":"error","status":400,...}
+              try { const st = Number(JSON.parse(m).status); if (st >= 400 && st < 500) apiRejected = st; } catch { /* plain text */ }
+            }
+          } catch { /* not JSON */ }
+        }
         if (!l.includes("\"usage\"") && !l.includes("\"model\"")) return;
         usageLines.push(l.length > 20000 ? l.slice(0, 20000) : l);
         if (!cur || !l.includes("\"usage\"")) return;
@@ -562,7 +593,8 @@ export async function startRelay({ jobHome, buildDir, policies = [], codexBin = 
           if (c.length > room && !truncatedOut) { truncatedOut = true; send("E", `codex: output beyond ${stdoutCap} bytes is not returned to the sandbox\n`); }
         } else if (captured <= CAPTURE_CAP) { captured += c.length; chunks.push(c); }
       });
-      child.stderr.on("data", (c) => { const room = (vet.info ? STDERR_CAP : EXEC_STDERR_CAP) - sentErr; if (room > 0) { const part = c.length > room ? c.subarray(0, room) : c; sentErr += part.length; send("E", part); } });
+      child.stderr.on("data", (c) => {
+        errTail = (errTail + c.toString("utf8")).slice(-8192); const room = (vet.info ? STDERR_CAP : EXEC_STDERR_CAP) - sentErr; if (room > 0) { const part = c.length > room ? c.subarray(0, room) : c; sentErr += part.length; send("E", part); } });
       child.stdin.on("error", () => {});
       child.on("error", (e) => send("E", `codex: ${e.code || e.message}\n`));
       child.on("close", (code, signal) => {
@@ -573,12 +605,19 @@ export async function startRelay({ jobHome, buildDir, policies = [], codexBin = 
         else if (stopped === "call-budget") { exit = 125; send("E", `codex: review call stopped at its spend ceiling ($${maxCallUsd})\n`); }
         const usage = vet.info ? null : parseCodexUsage(usageLines);
         let rec, last = null;
-        if (vet.info) rec = { argv_sanitized: sanitizeArgv(argv), exit, wall_ms: Date.now() - t0, usage: null, probe: true };
+        if (vet.info) rec = { argv_sanitized: sanitizeArgv(argv), exit, wall_ms: Date.now() - t0, usage: null, probe: true, ...(errTail ? { stderr_tail: redactTail(errTail) } : {}) };
         else {
           const p = usage ? priceUsage(model() || usage.observed_models[0] || null, usage) : null;
           rec = { argv_sanitized: sanitizeArgv(argv), exit, wall_ms: Date.now() - t0, usage, request: policy.label, phase: policy.phase, template_sha256: policy.templateSha256 || null,
             model: model() || usage?.observed_models?.[0] || null,
-            ...(p ? { cost_usd: p.usd, priced: { known: p.known, basis: p.basis } } : { cost_usd: charge, unmeasured: true, priced: { known: false, basis: "estimate: no usage reported" } }),
+            // Priced honestly: reported usage at its rate; a non-zero exit before any model turn
+            // began cost nothing; a turn that began but reported no usage is charged the estimate.
+            ...(p ? { cost_usd: p.usd, priced: { known: p.known, basis: p.basis } }
+              : (exit !== 0 && !sawTurn) ? { cost_usd: 0, failed_before_turn: true, priced: { known: true, basis: "failed before a model turn" } }
+                : (exit !== 0 && apiRejected) ? { cost_usd: 0, failed_before_turn: true, priced: { known: true, basis: `rejected by the API (status ${apiRejected}) before any model output` } }
+                  : { cost_usd: charge, unmeasured: true, priced: { known: false, basis: "estimate: no usage reported" } }),
+            ...(errTail ? { stderr_tail: redactTail(errTail) } : {}),
+            ...(errorEvents.length ? { error_events: errorEvents } : {}),
             ...(p && p.usd > maxCallUsd ? { over_ceiling: true } : {}),
             ...(timedOut ? { timed_out: true } : {}), ...(stopped === "call-budget" ? { stopped: "call-budget" } : {}) };
           // What the sandbox gets back: the framework's answer, valid and short, and the turn events.
