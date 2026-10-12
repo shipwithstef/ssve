@@ -75,7 +75,22 @@ function reservedRounds(root, cycleId, key) {
     return row;
   });
 }
-export function reserveExternalReviewRound(receipt, {receiptPath = null, reviewerInvoked = true} = {}) {
+function roundCounts(row) {
+  if (row.status === 'released') return false;
+  if (row.status === 'pending') {
+    // A pending admission holds a slot only while its launcher is alive. A
+    // launcher that died before the reviewer spawned never consumed a round.
+    if (!Number.isInteger(row.pid)) return false;
+    try { process.kill(row.pid, 0); return true; } catch (error) { return error?.code === 'EPERM'; }
+  }
+  return row.reviewer_invoked !== false;
+}
+function signedRound(key, row) {
+  return {...row, authority_hmac_sha256:crypto.createHmac('sha256', key).update(canonical(row)).digest('hex')};
+}
+// Phase 1 (before any spawn): take every lock, run every fallible check, and
+// durably write the round with the given status. Locks are released on return.
+function writeRound(receipt, {receiptPath, status, reviewerInvoked}) {
   const root = externalReviewProvenanceRoot({receiptPath});
   authorityKey(root, {create:true});
   const release = acquireLock(path.join(root, `admission-${externalReviewCycleIdFromReceipt(receipt)}`), {staleMs:60_000});
@@ -92,13 +107,37 @@ export function reserveExternalReviewRound(receipt, {receiptPath = null, reviewe
     const fd = fs.openSync(bindingFile, fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_WRONLY, 0o600);
     try {fs.writeFileSync(fd, JSON.stringify({...binding, authority_hmac_sha256:crypto.createHmac('sha256',key).update(canonical(binding)).digest('hex')}));fs.fsyncSync(fd);} finally {fs.closeSync(fd);}
   }
-  const row = {cycle_id:capacity.cycle_id, request_id:receipt.request_id, round:capacity.issued+1, reserved_at:new Date().toISOString(), reviewer_invoked:reviewerInvoked!==false};
-  const record = {...row, authority_hmac_sha256:crypto.createHmac('sha256',key).update(canonical(row)).digest('hex')};
+  const row = {cycle_id:capacity.cycle_id, request_id:receipt.request_id, round:capacity.issued+1, reserved_at:new Date().toISOString(), reviewer_invoked:reviewerInvoked, ...(status ? {status, pid:process.pid} : {})};
   const file = path.join(root, 'rounds', `${capacity.cycle_id}-${receipt.request_id}.json`);
   const fd=fs.openSync(file,fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_WRONLY,0o600);
-  try {fs.writeFileSync(fd,JSON.stringify(record));fs.fsyncSync(fd);} finally {fs.closeSync(fd);}
-  return row;
+  try {fs.writeFileSync(fd,JSON.stringify(signedRound(key,row)));fs.fsyncSync(fd);} finally {fs.closeSync(fd);}
+  return {row, root, file, key};
   } finally {releaseBindings?.();release();}
+}
+export function reserveExternalReviewRound(receipt, {receiptPath = null, reviewerInvoked = true} = {}) {
+  return writeRound(receipt, {receiptPath, status:null, reviewerInvoked:reviewerInvoked!==false}).row;
+}
+// Admission for a launcher: reserves a PENDING round (counts against the cap
+// while this launcher is alive, so concurrent launchers cannot exceed it) with
+// every fallible step done before the reviewer is spawned. markInvoked() is a
+// lock-free atomic rewrite of this launcher's own record; release() frees the
+// slot when no reviewer ever spawned. A spawned reviewer is never unrecorded:
+// a pending record keeps counting until released.
+export function admitExternalReviewRound(receipt, {receiptPath = null} = {}) {
+  const {row, file, key} = writeRound(receipt, {receiptPath, status:'pending', reviewerInvoked:false});
+  const rewrite = (patch) => {
+    const next = {...row, ...patch};
+    const tmp = `${file}.${process.pid}.${crypto.randomUUID()}.tmp`;
+    const fd = fs.openSync(tmp, fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_WRONLY, 0o600);
+    try {fs.writeFileSync(fd, JSON.stringify(signedRound(key,next)));fs.fsyncSync(fd);} finally {fs.closeSync(fd);}
+    try {fs.renameSync(tmp, file);} catch (error) {try {fs.unlinkSync(tmp);} catch {} throw error;}
+  };
+  let state = 'pending';
+  return {
+    row,
+    markInvoked() { if (state === 'invoked') return; rewrite({status:'invoked', reviewer_invoked:true}); state = 'invoked'; },
+    release() { if (state !== 'pending') return; rewrite({status:'released', reviewer_invoked:false}); state = 'released'; },
+  };
 }
 function markerReceiptBytes(payload,label){
   if(!/^[0-9a-f]{64}$/.test(String(payload.receipt_sha256||"")))return null;
@@ -137,7 +176,7 @@ export function externalReviewCycleCapacity(receipt, { receiptPath = null } = {}
   secureDirectory(path.join(root, 'issuance'), 'external review issuance directory', { create: true });
   secureDirectory(path.join(root, 'classifications'), 'external review classification directory', { create: true });
   const rows = listExternalReviewCycleProvenance({ receiptPath, wi, reviewKind: receipt.review_kind, cycleId });
-  const reservations = reservedRounds(root, cycleId, authorityKey(root)).filter(row => row.reviewer_invoked !== false);
+  const reservations = reservedRounds(root, cycleId, authorityKey(root)).filter(roundCounts);
   const issued = new Set([...rows.filter(row => row.counts_as_round !== false), ...reservations].map(row => row.request_id)).size;
   return { cycle_id: cycleId, lock_path: path.join(root, `cycle-${cycleId}.lock`), issued,
     remaining: Math.max(0, 2 - issued), allowed: issued < 2 };

@@ -134,41 +134,73 @@ function relocationRecords(parsed, historical_path, label) {
   return [parsed];
 }
 
-function serializableRelocation(row, historical_path) {
-  return {
-    schema_version: 1,
-    historical_path,
-    sha256: row.sha256,
-    repo_root: row.repo_root ?? null,
-    candidate_digest: row.candidate_digest ?? null,
-    kind: row.kind ?? null,
-    relocated_at: row.relocated_at,
-  };
-}
-
-function atomicWriteJson(file, body) {
+// Create-if-absent: write a private temp file, then hard-link it into place.
+// link() fails with EEXIST instead of replacing, so concurrent writers can
+// never discard each other's record. Returns true when this call created it.
+function createJsonOnce(file, body) {
   const tmp = `${file}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`;
-  fs.writeFileSync(tmp, `${JSON.stringify(body, null, 2)}\n`, { mode: 0o600 });
-  fs.renameSync(tmp, file);
+  const fd = fs.openSync(tmp, fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY, 0o600);
+  try {
+    fs.writeFileSync(fd, `${JSON.stringify(body, null, 2)}\n`);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  try {
+    fs.linkSync(tmp, file);
+    return true;
+  } catch (error) {
+    if (error.code === "EEXIST") return false;
+    throw error;
+  } finally {
+    try { fs.unlinkSync(tmp); } catch { /* temp is not authority */ }
+  }
 }
 
-function writeRelocationManifest(file, historical_path, records) {
-  const stored = records.map((row) => serializableRelocation(row, historical_path));
-  if (stored.length === 1) {
-    atomicWriteJson(file, stored[0]);
-    return;
+// Layout: relocations/<key>.json is the first record for a path (v1, or a
+// legacy v2 manifest). Every later digest is its own immutable file
+// relocations/<key>.d/<sha256>.json, created with link-no-clobber. Nothing is
+// ever rewritten, so concurrent rounds cannot lose each other's records.
+function relocationFiles(root, historical_path) {
+  const key = digest(Buffer.from(historical_path));
+  const dir = path.join(root, "relocations");
+  return { file: path.join(dir, `${key}.json`), recordsDir: path.join(dir, `${key}.d`), dir };
+}
+
+function readRelocationRecords(root, historical_path, label) {
+  const { file, recordsDir } = relocationFiles(root, historical_path);
+  const records = [];
+  let primaryExists = false;
+  try {
+    const stat = fs.lstatSync(file);
+    primaryExists = true;
+    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`relocation manifest is insecure: ${historical_path}`);
+    records.push(...relocationRecords(JSON.parse(fs.readFileSync(file, "utf8")), historical_path, label));
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
   }
-  const latest = stored[stored.length - 1];
-  atomicWriteJson(file, {
-    schema_version: 2,
-    historical_path,
-    sha256: latest.sha256,
-    records: stored,
-    repo_root: latest.repo_root,
-    candidate_digest: latest.candidate_digest,
-    kind: latest.kind,
-    relocated_at: latest.relocated_at,
-  });
+  let names = [];
+  try {
+    const stat = fs.lstatSync(recordsDir);
+    if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error(`relocation manifest is insecure: ${historical_path}`);
+    names = fs.readdirSync(recordsDir).filter((name) => name.endsWith(".json")).sort();
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  const extra = [];
+  for (const name of names) {
+    const child = path.join(recordsDir, name);
+    const stat = fs.lstatSync(child);
+    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`relocation manifest is insecure: ${historical_path}`);
+    const row = JSON.parse(fs.readFileSync(child, "utf8"));
+    if (!row || row.historical_path !== historical_path || row.sha256 !== name.slice(0, -5) || !SHA_RE.test(String(row.sha256))) {
+      relocationFailure(label, historical_path);
+    }
+    if (!records.some((existing) => existing.sha256 === row.sha256)) extra.push(row);
+  }
+  extra.sort((left, right) => String(left.relocated_at).localeCompare(String(right.relocated_at)));
+  records.push(...extra);
+  return { records, file, primaryExists };
 }
 
 export function putRelocation(entry, { start = process.cwd(), env = process.env } = {}) {
@@ -177,9 +209,8 @@ export function putRelocation(entry, { start = process.cwd(), env = process.env 
   if (!historical_path) throw new Error("relocation requires historical_path");
   if (!SHA_RE.test(sha256)) throw new Error("relocation requires object sha256");
   const root = secureDir(reviewEvidenceStoreRoot(start, env), { create: true });
-  const manifestDir = secureDir(path.join(root, "relocations"), { create: true });
-  const key = digest(Buffer.from(historical_path));
-  const file = path.join(manifestDir, `${key}.json`);
+  secureDir(path.join(root, "relocations"), { create: true });
+  const { file, recordsDir } = relocationFiles(root, historical_path);
   const record = {
     schema_version: 1,
     historical_path,
@@ -189,29 +220,21 @@ export function putRelocation(entry, { start = process.cwd(), env = process.env 
     kind: entry.kind || null,
     relocated_at: entry.relocated_at || new Date().toISOString(),
   };
-  if (fs.existsSync(file)) {
-    const existing = JSON.parse(fs.readFileSync(file, "utf8"));
-    const records = relocationRecords(existing, historical_path, "conflicting relocation");
-    const match = records.find((row) => row.sha256 === sha256);
-    if (match) return { ...match, historical_path, created: false, path: file };
-    records.push(record);
-    writeRelocationManifest(file, historical_path, records);
-    return { ...record, created: true, path: file };
-  }
-  atomicWriteJson(file, record);
-  return { ...record, created: true, path: file };
+  const existing = readRelocationRecords(root, historical_path, "conflicting relocation").records;
+  const match = existing.find((row) => row.sha256 === sha256);
+  if (match) return { ...match, historical_path, created: false, path: file };
+  if (existing.length === 0 && createJsonOnce(file, record)) return { ...record, created: true, path: file };
+  fs.mkdirSync(recordsDir, { recursive: true, mode: 0o700 });
+  const created = createJsonOnce(path.join(recordsDir, `${sha256}.json`), record);
+  return { ...record, created, path: file };
 }
 
 export function lookupRelocation(historicalPath, { start = process.cwd(), env = process.env, sha256 = null } = {}) {
   const historical_path = normalizeHistoricalPath(historicalPath);
   if (!historical_path) return null;
   const root = reviewEvidenceStoreRoot(start, env);
-  const file = path.join(root, "relocations", `${digest(Buffer.from(historical_path))}.json`);
-  if (!fs.existsSync(file)) return null;
-  const stat = fs.lstatSync(file);
-  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`relocation manifest is insecure: ${historical_path}`);
-  const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
-  const records = relocationRecords(parsed, historical_path, "forged or malformed relocation");
+  const { records, file } = readRelocationRecords(root, historical_path, "forged or malformed relocation");
+  if (records.length === 0) return null;
   const wanted = typeof sha256 === "string" ? sha256 : null;
   if (wanted) {
     const match = records.find((row) => row.sha256 === wanted);

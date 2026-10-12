@@ -58,9 +58,40 @@ function localCheckoutArtifact(root, value, { externalOnly = true } = {}) {
 }
 
 function secureArtifact(root, value, { externalOnly = true, extraPaths = [] } = {}) {
-  const local = localCheckoutArtifact(root, value, { externalOnly });
+  // The bound digest is authoritative. A mutable checkout file whose bytes were
+  // overwritten by a later review round must not mask the preserved object.
+  let mismatch = null; let local = null;
+  try { local = localCheckoutArtifact(root, value, { externalOnly }); }
+  catch (error) { if (!/^evidence digest mismatch/.test(String(error?.message))) throw error; mismatch = error; }
   if (local) return local;
-  return resolveEvidenceBytes(value, { start: root, extraPaths: [value.path, ...extraPaths] });
+  try { return resolveEvidenceBytes(value, { start: root, extraPaths: [value.path, ...extraPaths] }); }
+  catch (error) { throw mismatch || error; }
+}
+
+export function boundEvidenceBytes(root, value, options) {
+  return secureArtifact(fs.realpathSync(path.resolve(root)), value, options);
+}
+
+// Round-specific output digest. Several review rounds can reuse one path, so
+// "the latest relocation" is wrong for earlier rounds: prefer the digest the
+// receipt itself binds, then the digests the closing receipt declares for that
+// path, and only then fall back to the single-record/current-file inference.
+export function roundOutputDigest(root, filePath, { bound = new Map(), declared = [], used = new Set() } = {}) {
+  const receiptBound = bound.get(filePath);
+  if (/^[0-9a-f]{64}$/.test(String(receiptBound || ""))) return receiptBound;
+  let relocated = null;
+  try { relocated = lookupRelocation(filePath, { start: root }); } catch { /* fall back below */ }
+  if (relocated?.history) {
+    const known = new Set(relocated.history.map((row) => row.sha256));
+    for (const entry of declared) {
+      if (entry?.path !== filePath || !known.has(entry.sha256)) continue;
+      const key = `${filePath}\0${entry.sha256}`;
+      if (used.has(key)) continue;
+      used.add(key);
+      return entry.sha256;
+    }
+  }
+  return artifactDigest(root, filePath);
 }
 
 function artifactDigest(root, maybePath, declaredSha = null) {
@@ -116,7 +147,7 @@ function verifyReviewerEvidenceInternal({ root = process.cwd(), reviewKind, body
   if (!Array.isArray(evidence.output_artifacts) || evidence.output_artifacts.length === 0) reasons.push("reviewer evidence requires hash-bound output artifacts");
   if (reasons.length) return reasons;
 
-  const launcherCommands = []; const launcherOutputs = []; const rounds = [];
+  const launcherCommands = []; const launcherOutputs = []; const rounds = []; const usedDeclaredOutputs = new Set();
   for (const entry of evidence.launcher_receipts) {
     try {
       const loaded = secureArtifact(repository, entry, { extraPaths: [entry.path, path.resolve(repository, entry.path)] }); const bytes = loaded.bytes; const receipt = JSON.parse(bytes.toString("utf8"));
@@ -177,7 +208,8 @@ function verifyReviewerEvidenceInternal({ root = process.cwd(), reviewKind, body
       const attemptCommands = receipt.attempts.map((attempt) => attempt.command).filter(Boolean);
       if (!sameJson(receipt.reviewer_run?.commands, attemptCommands)) reasons.push(`launcher reviewer_run commands do not match attempts: ${entry.path}`);
       launcherCommands.push(...(runReceipt.reviewer_run?.commands || []));
-      launcherOutputs.push(...(runReceipt.reviewer_run?.output_artifacts || []).map((value) => artifactDigest(repository, value)));
+      const boundOutputs = new Map([[receipt.artifacts?.findings, receipt.findings_sha256], [receipt.artifacts?.package, receipt.package_sha256]]);
+      launcherOutputs.push(...(runReceipt.reviewer_run?.output_artifacts || []).map((value) => roundOutputDigest(repository, value, { bound: boundOutputs, declared: evidence.output_artifacts, used: usedDeclaredOutputs })));
       rounds.push({ receipt, receiptPath: loaded.absolute, receiptSha: digest(bytes), findings, findingsSha: digest(findingsBytes.bytes) });
       // 7bca62f regression: receiptPath must remain a STRING. bytesOrFile()
       // prefers the explicit bytes, but externalReviewProvenanceRoot() derives

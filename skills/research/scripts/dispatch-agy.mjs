@@ -131,6 +131,8 @@ function runAgy(args, timeoutMs) {
       resolve({ code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(error.message), spawnError: true });
       return;
     }
+    // Tell a launcher the reviewer process really exists (not just this bridge).
+    child.on('spawn', () => process.stderr.write('svc-agy-reviewer-spawned\n'));
     const stdout = [];
     const stderr = [];
     let timedOut = false;

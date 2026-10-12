@@ -26,7 +26,7 @@ import { readFrozenFile, readFrozenStream, GENERAL_REVIEW_MAX_BYTES } from './li
 import { fileURLToPath } from 'node:url';
 import { WI_ID_RE } from "../hooks/lib/wi-id.mjs";
 import { loadReviewerPolicy, resolveExternalReviewer } from './review-topology-v2.mjs';
-import { candidateTreeIdentity, issueExternalReviewProvenance, externalReviewCycleCapacity, reserveExternalReviewRound, verifyExternalReviewProvenance } from './lib/external-review-provenance.mjs';
+import { candidateTreeIdentity, issueExternalReviewProvenance, externalReviewCycleCapacity, admitExternalReviewRound, verifyExternalReviewProvenance } from './lib/external-review-provenance.mjs';
 import { relocateTree } from './lib/review-evidence-store.mjs';
 
 import { reviewerAvailability, recordReviewerFailure } from './lib/reviewer-resources.mjs';
@@ -38,6 +38,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FINDINGS_SCHEMA = path.join(ROOT, 'schemas/external-review-findings.schema.json');
 const RECEIPT_SCHEMA = path.join(ROOT, 'schemas/external-review-receipt.schema.json');
 const MODEL_REGISTRY = path.join(ROOT, 'references/model-registry.json');
+const AGY_REVIEWER_SPAWNED_MARKER = 'svc-agy-reviewer-spawned';
 const AGY_DISPATCHER = path.join(ROOT, 'skills/research/scripts/dispatch-agy.mjs');
 const REVIEW_HOST_TRANSPORTS = Object.freeze({
   codex: { env: 'SVC_EXTERNAL_REVIEW_CODEX_BIN', binary: 'codex' },
@@ -742,7 +743,7 @@ function fixtureBinary(variable, fallback, fixtureRoot) {
   });
 }
 
-async function runProcess(binary, args, input, timeoutMs, env = process.env, cwd = undefined, onReviewerSpawned = null) {
+async function runProcess(binary, args, input, timeoutMs, env = process.env, cwd = undefined, onReviewerSpawned = null, spawnMarker = null) {
   return new Promise((resolve, reject) => {
     const child = spawn(binary, args, { env, cwd, stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
     const stdout = [];
@@ -791,8 +792,10 @@ async function runProcess(binary, args, input, timeoutMs, env = process.env, cwd
     child.stdin.on('error', () => {});
     // 'spawn' fires only after the OS process exists. ENOENT and other
     // pre-start failures emit 'error' and must not admit a review round.
-    child.on('spawn', () => {
-      if (typeof onReviewerSpawned !== 'function') return;
+    let admitted = false;
+    const admit = () => {
+      if (admitted || typeof onReviewerSpawned !== 'function') return;
+      admitted = true;
       try { onReviewerSpawned(); }
       catch (error) {
         error.reviewAdmission = true;
@@ -800,7 +803,17 @@ async function runProcess(binary, args, input, timeoutMs, env = process.env, cwd
         // The 'error' listener settles, cleans up and rejects exactly once.
         child.emit('error', error);
       }
-    });
+    };
+    if (spawnMarker) {
+      // The direct child is a dispatcher, not the reviewer: admit only when it
+      // reports that the reviewer process itself exists.
+      let tail = '';
+      child.stderr.on('data', (chunk) => {
+        if (admitted) return;
+        tail = (tail + chunk.toString('utf8')).slice(-(spawnMarker.length * 2));
+        if (tail.includes(spawnMarker)) admit();
+      });
+    } else child.on('spawn', admit);
     child.stdin.end(input);
   });
 }
@@ -1350,7 +1363,7 @@ export async function invoke(tuple, binary, packageBytes, reviewKind, schemaByte
     result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(`no review transport for host ${tuple.host}`), spawnError: true };
   }
   if (!result) {
-    try { result = await runProcess(binary, args, packageBytes, timeoutMs, env, contextRoot, onReviewerSpawned); }
+    try { result = await runProcess(binary, args, packageBytes, timeoutMs, env, contextRoot, onReviewerSpawned, tuple.host === 'agy' ? AGY_REVIEWER_SPAWNED_MARKER : null); }
     catch (error) {
       if (error?.reviewAdmission) throw error;
       result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(error.message), spawnError: true };
@@ -1968,6 +1981,7 @@ async function main() {
     return;
   }
 
+  let roundAdmission = null;
   try {
     if (!fixture && !options.validateCapabilities) {
       const prospective = makeReceipt('success', { effectiveTuple: requestedTuple });
@@ -2064,14 +2078,15 @@ async function main() {
     }
 
     const attempts = observedAttempts;
-    // Count a round only after the reviewer process exists. Lock, relocation,
-    // preflight, and spawn failures before that event leave the two-round cap.
-    let reviewerSpawned = false;
-    const admitSpawnedReviewer = () => {
-      if (reviewerSpawned || !cycleCapacity) return;
-      reserveExternalReviewRound(makeReceipt('success', { effectiveTuple: requestedTuple }), { receiptPath, reviewerInvoked: true });
-      reviewerSpawned = true;
-    };
+    // Admission is reserved BEFORE any spawn: every lock and fallible check
+    // happens here, so a failure aborts the launch with no reviewer running.
+    // The spawn event then only flips this launcher's own record to invoked.
+    // A pending admission that never spawns is released in the finally block.
+    if (cycleCapacity) {
+      try { roundAdmission = admitExternalReviewRound(makeReceipt('success', { effectiveTuple: requestedTuple }), { receiptPath }); }
+      catch (error) { await finishFailure('lock_failure', { cacheKey, detail: error.message }); return; }
+    }
+    const admitSpawnedReviewer = () => { roundAdmission?.markInvoked(); };
     const invocationStarted = Date.now();
     let primaryResult = await invoke(requestedTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 1, timeoutSeconds * 1000, reviewBudgetUsd, reviewerTurnCeiling, contextRoot, cycleCapacity ? cycleCapacity.issued + 1 : 1, { onReviewerSpawned: admitSpawnedReviewer });
     observedResult = primaryResult;
@@ -2248,6 +2263,7 @@ async function main() {
     }
     throw error;
   } finally {
+    try { roundAdmission?.release(); } catch { /* a pending record of a dead launcher is ignored */ }
     if (heartbeat) clearInterval(heartbeat);
     await heartbeatWork;
     if (cycleLock) await releaseLock(cycleLock, owner);
