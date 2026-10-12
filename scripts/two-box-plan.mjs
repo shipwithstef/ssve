@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { resolveDispatchRoleTuple } from "./resolve-dispatch.mjs";
+import { resolveDispatchRoleTuple, HOST_FAMILY } from "./resolve-dispatch.mjs";
 import { putObject } from "./lib/review-evidence-store.mjs";
-import { readJsonAtomic, updateJsonAtomic, withStateLock } from "./state-io.mjs";
+import { appendJsonlLine, readJsonAtomic, updateJsonAtomic, withStateLock } from "./state-io.mjs";
 import {
   CoverageGap,
   DEFAULT_LIMITS,
@@ -34,7 +34,8 @@ import {
 import { diagnosePromptContamination, isolationProofContractDigest } from "./lib/isolated-plan-analysis.mjs";
 import { assertRetainedStageProof } from "./lib/control-plan-validate.mjs";
 import { assignDualPass, assignmentCoverage, constraintSources, preflightDeclaredScoutExposure, freezeScoutExposure, frozenScoutExposure } from "./lib/two-box-scout-assign.mjs";
-import { buildRolePrompt, renderRolePrompt, assertCompleteRequestBudget, launchRole, preflightRole, parseCodexJsonl, PLANNING_REQUEST_MAX_BYTES } from "./lib/two-box-role-launch.mjs";
+import { buildRolePrompt, renderRolePrompt, assertCompleteRequestBudget, launchRole, preflightRole, parsePlanningStdout, PLANNING_REQUEST_MAX_BYTES } from "./lib/two-box-role-launch.mjs";
+import { planningHostFamily, planningTransportOf, primeClaudeProbe, transportAvailability } from "./lib/claude-plan-transport.mjs";
 import { redactSecrets } from "./lib/secret-redaction.mjs";
 import { realpathSync as __svcRealpath } from "node:fs";
 import { fileURLToPath as __svcToPath } from "node:url";
@@ -133,6 +134,77 @@ function containRel(root, rel) {
     assertNoSymlink(acc);
   }
   return rel;
+}
+
+export class AssessorUnavailable extends IsolationUnsupported {
+  constructor(message) {
+    super(message);
+    this.name = "AssessorUnavailable";
+  }
+}
+
+const SUPPORTED_PLANNING_HOSTS = ["claude", "codex"];
+
+/**
+ * Transport and family rules for the six planning calls, enforced whatever the policy says.
+ * Same-family roles (Open, Contract, scouts, revision) may run on any supported isolated
+ * transport. The assessor judges the two plans, so it must be of a different model family
+ * than the orchestrator and than the authors of both plans; there is no same-family fallback.
+ */
+export function assertPlanningTransports(tuples) {
+  for (const role of PLANNING_ROLES) {
+    const t = tuples[role]?.tuple;
+    if (!t || !SUPPORTED_PLANNING_HOSTS.includes(t.host)) {
+      throw new IsolationUnsupported(`unsupported planning transport: ${t?.host} (role ${role}); supported: ${SUPPORTED_PLANNING_HOSTS.join(", ")}`);
+    }
+    if (t.family !== planningHostFamily(t.host)) {
+      throw new IsolationUnsupported(`role ${role}: family ${t.family} does not match host ${t.host} (${planningHostFamily(t.host)})`);
+    }
+  }
+  // The orchestrator identity is the resolver's own field. A tuple carrying a different (or any
+  // non-matching) orchestrator is an override attempt and fails closed; unknown families too.
+  const orchestrator = tuples.assessor.orchestrator;
+  for (const role of PLANNING_ROLES) {
+    if (tuples[role].orchestrator !== orchestrator || tuples[role].tuple.orchestrator !== orchestrator) {
+      throw new IsolationUnsupported(`role ${role}: orchestrator identity must be the single resolved orchestrator (${orchestrator}); a tuple-provided orchestrator override is refused`);
+    }
+  }
+  const orchestratorFamily = typeof orchestrator === "string" && Object.hasOwn(HOST_FAMILY, orchestrator) ? HOST_FAMILY[orchestrator] : null;
+  if (!orchestratorFamily) throw new IsolationUnsupported(`unknown orchestrator family for host ${orchestrator}; set SVC_HOST or dispatch.orchestrator to a known host`);
+  const assessor = tuples.assessor.tuple;
+  const authorFamilies = new Set(["open_box", "contract_box", "contract_revise"].map((r) => tuples[r].tuple.family));
+  const clash = authorFamilies.has(assessor.family) ? "a plan author" : (assessor.family === orchestratorFamily ? "the orchestrator" : null);
+  if (clash) {
+    const need = assessor.family === "anthropic" ? "codex (family openai)" : "claude (family anthropic)";
+    throw new IsolationUnsupported(
+      `the assessor must be cross-family but its family ${assessor.family} (host ${assessor.host}) matches ${clash}. `
+      + `Run the assessor on ${need}: set modes.<mode>.roles.assessor in the dispatch policy to a tuple of a different model family than the plan tuples (the default policy already does this). Same-family assessors are refused.`,
+    );
+  }
+}
+
+/** Live pre-spend check: every host CLI the plan needs is present; the assessor gets an actionable error. */
+export function assertPlanningTransportsAvailable(tuples, pathEnv = process.env.PATH || "") {
+  const assessorHost = tuples.assessor.tuple.host;
+  const status = transportAvailability(assessorHost, pathEnv);
+  if (!status.ok) {
+    throw new AssessorUnavailable(
+      `cannot issue a plan-manifest: the cross-family assessor needs the ${assessorHost} CLI (${tuples.assessor.tuple.family}) but it is unavailable: ${status.reason}. `
+      + `Install the ${assessorHost} CLI and sign in (${assessorHost === "codex" ? "`codex login`" : "`claude`, then `/login`"}), then re-run this command. Issuance fails closed here; it never falls back to a same-family assessor.`,
+    );
+  }
+  for (const role of PLANNING_ROLES) {
+    const host = tuples[role].tuple.host;
+    const other = transportAvailability(host, pathEnv);
+    if (!other.ok) throw new IsolationUnsupported(`planning role ${role} needs the ${host} CLI: ${other.reason}`);
+  }
+}
+
+export function planningTransportSummary(tuples) {
+  return Object.fromEntries(PLANNING_ROLES.map((role) => {
+    const t = tuples[role].tuple;
+    return [role, { transport: planningTransportOf(t.host), host: t.host, family: t.family, model: t.model, effort: t.effort }];
+  }));
 }
 
 function publicTuple(resolved) {
@@ -240,6 +312,9 @@ function dispatchOpts(dispatch, wi, consumerRoot) {
   for (const [from, to] of DISPATCH_PASS) {
     if (dispatch[from] != null) opts[to] = dispatch[from];
   }
+  // Same default every svc command line uses (`${SVC_HOST:-claude}`): a Claude Code
+  // orchestrator needs no extra flag, another host sets SVC_HOST or dispatch.orchestrator.
+  if (opts.orchestrator == null && !process.env.SVC_HOST) opts.orchestrator = "claude";
   return opts;
 }
 
@@ -285,16 +360,18 @@ function offlineIsolation(offline) {
 
 function offlineForRole(offline, role) {
   const iso = offlineIsolation(offline);
+  const delay = Number.isInteger(offline.outputs?.[role]?.delay_ms) ? { delay_ms: offline.outputs[role].delay_ms } : {};
   const row = offline.outputs?.[role] ?? offline.stages?.[role];
   if (row == null) throw new Error(`OFFLINE missing recorded output for ${role}`);
   if (isPlainObject(row) && row.stdout == null && row.output == null && (row.plan || row.decisions || row.winner || row.findings)) {
-    return { ...iso, output: row, usage: row.usage ?? null, stderr: row.stderr, exit_code: row.exit_code ?? 0 };
+    return { ...iso, ...delay, output: row, usage: row.usage ?? null, stderr: row.stderr, exit_code: row.exit_code ?? 0 };
   }
   if (isPlainObject(row) && row.output && row.stdout == null) {
-    return { ...iso, output: row.output, usage: row.usage ?? null, stderr: row.stderr, exit_code: row.exit_code ?? 0 };
+    return { ...iso, ...delay, output: row.output, usage: row.usage ?? null, stderr: row.stderr, exit_code: row.exit_code ?? 0 };
   }
   return {
     ...iso,
+    ...delay,
     stdout: isPlainObject(row) ? row.stdout : row,
     stderr: row.stderr,
     usage: row.usage,
@@ -385,7 +462,7 @@ function verifyEnvelope(ref, { consumerRoot, wi, role, input, policyDigest, sour
   validateRoleOutput(role, envelope.output, context);
   if (role === "scout_forward" || role === "scout_reverse") assignmentCoverage({assignment:input.assignment.value,parsed:envelope.output});
   if (evidenceClass === "LIVE" || stdout.bytes.length) {
-    if(canonicalJson(parseCodexJsonl(stdout.bytes,role)) !== canonicalJson(envelope.output)) return null;
+    if(canonicalJson(parsePlanningStdout(envelope.launch.requested?.host,stdout.bytes,role)) !== canonicalJson(envelope.output)) return null;
   }
   if(envelope.launch.prompt_digest !== sha256Utf8(renderRolePrompt({role,payload:input}))) return null;
   if(envelope.launch.exit_code !== 0 || envelope.input_digest !== sha256Utf8(canonicalJson(input))) return null;
@@ -565,7 +642,7 @@ export function preflightAssignedScouts({ consumerRoot, tuples, payloads, reques
 async function runSix(ctx) {
   const {
     mode, offline, consumerRoot, wi, requirements, snapshot, bindings, tuples,
-    policyHash, journalPath, signal, limits, contractContext, eligibility, resume, sourceHash,
+    policyHash, journalPath, signal, limits, contractContext, eligibility, resume, sourceHash, retryInterrupted,
   } = ctx;
   const evidenceClass = mode === "OFFLINE" ? "OFFLINE" : "LIVE";
   const isoMode = mode === "OFFLINE" ? "offline" : "live";
@@ -652,7 +729,31 @@ async function runSix(ctx) {
         throw new Error(`failed content attempt blocked until input changes (${role}): ${current.error || "failed"}`);
       }
       if (current?.status === "running" && current.key === key) {
-        throw new Error("interrupted provider attempt cannot be assumed zero-cost; change input or explicit decision to retry");
+        if (!retryInterrupted) {
+          throw new Error(`interrupted provider attempt cannot be assumed zero-cost; change input or explicit decision to retry (${role}). `
+            + `To retry ONLY this stage, record the decision: rerun with --retry-interrupted --decision-reason "<why a retry is acceptable>"`);
+        }
+        // An explicit, recorded decision. The interrupted attempt's cost stays unknown and is
+        // kept in history; only this stage is re-run, every completed stage is reused.
+        appendJsonlLine(path.join(consumerRoot, ".svc", "pipeline-decisions.jsonl"), {
+          ts: new Date().toISOString(),
+          skill: "two-box-plan",
+          decision: `retry interrupted provider attempt for ${role}`,
+          wi,
+          kind: "user",
+          reason: retryInterrupted.reason,
+          decided_by: retryInterrupted.decided_by,
+          role,
+          stage_key: key,
+          interrupted_started_at: current.started_at ?? null,
+          attempt_cost: "unknown",
+        });
+        patchJournal(journalPath, wi, (j) => {
+          const stages = { ...j.stages };
+          const prior = stages[role];
+          delete stages[role];
+          return { ...j, stages, history: [...(j.history || []), { ...prior, role, invalidated_at: new Date().toISOString(), reason: "interrupted_retry_decided" }] };
+        });
       }
       if (current && current.key !== key) {
         patchJournal(journalPath, wi, (j) => invalidateFrom(j, role, "stage_input_changed"));
@@ -888,6 +989,7 @@ async function runSix(ctx) {
     return {
       status: "completed",
       new_provider_calls: newProviderCalls,
+      planning_transports: planningTransportSummary(tuples),
       evidence_class: "OFFLINE",
       eligibility,
       control_plan_ref,
@@ -924,6 +1026,7 @@ async function runSix(ctx) {
   return {
     status: "completed",
     new_provider_calls: newProviderCalls,
+    planning_transports: planningTransportSummary(tuples),
     evidence_class: "LIVE",
     eligibility,
     control_plan_ref,
@@ -933,9 +1036,19 @@ async function runSix(ctx) {
   };
 }
 
+function normalizeRetryInterrupted(value) {
+  if (value == null || value === false) return null;
+  const reason = isPlainObject(value) ? value.reason : null;
+  if (typeof reason !== "string" || reason.trim().length < 8) {
+    throw new Error("--retry-interrupted requires --decision-reason \"<text>\" (at least 8 characters) so the decision is recorded");
+  }
+  return { reason: reason.trim(), decided_by: value.decided_by || process.env.SVC_HOST || "claude" };
+}
+
 export async function runTwoBox(opts = {}) {
   const mode = opts.mode ?? "prepare";
   if (!["prepare", "live", "OFFLINE"].includes(mode)) throw new Error(`unknown mode: ${mode}`);
+  normalizeRetryInterrupted(opts.retryInterrupted);
   const offline = opts.offline ?? {};
   if (mode !== "OFFLINE") {
     if (isPlainObject(offline) && Object.keys(offline).length) {
@@ -996,8 +1109,8 @@ export async function runTwoBox(opts = {}) {
   const policyHash = canonicalPolicyHash(tuples.open_box.effective_policy_sha256);
   for (const role of PLANNING_ROLES) {
     if (canonicalPolicyHash(tuples[role].effective_policy_sha256) !== policyHash) throw new Error("role policy digests diverged");
-    if (tuples[role].tuple.host !== "codex") throw new IsolationUnsupported(`unsupported planning transport: ${tuples[role].tuple.host}`);
   }
+  assertPlanningTransports(tuples);
   const bindings = {
     wi,
     original_requirements_ref: persisted.original_requirements_ref,
@@ -1021,6 +1134,7 @@ export async function runTwoBox(opts = {}) {
     return {
       status: "prepared",
       evidence_class: "PREPARE",
+      planning_transports: planningTransportSummary(tuples),
       eligibility,
       control_plan_ref: null,
       control_plan: null,
@@ -1039,10 +1153,17 @@ export async function runTwoBox(opts = {}) {
       resume: { ...resume, eligible: true },
     };
   }
+  if (mode === "live") {
+    // Fail closed before any model spend: every host CLI is present, and the Claude canary
+    // probe (when a Claude transport is used) has run on the binary that will be launched.
+    assertPlanningTransportsAvailable(tuples);
+    if (PLANNING_ROLES.some((role) => tuples[role].tuple.host === "claude")) await primeClaudeProbe();
+  }
   return await withRunClaim(runPath, () => runSix({
     mode, offline, consumerRoot, wi, requirements, snapshot, bindings, tuples,
     policyHash, journalPath, signal: opts.signal, limits: opts.limits,
     contractContext: opts.contractContext, eligibility, resume, sourceHash,
+    retryInterrupted: normalizeRetryInterrupted(opts.retryInterrupted),
   }));
 }
 
@@ -1094,27 +1215,155 @@ async function selfCheck() {
   }
 }
 
+// ---- Detached runs: survive host command time limits ------------------------------------
+// A live run can take longer than an agent's foreground command limit. `start` launches the
+// run in its own session and returns at once; `status` and `wait` only read state, so killing
+// them can never kill the run. Stage state is the existing journal (.svc/two-box/<WI>/journal.json).
+export const WAIT_EXIT = Object.freeze({ completed: 0, failed: 1, usage: 2, running: 20, interrupted: 21, not_started: 22 });
+export const WAIT_MAX_SECONDS = 530; // under 9 minutes: always inside a 10 minute host limit
+
+function runDir(root, wi) {
+  if (!WI_RE.test(wi || "")) throw new Error("stage WI required");
+  return path.join(path.resolve(root), ".svc", "two-box", wi);
+}
+
+function readInputFile(file) {
+  const input = JSON.parse(fs.readFileSync(file, "utf8"));
+  if (!isPlainObject(input)) throw new Error("input must be ONE JSON object");
+  return input;
+}
+
+function targetOf(args) {
+  if (args.input) {
+    const input = readInputFile(path.resolve(args.input));
+    return { root: path.resolve(input.consumerRoot || process.cwd()), wi: input.wi, input, inputPath: path.resolve(args.input) };
+  }
+  if (args.wi) return { root: path.resolve(args.root || process.cwd()), wi: args.wi, input: null, inputPath: null };
+  throw new Error("status/wait need --input <json> (the same file given to start) or --wi <WI> [--root <dir>]");
+}
+
+function sameInvocation(args) {
+  const parts = [];
+  if (args.input) parts.push(`--input ${args.input}`); else if (args.wi) parts.push(`--wi ${args.wi}`);
+  return parts.join(" ");
+}
+
+export function twoBoxStatus(root, wi) {
+  const dir = runDir(root, wi);
+  const detach = readJsonAtomic(path.join(dir, "detach.json"));
+  const outcome = readJsonAtomic(path.join(dir, "outcome.json"));
+  const journal = readJsonAtomic(path.join(dir, "journal.json")) ?? emptyJournal(wi);
+  const claim = readJsonAtomic(path.join(dir, "run.json"));
+  const alive = pidAlive(detach?.pid) || pidAlive(claim?.pid);
+  const stages = {};
+  for (const role of PLANNING_ROLES) {
+    const row = journal.stages?.[role];
+    let state = row?.status ?? "pending";
+    if (state === "running" && !alive) state = "interrupted";
+    stages[role] = { state, ...(row?.started_at ? { started_at: row.started_at } : {}), ...(row?.ref ? { ref: row.ref } : {}), ...(row?.error ? { error: row.error } : {}) };
+  }
+  let state;
+  if (outcome && !alive) state = outcome.exit_code === 0 ? "completed" : "failed";
+  else if (alive) state = "running";
+  else if (Object.values(stages).some((st) => st.state === "interrupted") || detach) state = "interrupted";
+  else state = "not_started";
+  return {
+    wi, state, alive, pid: detach?.pid ?? claim?.pid ?? null,
+    stages, attempts: (journal.attempts || []).length,
+    result_path: detach?.out ?? null, log_path: detach?.log ?? null,
+    ...(outcome ? { outcome } : {}),
+  };
+}
+
+function printStatus(status, args) {
+  const cmd = sameInvocation(args);
+  const hint = status.state === "running" ? `still running; poll with: node scripts/two-box-plan.mjs wait ${cmd} --timeout-seconds 300`
+    : status.state === "interrupted" ? `the run was cut off. Completed stages are kept. If a provider attempt was interrupted its cost is unknown; to retry ONLY that stage: node scripts/two-box-plan.mjs start ${cmd} --mode live --retry-interrupted --decision-reason "<why a retry is acceptable>"`
+      : status.state === "failed" ? `failed; see ${status.log_path ?? "the run log"}`
+        : status.state === "completed" ? `completed; result at ${status.result_path ?? "the --out file"}` : "no run recorded; use start";
+  process.stdout.write(`${JSON.stringify({ ...status, hint }, null, 2)}\n`);
+}
+
+function startDetached(args) {
+  const target = targetOf(args);
+  if (!target.input) throw new Error("start needs --input <json>");
+  const { root, wi, inputPath } = target;
+  const dir = runDir(root, wi);
+  fs.mkdirSync(dir, { recursive: true });
+  const before = twoBoxStatus(root, wi);
+  if (before.alive) {
+    printStatus({ ...before, already_running: true }, args);
+    return;
+  }
+  const out = path.resolve(args.out || path.join(dir, "result.json"));
+  const log = path.join(dir, "run.log");
+  try { fs.unlinkSync(path.join(dir, "outcome.json")); } catch { /* none yet */ }
+  const childArgs = ["_run", "--input", inputPath, "--mode", args.mode, "--out", out];
+  if (args.retryInterrupted) childArgs.push("--retry-interrupted", "--decision-reason", args.decisionReason);
+  const logFd = fs.openSync(log, "a");
+  // detached: the child leads its own session/process group, so the agent's command timeout
+  // (or the death of this launcher) cannot reach it.
+  const child = spawn(process.execPath, [fileURLToPath(import.meta.url), ...childArgs], {
+    cwd: root, detached: true, stdio: ["ignore", logFd, logFd], env: process.env,
+  });
+  child.unref();
+  fs.closeSync(logFd);
+  fs.writeFileSync(path.join(dir, "detach.json"), `${JSON.stringify({ pid: child.pid, started_at: new Date().toISOString(), mode: args.mode, input: inputPath, out, log }, null, 2)}\n`, { mode: 0o600 });
+  const cmd = sameInvocation(args);
+  process.stdout.write(`${JSON.stringify({
+    state: "started", wi, pid: child.pid, result_path: out, log_path: log,
+    status_command: `node scripts/two-box-plan.mjs status ${cmd}`,
+    wait_command: `node scripts/two-box-plan.mjs wait ${cmd} --timeout-seconds 300`,
+  }, null, 2)}\n`);
+}
+
+async function waitFor(args) {
+  const seconds = Number(args.timeoutSeconds);
+  if (!Number.isFinite(seconds) || seconds < 1 || seconds > WAIT_MAX_SECONDS) {
+    throw new Error(`--timeout-seconds must be between 1 and ${WAIT_MAX_SECONDS} (under 9 minutes, so a host command limit never kills the wait)`);
+  }
+  const { root, wi } = targetOf(args);
+  const pollMs = Math.max(50, Number(args.pollMs) || 1000);
+  const deadline = Date.now() + seconds * 1000;
+  for (;;) {
+    const status = twoBoxStatus(root, wi);
+    if (status.state !== "running" || Date.now() >= deadline) {
+      printStatus(status, args);
+      process.exitCode = WAIT_EXIT[status.state] ?? 1;
+      return;
+    }
+    await new Promise((r) => setTimeout(r, Math.min(pollMs, Math.max(10, deadline - Date.now()))));
+  }
+}
+
 function parseCli(argv) {
   const out = { mode: "prepare" };
-  for (let i = 0; i < argv.length; i += 1) {
+  let i = 0;
+  if (["start", "status", "wait", "_run"].includes(argv[0])) { out.command = argv[0]; i = 1; }
+  for (; i < argv.length; i += 1) {
     const token = argv[i];
     if (token === "--self-check") out.selfCheck = true;
     else if (token === "--input") out.input = argv[++i];
     else if (token === "--mode") out.mode = argv[++i];
     else if (token === "--out") out.out = argv[++i];
+    else if (token === "--wi") out.wi = argv[++i];
+    else if (token === "--root") out.root = argv[++i];
+    else if (token === "--timeout-seconds") out.timeoutSeconds = argv[++i];
+    else if (token === "--poll-ms") out.pollMs = argv[++i];
+    else if (token === "--retry-interrupted") out.retryInterrupted = true;
+    else if (token === "--decision-reason") out.decisionReason = argv[++i];
     else throw new Error(`unsupported argument ${token}`);
   }
   if (out.mode && !["prepare", "live", "OFFLINE"].includes(out.mode)) throw new Error(`unknown mode: ${out.mode}`);
+  if (out.retryInterrupted && !(typeof out.decisionReason === "string" && out.decisionReason.trim().length >= 8)) {
+    throw new Error("--retry-interrupted requires --decision-reason \"<text>\" (at least 8 characters) so the decision is recorded");
+  }
+  if (out.decisionReason && !out.retryInterrupted) throw new Error("--decision-reason is only valid with --retry-interrupted");
+  if (out.command === "start" && out.mode === "prepare") out.mode = "live";
   return out;
 }
 
-async function main(argv) {
-  const args = parseCli(argv);
-  if (args.selfCheck) {
-    await selfCheck();
-    process.stdout.write("self-check ok\n");
-    return;
-  }
+async function runFromInput(args) {
   if (!args.input) throw new Error("missing --input");
   const raw = fs.readFileSync(args.input, "utf8");
   const input = JSON.parse(raw);
@@ -1133,10 +1382,39 @@ async function main(argv) {
     signal: undefined,
     limits: input.limits,
     offline: args.mode === "OFFLINE" ? input.offline : undefined,
+    retryInterrupted: args.retryInterrupted ? { reason: args.decisionReason } : undefined,
   });
   const text = `${JSON.stringify(result, null, 2)}\n`;
   if (args.out) fs.writeFileSync(args.out, text);
   else process.stdout.write(text);
+  return result;
+}
+
+async function main(argv) {
+  const args = parseCli(argv);
+  if (args.selfCheck) {
+    await selfCheck();
+    process.stdout.write("self-check ok\n");
+    return;
+  }
+  if (args.command === "start") return startDetached(args);
+  if (args.command === "status") { const t = targetOf(args); printStatus(twoBoxStatus(t.root, t.wi), args); return; }
+  if (args.command === "wait") return waitFor(args);
+  if (args.command === "_run") {
+    // The detached worker: always leaves an outcome file, unless it is killed outright, in
+    // which case `status` reports the stage as interrupted.
+    const { root, wi } = targetOf(args);
+    const outcomePath = path.join(runDir(root, wi), "outcome.json");
+    try {
+      const result = await runFromInput(args);
+      fs.writeFileSync(outcomePath, `${JSON.stringify({ exit_code: 0, state: result?.status ?? "completed", finished_at: new Date().toISOString(), out: args.out ?? null }, null, 2)}\n`, { mode: 0o600 });
+    } catch (error) {
+      fs.writeFileSync(outcomePath, `${JSON.stringify({ exit_code: 1, state: "failed", error: redactSecrets(String(error.message)).slice(0, 1024), finished_at: new Date().toISOString() }, null, 2)}\n`, { mode: 0o600 });
+      throw error;
+    }
+    return;
+  }
+  await runFromInput(args);
 }
 
 if (__svcIsMain(import.meta.url)) {

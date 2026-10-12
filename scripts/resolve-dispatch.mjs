@@ -41,7 +41,7 @@ export const NAMED_PLANNING_ROLES = Object.freeze({
 });
 const MODE_NON_ROLE_KEYS = new Set(['labels', 'review', 'roles', 'planning_transport']);
 const PLANNING_TRANSPORT_RETRY_KEYS = new Set(['enabled', 'max_classified_spawn_retries', 'retry_class']);
-const HOST_FAMILY = {
+export const HOST_FAMILY = {
   claude: 'anthropic',
   codex: 'openai',
   gemini: 'google',
@@ -252,9 +252,15 @@ function normalizeRoleEntry(modeConfig, role, label) {
 
 function tupleFromRoleEntry(entry, role, orchestrator) {
   if (!isObject(entry)) fail(`role "${role}" route is missing`, 'dispatch_policy_invalid');
+  // The orchestrator identity comes only from the resolver's own input (--orchestrator /
+  // SVC_HOST). A policy entry that tries to carry one is rejected, never silently honored.
+  if (Object.prototype.hasOwnProperty.call(entry, 'orchestrator')
+      || (isObject(entry.tuple) && Object.prototype.hasOwnProperty.call(entry.tuple, 'orchestrator'))) {
+    fail(`role "${role}" route must not set an orchestrator; the orchestrator identity is resolved, not configured`, 'dispatch_policy_invalid');
+  }
   if (isObject(entry.tuple)) {
     validateTuple(entry.tuple, `role "${role}"`);
-    return entry.tuple;
+    return { ...entry.tuple };
   }
   if (typeof entry.host === 'string' && typeof entry.family === 'string' && typeof entry.model === 'string' && typeof entry.effort === 'string') {
     validateTuple(entry, `role "${role}"`);
@@ -595,7 +601,7 @@ export function resolveDispatchModel(options = {}) {
     requested_role: role,
     inherited_role: null,
     inherited_label: null,
-    tuple: { orchestrator, ...tuple },
+    tuple: { ...tuple, orchestrator },
     harness: tuple.host,
     provider: tuple.host,
     model: tuple.model,
@@ -672,7 +678,7 @@ export function resolveDispatchRoleTuple(options = {}) {
     requested_role: role,
     inherited_role,
     inherited_label,
-    tuple: { orchestrator, ...tuple },
+    tuple: { ...tuple, orchestrator },
     harness: tuple.host,
     provider: tuple.host,
     model: tuple.model,

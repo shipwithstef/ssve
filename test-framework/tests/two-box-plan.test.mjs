@@ -7,6 +7,7 @@ import path from 'node:path';
 import {resolveDispatchRoleTuple} from '../../scripts/resolve-dispatch.mjs';
 const planTuple={host:'codex',family:'openai',model:'offline-plan',effort:'xhigh'};
 const execTuple={host:'codex',family:'openai',model:'offline-exec',effort:'max'};
+const assessorTuple={host:'claude',family:'anthropic',model:'offline-assessor',effort:'high'};
 function withPolicy(edit,run){
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'two-box-policy-'));
  const policy={schema_version:1,authority:'repository-owner',default_mode:'offline',modes:{offline:{labels:{PLAN:planTuple,EXEC:execTuple}}}};
@@ -360,6 +361,7 @@ test('a pre-aborted bounded invocation never creates a child result',async()=>{
 });
 
 const {runTwoBox}=await import('../../scripts/two-box-plan.mjs');
+const {claudeResultFixture}=await import('../../scripts/lib/claude-plan-transport.mjs');
 const {putObject}=await import('../../scripts/lib/review-evidence-store.mjs');
 function journalFile(root,wi){return path.join(root,'.svc/two-box',wi,'journal.json');}
 function rewriteRoleProof(root,wi,role,mutate){
@@ -376,7 +378,7 @@ function rewriteRoleProof(root,wi,role,mutate){
 async function cycleFixture(run,{contextText=null,scoutExposure=null,ranges=[]}={}){
  await withSourceFixture(async(root,baseSha)=>{
   const configPath=path.join(root,'policy.json');
-  fs.writeFileSync(configPath,JSON.stringify({schema_version:1,authority:'repository-owner',default_mode:'offline',modes:{offline:{labels:{PLAN:planTuple,EXEC:execTuple}}}}),{mode:0o600});
+  fs.writeFileSync(configPath,JSON.stringify({schema_version:1,authority:'repository-owner',default_mode:'offline',modes:{offline:{labels:{PLAN:planTuple,EXEC:execTuple},roles:{assessor:assessorTuple}}}}),{mode:0o600});
   const sourceSnapshot=protocol.buildSourceSnapshot({consumerRoot:root,baseSha,scope:['source.mjs'],ranges});
   const constraints={paths:[]};
   const contract=structuredClone(contractFixture);
@@ -390,7 +392,7 @@ async function cycleFixture(run,{contextText=null,scoutExposure=null,ranges=[]}=
   const outputs={open_box:{plan:'  Preserve the public value.\n\nKeep its consumers compatible.  '},contract_box:contract,
    contract_revise:{...contract,dispositions:[]},assessor:{winner:'open_win',selected_decisions:[{original_requirement_id:'AC1',decision_id:'open:P1',source_ids:['open:P1'],origin:'open_box',reason:'Preserves the original requirement with the simpler grounded approach.'}],rejection_dispositions:[],unresolved_conflicts:[]}};
   for(const role of ['scout_forward','scout_reverse'])outputs[role]={findings:[],citations:[],unread_gaps:[],supplied_denominator:assignments[role].supplied_denominator,incomplete:false};
-  for (const [role, output] of Object.entries(outputs)) outputs[role] = {output, stdout: [
+  for (const [role, output] of Object.entries(outputs)) outputs[role] = {output, stdout: role==='assessor' ? claudeResultFixture(output) : [
    {type:'thread.started',thread_id:'OFFLINE-FIXTURE'}, {type:'turn.started'},
    {type:'item.completed',item:{id:'offline-answer',type:'agent_message',text:JSON.stringify(output)}},
    {type:'turn.completed',usage:{input_tokens:0,output_tokens:0}},
@@ -640,7 +642,7 @@ test('a declared Contract winner cannot hand off Open-only decisions',async()=>{
  await cycleFixture(async(opts)=>{
   const answer=opts.offline.outputs.assessor.output;
   answer.winner='contract_win';
-  opts.offline.outputs.assessor.stdout=JSON.stringify({type:'thread.started',thread_id:'OFFLINE'})+'\n'+JSON.stringify({type:'turn.started'})+'\n'+JSON.stringify({type:'item.completed',item:{type:'agent_message',text:JSON.stringify(answer)}})+'\n'+JSON.stringify({type:'turn.completed',usage:{input_tokens:0,output_tokens:0}})+'\n';
+  opts.offline.outputs.assessor.stdout=claudeResultFixture(answer);
   await assert.rejects(runTwoBox(opts),/Contract winner cannot retain Open/);
  });
 });
