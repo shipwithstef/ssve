@@ -742,7 +742,7 @@ function fixtureBinary(variable, fallback, fixtureRoot) {
   });
 }
 
-async function runProcess(binary, args, input, timeoutMs, env = process.env, cwd = undefined) {
+async function runProcess(binary, args, input, timeoutMs, env = process.env, cwd = undefined, onReviewerSpawned = null) {
   return new Promise((resolve, reject) => {
     const child = spawn(binary, args, { env, cwd, stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
     const stdout = [];
@@ -789,6 +789,18 @@ async function runProcess(binary, args, input, timeoutMs, env = process.env, cwd
       resolve({ code, signal, timedOut, cancelled, stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr) });
     });
     child.stdin.on('error', () => {});
+    // 'spawn' fires only after the OS process exists. ENOENT and other
+    // pre-start failures emit 'error' and must not admit a review round.
+    child.on('spawn', () => {
+      if (typeof onReviewerSpawned !== 'function') return;
+      try { onReviewerSpawned(); }
+      catch (error) {
+        error.reviewAdmission = true;
+        try { terminate(false); } catch { /* process may already be gone */ }
+        // The 'error' listener settles, cleans up and rejects exactly once.
+        child.emit('error', error);
+      }
+    });
     child.stdin.end(input);
   });
 }
@@ -1293,7 +1305,8 @@ async function gcCache(cacheRoot, ttlDays, staleSeconds, fixture) {
   return removed;
 }
 
-export async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, attemptIndex, timeoutMs, budgetUsd, turnCeiling = null, contextRoot = process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd(), round = 1) {
+export async function invoke(tuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, attemptIndex, timeoutMs, budgetUsd, turnCeiling = null, contextRoot = process.env.SVC_EXTERNAL_REVIEW_CONTEXT_ROOT || process.cwd(), round = 1, hooks = null) {
+  const onReviewerSpawned = hooks && typeof hooks.onReviewerSpawned === 'function' ? hooks.onReviewerSpawned : null;
   packageBytes = Buffer.concat([Buffer.from(agenticReviewInstructions(contextRoot, round)), packageBytes]);
   const treeBefore = tuple.host === 'codex' ? reviewTreeSnapshot(contextRoot) : null;
   const transportDir = tuple.host === 'codex' ? await mkdtemp(path.join(tmpdir(), 'svc-review-readonly-')) : artifactsDir;
@@ -1337,8 +1350,11 @@ export async function invoke(tuple, binary, packageBytes, reviewKind, schemaByte
     result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(`no review transport for host ${tuple.host}`), spawnError: true };
   }
   if (!result) {
-    try { result = await runProcess(binary, args, packageBytes, timeoutMs, env, contextRoot); }
-    catch (error) { result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(error.message), spawnError: true }; }
+    try { result = await runProcess(binary, args, packageBytes, timeoutMs, env, contextRoot, onReviewerSpawned); }
+    catch (error) {
+      if (error?.reviewAdmission) throw error;
+      result = { code: null, signal: null, timedOut: false, stdout: Buffer.alloc(0), stderr: Buffer.from(error.message), spawnError: true };
+    }
   }
   await writeFile(eventsFile, redactDiagnostic(result.stdout.toString('utf8')), { mode: 0o600 });
   await writeFile(stderrFile, redactDiagnostic(result.stderr.toString('utf8')), { mode: 0o600 });
@@ -2048,9 +2064,16 @@ async function main() {
     }
 
     const attempts = observedAttempts;
-    if (cycleCapacity) reserveExternalReviewRound(makeReceipt('success', { effectiveTuple: requestedTuple }), { receiptPath });
+    // Count a round only after the reviewer process exists. Lock, relocation,
+    // preflight, and spawn failures before that event leave the two-round cap.
+    let reviewerSpawned = false;
+    const admitSpawnedReviewer = () => {
+      if (reviewerSpawned || !cycleCapacity) return;
+      reserveExternalReviewRound(makeReceipt('success', { effectiveTuple: requestedTuple }), { receiptPath, reviewerInvoked: true });
+      reviewerSpawned = true;
+    };
     const invocationStarted = Date.now();
-    let primaryResult = await invoke(requestedTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 1, timeoutSeconds * 1000, reviewBudgetUsd, reviewerTurnCeiling, contextRoot, cycleCapacity ? cycleCapacity.issued + 1 : 1);
+    let primaryResult = await invoke(requestedTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 1, timeoutSeconds * 1000, reviewBudgetUsd, reviewerTurnCeiling, contextRoot, cycleCapacity ? cycleCapacity.issued + 1 : 1, { onReviewerSpawned: admitSpawnedReviewer });
     observedResult = primaryResult;
     attempts.push(primaryResult.attempt);
     const repairKind = primaryResult.attempt.classification === 'success' && primaryResult.routeKind === 'exact_primary'
@@ -2067,7 +2090,7 @@ async function main() {
         const repairPackage = repairKind === 'incomplete' ? Buffer.concat([correction, packageBytes]) : correction;
         const repairInput = path.join(artifactsDir, 'report-repair-input.bin');
         await writeFile(repairInput, repairPackage, { mode: 0o600 });
-        const repaired = await invoke(requestedTuple, binary, repairPackage, reviewKind, schemaBytes, artifactsDir, 2, remainingMs, remainingBudget ?? reviewBudgetUsd, reviewerTurnCeiling, contextRoot, cycleCapacity ? cycleCapacity.issued + 1 : 1);
+        const repaired = await invoke(requestedTuple, binary, repairPackage, reviewKind, schemaBytes, artifactsDir, 2, remainingMs, remainingBudget ?? reviewBudgetUsd, reviewerTurnCeiling, contextRoot, cycleCapacity ? cycleCapacity.issued + 1 : 1, { onReviewerSpawned: admitSpawnedReviewer });
         repaired.attempt.artifacts.repair_input = repairInput;
         attempts.push(repaired.attempt);
         const repairErrors = repaired.attempt.classification === 'success' ? validateReportRepair(original, repaired.findings, repairKind) : [];
@@ -2180,7 +2203,7 @@ async function main() {
       return;
     }
     const fallbackTurnCeiling = await configuredTurnCeiling(fallbackTuple, resolvedReviewerConfigPath);
-    const fallbackResult = await invoke(fallbackTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 2, timeoutSeconds * 1000, fallbackBudgetUsd, fallbackTurnCeiling, contextRoot, cycleCapacity ? cycleCapacity.issued + 1 : 1);
+    const fallbackResult = await invoke(fallbackTuple, binary, packageBytes, reviewKind, schemaBytes, artifactsDir, 2, timeoutSeconds * 1000, fallbackBudgetUsd, fallbackTurnCeiling, contextRoot, cycleCapacity ? cycleCapacity.issued + 1 : 1, { onReviewerSpawned: admitSpawnedReviewer });
     observedResult = fallbackResult;
     attempts.push(fallbackResult.attempt);
     const fallbackProtocol = { ...fallbackResult.protocol, process_invocations: attempts.length, configured_budget_usd: reviewBudgetUsd };

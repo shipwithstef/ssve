@@ -63,9 +63,9 @@ function loadBoundRepositoryFile(root, artifact, label) {
   for (const historical of new Set([artifact.path, absolute])) {
     const relocationPath = path.join(store, "relocations", `${digest(Buffer.from(historical.trim()))}.json`);
     if (!privateArchivePath(store, relocationPath)) continue;
-    const relocation = lookupRelocation(historical, { start: repository });
+    const relocation = lookupRelocation(historical, { start: repository, sha256: artifact.sha256 });
     if (!relocation) throw new Error(`${label} relocation disappeared`);
-    if (relocation.sha256 !== artifact.sha256) throw new Error(`${label} relocation digest mismatch`);
+    if (relocation.conflict || relocation.sha256 !== artifact.sha256) throw new Error(`${label} relocation digest mismatch`);
     if (!privateArchivePath(store, objectPath)) throw new Error(`${label} relocated object is missing`);
     return getObject(artifact.sha256, { start: repository }).bytes;
   }

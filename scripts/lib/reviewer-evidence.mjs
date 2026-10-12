@@ -70,8 +70,9 @@ function artifactDigest(root, maybePath, declaredSha = null) {
   const candidates = [maybePath, declaredSha].filter((value) => typeof value === "string" && value);
   for (const candidate of candidates) {
     try {
-      const relocated = lookupRelocation(candidate, { start: root });
-      if (relocated) return relocated.sha256;
+      const shaLike = /^[0-9a-f]{64}$/.test(String(declaredSha || ""));
+      const relocated = lookupRelocation(candidate, { start: root, ...(shaLike ? { sha256: declaredSha } : {}) });
+      if (relocated && !relocated.conflict) return relocated.sha256;
     } catch { /* fail closed below */ }
     if (!path.isAbsolute(candidate) || fs.existsSync(candidate)) {
       try {
@@ -89,12 +90,12 @@ function selfBindHolds(repository, entry, receipt, receiptBytes) {
   const checkoutResolved = path.resolve(repository, entry.path);
   if (historical && path.resolve(historical) === checkoutResolved) return true;
   if (digest(receiptBytes) !== entry.sha256) return false;
-  const mappedHistorical = historical ? lookupRelocation(historical, { start: repository }) : null;
-  const mappedEntry = lookupRelocation(entry.path, { start: repository })
-    || lookupRelocation(checkoutResolved, { start: repository });
+  const mappedHistorical = historical ? lookupRelocation(historical, { start: repository, sha256: entry.sha256 }) : null;
+  const mappedEntry = lookupRelocation(entry.path, { start: repository, sha256: entry.sha256 })
+    || lookupRelocation(checkoutResolved, { start: repository, sha256: entry.sha256 });
   const objectOk = (() => { try { return getObject(entry.sha256, { start: repository }).sha256 === entry.sha256; } catch { return false; } })();
-  if (mappedHistorical && mappedHistorical.sha256 === entry.sha256 && objectOk) return true;
-  if (mappedEntry && mappedEntry.sha256 === entry.sha256 && objectOk) return true;
+  if (mappedHistorical && !mappedHistorical.conflict && mappedHistorical.sha256 === entry.sha256 && objectOk) return true;
+  if (mappedEntry && !mappedEntry.conflict && mappedEntry.sha256 === entry.sha256 && objectOk) return true;
   return false;
 }
 

@@ -62,7 +62,9 @@ export function externalReviewCycleIdFromReceipt(receipt) {
   return externalReviewCycleId({wi: receipt?.phase_guard?.wi, featureId: receipt?.protocol?.feature_id});
 }
 
-// Admission is durable BEFORE dispatch, including incomplete/failed attempts.
+// Admission counts once the reviewer process is spawned, including incomplete
+// attempts after that spawn. Pre-spawn launcher failures pass
+// reviewerInvoked:false and do not consume the two-round cap.
 // Call under the feature lock; issuance remains independently HMAC authenticated.
 function reservedRounds(root, cycleId, key) {
   const dir = secureDirectory(path.join(root, 'rounds'), 'external review round ledger', {create:true});
@@ -73,7 +75,7 @@ function reservedRounds(root, cycleId, key) {
     return row;
   });
 }
-export function reserveExternalReviewRound(receipt, {receiptPath = null} = {}) {
+export function reserveExternalReviewRound(receipt, {receiptPath = null, reviewerInvoked = true} = {}) {
   const root = externalReviewProvenanceRoot({receiptPath});
   authorityKey(root, {create:true});
   const release = acquireLock(path.join(root, `admission-${externalReviewCycleIdFromReceipt(receipt)}`), {staleMs:60_000});
@@ -90,7 +92,7 @@ export function reserveExternalReviewRound(receipt, {receiptPath = null} = {}) {
     const fd = fs.openSync(bindingFile, fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_WRONLY, 0o600);
     try {fs.writeFileSync(fd, JSON.stringify({...binding, authority_hmac_sha256:crypto.createHmac('sha256',key).update(canonical(binding)).digest('hex')}));fs.fsyncSync(fd);} finally {fs.closeSync(fd);}
   }
-  const row = {cycle_id:capacity.cycle_id, request_id:receipt.request_id, round:capacity.issued+1, reserved_at:new Date().toISOString()};
+  const row = {cycle_id:capacity.cycle_id, request_id:receipt.request_id, round:capacity.issued+1, reserved_at:new Date().toISOString(), reviewer_invoked:reviewerInvoked!==false};
   const record = {...row, authority_hmac_sha256:crypto.createHmac('sha256',key).update(canonical(row)).digest('hex')};
   const file = path.join(root, 'rounds', `${capacity.cycle_id}-${receipt.request_id}.json`);
   const fd=fs.openSync(file,fs.constants.O_CREAT|fs.constants.O_EXCL|fs.constants.O_WRONLY,0o600);
@@ -135,7 +137,7 @@ export function externalReviewCycleCapacity(receipt, { receiptPath = null } = {}
   secureDirectory(path.join(root, 'issuance'), 'external review issuance directory', { create: true });
   secureDirectory(path.join(root, 'classifications'), 'external review classification directory', { create: true });
   const rows = listExternalReviewCycleProvenance({ receiptPath, wi, reviewKind: receipt.review_kind, cycleId });
-  const reservations = reservedRounds(root, cycleId, authorityKey(root));
+  const reservations = reservedRounds(root, cycleId, authorityKey(root)).filter(row => row.reviewer_invoked !== false);
   const issued = new Set([...rows.filter(row => row.counts_as_round !== false), ...reservations].map(row => row.request_id)).size;
   return { cycle_id: cycleId, lock_path: path.join(root, `cycle-${cycleId}.lock`), issued,
     remaining: Math.max(0, 2 - issued), allowed: issued < 2 };

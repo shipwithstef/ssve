@@ -3,7 +3,9 @@
  * Repository-shared immutable store for external-review artifact bytes.
  * Objects are keyed by SHA-256. A relocation manifest maps historical
  * absolute (or checkout-relative) paths to those object ids without
- * rewriting launcher receipts or git notes.
+ * rewriting launcher receipts or git notes. The same historical path may
+ * accumulate append-only records keyed by path + sha256 (one per review
+ * round). A later round never overwrites an earlier round's record.
  */
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -105,6 +107,70 @@ function normalizeHistoricalPath(value) {
   return String(value || "").trim();
 }
 
+function relocationFailure(label, historical_path) {
+  throw new Error(`${label} for ${historical_path}`);
+}
+
+// v1 is one path → one digest. v2 keeps every digest for that path.
+// A declared digest that is absent while any record exists is a conflict,
+// not permission to fall back to a different object.
+function relocationRecords(parsed, historical_path, label) {
+  if (!parsed || typeof parsed !== "object" || parsed.historical_path !== historical_path) {
+    relocationFailure(label, historical_path);
+  }
+  if (parsed.schema_version === 2 && Array.isArray(parsed.records)) {
+    if (parsed.records.length === 0) relocationFailure(label, historical_path);
+    if (parsed.sha256 && !parsed.records.some((row) => row && row.sha256 === parsed.sha256)) {
+      relocationFailure(label, historical_path);
+    }
+    return parsed.records.map((row) => {
+      if (!row || (row.historical_path && row.historical_path !== historical_path) || !SHA_RE.test(String(row.sha256 || ""))) {
+        relocationFailure(label, historical_path);
+      }
+      return { ...row, historical_path };
+    });
+  }
+  if (!SHA_RE.test(String(parsed.sha256 || ""))) relocationFailure(label, historical_path);
+  return [parsed];
+}
+
+function serializableRelocation(row, historical_path) {
+  return {
+    schema_version: 1,
+    historical_path,
+    sha256: row.sha256,
+    repo_root: row.repo_root ?? null,
+    candidate_digest: row.candidate_digest ?? null,
+    kind: row.kind ?? null,
+    relocated_at: row.relocated_at,
+  };
+}
+
+function atomicWriteJson(file, body) {
+  const tmp = `${file}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(body, null, 2)}\n`, { mode: 0o600 });
+  fs.renameSync(tmp, file);
+}
+
+function writeRelocationManifest(file, historical_path, records) {
+  const stored = records.map((row) => serializableRelocation(row, historical_path));
+  if (stored.length === 1) {
+    atomicWriteJson(file, stored[0]);
+    return;
+  }
+  const latest = stored[stored.length - 1];
+  atomicWriteJson(file, {
+    schema_version: 2,
+    historical_path,
+    sha256: latest.sha256,
+    records: stored,
+    repo_root: latest.repo_root,
+    candidate_digest: latest.candidate_digest,
+    kind: latest.kind,
+    relocated_at: latest.relocated_at,
+  });
+}
+
 export function putRelocation(entry, { start = process.cwd(), env = process.env } = {}) {
   const historical_path = normalizeHistoricalPath(entry.historical_path);
   const sha256 = String(entry.sha256 || "");
@@ -125,18 +191,18 @@ export function putRelocation(entry, { start = process.cwd(), env = process.env 
   };
   if (fs.existsSync(file)) {
     const existing = JSON.parse(fs.readFileSync(file, "utf8"));
-    if (existing.sha256 !== sha256 || existing.historical_path !== historical_path) {
-      throw new Error(`conflicting relocation for ${historical_path}`);
-    }
-    return { ...existing, created: false, path: file };
+    const records = relocationRecords(existing, historical_path, "conflicting relocation");
+    const match = records.find((row) => row.sha256 === sha256);
+    if (match) return { ...match, historical_path, created: false, path: file };
+    records.push(record);
+    writeRelocationManifest(file, historical_path, records);
+    return { ...record, created: true, path: file };
   }
-  const tmp = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, `${JSON.stringify(record, null, 2)}\n`, { mode: 0o600 });
-  fs.renameSync(tmp, file);
+  atomicWriteJson(file, record);
   return { ...record, created: true, path: file };
 }
 
-export function lookupRelocation(historicalPath, { start = process.cwd(), env = process.env } = {}) {
+export function lookupRelocation(historicalPath, { start = process.cwd(), env = process.env, sha256 = null } = {}) {
   const historical_path = normalizeHistoricalPath(historicalPath);
   if (!historical_path) return null;
   const root = reviewEvidenceStoreRoot(start, env);
@@ -144,11 +210,16 @@ export function lookupRelocation(historicalPath, { start = process.cwd(), env = 
   if (!fs.existsSync(file)) return null;
   const stat = fs.lstatSync(file);
   if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`relocation manifest is insecure: ${historical_path}`);
-  const record = JSON.parse(fs.readFileSync(file, "utf8"));
-  if (record.historical_path !== historical_path || !SHA_RE.test(record.sha256)) {
-    throw new Error(`forged or malformed relocation for ${historical_path}`);
+  const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+  const records = relocationRecords(parsed, historical_path, "forged or malformed relocation");
+  const wanted = typeof sha256 === "string" ? sha256 : null;
+  if (wanted) {
+    const match = records.find((row) => row.sha256 === wanted);
+    if (match) return { ...match, path: file };
+    return { ...records[0], path: file, conflict: true };
   }
-  return record;
+  if (records.length === 1) return { ...records[0], path: file };
+  return { ...records[records.length - 1], path: file, history: records };
 }
 
 function walkFiles(directory, out = []) {
@@ -200,9 +271,9 @@ export function resolveEvidenceBytes(value, { start = process.cwd(), env = proce
   const declared = String(value.sha256);
   const candidates = [value.path, ...extraPaths].map(normalizeHistoricalPath).filter(Boolean);
   for (const candidate of candidates) {
-    const relocated = lookupRelocation(candidate, { start, env });
+    const relocated = lookupRelocation(candidate, { start, env, sha256: declared });
     if (relocated) {
-      if (relocated.sha256 !== declared) throw new Error(`relocation digest mismatch: ${candidate}`);
+      if (relocated.conflict || relocated.sha256 !== declared) throw new Error(`relocation digest mismatch: ${candidate}`);
       const object = getObject(declared, { start, env });
       return { ...object, source: "relocation", historical_path: candidate };
     }
