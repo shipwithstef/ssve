@@ -26,7 +26,8 @@ import {
 } from "./two-box-protocol.mjs";
 import { buildCodexConfigFlags, buildCodexExecArgs, diagnosePromptContamination, assertIsolationAuthority } from "./isolated-plan-analysis.mjs";
 import { assignDualPass, assignmentCoverage, constraintSources, frozenScoutExposure } from "./two-box-scout-assign.mjs";
-import { renderRolePrompt, assertCompleteRequestBudget, parseCodexJsonl } from "./two-box-role-launch.mjs";
+import { renderRolePrompt, assertCompleteRequestBudget, parsePlanningStdout } from "./two-box-role-launch.mjs";
+import { collectClaudeProofErrors, CLAUDE_TRANSPORT } from "./claude-plan-transport.mjs";
 
 const SCHEMA = JSON.parse(
   fs.readFileSync(new URL("../../schemas/receipts/control-plan.schema.json", import.meta.url), "utf8"),
@@ -142,31 +143,40 @@ export function collectRetainedStageProofErrors(env, { consumerRoot, fixture = f
   } else {
     fail(`${role}: native inspection object required`);
   }
-  try {
-    assertIsolationAuthority(proof, {
-      fixture,
-      requested: launch.requested,
-      schema: outputSchemaForCall(role),
-      inspectMessages: messages || undefined,
-    });
-  } catch (err) { fail(`${role}: isolation authority: ${err.message}`); }
-  if (messages) {
-    const diagnosis = diagnosePromptContamination(messages, {
-      prompt: proofPrompt,
-      cwd: proofCwd,
-      profile: proof.native_profile,
-      requireEnv: true,
-    });
-    if (!diagnosis.ok || diagnosis.unknown) fail(`${role}: prompt contamination: ${(diagnosis.reasons || []).join("; ")}`);
-    if (isPlain(proof.diagnosis) && proof.diagnosis.ok !== diagnosis.ok) fail(`${role}: recorded diagnosis disagrees with recomputation`);
+  const claudeProof = proof.transport === CLAUDE_TRANSPORT;
+  if (claudeProof !== (launch.requested?.host === "claude")) fail(`${role}: proof transport does not match requested host`);
+  if (claudeProof) {
+    for (const msg of collectClaudeProofErrors(proof, {
+      launch, role, schema: outputSchemaForCall(role), proofPrompt, fixture,
+      nativeBytes: nativeGot ? nativeGot.bytes : null,
+    })) errors.push(msg);
+  } else {
+    try {
+      assertIsolationAuthority(proof, {
+        fixture,
+        requested: launch.requested,
+        schema: outputSchemaForCall(role),
+        inspectMessages: messages || undefined,
+      });
+    } catch (err) { fail(`${role}: isolation authority: ${err.message}`); }
+    if (messages) {
+      const diagnosis = diagnosePromptContamination(messages, {
+        prompt: proofPrompt,
+        cwd: proofCwd,
+        profile: proof.native_profile,
+        requireEnv: true,
+      });
+      if (!diagnosis.ok || diagnosis.unknown) fail(`${role}: prompt contamination: ${(diagnosis.reasons || []).join("; ")}`);
+      if (isPlain(proof.diagnosis) && proof.diagnosis.ok !== diagnosis.ok) fail(`${role}: recorded diagnosis disagrees with recomputation`);
+    }
+    try {
+      const expectedConfig = buildCodexConfigFlags({tuple: launch.requested, disabledSkills: proof.disabled_skills});
+      if (canonicalJson(expectedConfig) !== canonicalJson(proof.config_flags)) fail(`${role}: isolation controls differ from canonical builder`);
+      const at = proof.exec_args?.indexOf("--output-schema");
+      const expectedArgs = buildCodexExecArgs({tuple: launch.requested, disabledSkills: proof.disabled_skills, outputSchemaPath: proof.exec_args?.[at + 1]});
+      if (canonicalJson(expectedArgs) !== canonicalJson(proof.exec_args) || canonicalJson(launch.invocation.exec_args) !== canonicalJson(proof.exec_args)) fail(`${role}: actual invocation/config/tuple disagreement`);
+    } catch (err) { fail(`${role}: controls ${err.message}`); }
   }
-  try {
-    const expectedConfig = buildCodexConfigFlags({tuple: launch.requested, disabledSkills: proof.disabled_skills});
-    if (canonicalJson(expectedConfig) !== canonicalJson(proof.config_flags)) fail(`${role}: isolation controls differ from canonical builder`);
-    const at = proof.exec_args?.indexOf("--output-schema");
-    const expectedArgs = buildCodexExecArgs({tuple: launch.requested, disabledSkills: proof.disabled_skills, outputSchemaPath: proof.exec_args?.[at + 1]});
-    if (canonicalJson(expectedArgs) !== canonicalJson(proof.exec_args) || canonicalJson(launch.invocation.exec_args) !== canonicalJson(proof.exec_args)) fail(`${role}: actual invocation/config/tuple disagreement`);
-  } catch (err) { fail(`${role}: controls ${err.message}`); }
   if (!Array.isArray(proof.config_flags)) fail(`${role}: config_flags required`);
   if (Array.isArray(proof.config_flags) && proof.config_sha256 !== sha256Utf8(canonicalJson(proof.config_flags))) {
     fail(`${role}: config_sha256 mismatch`);
@@ -411,9 +421,9 @@ function validateControlPlanCore({
         fail(`${role}: stdout_sha256 mismatch`);
       }
       try {
-        const parsed = parseCodexJsonl(stdoutGot.bytes, role);
+        const parsed = parsePlanningStdout(launch.requested?.host, stdoutGot.bytes, role);
         if (canonicalJson(parsed) !== canonicalJson(env.output)) fail(`${role}: parsed stdout output !== stored output`);
-      } catch (err) { fail(`${role} parseCodexJsonl: ${err.message}`); }
+      } catch (err) { fail(`${role} parsePlanningStdout: ${err.message}`); }
     }
     const stderrGot = loadCas(launch.raw_stderr_ref, consumerRoot, errors, `${role} raw_stderr`);
     if (stderrGot && sha256Bytes(stderrGot.bytes) !== launch.stderr_sha256) fail(`${role}: stderr_sha256 mismatch`);
@@ -449,6 +459,15 @@ function validateControlPlanCore({
     if (canonicalJson(body.tuple?.[role]) !== canonicalJson(stages[role]?.launch?.requested)) fail(`${role}: requested tuple differs from control`);
   }
   if (canonicalJson(body.tuple?.contract_revise) !== canonicalJson(body.tuple?.contract_box)) fail("revision must reuse Contract tuple");
+  // The assessor is the adversarial judge of the two plans: it must not share a model family
+  // with the authors of either plan. Derived from the recorded tuples, not from policy.
+  {
+    const af = body.tuple?.assessor?.family;
+    for (const author of ["open_box", "contract_box", "contract_revise"]) {
+      const authorFamily = body.tuple?.[author]?.family;
+      if (!af || !authorFamily || af === authorFamily) fail(`assessor must be cross-family: assessor family ${af} vs ${author} family ${authorFamily}`);
+    }
+  }
   if (stages.contract_revise && canonicalJson(body.dispositions || []) !== canonicalJson(stages.contract_revise.output?.dispositions || [])) {
     fail("body.dispositions mismatch vs revised Contract");
   }
