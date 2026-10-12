@@ -224,6 +224,8 @@ section-by-section CURRENT/STALE/OUTDATED.
 
 ## Pipeline Continuation
 
+**Lane graph driven by `svc-next`.** When `.svc/lane-tasks-<WI>.json` was compiled for this work, `svc-next` alone completes this stage and picks the successor: do not mark the task completed, start or load the next task or skill, or follow a next-skill default from this section; finish through `## Handback` at the end of this file. The rules below apply only without a compiled lane graph.
+
 ### Task-graph mode (source of truth: `.svc/lane-tasks-<WI>.json`; mirrors: Claude `TaskList`, Kimi `/task`+`TaskList`/`TaskOutput` observe-only, Codex `update_plan`)
 - Treat `Invoke: /skill-name` + `metadata.skill` as routing instructions, not prose.
 - Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume.
@@ -239,9 +241,9 @@ section-by-section CURRENT/STALE/OUTDATED.
 
 **Discovery wave (WI-387 — opt-in, faster):** analyze-domain, analyze-competitors, and build-personas each need only `vision.md` and write disjoint paths, so they can run as ONE concurrent wave via `dispatch-waves` (catalog-domain-capabilities as wave 2) instead of the serial chain — ~55% faster discovery. **Before dispatching, run the disjoint-write fence:** `node scripts/discovery-wave-fence.mjs` (fails closed on any write-scope overlap), because concurrent writers to one path corrupt each other. `validate-feature` still gates the merged discovery. Serial-domain-context is a soft, stated cost. See `references/discovery-wave.md`. Permitted mutating transport per the S5 policy (recorded 2026-06-09).
 
-**If `--progressive` and self-verify passed (serial default):** chain to analyze-competitors: `analyze-competitors --progressive --lane greenfield`
+**With a lane graph:** after self-verify passes, report the domain profile summary and follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage.
 
-**If standalone:** report the domain profile summary and suggest: "Next: run `analyze-competitors` if not already done, or `build-personas`"
+**If standalone (no lane graph):** report the domain profile summary and suggest: "Next: run `analyze-competitors` if not already done, or `build-personas`"
 
 ## Post-Compaction Recovery
 
@@ -255,3 +257,7 @@ If Kimi CLI compacted context and you lost track of framework state:
 6. **Never ghost-complete** — Verify `skill_receipt` exists before marking any task complete
 
 If a checkpoint file exists (`.svc/.checkpoint-<WI>.checkpoint.json`), compare its `next_task` against the lane-tasks file. If they differ, trust the lane-tasks file and re-run `node scripts/task-graph.mjs checkpoint <path>` after recovery.
+
+## Handback
+
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `CLOSEOUT` command `svc-next` printed for this stage, verbatim (it ends in `--receipt load-skill`). Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above.

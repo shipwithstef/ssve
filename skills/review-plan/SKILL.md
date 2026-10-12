@@ -368,6 +368,8 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Pipeline Continuation
 
+**Lane graph driven by `svc-next`.** When `.svc/lane-tasks-<WI>.json` was compiled for this work, `svc-next` alone completes this stage and picks the successor: do not mark the task completed, start or load the next task or skill, or follow a next-skill default from this section; finish through `## Handback` at the end of this file. The rules below apply only without a compiled lane graph.
+
 Follow the canonical task-graph chaining contract: see `references/task-graph-chaining-protocol.md`.
 
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
@@ -453,3 +455,7 @@ Self-verify: the receipt at `.svc/receipts/<sha>/<type>.json` passes its schema 
 Before paid review, run the canonical launcher with `--preflight --plan-file <exact-prepared-v5-json>` and the same reviewer, phase-binding, context and candidate-digest arguments as the actual invocation. `--plan-file` is the exact prepared JSON bytes (`planBytes`), not a reconstructed `JSON.stringify(body)`. Pass `--plan-file` again during review so the same schema validation and declared source packaging run on the consumed bytes. Include the full supporting Markdown manifest as declared context. Put extra declared source paths in a JSON array passed as `--context-files`; do not silently omit missing dependencies. Preflight makes no reviewer call and does not certify credentials, approval, or a seal.
 
 A terminal `pass`/`pass-with-findings` with failed plan certifications may use the same bounded closeout as raw `fail`: exactly three authoritative rounds, fixed non-Critical findings and complete candidate-bound certification proof. Use the canonical builder; all identity, census, unread-dependency and Critical checks still apply. Never reinterpret a failed execution certification this way.
+
+## Handback
+
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `EMIT` command `svc-next` printed for this stage; it prints `review-plan:<sha256>`. Then run the `CLOSEOUT` command `svc-next` printed, verbatim, with that value in place of `review-plan:<sha256>`. Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above.
