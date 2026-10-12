@@ -168,6 +168,18 @@ node scripts/check-branch-index.mjs --all
 
 **Step 2: Ship Preparation** — Prepare the release before pushing. If `schemas/mobile-build-contract.json` exists, run the canonical mobile release checkpoint first (read store and ledger floors, call `node scripts/mobile-build-identity.mjs allocate-release` exactly once per source and platform, build and inspect via the contract's argv arrays, require exact identity and SHA-256 equality, mark the reservation `built`, then `committed` on land or `failed` on error); otherwise record it as `N/A`. Commit in order: infrastructure, models and tests, controllers and tests, then VERSION + CHANGELOG as one final commit. Bump the 4-digit version (MICRO under 50 changed lines, PATCH 50+, MINOR with feature signals: ASK the user, MAJOR: always ASK; skip if already bumped versus base), write the CHANGELOG from user-visible outcomes so every commit maps to a bullet, and require a full passing test suite at the release boundary (reuse a prior result only if input hashes and environment still match; any failure means STOP and fix in the worktree). Produce the code-path coverage diagram: under 30% covered is a HARD STOP back to `write-e2e`, 30-59% asks the user, 60% or more proceeds. Details: `references/process.md`. Mobile, in short: call `allocate-release` exactly once per source and platform; a failed reservation remains consumed and is never reused.
 
+### Step 3-local: Local project (no remote, no GitHub) - land on main in the project checkout
+
+Run `git remote` first. If it prints nothing, this is a local project: there is nothing to push and no PR to open, so skip Steps 3a, 3b and 4 and land with the one local entry below. If any remote exists, ignore this step; the push/PR path (3a onward) stays exactly as written and is the only path that may use GitHub merge authority.
+
+```bash
+node "$SVC_ROOT"/scripts/land-local.mjs --root "$WORKTREE" --wi "$WI" --json
+```
+
+`land-local` lands only with the FULL five-receipt chain at the WI tip (`check-chain-receipts --consumer stop --expected-stage audit`, note-sourced) whose `review-plan` and `review-exec` carry verified cross-family adversarial review evidence (integer `schema_version` 3 or more, authenticated `reviewer_evidence`, author and reviewer families different). Cross-family review is mandatory for every landing: quick-fix-only receipts and same-host reviews are refused, and there is no override. It only fast-forwards the main branch in the project's main checkout, because the receipts cover exactly the WI tip's tree; it never makes a merge commit, rewrites history, forces, or resolves a conflict, and it refuses on any tracked change in either checkout. If main has moved (`MAIN_MOVED`), merge main into the WI branch in its worktree (`git merge main`, no rebase), resolve conflicts there, re-run the plan/exec/audit reviews on the new tip, then re-run. Receipts are git notes on the WI commits in the same repository, so they stay attached. With no `origin` remote it also advances the local `refs/remotes/origin/main` (compare-and-swap, never rewinding). It prints `{landed, main_sha, method}`; a repeat run reports `already-landed`.
+
+A refusal (exit 2) names a reason: `RECEIPTS_MISSING` (finish the chain including the cross-family reviews), `MAIN_DIRTY` / `MAIN_UNTRACKED_COLLISION` / `MAIN_CHECKOUT_OFF_BRANCH` (the user's checkout needs attention; report, do not force), `MAIN_MOVED` (update the WI branch by merging main into it and re-review, as above), `HAS_REMOTE` (use the PR path). Landed means `landed: true`; record `main_sha` as the landing evidence for `verify-promotion`, then continue at Step 5 (local variant: `--cleanup`) and Step 6.
+
 ### Step 3a: Push the branch
 
 Before any detached local commit or remote promotion, mint and consume the
@@ -364,7 +376,11 @@ git checkout main && git pull
 scripts/worktree.sh remove <branch-name>
 ```
 
+**Local project (Step 3-local):** do not run `git checkout main && git pull`, and do not call a project-relative `scripts/worktree.sh` (a fresh user project does not have it). The project checkout already holds the landed main and there is no remote to pull from. From the project root, re-run the package-resolved entry with cleanup: `node "$SVC_ROOT"/scripts/land-local.mjs --root "$WORKTREE" --wi "$WI" --json --cleanup` (reports `already-landed`, then removes the WI worktree and its merged branch; it refuses to remove from inside the worktree or with tracked changes).
+
 This removes `.worktrees/<branch-name>` and deletes the local branch.
+
+**Lane graph driven by `svc-next`:** the worktree holds `.svc/lane-tasks-<WI>.json` and the receipts that `verify-promotion` and the final `STATUS done` read. Do not remove it here: record this stage's `CLOSEOUT` first, finish the remaining stages from the same worktree, and run this removal as the last act after `svc-next` reports `STATUS done`.
 
 ### Step 6: Update spec status
 
@@ -393,6 +409,8 @@ node scripts/task-graph.mjs record-phase .svc/lane-tasks-<WI>.json <task-id> P6-
 
 ## Pipeline Continuation
 
+**Lane graph driven by `svc-next`.** When `.svc/lane-tasks-<WI>.json` was compiled for this work, `svc-next` alone completes this stage and picks the successor: do not mark the task completed, start or load the next task or skill, or follow a next-skill default from this section; finish through `## Handback` at the end of this file. The rules below apply only without a compiled lane graph.
+
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
 Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume (also across sessions and subagents). Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose.
 
@@ -408,7 +426,7 @@ Before declaring done, verify:
 |---|-------|-----|-----------|
 | 1 | PR was created | `gh pr view <number>` shows the PR | |
 | 2 | PR was merged OR waiting for approval | `gh pr view <number> --json state` shows MERGED or OPEN | |
-| 3 | If merged: worktree removed | `.worktrees/<branch>` no longer exists | |
+| 3 | If merged: worktree removed | `.worktrees/<branch>` no longer exists (with a lane graph: after `svc-next` reports `STATUS done`) | |
 | 4 | If merged: spec updated | spec shows `PROMOTED` status | |
 | 5 | If merged: post-commit tier-1 passed | `bash test-framework/evals/run-all-evals.sh` exits 0 (or the relevant tier-1 check for the changed skills) | |
 | 6 | Leftover disposition validated | `git status --short --untracked-files=all` is clean, or every remaining path is covered by a passing ledger per `references/leftover-disposition.md` | |
@@ -424,8 +442,7 @@ deferred until the PR is merged. Report the PR URL and stop — do not chain to
 In task-graph mode, follow §Task-graph mode above, then:
 
 **If PR was merged (auto-approve or post-approval):**
-- If `--progressive`: invoke `verify-promotion --progressive --lane <lane>`
-- If not progressive: suggest "Next: run `verify-promotion`"
+- With a lane graph, follow `## Handback` at the end of this file; the lane graph, not this skill, names the next stage. Standalone: suggest "Next: run `verify-promotion`".
 
 **If PR is open and waiting for approval:**
 - Stop the progressive chain. Report:
@@ -450,3 +467,7 @@ This makes the per-commit chain-receipt envelope and the per-WI story-receipts f
 ### Derived PR review view
 
 Invoke the canonical merge wrapper with exact expected repository, head branch and candidate SHA. If the compatibility PR receipt is absent, the wrapper verifies the live PR identity and canonical source chain, then derives that receipt from actual G5 evidence. Do not hand-author an approval or add a second review to obtain this view. Missing proof still refuses before merge. The GitHub merge is constrained to the expected head commit; installation follows verified finalization.
+
+## Handback
+
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `CLOSEOUT` command `svc-next` printed for this stage, verbatim (it ends in `--receipt load-skill`). Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above. Run the `CLOSEOUT` from the lane's worktree before any worktree removal, and keep that worktree (Step 5) until `svc-next` reports `STATUS done`.
