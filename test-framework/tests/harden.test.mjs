@@ -1,3 +1,4 @@
+// @organism-suite
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -477,4 +478,147 @@ test("mvp runs runtime probes and every profile walks routes and checks ui", () 
     assert.equal(report.ui.ok, true, profile);
     assert.deepEqual(rulesOf(report, "smoke-dead-end").map((f) => f.file), ["App.jsx"], profile);
   }
+});
+
+test("harden reads delivery_graph.planning.profile and defaults only when it is absent", () => {
+  const shared = fs.readFileSync(new URL("../../_shared/before-starting.md", import.meta.url), "utf8");
+  assert.match(shared, /delivery_graph\.planning\.profile/);
+  assert.match(shared, /compile-delivery-graph\.mjs/);
+  assert.match(shared, /When `delivery_graph\.planning\.profile` is absent or null, use `mvp`/);
+  assert.match(shared, /only when no profile is recorded/);
+  assert.doesNotMatch(shared, /`delivery_profile` on `\.svc\/lane-tasks/);
+});
+
+test("scripts.test runs through the package manager so local bins resolve", () => {
+  const dir = project({
+    "package.json": JSON.stringify({ scripts: { test: "fixture-ok" } }),
+    "node_modules/.bin/fixture-ok": "#!/bin/sh\nexit 0\n",
+  });
+  fs.chmodSync(path.join(dir, "node_modules/.bin/fixture-ok"), 0o755);
+  const report = hardenProject({ root: dir, profile: "prototype" });
+  assert.equal(report.tests.ran, true);
+  assert.equal(report.tests.command, "fixture-ok");
+  assert.equal(report.tests.ok, true);
+  assert.equal(rulesOf(report, "own-tests").length, 0);
+});
+
+test("a listening server is not a runtime-probe failure", () => {
+  const dir = project({
+    "bad.mjs": "throw new Error('import failed');\n",
+    "server.mjs": "import http from 'node:http';\nhttp.createServer((req, res) => res.end('ok')).listen(0);\n",
+  });
+  const report = hardenProject({ root: dir, profile: "mvp" });
+  assert.equal(report.probes.ran, true);
+  assert.deepEqual(rulesOf(report, "runtime-probe").map((f) => f.file), ["bad.mjs"]);
+});
+
+test("mutation probes use the declared test script and installed dependencies", () => {
+  const dir = project({
+    "package.json": JSON.stringify({ scripts: { test: "node --test kept.test.mjs" } }),
+    "add.mjs": "export function add(a, b) {\n  return a + b;\n}\n",
+    "kept.test.mjs": [
+      "import { createRequire } from 'node:module';",
+      "import test from 'node:test';",
+      "import assert from 'node:assert/strict';",
+      "import { add } from './add.mjs';",
+      "const require = createRequire(import.meta.url);",
+      "test('add', () => {",
+      "  assert.equal(require('marker'), 1);",
+      "  assert.equal(add(2, 3), 5);",
+      "});",
+    ].join("\n"),
+    "other.test.mjs": "import test from 'node:test'; import assert from 'node:assert/strict'; test('no', () => { assert.equal(1, 2); });\n",
+    "node_modules/marker/package.json": JSON.stringify({ name: "marker", main: "index.js" }),
+    "node_modules/marker/index.js": "module.exports = 1;\n",
+  });
+  const report = hardenProject({ root: dir, profile: "production" });
+  assert.equal(report.tests.ok, true);
+  assert.equal(report.probes.ran, true);
+  assert.ok(report.probes.mutation >= 0.6, `mutation ${report.probes.mutation} reason ${report.probes.reason}`);
+  assert.equal(rulesOf(report, "mutation-threshold").length, 0);
+});
+
+test("catch uses only its first argument and only a real function", () => {
+  const dir = project({
+    "util.js": [
+      "export function go(p) {",
+      "  p.then(v => v).catch(null, () => null);",
+      "  p.then(v => v).catch({ onError: () => null });",
+      "  p.then(v => v, { onError: () => null });",
+      "  p.then(v => v).catch(() => null);",
+      "  p.then(v => v, handler);",
+      "}",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "unhandled-promise").map((f) => f.line), [2, 3, 4]);
+});
+
+test("an uncalled arrow inside a handler does not authorize the route", () => {
+  const dir = project({
+    "server.js": [
+      "app.get('/nested', (req, res) => {",
+      "  const setup = () => requireAuth(req);",
+      "  res.end('nope');",
+      "});",
+      "app.get('/direct', (req, res) => {",
+      "  requireAuth(req);",
+      "  res.end('ok');",
+      "});",
+      "app.get('/ran', (req, res) => {",
+      "  const setup = () => requireAuth(req);",
+      "  setup();",
+      "  res.end('ok');",
+      "});",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "http-authz").map((f) => f.line), [1]);
+});
+
+test("idempotency parses the property and rejects a parenthesized null", () => {
+  const dir = project({
+    "billing.js": [
+      "export function chargeCustomer(sku) {",
+      "  stripe.paymentIntents.create({ amount: 100, currency: 'usd', idempotencyKey: (null) });",
+      "  stripe.paymentIntents.create({ amount: 200, currency: 'usd', \"idempotencyKey\": \"key\" });",
+      "}",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "money-idempotency").map((f) => f.line), [2]);
+});
+
+test("template interpolation of a secret is still a secret log", () => {
+  const dir = project({
+    "server.js": [
+      "console.log(`secret: ${password}`);",
+      "console.log(`no secret here`);",
+      "const note = `console.log(${password})`;",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir });
+  assert.deepEqual(rulesOf(report, "http-secret-in-log").map((f) => f.line), [1]);
+});
+
+test("smoke matches route params and does not treat static routes as prefixes", () => {
+  const dir = project({
+    "server.js": [
+      "app.get('/home', (req, res) => { res.end('ok'); });",
+      "app.get('/users/:id', (req, res) => { res.end('ok'); });",
+    ].join("\n"),
+    "App.jsx": [
+      "export function App() {",
+      "  return <div>",
+      "    <a href='/home'>Home</a>",
+      "    <a href='/home/missing'>Missing</a>",
+      "    <a href='/users/123'>User</a>",
+      "    <a href='/users/123/edit'>Edit</a>",
+      "  </div>;",
+      "}",
+    ].join("\n"),
+  });
+  const report = hardenProject({ root: dir, profile: "prototype" });
+  const dead = rulesOf(report, "smoke-dead-end").map((f) => f.line);
+  assert.deepEqual(dead, [4, 6]);
 });

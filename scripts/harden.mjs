@@ -117,7 +117,50 @@ function stripLineComment(line) {
 }
 
 function stripStrings(fragment) {
-  return fragment.replace(/'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`/g, "''");
+  let out = "";
+  let i = 0;
+  while (i < fragment.length) {
+    const c = fragment[i];
+    if (c === "'" || c === "\"") {
+      const q = c;
+      out += "''";
+      i++;
+      while (i < fragment.length) {
+        if (fragment[i] === "\\") { i += 2; continue; }
+        if (fragment[i] === "\n") break;
+        if (fragment[i] === q) { i++; break; }
+        i++;
+      }
+      continue;
+    }
+    if (c === "`") {
+      out += " ";
+      i++;
+      while (i < fragment.length && fragment[i] !== "`") {
+        if (fragment[i] === "\\") { i += 2; continue; }
+        if (fragment[i] === "$" && fragment[i + 1] === "{") {
+          let depth = 1;
+          i += 2;
+          const start = i;
+          while (i < fragment.length && depth > 0) {
+            if (fragment[i] === "{") depth++;
+            else if (fragment[i] === "}") depth--;
+            if (depth > 0) i++;
+          }
+          out += stripStrings(fragment.slice(start, i));
+          if (fragment[i] === "}") i++;
+          continue;
+        }
+        out += fragment[i] === "\n" ? "\n" : " ";
+        i++;
+      }
+      if (fragment[i] === "`") i++;
+      continue;
+    }
+    out += c;
+    i++;
+  }
+  return out;
 }
 
 function visibleLine(line) {
@@ -324,12 +367,58 @@ function maskComments(text) {
   return chars.join("");
 }
 
+function unwrapParens(src) {
+  let s = src.trim();
+  for (;;) {
+    if (!s.startsWith("(") || !s.endsWith(")")) break;
+    let depth = 0;
+    let wraps = true;
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] === "(") depth++;
+      else if (s[i] === ")") {
+        depth--;
+        if (depth === 0 && i !== s.length - 1) { wraps = false; break; }
+      }
+    }
+    if (!wraps || depth !== 0) break;
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
+function isArrowExpression(src) {
+  const s = src.trim();
+  if (!s || s[0] === "{" || s[0] === "[") return false;
+  let i = 0;
+  if (s.startsWith("async") && (s.length === 5 || /\s/.test(s[5]))) {
+    i = 5;
+    while (/\s/.test(s[i] || "")) i++;
+  }
+  if (s[i] === "(") {
+    let depth = 0;
+    for (; i < s.length; i++) {
+      if (s[i] === "(") depth++;
+      else if (s[i] === ")") {
+        depth--;
+        if (depth === 0) { i++; break; }
+      }
+    }
+  } else if (/[A-Za-z_$]/.test(s[i] || "")) {
+    while (/[\w$]/.test(s[i] || "")) i++;
+  } else return false;
+  while (/\s/.test(s[i] || "")) i++;
+  return s.startsWith("=>", i);
+}
+
 function isRejectionHandler(src) {
   const visible = maskComments(src).replace(/'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`/g, " ").trim();
   if (!visible) return false;
-  if (/\bfunction\b/.test(visible) || visible.includes("=>")) return true;
-  if (/^(?:null|undefined|false|true|void\s+0|NaN|Infinity|-?\d+(?:\.\d+)?)$/.test(visible)) return false;
-  return /^(?:async\s+)?[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)*$/.test(visible);
+  const expr = unwrapParens(visible);
+  if (!expr) return false;
+  if (/^(?:null|undefined|false|true|void\s+0|NaN|Infinity|-?\d+(?:\.\d+)?)$/.test(expr)) return false;
+  if (/^(?:async\s+)?function\b/.test(expr)) return true;
+  if (isArrowExpression(expr)) return true;
+  return /^(?:async\s+)?[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)*$/.test(expr);
 }
 
 function promiseChainHandled(text, dotIndex) {
@@ -343,7 +432,7 @@ function promiseChainHandled(text, dotIndex) {
     if (text[after] !== "(") return false;
     const call = callInfo(text, after);
     if (call.end <= after) return false;
-    if (ident.word === "catch" && call.args.some((arg) => isRejectionHandler(arg))) return true;
+    if (ident.word === "catch") return call.args.length > 0 && isRejectionHandler(call.args[0]);
     if (ident.word === "then" && call.args.length >= 2 && isRejectionHandler(call.args[1])) return true;
     if (ident.word !== "then" && ident.word !== "finally") return false;
     const next = skipWsComments(text, call.end);
@@ -975,6 +1064,109 @@ function routeIsPublic(text, route, codeBody) {
   return PUBLIC_COMMENT.test(comments) || PUBLIC_CODE.test(codeBody);
 }
 
+function skipWsBack(text, index) {
+  let i = index;
+  while (i >= 0 && /\s/.test(text[i])) i--;
+  return i;
+}
+
+function parensBack(text, closeIdx) {
+  let depth = 0;
+  for (let i = closeIdx; i >= 0; i--) {
+    const c = text[i];
+    if (c === ")") depth++;
+    else if (c === "(") {
+      depth--;
+      if (depth === 0) return i;
+    }
+  }
+  return null;
+}
+
+function nestedCallable(text, body) {
+  let i = skipWsBack(text, body.start - 1);
+  if (text[i] === ">" && text[i - 1] === "=") {
+    i = skipWsBack(text, i - 2);
+    if (text[i] === ")") {
+      const open = parensBack(text, i);
+      if (open == null) return null;
+      i = skipWsBack(text, open - 1);
+    } else {
+      while (i >= 0 && /[\w$]/.test(text[i])) i--;
+      i = skipWsBack(text, i);
+    }
+    if (i >= 4 && text.slice(i - 4, i + 1) === "async" && (i < 5 || !/[\w$]/.test(text[i - 5]))) {
+      i = skipWsBack(text, i - 5);
+    }
+    let name = null;
+    if (text[i] === "=") {
+      const end = skipWsBack(text, i - 1);
+      let k = end;
+      while (k >= 0 && /[\w$]/.test(text[k])) k--;
+      const ident = text.slice(k + 1, end + 1);
+      if (/^[A-Za-z_$][\w$]*$/.test(ident)) name = ident;
+    }
+    return { name };
+  }
+  if (text[i] === ")") {
+    const open = parensBack(text, i);
+    if (open == null) return null;
+    i = skipWsBack(text, open - 1);
+    const end = i;
+    while (i >= 0 && /[\w$]/.test(text[i])) i--;
+    const word = text.slice(i + 1, end + 1);
+    if (!word || word === "function") return { name: null };
+    return { name: word };
+  }
+  return null;
+}
+
+function isImmediatelyInvoked(text, bodyEnd) {
+  let i = skipWsComments(text, bodyEnd);
+  while (text[i] === ")") i = skipWsComments(text, i + 1);
+  return text[i] === "(";
+}
+
+function isOwnDeclaration(text, matchIndex, body) {
+  const paren = text.indexOf("(", matchIndex);
+  if (paren < 0 || paren > body.start) return false;
+  const end = balancedEnd(text, paren);
+  if (end == null) return false;
+  return skipWsComments(text, end) === body.start;
+}
+
+function nameIsCalled(text, name, route, body) {
+  const escaped = name.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+  const re = new RegExp(`(?<![\\w$])${escaped}(?![\\w$])\\s*\\(`, "g");
+  const region = text.slice(route.start, route.end);
+  let match;
+  while ((match = re.exec(region))) {
+    const at = route.start + match.index;
+    if (at >= body.start && at < body.end) continue;
+    if (isOwnDeclaration(text, at, body)) continue;
+    return true;
+  }
+  return false;
+}
+
+// Authorization has to run on this request. An arrow or function that the
+// handler only defines does not, unless the handler calls it or it is an IIFE.
+function authorizationText(masked, text, route) {
+  const ranges = functionBodyRanges(text).filter((range) => range.start >= route.start && range.end <= route.end);
+  const nested = ranges.filter((range) => ranges.some((outer) => outer !== range && outer.start < range.start && outer.end >= range.end));
+  const chars = masked.slice(route.start, route.end).split("");
+  for (const range of nested) {
+    if (isImmediatelyInvoked(text, range.end)) continue;
+    const info = nestedCallable(text, range);
+    if (info && info.name && nameIsCalled(text, info.name, route, range)) continue;
+    for (let i = range.start; i < range.end; i++) {
+      const k = i - route.start;
+      if (k >= 0 && k < chars.length && chars[k] !== "\n") chars[k] = " ";
+    }
+  }
+  return chars.join("");
+}
+
 function checkHttp(text, findings) {
   const masked = maskNonCode(text);
   const guards = collectMiddleware(text);
@@ -984,7 +1176,7 @@ function checkHttp(text, findings) {
       findings.push({ line: firstIn(masked, route.start, route.end, INPUT_READ), rule: "http-input-validation" });
     }
     const covered = guards.some((guard) => middlewareCovers(guard, route));
-    if (!covered && !AUTHZ.test(body) && !routeIsPublic(text, route, body)) {
+    if (!covered && !AUTHZ.test(authorizationText(masked, text, route)) && !routeIsPublic(text, route, body)) {
       findings.push({ line: lineAt(text, route.start), rule: "http-authz" });
     }
     if (THROWS.test(body) && !HANDLED.test(body)) {
@@ -1103,20 +1295,55 @@ function maskNonCode(text, { preserveKeys = false } = {}) {
   return chars.join("");
 }
 
+function readExpression(raw, start) {
+  let i = start;
+  let paren = 0;
+  let brace = 0;
+  let bracket = 0;
+  let quote = null;
+  while (i < raw.length) {
+    const c = raw[i];
+    if (quote) {
+      if (c === "\\") { i += 2; continue; }
+      if (c === quote) quote = null;
+      i++;
+      continue;
+    }
+    if (c === "'" || c === "\"" || c === "`") { quote = c; i++; continue; }
+    if (c === "(") paren++;
+    else if (c === ")") { if (paren === 0) break; paren--; }
+    else if (c === "{") brace++;
+    else if (c === "}") { if (brace === 0) break; brace--; }
+    else if (c === "[") bracket++;
+    else if (c === "]") { if (bracket === 0) break; bracket--; }
+    else if (c === "," && paren === 0 && brace === 0 && bracket === 0) break;
+    i++;
+  }
+  return raw.slice(start, i).trim();
+}
+
+function unusableIdempotencyValue(value) {
+  const expr = unwrapParens(value);
+  if (!expr) return true;
+  if (/^(?:null|undefined|false)\b/.test(expr)) return true;
+  if (/^(["'`])\1$/.test(expr)) return true;
+  return false;
+}
+
 function usableIdempotency(raw, masked) {
   const re = /\b(?:idempotencyKey|idempotency_key|idempotency-key)\b/g;
   let match;
   while ((match = re.exec(raw))) {
     if (masked.slice(match.index, match.index + match[0].length) !== match[0]) continue;
-    let i = match.index + match[0].length;
+    let nameEnd = match.index + match[0].length;
+    const quote = match.index > 0 ? raw[match.index - 1] : "";
+    if ((quote === "'" || quote === "\"" || quote === "`") && raw[nameEnd] === quote) nameEnd++;
+    let i = nameEnd;
     while (i < raw.length && /\s/.test(raw[i])) i++;
     if (raw[i] === ":") {
       i++;
       while (i < raw.length && /\s/.test(raw[i])) i++;
-      const rest = raw.slice(i);
-      if (/^(?:null|undefined|false)\b/.test(rest)) continue;
-      if (/^(["'`])\1/.test(rest)) continue;
-      if (!rest.trim() || /^[,}\]]/.test(rest)) continue;
+      if (unusableIdempotencyValue(readExpression(raw, i))) continue;
       return true;
     }
     if (i >= raw.length || /[,}\]]/.test(raw[i])) return true;
@@ -1330,19 +1557,43 @@ function listOwnTestFiles(dir, rel = "", out = []) {
   return out;
 }
 
-function runOwnTests(root) {
-  const script = testScriptOf(root);
-  const files = listOwnTestFiles(root);
-  if (!script && files.length === 0) return { ran: false, reason: "not-present", files, command: null };
+function commandEnv(root) {
   const env = { ...process.env, PORT: "0", NODE_ENV: "test" };
   delete env.NODE_TEST_CONTEXT;
+  const bin = path.join(root, "node_modules", ".bin");
+  env.PATH = env.PATH ? `${bin}${path.delimiter}${env.PATH}` : bin;
+  return env;
+}
+
+// scripts.test is an npm script: run it with the package manager so local bins
+// (vitest, and the rest of node_modules/.bin) resolve the way `npm test` does.
+function packageRunner(root) {
+  const has = (name) => fs.existsSync(path.join(root, name));
+  if (has("pnpm-lock.yaml")) return { bin: "pnpm", args: ["test", "--silent"] };
+  if (has("yarn.lock")) return { bin: "yarn", args: ["test", "--silent"] };
+  if (has("bun.lock") || has("bun.lockb")) return { bin: "bun", args: ["run", "test"] };
+  return { bin: "npm", args: ["test", "--silent"] };
+}
+
+export function runProjectTests(root, { timeoutMs = 20000 } = {}) {
+  const script = testScriptOf(root);
+  const files = listOwnTestFiles(root);
+  if (!script && files.length === 0) {
+    return { ran: false, reason: "not-present", files, command: null, ok: false, pass: 0, fail: 0, timedOut: false };
+  }
+  const env = commandEnv(root);
   const command = script || "node --test";
   const result = script
-    ? spawnSync(script, { cwd: root, encoding: "utf8", timeout: 20000, env, shell: true })
+    ? spawnSync(packageRunner(root).bin, packageRunner(root).args, {
+      cwd: root,
+      encoding: "utf8",
+      timeout: timeoutMs,
+      env,
+    })
     : spawnSync(process.execPath, ["--test", "--test-reporter=tap", "--test-timeout=15000"], {
       cwd: root,
       encoding: "utf8",
-      timeout: 20000,
+      timeout: timeoutMs,
       env,
     });
   const out = `${result.stdout || ""}\n${result.stderr || ""}`;
@@ -1360,6 +1611,10 @@ function runOwnTests(root) {
     ok,
     timedOut: result.error?.code === "ETIMEDOUT",
   };
+}
+
+function runOwnTests(root) {
+  return runProjectTests(root, { timeoutMs: 20000 });
 }
 
 function packageType(root) {
@@ -1405,13 +1660,21 @@ function runRuntimeProbes(root) {
   const failures = [];
   for (const rel of files.slice(0, 30)) {
     const href = pathToFileURL(path.join(root, rel)).href;
-    const result = spawnSync(process.execPath, ["--input-type=module", "-e", `await import(${JSON.stringify(href)})`], {
+    // Exit after a successful import. A listening server keeps the event loop
+    // alive; that is an open handle, not an import error. Only a rejected import
+    // (or a hang before the import resolves) is a runtime-probe finding.
+    const source = `try { await import(${JSON.stringify(href)}); process.stdout.write("SVC_IMPORT_OK\\n"); process.exit(0); } catch (error) { process.stderr.write(String(error && error.stack || error)); process.exit(1); }`;
+    const result = spawnSync(process.execPath, ["--input-type=module", "-e", source], {
       cwd: root,
       encoding: "utf8",
       timeout: 8000,
       env,
     });
-    if (result.status !== 0 || result.error) failures.push(rel);
+    const imported = `${result.stdout || ""}`.includes("SVC_IMPORT_OK");
+    if (result.error?.code === "ETIMEDOUT" && result.pid) {
+      try { process.kill(result.pid, "SIGKILL"); } catch { /* spawnSync already reaped it */ }
+    }
+    if (!imported && (result.status !== 0 || result.error)) failures.push(rel);
   }
   return { ran: true, ok: failures.length === 0, kind: "runtime", reason: failures.length ? "import-failed" : "loaded", files, failures };
 }
@@ -1421,6 +1684,34 @@ function normRoute(value) {
   const cut = value.split(/[?#]/)[0];
   if (cut.length > 1 && cut.endsWith("/")) return cut.slice(0, -1);
   return cut;
+}
+
+function routeSegments(pathname) {
+  const parts = pathname.split("/");
+  if (parts[0] === "") parts.shift();
+  if (parts.length && parts[parts.length - 1] === "") parts.pop();
+  return parts;
+}
+
+// Express-style: a static segment is exact, `:param` is one segment, and a
+// final `*` consumes the rest. `/home` does not cover `/home/missing`.
+function routeCovers(pattern, actual) {
+  const expected = routeSegments(pattern);
+  const got = routeSegments(actual);
+  let index = 0;
+  for (let i = 0; i < expected.length; i++) {
+    const segment = expected[i];
+    if ((segment === "*" || segment === "(.*)") && i === expected.length - 1) return true;
+    if (index >= got.length) return false;
+    if (segment.startsWith(":")) {
+      if (!got[index]) return false;
+      index++;
+      continue;
+    }
+    if (segment !== got[index]) return false;
+    index++;
+  }
+  return index === got.length;
 }
 
 function runSmokeWalk(selection, texts) {
@@ -1448,7 +1739,7 @@ function runSmokeWalk(selection, texts) {
   const deadEnds = [];
   if (routes.length) {
     for (const link of links) {
-      const covered = routes.some((route) => route.path === link.path || link.path.startsWith(`${route.path}/`));
+      const covered = routes.some((route) => routeCovers(route.path, link.path));
       if (!covered) deadEnds.push(link);
     }
   }
@@ -1473,7 +1764,7 @@ function runQualityProbes(root) {
   if (!fs.existsSync(script)) return { ran: false, reason: "not-present", threshold: MUTATION_THRESHOLD };
   const env = { ...process.env, PORT: "0", NODE_ENV: "test" };
   delete env.NODE_TEST_CONTEXT;
-  const result = spawnSync(process.execPath, [script, root, "--mutants", "8"], {
+  const result = spawnSync(process.execPath, [script, root, "--mutants", "8", "--project-runner"], {
     cwd: root,
     encoding: "utf8",
     timeout: 25000,
