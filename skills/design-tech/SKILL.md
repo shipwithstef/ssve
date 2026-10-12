@@ -367,6 +367,8 @@ requiring chrome controls to be testable before implementation starts.
 
 ## Pipeline Continuation
 
+**Lane graph driven by `svc-next`.** When `.svc/lane-tasks-<WI>.json` was compiled for this work, `svc-next` alone completes this stage and picks the successor: do not mark the task completed, start or load the next task or skill, or follow a next-skill default from this section; finish through `## Handback` at the end of this file. The rules below apply only without a compiled lane graph.
+
 ### Phase Receipt Contract
 
 When running in task-graph mode, record these phase receipts before marking the `design-tech` task complete:
@@ -401,6 +403,8 @@ If any check FAILs, fix before continuing. If a fix requires upstream changes, s
 
 ### Chaining
 
+**Under a compiled lane graph (`.svc/lane-tasks-*.json`) `svc-next` chooses the next stage: do not invoke or suggest the next skill from this section; follow `## Handback` at the end of this file. The standalone guidance below applies only when no lane graph exists.**
+
 Apply the task-graph protocol above, then:
 
 **If `--progressive` flag is present AND self-verify passed:**
@@ -421,3 +425,7 @@ If context was compacted and you lost framework state, `.svc/lane-tasks-<WI>.jso
 
 When this skill discovers new delivery-graph signals, emit `skill_outcome` per
 `references/skill-outcome-contract.md` before completing the task.
+
+## Handback
+
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `CLOSEOUT` command `svc-next` printed for this stage, verbatim (it ends in `--receipt load-skill`). Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above.

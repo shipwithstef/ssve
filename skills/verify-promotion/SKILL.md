@@ -297,6 +297,8 @@ Test quality blockers override an otherwise passing verification; green CI with 
 
 ## Pipeline Continuation
 
+**Lane graph driven by `svc-next`.** When `.svc/lane-tasks-<WI>.json` was compiled for this work, `svc-next` alone completes this stage and picks the successor: do not mark the task completed, start or load the next task or skill, or follow a next-skill default from this section; finish through `## Handback` at the end of this file. The rules below apply only without a compiled lane graph.
+
 ### Task-graph mode (when a task graph exists — source of truth: `.svc/lane-tasks-<WI>.json`; Claude mirror: `TaskList`; Kimi observation: `/task` + `TaskList`/`TaskOutput`; Codex mirror: `update_plan`)
 Read and update `.svc/lane-tasks-<WI>.json` first; it is the cross-host source of truth for task status, skip reasons, and resume (also across sessions and subagents). Treat `Invoke: /skill-name` in the task description and `metadata.skill` as routing instructions, not explanatory prose.
 
@@ -335,14 +337,7 @@ with `block_on_discovery`, and leave the parent blocked instead of VERIFIED.
 
 ### Chaining
 
-In task-graph mode, follow §Task-graph mode above, then:
-
-**If `--progressive` flag is present AND self-verify passed:**
-- This is the end of all lanes. Report one sentence before the detail: `VERIFIED (<tier>): checked <the checks that passed>. Still open: <observation, leftovers, or manual issue close — or none>.` Do not treat outcome observation or a manual issue close as done.
-
-**If `--progressive` flag is absent:**
-- Report results to user
-- Pipeline complete. No further skills to chain.
+In task-graph mode, follow §Task-graph mode above, then report one sentence before the detail: `VERIFIED (<tier>): checked <the checks that passed>. Still open: <observation, leftovers, or manual issue close — or none>.` Do not treat outcome observation or a manual issue close as done. With a lane graph, then follow `## Handback` at the end of this file; this is the last stage of every lane (standalone: report the results; the pipeline is complete), and the lane graph, not this skill, names the next stage.
 
 ## Post-Compaction Recovery
 
@@ -453,3 +448,7 @@ An exact duplicate is an idempotent no-op; corrections append with an explicit
 supersession id rather than deleting promotion history.
 
 Reference: `references/chain-receipt-contract.md`.
+
+## Handback
+
+When a compiled lane graph (`.svc/lane-tasks-<WI>.json`) drives this work, run the `EMIT` command `svc-next` printed for this stage; it prints `verify-promotion:<sha256>`. Then run the `CLOSEOUT` command `svc-next` printed, verbatim, with that value in place of `verify-promotion:<sha256>`. Never rebuild the command: the printed one carries the selected project root and WI. Then follow the card it prints and do only what its `SKILL` says. `progressive: true` means do not ask a person; it never names the next skill. Without a lane graph there is no card: skip this section and use the Chaining guidance above.
