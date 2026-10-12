@@ -337,7 +337,7 @@ check "worker edit rollup and progress stream exist" bash -c "test -f '$FIX/.svc
 check "dispatch-waves skill exists" test -f "$ROOT/skills/dispatch-waves/SKILL.md"
 check "dispatch-waves is in included skills" grep -q '"dispatch-waves"' "$ROOT/skills-manifest.json"
 check "dispatch-waves is in routing core pack" grep -q '\- `dispatch-waves`' "$ROOT/skills/route-workflow/references/routing-rules.md"
-check "route-workflow routes parallel WI requests" grep -q 'route to `dispatch-waves`' "$ROOT/skills/route-workflow/SKILL.md"
+check "route-workflow routes parallel WI requests" grep -q 'route to `dispatch-waves`' "$ROOT/skills/route-workflow/references/framework-and-host-route.md"
 check "transport reference exists" test -f "$ROOT/references/parallel-dispatch-transport.md"
 check "README lists dispatch-waves" grep -q '`dispatch-waves`' "$ROOT/README.md"
 check "nested execution wave planner exists" test -x "$ROOT/scripts/plan-execution-wave.mjs"

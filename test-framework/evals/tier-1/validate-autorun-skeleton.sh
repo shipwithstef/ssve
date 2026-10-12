@@ -4,7 +4,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-SKILL="$REPO_ROOT/skills/route-workflow/SKILL.md"
+SKILL="$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md"
 ORCH="$REPO_ROOT/skills/route-workflow/references/autorun-orchestrator.md"
 CONTRACT="$REPO_ROOT/references/autorun-contract.md"
 
@@ -27,7 +27,7 @@ check() {
 }
 
 # 1. Lane selection mention in SKILL.md
-check "lane selection mentioned in skills/route-workflow/SKILL.md" \
+check "lane selection mentioned in skills/route-workflow/references/framework-and-host-route.md" \
   "$SKILL" "lane[- ]selection|select.*lane|choose.*lane|lane.*model"
 
 # 2. Lane-tasks file creation mentioned in autorun-orchestrator.md (or SKILL.md)

@@ -5,7 +5,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-ROUTER="$REPO_ROOT/skills/route-workflow/SKILL.md"
+ROUTER="$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md"
 REF="$REPO_ROOT/skills/route-workflow/references/intent-normalization.md"
 PASS=0
 FAIL=0

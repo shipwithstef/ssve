@@ -101,7 +101,7 @@ else
 fi
 
 # route-workflow must have a Self-Verify check for new-lane detection.
-ROUTE_SV=$(awk '/^###? Self-Verify/{found=1; next} found && /^###? /{exit} found{print}' "$REPO_ROOT/skills/route-workflow/SKILL.md")
+ROUTE_SV=$(awk '/^###? Self-Verify/{found=1; next} found && /^###? /{exit} found{print}' "$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md")
 if echo "$ROUTE_SV" | grep -qiE 'new.lane necessity|new lane necessity|lane.*needed'; then
   pass
 else

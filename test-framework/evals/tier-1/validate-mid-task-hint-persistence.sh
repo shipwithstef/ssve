@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 HELPER="$REPO_ROOT/scripts/resolve-skill-hint.mjs"
-ROUTER="$REPO_ROOT/skills/route-workflow/SKILL.md"
+ROUTER="$REPO_ROOT/skills/route-workflow/references/framework-and-host-route.md"
 REF="$REPO_ROOT/skills/route-workflow/references/intent-classification.md"
 TASK_REF="$REPO_ROOT/skills/route-workflow/references/task-graph-protocol.md"
 AUDIT="$REPO_ROOT/skills/audit-session-execution/SKILL.md"
