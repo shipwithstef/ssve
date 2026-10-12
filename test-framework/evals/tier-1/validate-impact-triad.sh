@@ -261,6 +261,14 @@ PY
 AR_TMP="$(mktemp -d)"
 mkdir -p "$AR_TMP/scripts" "$AR_TMP/.svc"
 cp scripts/auto-receipt.mjs scripts/state-io.mjs scripts/classify-change-risk.mjs "$AR_TMP/scripts/"
+# The scratch copy keeps its state-io double. Ownership stays the source-tree
+# selector; a relative import would look next to the copy and miss it.
+python3 - "$AR_TMP/scripts/auto-receipt.mjs" "file://${ROOT}/hooks/svc-impact-triad-guard.mjs" <<'PY'
+import pathlib, sys
+file, url = sys.argv[1:]
+path = pathlib.Path(file)
+path.write_text(path.read_text().replace('from "../hooks/svc-impact-triad-guard.mjs"', f'from "{url}"'))
+PY
 # Test double: local export shadows the star export (ESM rule), records every
 # writeJsonAtomic invocation to a marker file, then delegates to the REAL impl.
 cat > "$AR_TMP/scripts/state-io.mjs" <<AREOF
@@ -284,7 +292,7 @@ ARG -c commit.gpgsign=false commit -qm seed
 printf 'y\n' > "$AR_TMP/staged.txt"
 ARG add staged.txt
 cat > "$AR_TMP/.svc/lane-tasks-WI-AUTOTEST.json" <<'ARJSON'
-{"wi":"WI-AUTOTEST","lane":"framework","created":"2026-01-01T00:00:00.000Z","tasks":[{"id":1,"subject":"t","status":"completed","blocked_by":[],"metadata":{"skill":"execute-changeset"}},{"id":2,"subject":"final review","status":"pending","blocked_by":[],"metadata":{"skill":"review-exec"}}]}
+{"wi":"WI-AUTOTEST","lane":"framework","created":"2026-01-01T00:00:00.000Z","tasks":[{"id":1,"subject":"t","status":"completed","blocked_by":[],"metadata":{"skill":"execute-changeset"}},{"id":2,"subject":"final review","status":"pending","blocked_by":[1],"metadata":{"skill":"review-exec"}}]}
 ARJSON
 node --check scripts/auto-receipt.mjs
 # ── cosmetic/logic path ──

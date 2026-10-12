@@ -73,11 +73,11 @@ test('the printed plan-manifest sequence produces a receipt svc-next accepts (re
     if (!branch) branch = git(tmp, 'symbolic-ref', '--short', 'HEAD');
     fs.appendFileSync(path.join(tmp, '.git/info/exclude'), '.svc/bindings/\n.svc/claims/\n.svc/impact-triad/\n');
 
-    // the compiled lane graph svc-next drives; execute-changeset is the task the classifier evidence binds to
+    // the compiled lane graph svc-next drives. diagnose-bug is done; plan-changeset
+    // is the runnable stage (execute-changeset stays pending behind review-plan).
+    // The cosmetic receipt binds to that stage, the same task the guard selects.
     const graph = compileDeliveryGraph({ wi: WI, lane: 'bugfix', change_type: 'bugfix', user_intent: 'x' });
-    const exec = graph.tasks.find((x) => x.metadata.skill === 'execute-changeset');
-    exec.status = 'in_progress';
-    exec.skill_receipt = { skill: 'execute-changeset', loaded_at: '2026-09-07T20:30:00Z', loaded_via: 'fixture' };
+    const plan = graph.tasks.find((x) => x.metadata.skill === 'plan-changeset');
     graph.tasks[0].status = 'completed';
     graph.tasks[0].skill_receipt = { skill: 'diagnose-bug', loaded_at: '2026-09-07T20:30:00Z', loaded_via: 'fixture' };
     graph.tasks[0].chain_receipt = { type: 'load-skill' };
@@ -96,7 +96,7 @@ test('the printed plan-manifest sequence produces a receipt svc-next accepts (re
     const classified = classifyFromGit({ cwd: tmp, staged: true });
     assert.equal(classified.tier, 'cosmetic');
     fs.mkdirSync(path.join(tmp, `.svc/impact-triad/${WI}`), { recursive: true });
-    fs.writeFileSync(path.join(tmp, `.svc/impact-triad/${WI}/task-${exec.id}.json`), JSON.stringify({ schema_version: 1, wi: WI, session_id: token, worktree_root: real, task_graph: graphPath, task_id: exec.id, diff_sha256: classified.sha256, risk_tier: classified.tier, risk_reasons: classified.reasons, breaks_what: { answer: 'docs note copy', sources: ['git diff --cached'], evidence: ['svc-next-plan-sequence.test.mjs'] }, intended_behavior: { answer: 'keep the existing contract', sources: ['spec.md'], evidence: ['AC-1'] }, product_surface: { answer: 'headless eligibility fixture', sources: ['scripts/quick-fix-eligibility.mjs'], evidence: ['mechanical fixture'] }, coverage_tasks: [{ id: 'fixture', status: 'completed', owner: 'test', validation: 'svc-next-plan-sequence.test.mjs' }], independent_review: { status: 'n/a', executor_family: 'n/a', reviewer_family: 'n/a', artifacts: [] }, runtime_proof: { status: 'pass', kind: 'static', artifacts: ['docs/specs/note.md'] }, created_at: now }));
+    fs.writeFileSync(path.join(tmp, `.svc/impact-triad/${WI}/task-${plan.id}.json`), JSON.stringify({ schema_version: 1, wi: WI, session_id: token, worktree_root: real, task_graph: graphPath, task_id: plan.id, diff_sha256: classified.sha256, risk_tier: classified.tier, risk_reasons: classified.reasons, breaks_what: { answer: 'docs note copy', sources: ['git diff --cached'], evidence: ['svc-next-plan-sequence.test.mjs'] }, intended_behavior: { answer: 'keep the existing contract', sources: ['spec.md'], evidence: ['AC-1'] }, product_surface: { answer: 'headless eligibility fixture', sources: ['scripts/quick-fix-eligibility.mjs'], evidence: ['mechanical fixture'] }, coverage_tasks: [{ id: 'fixture', status: 'completed', owner: 'test', validation: 'svc-next-plan-sequence.test.mjs' }], independent_review: { status: 'n/a', executor_family: 'n/a', reviewer_family: 'n/a', artifacts: [] }, runtime_proof: { status: 'pass', kind: 'static', artifacts: ['docs/specs/note.md'] }, created_at: now }));
     const eligibility = evaluateEligibility({ consumerRoot: tmp });
     assert.equal(eligibility.eligible, true);
     const persisted = persistOriginalInputs({ originalRequirements: [{ id: 'AC-1' }, { id: 'AC-2' }], facts: { annotations: { change_archetype: 'feature' } } }, { start: tmp });
