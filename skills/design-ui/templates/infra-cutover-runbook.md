@@ -40,7 +40,7 @@ Used in `infra-migration` lane phase 5c. Phased cutover with explicit rollback a
 **Rollback:** Last opportunity for clean revert.
 
 ### Phase 6: Decommission (T+30+)
-**What:** Source removed entirely.
+**What:** Source removed entirely. Executor: `retire-cloud-resources`.
 **Verify:** `decommission-receipt.md` archived.
 **Rollback:** NOT POSSIBLE — irreversible from this point.
 

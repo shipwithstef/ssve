@@ -934,7 +934,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 - `recall-stack-knowledge` — Knowledge Spine recall gate (see WI-SPINE-001)
 - `refresh-competitors` — Weekly diff-based refresh of tracked competitor state
 - `research` — Resolve uncertainty about APIs, libraries, patterns
-- `retire-cloud-resources` — Fail-closed permanent deletion of old cloud resources after a cutover has soaked
+- `retire-cloud-resources` — Lane 10 Phase 20+ executor for old-cloud deletion after cutover soak
 - `reverse-engineer` — Deconstruct any company/product/tweet/technique, produce teardown + build brief with unique twist
 - `review-cross-model` — Adversarial review via a second model
 - `review-exec` — G5-enforcing gate: self-review + adversarial review of executed diff before land (mandatory-chain plan)

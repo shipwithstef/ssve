@@ -210,7 +210,7 @@ Progressive deterministic development framework and governed autonomous operatin
 | `manage-learnings` | Persistent learning store with 3-question quality gate |
 | `teach-project` | Owner guide calibrated to builder's knowledge gap |
 | `plan-capabilities` | Classify project type, recommend MCPs/skills/research |
-| `retire-cloud-resources` | Fail-closed permanent deletion of old cloud resources after a soaked cutover: exact allow-list, protected hashes, soak window including the final slot, and a report on every exit |
+| `retire-cloud-resources` | Lane 10 Phase 20+ executor: deletion guards and a sanitized decommission receipt after cutover soak |
 | `platform-operating-architect` | Classify platform operating model, split local/dev/staging/prod, define integration boundaries, and encode how svc should coexist with hosted platforms |
 | `analyze-marketing` | Feature mining for product marketing context |
 | `onboard-repo` | Convert existing repo to svc conventions |

@@ -412,7 +412,7 @@
           "name": "retire-cloud-resources-eval",
           "path": "tier-2/scenarios/retire-cloud-resources-eval.md",
           "skill_under_test": "retire-cloud-resources",
-          "assertions": 2,
+          "assertions": 1,
           "cost": "~50K tokens",
           "duration": "~2min"
         }
