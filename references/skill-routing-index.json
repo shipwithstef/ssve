@@ -1936,7 +1936,7 @@
     {
       "skill": "verify-promotion",
       "path": "skills/verify-promotion/SKILL.md",
-      "content_hash": "f336992c155f52b04d78f8d5183c31ec007d71a31a0f6e38529473c06117e152",
+      "content_hash": "bd677617e1809fdd306ca5ef0fa8ba42571d40d845147aaebfb67925a62ddbf7",
       "description": "Use after a reviewed branch has been promoted to verify that the promoted implementation matches specs, passes tests, satisfies acceptance criteria, and closes the loop back into spec/journey state — triggers G7 review. For an improvement claim, consume the pre-production stage-acceptance receipt and leave live outcome metrics pending on the observation lifecycle.",
       "aliases": [],
       "positive_triggers": [],
