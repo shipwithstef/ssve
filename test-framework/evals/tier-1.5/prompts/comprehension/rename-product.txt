@@ -1,0 +1,10 @@
+Skill: rename-product
+
+Q: Who owns the code-rename sweep, and who owns deletion of old cloud resources if that sibling is missing?
+A: Expected pattern: plan-changeset Migration / sweep owns the code-rename manifest. retire-cloud-resources owns deletion. If that skill is absent, the P5 receipt outcome is blocked-missing-sibling and this skill does not delete.
+
+Q: When do local folder and agent-memory moves run, and what is the default mode of the bundled scripts?
+A: Expected pattern: they run last, after the agent session is closed. The scripts are dry-run unless the operator passes --apply.
+
+Q: What must a deploy receipt cite, and what happens to old production after cutover?
+A: Expected pattern: every deploy cites a reviewed, committed, pushed SHA, and only after that review is finished. Old production is never restarted after cutover.

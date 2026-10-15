@@ -105,6 +105,7 @@ Validator: `test-framework/evals/tier-1/validate-visual-skills-have-live-evidenc
 - `quick-fix`
 - `recall-stack-knowledge`
 - `refresh-competitors`
+- `rename-product`
 - `research`
 - `retire-cloud-resources`
 - `reverse-engineer`

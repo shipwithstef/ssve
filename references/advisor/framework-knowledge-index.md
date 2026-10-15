@@ -36,9 +36,9 @@ Derived-at for all blocks: **2026-09-14** unless stated otherwise
 | Bootstrap sequence | 26 steps (greenfield minimal order) | `skills-manifest.json` `bootstrapStartSequence` | read manifest |
 
 > ✅ Knowledge surfaces restamped: `references/knowledge/svc/CAPABILITIES.md` and
-> `references/knowledge/svc/details/infrastructure.md` restamped to 107 skills, 9 provisioned hosts,
+> `references/knowledge/svc/details/infrastructure.md` restamped to 108 skills, 9 provisioned hosts,
 > Landlock containment, and Cursor x-high review transport on 2026-09-14 (WI-FW-ADVISOR-KNOWLEDGE-02).
-> ⚠️ Warning on adjacent surfaces: `references/knowledge/svc/CAPABILITIES.md` and `references/knowledge/INDEX.md` were historically frozen at 77 skills (now updated to 107); legacy sections of `AGENTS.md` and `CLAUDE.md` previously mentioned 24 APs (now 34). Live framework truth is strictly governed by `skills-manifest.json` (107 skills), `references/anti-patterns.md` (34 APs), and this index.
+> ⚠️ Warning on adjacent surfaces: `references/knowledge/svc/CAPABILITIES.md` and `references/knowledge/INDEX.md` were historically frozen at 77 skills (now updated to 108); legacy sections of `AGENTS.md` and `CLAUDE.md` previously mentioned 24 APs (now 34). Live framework truth is strictly governed by `skills-manifest.json` (108 skills), `references/anti-patterns.md` (34 APs), and this index.
 
 ## 2. Lanes, pipeline, pre-lane
 
@@ -157,4 +157,4 @@ Verify with `node --test test-framework/tests/session-recovery.test.mjs`.
 
 ---
 
-*Restamp log:* initial extraction 2026-08-26 (WI-FW-ADVISOR-KNOWLEDGE-01); refreshed 2026-09-14 (WI-FW-ADVISOR-KNOWLEDGE-02: Cursor CLI x-high review transport, 105 skills, 329 tier-1 validators, WI-566 bounded review receipts, Landlock containment, WI-FW-SESSION-RECOVERY-01/02 & WI-FW-READONLY-OBSERVATION-01, Section 8 Change Discipline & Execution Governance); skill count restamped 2026-10-15 to 107 with `retire-cloud-resources`.
+*Restamp log:* initial extraction 2026-08-26 (WI-FW-ADVISOR-KNOWLEDGE-01); refreshed 2026-09-14 (WI-FW-ADVISOR-KNOWLEDGE-02: Cursor CLI x-high review transport, 105 skills, 329 tier-1 validators, WI-566 bounded review receipts, Landlock containment, WI-FW-SESSION-RECOVERY-01/02 & WI-FW-READONLY-OBSERVATION-01, Section 8 Change Discipline & Execution Governance); skill count restamped 2026-10-15 to 108 with `retire-cloud-resources` and `rename-product`.

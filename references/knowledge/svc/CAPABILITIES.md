@@ -1,13 +1,13 @@
 # svc (Serious Vibe Coding) — Capabilities
 
 Source: this repo (seriousvibecoding / ssve)
-Version: current framework state (107 skills, 34 APs, 91 references, 7 lanes, 7 gates, 9 provisioned hosts)
+Version: current framework state (108 skills, 34 APs, 91 references, 7 lanes, 7 gates, 9 provisioned hosts)
 Last updated: 2026-10-15
 Self-extracted: full L3 analysis (WI-FW-ADVISOR-KNOWLEDGE-02)
 
 ## What It Is
 
-Progressive deterministic development framework and governed autonomous operating system — vision to verified code in one prompt. Builder-aware: mines who you are before deciding what to build. Rejects bad ideas with evidence. Self-assesses market readiness instead of asking. 107 first-party skills, 7 review gates (G1-G7), 7 workflow lanes, 34 anti-patterns, 91 reference docs, 9 provisioned hosts (Claude Code, Kimi Code CLI, OpenAI Codex CLI, Google Gemini CLI, OpenCode CLI, MiMo-Code, Google Antigravity, Cursor Agent, xAI Grok Build CLI).
+Progressive deterministic development framework and governed autonomous operating system — vision to verified code in one prompt. Builder-aware: mines who you are before deciding what to build. Rejects bad ideas with evidence. Self-assesses market readiness instead of asking. 108 first-party skills, 7 review gates (G1-G7), 7 workflow lanes, 34 anti-patterns, 91 reference docs, 9 provisioned hosts (Claude Code, Kimi Code CLI, OpenAI Codex CLI, Google Gemini CLI, OpenCode CLI, MiMo-Code, Google Antigravity, Cursor Agent, xAI Grok Build CLI).
 
 ## Pre-Pipeline (builder-aware)
 
@@ -214,6 +214,7 @@ Progressive deterministic development framework and governed autonomous operatin
 | `platform-operating-architect` | Classify platform operating model, split local/dev/staging/prod, define integration boundaries, and encode how svc should coexist with hosted platforms |
 | `analyze-marketing` | Feature mining for product marketing context |
 | `onboard-repo` | Convert existing repo to svc conventions |
+| `rename-product` | Evidence-gated Lane 10 rename of a live product. Owns occurrence classes, phase receipts, and local and agent-memory moves. The retrospective consumes `review-cross-model` receipts. The code sweep stays `plan-changeset`. Phase 20+ deletion stays `retire-cloud-resources`. |
 | `audit-coverage` | Classify project against full svc canonical artifact catalog (CANONICAL/FOREIGN/MISSING) with consolidation recommendations |
 | `sync-work-items` | Sync work items to GitHub Issues |
 | `discover-skills` | Multi-source skill discovery (skills.sh + SkillHub) with merged ranking by install count + AI quality ratings |
