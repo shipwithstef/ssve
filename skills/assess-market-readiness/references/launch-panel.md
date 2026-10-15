@@ -16,14 +16,14 @@ Fit the roster to the product. Drop a row that does not apply. Add a row the pro
 
 | Id | Role | What they own | Skip when |
 |---|---|---|---|
-| x-legal | Legal and compliance, without a lawyer | Jurisdiction-aware pass from official sources. Lists what a lawyer is needed for later, the no-lawyer route, and the residual risk. | Never, when the gate collects personal data for the first time. `privacy-dpo` stays the dedicated privacy skill when the founder asks for that pass alone. `launch-knowledge` may be read. Do not restate either skill. |
+| x-legal | Legal and compliance | Consume `counsel`. For personal data, consume `privacy-dpo`. Jurisdiction lookup may read `launch-knowledge`. Missing artifact: run that skill and keep its preflight and human checkpoint. Launch-only: which gate the finding blocks. | Never, when the gate collects personal data for the first time. |
 | x-ba | Business analyst | What is live, what to cut, the cheapest test that can fail. | — |
 | x-competitors | Competitors | Landscape and positions. Call `analyze-competitors` when the artifact is missing or stale. This seat consumes it. | A fresh committed competitor artifact already answers the question. |
-| x-growth | Growth | Channels, measurement, kill rules, calendar to first traffic. | — |
-| x-marketing | Marketing context | Positioning, audiences, voice, and claims the current build can support. | — |
+| x-growth | Growth | Consume the approved `growth-lead` experiment. Missing: run `growth-lead` and keep its preflight and human checkpoint. Launch-only: place that experiment on the calendar. | — |
+| x-marketing | Marketing context | Consume `analyze-marketing`'s `docs/specs/marketing-context.md`. Missing: run `analyze-marketing` and keep its preflight. Launch-only: which of those claims this build can support. | — |
 | x-pitches | Later narrative | A later raise or partner conversation. Not a deck to send now. | The founder has ruled out fundraising and partnerships. |
 | x-roles | Company roles | Hats a small team can hold, and the first contracts that are not optional. | — |
-| x-pricing | Pricing and finance | What the approved budget can buy, and later paid-stage gates. Not tax filing. | — |
+| x-pricing | Pricing and finance | Consume `fin-analyst`'s decision artifact. Missing: run `fin-analyst` and keep its preflight and human checkpoint. Launch-only: apply that evidence to the gate that is opening. | — |
 | x-supply | Supply side | How the other side of a two-sided product joins, what they are promised, cold start. | The product is one-sided. |
 | r1, r2 | Two full reviews | Bugs, performance, security, compliance-in-code. Same brief. Different model families. | Never. One family twice is not independence. |
 | r-landing | Landing, SEO, and AEO | Public page: conversion, search, answer-engine readability, both shipped widths. | No public page. Say so in the index. This seat is not the `benchmark-landing` rubric. |
@@ -32,7 +32,7 @@ Fit the roster to the product. Drop a row that does not apply. Add a row the pro
 
 `build-personas` writes the persona files when that skill exists and the project has no committed set. This panel then simulates those people against the current screens. It does not rewrite the persona skill.
 
-The fan-out uses at least two model families. The two full reviews are the pair that must differ. Specialists may share a family. The landing review may use either family.
+Families come from the owner reviewer policy. The two full reviews are the pair that must differ. Specialists may share a family. The landing review may use either resolved family.
 
 ## Directory
 
@@ -62,7 +62,17 @@ One common brief, `briefs/common.md`, read first by every agent:
 
 If a fact is not committed, it is not in the brief. Agents do not see untracked files. Commit the product's planning documents, the briefs, and the screenshots before the first wave.
 
-One role brief per agent, `briefs/<id>.md`. It points at the common brief, names the role, lists the surfaces to open, and states the deliverable. Persona briefs also name language, segment, device, and the arrival path (ad, post, or listing). Persona agents think aloud in character, then step out for scores and fixes.
+One role brief per agent, `briefs/<id>.md`. It points at the common brief, names the role, lists the surfaces to open, and states the deliverable. Persona briefs also name language, segment, device, and the arrival path (ad, post, or listing). They require four scores — comprehension, likeability, trust, and join intent — each on this shared 0–10 scale:
+
+| Score | Anchor |
+|---|---|
+| 0 | Cannot say what the product is, who it is for, or the next action. Would leave. |
+| 3 | Understood only part of the offer. Would not trust it or join. |
+| 5 | Understood the offer. Would not act today. |
+| 7 | Understood it and mostly trusted it. Would join if one named doubt were resolved. |
+| 10 | Understood it, trusted it, and would join from this screen. |
+
+Each score needs evidence: a screenshot path or surface, plus one sentence naming what on that surface produced the number. A missing number, a number with no evidence, or a response that does not use this scale is `unavailable`. Do not fill it in. Persona agents think aloud in character, then step out for these scores and fixes.
 
 ### Output contract
 
@@ -80,18 +90,38 @@ Every finding uses this shape. "Someone should look at it" is not a finding.
 
 Also require a three-line verdict, a short "already good" list so synthesis does not delete working parts, and at most five real founder decisions.
 
+Persona reports add this block, using the same four names and the same 0–10 anchors as the brief. No other scale.
+
+| Metric | Score | Evidence |
+|---|---|---|
+| comprehension | 0–10, or `unavailable` | Screenshot path or surface, and one sentence |
+| likeability | 0–10, or `unavailable` | Screenshot path or surface, and one sentence |
+| trust | 0–10, or `unavailable` | Screenshot path or surface, and one sentence |
+| join intent | 0–10, or `unavailable` | Screenshot path or surface, and one sentence |
+
 ## Waves
 
 - Agents run read-only (ask or read-only sandbox) with a memory cap and a time cap.
-- Launch text reviewers in waves. Do not start the next wave until the previous wave's reports are files in `reports/`.
+- Resolve r1 and r2 through the owner reviewer policy before any dispatch. Use `scripts/review-topology-v2.mjs` and the canonical launcher the way `review-exec` and `review-cross-model` do. Do not pick a family in this file.
+- Launch text reviewers in waves. A wave is finished only when every seat in it has passed the coverage gate. A file that merely exists does not finish a wave.
 - Browser-driving agents run one at a time.
-- Write each report to `reports/<id>.md`. Append exit status to a gitignored log.
-- A quota failure is expected. Fall back to another family, write the report from that run, and record the substitution before synthesis. A quota error is not a product finding.
-- A substituted agent counts as an independent family only if the family changed. A retry on the same family does not create consensus.
+- Write each report to `reports/<id>.md`. Append the exit status to a gitignored log.
+- A quota, timeout, or capability failure is not a product finding and is not permission to switch family. Substitute only when the owner policy authorizes that substitute and the approved review budget still covers the call. Otherwise record the panel incomplete, name the missing seat, and request approval. Do not dispatch another paid review while waiting.
+- A substituted agent counts as an independent family only when its actual family differs from the other full review. A retry on the same family does not create consensus.
 
 | Agent | Planned family | Actual family | Reason |
 |---|---|---|---|
-| r2 | family B | family C | Quota. Recorded before synthesis. |
+| r2 | policy family B | — | Quota. Policy does not authorize another family inside the approved review budget. Panel incomplete. Approval requested. |
+
+## Coverage gate
+
+Before synthesis, and before any readiness score or ready/not-ready verdict:
+
+1. `reports/<id>.md` exists, is nonempty, and the gitignored log records a successful exit for that id. Timeout, error, quota, and empty files are failed coverage.
+2. r1 and r2 both passed, and their actual families are recorded and distinct.
+3. When strangers will see a public surface, at least five persona reports passed. Fewer than five is failed coverage.
+
+A row whose skip rule fired is not required, and the index must say why. Every other roster row is required. A missing or failed required seat stops the run: list the gaps in `README.md`, record the panel incomplete, and request approval before any further paid call. Do not compute the 0–100 score. Do not write a ready or not-ready verdict.
 
 ## Consolidation
 
@@ -112,13 +142,13 @@ L0 blocks first traffic. Later gates are recorded and scheduled. They do not ent
 |---|---|---|
 | Decision | Founder | Two or more real options. Record the reviewers' recommendation beside the question. |
 | Founder task | Founder | No product code. Adopting a notice, registering a name, or passing copy in the language of the ad are founder tasks. |
-| Build task | Engineer | A code or config change. These become the L0 package for `plan-changeset`. |
+| Build task | Engineer | A code or config change. Create or reuse a WI and route it through `route-workflow` on the matching lane. Name `plan-changeset` only when that WI already has the baselined feature spec that skill requires. |
 
 Every blocker is exactly one of the three.
 
 ### Budget realism
 
-Check the growth plan against the approved budget before it reaches the founder page. A small ad budget buys tens of confirmed sign-ups, not thousands. If a target needs orders of magnitude more spend than was approved, say that, and set kill rules: a channel stops when aged spend produces no confirmed result, and unspent money is not moved to hide a failed channel. Do not shorten the kill rules to protect a date. Slide the first-traffic date until the preconditions are true.
+Check the approved `growth-lead` experiment against the approved budget before it reaches the founder page. Consume that experiment's sourced acquisition assumptions, confirmation definition, attribution window, cost ceiling, and numeric stop condition. If any of those is missing, the experiment is not approved: run `growth-lead` and do not invent a forecast or a stop threshold. If its sourced target needs more than its cost ceiling, say that from those figures. Do not move unspent money across channels. Do not shorten the stop condition to protect a date. Slide the first-traffic date until the preconditions are true. This check does not approve spend.
 
 ### Calendar
 
@@ -128,8 +158,8 @@ Write a calendar from today to the first traffic date. Preconditions sit on the 
 
 One page, `founder-page.md`, in the review directory. Do not leave it only in chat.
 
-1. Verdict: ready or not for first traffic, and the single biggest risk.
-2. Scores from the persona panel: comprehension, likeability, trust, join intent. Median and range. Do not invent a score an agent did not give. These are not the 0–100 readiness score.
+1. When the coverage gate passed: ready or not for first traffic, and the single biggest risk. When it failed: panel incomplete, the missing seats, and no readiness verdict.
+2. Scores from the persona panel: comprehension, likeability, trust, join intent. For each metric, the median and range of the numeric scores that carried evidence. A metric with no such score is `unavailable`. Do not invent a score. These are not the 0–100 readiness score.
 3. Consensus blockers and the plan (decision, founder task, or build task).
 4. Decisions, each with the reviewers' recommendation and a blank for the founder's answer.
 5. A manual test kit: one pass/fail line per item a person can run without a model. Examples: confirm mail arrives, withdraw works, the fold does not claim a feature that is off, phone width shows the primary action.
@@ -140,7 +170,7 @@ Copy the answers, including each kit result, into `founder-decisions.md` and com
 
 ## How the readiness score uses the panel
 
-After the index exists, run Step 2 through Step 7 of this skill with the launch weights. The panel reports are the evidence those steps read. Do not add a second score.
+After the coverage gate passes, run Step 2 through Step 7 of this skill with the launch weights. The panel reports are the evidence those steps read. Do not add a second score. If the gate failed, stop. There is no score to use.
 
 | Dimension | Evidence to cite |
 |---|---|
@@ -149,15 +179,15 @@ After the index exists, run Step 2 through Step 7 of this skill with the launch 
 | Competitive position | The `analyze-competitors` artifact the competitors seat consumed. Missing artifact: score 0, same as Step 2. |
 | Visual quality | Dated desktop and phone screenshots plus the landing review. |
 | Technical reliability | The two full reviews. Use their reproduced defects as the bug and security inputs. |
-| Monetization readiness | The pricing seat, scored against the gate that is opening. A waitlist does not require a live checkout. |
+| Monetization readiness | The pricing seat consumes `fin-analyst`. The dimension still uses the four Step 2 checks at 25 points each: payment provider configured, pricing page with clear tiers, checkout flow tested, subscription management. Those four checks are the whole score at every gate. A missing payment flow is a blocking gap only when the gate being opened takes payment. On a waitlist or any other gate that does not take payment, the same four checks still score the dimension, and payment absence is nonblocking. |
 | Distribution readiness | The growth seat plus the budget realism check. "No audience yet" stays traction-locked. |
 | Market timing | Competitors and marketing-context reports. Default 50 when they bring no outside evidence, same as Step 2. |
 
 Put the report path in the key-finding cell. Judge verdicts in Step 3 quote the panel. They do not replace the two full reviews.
 
-An open L0 blocker is a blocking gap in Step 4. A missing payment flow is a blocking gap only when the gate being opened takes payment. Traction-locked gaps stay non-blocking under the existing Step 4 rule. Skip Step 5 ICP simulation and record the skip. Do not emit GTM first while any L0 blocker is still open. When none remain, apply the existing routing table.
+An open L0 blocker is a blocking gap in Step 4. A missing payment flow is a blocking gap only when the gate being opened takes payment. Traction-locked gaps stay non-blocking under the existing Step 4 rule. Skip Step 5 ICP simulation and record the skip. Do not emit GTM first while any L0 blocker is still open or while the panel is incomplete. When no L0 blocker remains and the coverage gate passed, apply the existing routing table.
 
-`**Next:**` is `plan-changeset` for the L0 build tasks. Founder tasks and decisions stay with the founder. Do not open a changeset for them.
+`**Next:**` names one lane skill. For an L0 build task, create or reuse the WI and follow `route-workflow`. Name `plan-changeset` only when `docs/specs/features/<name>.md` is already BASELINED and includes the technical design `plan-changeset` requires. Otherwise name the lane skill that produces that missing prerequisite. Founder tasks and decisions stay with the founder. Do not open a changeset for them. When the coverage gate failed, `**Next:**` is approval for the incomplete panel, not a build skill and not a verdict.
 
 ## Do not rebuild
 
@@ -166,6 +196,11 @@ An open L0 blocker is a blocking gap in Step 4. A missing payment flow is a bloc
 | `build-personas` | Persona files | Called when they are missing. |
 | `analyze-competitors` | Competitive deep-dive | Called, or its artifact is read. |
 | `benchmark-landing` | Visitor panel and the visual rubric | Perception check only. The landing seat does not rescore that rubric. |
-| `privacy-dpo` | Privacy-law pass | Not replaced. The legal seat stays a no-lawyer brief inside the panel. |
-| `review-cross-model` | One second-model review of a diff | Not this panel. |
-| `launch-knowledge` | Jurisdiction lookup | The legal seat may read it. |
+| `counsel` | Legal issue spotting | x-legal consumes its decision artifact. |
+| `privacy-dpo` | Privacy review | x-legal consumes it for personal data. |
+| `growth-lead` | Growth experiments and stop conditions | x-growth consumes the approved experiment. |
+| `analyze-marketing` | Positioning, audience, and voice | x-marketing consumes `docs/specs/marketing-context.md`. |
+| `fin-analyst` | Financial analysis | x-pricing consumes its decision artifact. |
+| `launch-knowledge` | Jurisdiction lookup | x-legal may read it. |
+| `route-workflow` | Lane selection | L0 build tasks enter here. |
+| `review-exec` | Owner-policy reviewer resolution | r1 and r2 use it, then `review-cross-model`. This panel is not a diff review. |
