@@ -132,7 +132,10 @@ Do not restate them.
 
 In this mode, Step 2 and Step 3 cite those reports only when the coverage gate
 passed. Otherwise record the panel incomplete and do not emit a score or a
-ready/not-ready verdict. An open L0 blocker is a blocking gap in Step 4.
+ready/not-ready verdict. An incomplete panel leaves the task **blocked**, not
+completed: write receipts only for the phases that actually ran, record the
+missing seats and the approval they need, and skip the completion continuation
+and the Self-Verify rows that need a score. Resume at Step 2 once coverage passes. An open L0 blocker is a blocking gap in Step 4.
 Monetization still awards 25 points for each of the four Step 2 checks. A
 missing payment flow is a blocking gap only when the gate being opened takes
 payment. Traction-locked gaps stay non-blocking under the existing rule. Skip
