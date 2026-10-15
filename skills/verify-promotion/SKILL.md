@@ -1,10 +1,10 @@
 ---
 name: verify-promotion
-version: "1.0"
+version: "1.1"
 handles_concerns:
   - feature-validation-closeout
   - provider-fidelity
-description: Use after a reviewed branch has been promoted to verify that the promoted implementation matches specs, passes tests, satisfies acceptance criteria, and closes the loop back into spec/journey state — triggers G7 review
+description: Use after a reviewed branch has been promoted to verify that the promoted implementation matches specs, passes tests, satisfies acceptance criteria, and closes the loop back into spec/journey state — triggers G7 review. Also when a change claims an improvement and production needs same-instrument before/after evidence plus a human stage pass (keep, iterate, or revert).
 phases:
   - { id: P1-PromotionEvidence, trigger: always, reads: [], writes: [], evidence_kind: command_output, required_for_completion: true }
   - { id: P2-SpecACVerification, trigger: always, reads: [".svc/receipts/<sha>/plan-manifest.json#ac_digests (WI-381 baton: AC nav index; still verify against the live spec — baton routes attention, never replaces the AC source)"], writes: [], evidence_kind: file, required_for_completion: true }
@@ -305,6 +305,20 @@ Compile:
   when the closeout has no PR list
 - findings
 
+## Improvement claims and human stage acceptance
+
+When a change claims to improve UX, visuals or animation, copy, performance, conversion, or reliability, finish this before G7 verifies that claim and before production. Fill the templates in `skills/verify-promotion/references/improvement-claims.md`. Record N/A when no improvement was claimed.
+
+**Same instrument.** The claim, each metric, its threshold, and the guard budgets (bundle size, frame time or CPU, test pass count, accessibility) were declared before the change. Before and after use that instrument and the same seeds. Drive animation by phase, not wall clock. Evidence is the before/after table. A missing measurement is `unmeasured`. Also classify the acceptance-critical delta with `references/pre-post-validation-loop.md`. Score a landing page against its predecessor in `benchmark-landing`.
+
+**Input parity.** Interactive improvements work by mouse, touch, and keyboard, and respect reduced motion. Measure lighter tiers for weak devices. An unrun tier stays `unmeasured`.
+
+**Human stage acceptance.** Deploy the reviewed, committed source to stage. Give the human the short pass/fail kit. Production waits for their pass. Record the commit SHA, the deploy receipt, and the probe results. The kit accepts the claim. Functional ACs still follow the Verification Escalation Ladder.
+
+**Review loop.** Rounds and rechecks stay in `review-cross-model`.
+
+**Verdict.** `keep`, `iterate`, or `revert`. `keep` needs every target metric measured and inside its threshold, every guard inside budget, and a human pass on that staged commit. Any other result blocks production for this claim.
+
 ## G7 Review
 
 G7 checks:
@@ -313,6 +327,7 @@ G7 checks:
 - AC coverage is complete or explicitly justified
 - QA, E2E, and responsive evidence are current
 - spec/journey state reflects what shipped
+- an improvement claim has a same-instrument table, a human stage pass, and a `keep` verdict, or an explicit N/A
 
 If G7 passes:
 
@@ -656,6 +671,7 @@ Before declaring done, verify:
 | 13 | Delivery tier reported | Closeout classification output includes `delivery_tier`; compressed/rush closeouts cite a decision-log rationale and cannot be summarized as full validation. | |
 | 14 | Pre/post validation delta classified | For corrective, regression, deploy-affecting, or acceptance-critical work, closeout cites the exact pre and post evidence, comparison classification, iteration count, and pre/post evidence validator result per `references/pre-post-validation-loop.md`; otherwise records why N/A. | |
 | 15 | Leftover disposition validated | `git status --short --untracked-files=all` is clean, or every remaining path is covered by a passing ledger per `references/leftover-disposition.md`. Closeout states whether leftovers remain. | |
+| 16 | Improvement claim gated | When a change claims an improvement: declaration predates the change; before and after cite the same instrument and seeds; parity and lighter-tier rows are measured or `unmeasured`; stage kit records SHA, deploy receipt, and probes; verdict is keep, iterate, or revert, and only keep proceeds. Record N/A when no improvement was claimed. | |
 
 If any check FAILs, fix before continuing. If a fix requires upstream changes, stop and report.
 
