@@ -75,6 +75,12 @@ Bind the exact final SHA and build provenance, then execute only an authorized t
 effect. Require proven rollback readiness before production release. A merge is not live proof and
 does not close delivery. Follow `schemas/release-lifecycle-v2.schema.json`.
 
+When the change claims an improvement, enforce the human stage-acceptance kit in
+`skills/verify-promotion/references/improvement-claims.md` on the reviewed commit before the
+production release effect. Persist the human response bound to that SHA. Absent approval blocks
+the release effect and leaves this task incomplete. Do not deploy, publish, or spend to produce
+the kit. `verify-promotion` consumes the receipt at G7 and keeps its live post-deploy checks.
+
 Land validated work from a feature worktree onto main via PR.
 
 By the time this skill runs, the feature has been built, tested (unit + E2E),

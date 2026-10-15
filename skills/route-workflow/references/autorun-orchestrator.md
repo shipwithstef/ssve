@@ -35,7 +35,8 @@ Skills with `human_checkpoint: true` behave differently based on mode:
 | `explore-solutions` | Stop, present alternatives | P0 selects based on research, logs reasoning |
 | `plan-changeset` | Stop, ask user to approve plan | P0 approves if plan covers all ACs; logs plan summary |
 | `execute-changeset` | Stop at each task checkpoint | P0 reviews diffs, approves if tests pass |
-| `land-changeset` | Stop, ask user to merge | P0 merges (solo mode) or opens PR and stops (team mode) |
+| `land-changeset` | Stop, ask user to merge | P0 merges (solo mode) or opens PR and stops (team mode). **Exception:** an improvement-claim stage kit is always human; P0 must not substitute it. |
+| `verify-promotion` | Stop when an improvement claim lacks a human response bound to the staged SHA. No claim: record N/A and continue. | **Always human checkpoint** for that claim. P0 must not substitute. Persist the response bound to the staged SHA and leave the task incomplete while approval is absent. |
 | `improve-framework` | Stop, ask user to approve fix scope | P0 executes if ≤2 files / ≤50 lines; human checkpoint if larger (plan-changeset discipline) |
 | `evolve-framework` | Stop, ask user to rank gaps | P0 auto-runs evidence gathering; human checkpoint before any implementation |
 | `blend-external` / `blend-private` | Stop, ask user to approve source | **Always human checkpoint.** External code import is high-risk. |
