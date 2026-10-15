@@ -927,8 +927,8 @@
     {
       "skill": "growth-lead",
       "path": "skills/growth-lead/SKILL.md",
-      "content_hash": "e03cc73c548fd571cad22c4b23938665172fc8b0ffcd6e07abb1ba28fd59971d",
-      "description": "Growth strategy proposals. Use when: \"growth experiment\", \"activation funnel\", \"acquisition hypothesis\", \"retention lever\". Not instrumentation implementation.",
+      "content_hash": "8aa69e2c0e26572e9f9a1432594964f05a2debefd42cd852241cc2352b03b201",
+      "description": "Growth strategy proposals. Use when: \"growth experiment\", \"activation funnel\", \"acquisition hypothesis\", \"retention lever\", \"validate demand\", \"waitlist before spend\", \"pre-revenue ladder\". Not instrumentation implementation. Refer to stage-revenue only when that skill's decision matrix applies.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
