@@ -4,7 +4,7 @@ version: "1.1"
 handles_concerns:
   - feature-validation-closeout
   - provider-fidelity
-description: Use after a reviewed branch has been promoted to verify that the promoted implementation matches specs, passes tests, satisfies acceptance criteria, and closes the loop back into spec/journey state — triggers G7 review. Also when a change claims an improvement and production needs same-instrument before/after evidence plus a human stage pass (keep, iterate, or revert).
+description: Use after a reviewed branch has been promoted to verify that the promoted implementation matches specs, passes tests, satisfies acceptance criteria, and closes the loop back into spec/journey state — triggers G7 review. For an improvement claim, consume the pre-production stage-acceptance receipt and leave live outcome metrics pending on the observation lifecycle.
 phases:
   - { id: P1-PromotionEvidence, trigger: always, reads: [], writes: [], evidence_kind: command_output, required_for_completion: true }
   - { id: P2-SpecACVerification, trigger: always, reads: [".svc/receipts/<sha>/plan-manifest.json#ac_digests (WI-381 baton: AC nav index; still verify against the live spec — baton routes attention, never replaces the AC source)"], writes: [], evidence_kind: file, required_for_completion: true }
@@ -27,7 +27,7 @@ chain:
     refactor: { position: 7, prev: land-changeset, next: null }
   progressive: true
   self_verify: true
-  human_checkpoint: false
+  human_checkpoint: true
 ---
 
 > **Cognitive routing:** 🛡️ [REVIEW-SONNET] — checking deployed artifacts match specs and ACs is verification, not planning. Sonnet 4.6 against the Opus blueprint. See `references/model-routing.md`.
@@ -305,19 +305,27 @@ Compile:
   when the closeout has no PR list
 - findings
 
-## Improvement claims and human stage acceptance
+## Improvement claims
 
-When a change claims to improve UX, visuals or animation, copy, performance, conversion, or reliability, finish this before G7 verifies that claim and before production. Fill the templates in `skills/verify-promotion/references/improvement-claims.md`. Record N/A when no improvement was claimed.
+When a change claims to improve UX, visuals or animation, copy, performance, conversion, or reliability, fill `skills/verify-promotion/references/improvement-claims.md`. No claim: record N/A and continue. This section does not authorize spending, contacting people, publishing, or deploying.
 
-**Same instrument.** The claim, each metric, its threshold, and the guard budgets (bundle size, frame time or CPU, test pass count, accessibility) were declared before the change. Before and after use that instrument and the same seeds. Drive animation by phase, not wall clock. Evidence is the before/after table. A missing measurement is `unmeasured`. Also classify the acceptance-critical delta with `references/pre-post-validation-loop.md`. Score a landing page against its predecessor in `benchmark-landing`.
+**Pre-change declaration.** Require a traceable declaration that predates the change. If it is absent, record it missing and block the improvement claim. Never treat thresholds reconstructed from an older revision as predeclared.
 
-**Input parity.** Interactive improvements work by mouse, touch, and keyboard, and respect reduced motion. Measure lighter tiers for weak devices. An unrun tier stays `unmeasured`.
+**Same proof.** Consume the pre/post evidence from `execute-changeset` (Pre/Post Validation Baseline), `audit-implementation` (Evidence Standard), and `references/pre-post-validation-loop.md` in this skill. Do not restate those procedures.
 
-**Human stage acceptance.** Deploy the reviewed, committed source to stage. Give the human the short pass/fail kit. Production waits for their pass. Record the commit SHA, the deploy receipt, and the probe results. The kit accepts the claim. Functional ACs still follow the Verification Escalation Ladder.
+**Seeds and phase.** Before and after share one deterministic seed and one phase or simulation time. Drive animation by phase, not wall clock. Put both in the capture filename.
 
-**Review loop.** Rounds and rechecks stay in `review-cross-model`.
+**Thresholds.** Keep every declared target and guard row. Missing evidence stays `unmeasured`. N/A only with a documented applicability justification. Never drop a failed or unrun row. Thresholds come only from the pre-change declaration.
 
-**Verdict.** `keep`, `iterate`, or `revert`. `keep` needs every target metric measured and inside its threshold, every guard inside budget, and a human pass on that staged commit. Any other result blocks production for this claim.
+**Input parity.** Add a measured row for mouse, touch, keyboard, and each lighter device tier. An unrun tier stays `unmeasured`. Reduced motion: consume `design-ui` (Animation and Motion). Do not restate it.
+
+**Stage acceptance.** Enforce the human kit at the authorized release boundary in `land-changeset`, before production. G7 consumes that receipt and keeps the live post-deploy checks already in this skill. Persist the human response bound to the staged SHA. While that approval is absent, leave this task incomplete. Autorun must not substitute P0 for this gate (`skills/route-workflow/references/autorun-orchestrator.md`).
+
+**Outcomes.** Pre-release guardrails are the release-boundary gate. Conversion and live reliability are outcome metrics: evaluate them through the observation lifecycle already required by the Runtime v2 product outcome boundary and `schemas/release-lifecycle-v2.schema.json`. Keep those claims pending until that evidence exists. A pending outcome does not block delivery verification and is not `keep`.
+
+**Review loop.** Rounds and rechecks stay in `review-cross-model`. Landing-page scores stay in `benchmark-landing`.
+
+**Verdict.** `keep`, `iterate`, or `revert` applies to pre-release guardrails plus the SHA-bound human pass. `keep` needs the pre-change declaration, every guardrail measured and inside its threshold, every guard inside budget, and that human pass. Any other guardrail result is `iterate` or `revert`. Functional ACs still follow the Verification Escalation Ladder.
 
 ## G7 Review
 
@@ -327,7 +335,7 @@ G7 checks:
 - AC coverage is complete or explicitly justified
 - QA, E2E, and responsive evidence are current
 - spec/journey state reflects what shipped
-- an improvement claim has a same-instrument table, a human stage pass, and a `keep` verdict, or an explicit N/A
+- an improvement claim is N/A, or G7 consumes the SHA-bound stage-acceptance receipt from the `land-changeset` release boundary, blocks a missing pre-change declaration, and leaves outcome metrics pending on the observation lifecycle. Live post-deploy checks in this skill still run. Only a guardrail `keep` plus that human pass accepts the claim
 
 If G7 passes:
 
@@ -671,7 +679,7 @@ Before declaring done, verify:
 | 13 | Delivery tier reported | Closeout classification output includes `delivery_tier`; compressed/rush closeouts cite a decision-log rationale and cannot be summarized as full validation. | |
 | 14 | Pre/post validation delta classified | For corrective, regression, deploy-affecting, or acceptance-critical work, closeout cites the exact pre and post evidence, comparison classification, iteration count, and pre/post evidence validator result per `references/pre-post-validation-loop.md`; otherwise records why N/A. | |
 | 15 | Leftover disposition validated | `git status --short --untracked-files=all` is clean, or every remaining path is covered by a passing ledger per `references/leftover-disposition.md`. Closeout states whether leftovers remain. | |
-| 16 | Improvement claim gated | When a change claims an improvement: declaration predates the change; before and after cite the same instrument and seeds; parity and lighter-tier rows are measured or `unmeasured`; stage kit records SHA, deploy receipt, and probes; verdict is keep, iterate, or revert, and only keep proceeds. Record N/A when no improvement was claimed. | |
+| 16 | Improvement claim gated | No claim: N/A. Otherwise the pre-change declaration is present, or recorded missing and the claim is blocked; declared rows remain and missing evidence is `unmeasured` (N/A only with an applicability justification); seed and phase match; same-proof evidence is consumed from `execute-changeset`, `audit-implementation`, and `references/pre-post-validation-loop.md`; reduced motion is consumed from `design-ui`; the human response is bound to the staged SHA from the `land-changeset` release boundary and this task stays incomplete without it; the guardrail verdict is keep, iterate, or revert; outcome metrics stay pending until observation evidence exists. | |
 
 If any check FAILs, fix before continuing. If a fix requires upstream changes, stop and report.
 
