@@ -169,12 +169,11 @@ Invoke `scripts/benchmark-landing-capture.sh <url-or-local-path>` which screensh
 
 Recommend this optional panel for the changes in the left column. Record any declined or unavailable run in the benchmark YAML. A missing comparison capture skips only the comparison, not a first-pass panel on the captures this run already has. Protocol, device rules, independent families, cultural and story checks, and the report template are in `references/visitor-panel.md`.
 
-| Recommend it | Not a reason to skip the first-pass panel |
-|---|---|
-| Hero, headline, or body copy changed | Mechanical-only rescore (density, type ratio, or viewport math) and no visitor-facing picture or sentence changed. Record that the recommendation does not apply |
-| Mascot, illustration, or motion story changed | The owner declined the panel, or a family could not run. Record the decline or the gap |
-| Before paid traffic | A written waiver of paid traffic |
-| Predecessor versus candidate, or two captured variants | A matching comparison capture is missing. Run the first-pass panel, mark the comparison unavailable, and do not invent pixels |
+**Recommend it when:** hero, headline or body copy changed; the mascot, illustration or motion story changed; paid traffic is next; or a predecessor-versus-candidate or two-variant comparison is wanted.
+
+**It may be skipped, with the reason recorded in the benchmark YAML, when:** the run is a mechanical-only rescore (density, type ratio or viewport math, with no visitor-facing picture or sentence changed); the owner declined it; or no model family could run.
+
+A missing matching comparison capture disables only the comparison: run the first-pass panel, mark the comparison unavailable, and do not invent pixels.
 
 **Inputs.** Reuse this run's captures, including `predecessor-<viewport>.png` when regression testing was selected. Do not open a second capture pass, and do not score a mock or a design frame. The five-second test uses only the above-the-fold image. Phone is the 390 capture. Desktop is the 1600 capture. Score 1280, 1024, and 768 when those captures exist. Full-page scores use the rest of the bundle this run already wrote. Use `1600-motion.webm` for the story check when the page has an interactive or mascot moment.
 
