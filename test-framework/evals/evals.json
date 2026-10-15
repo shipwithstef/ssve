@@ -415,6 +415,30 @@
           "assertions": 1,
           "cost": "~50K tokens",
           "duration": "~2min"
+        },
+        {
+          "name": "retire-cloud-resources-negative-plan-severity",
+          "path": "tier-2/scenarios/retire-cloud-resources-negative-plan-severity.md",
+          "skill_under_test": "plan-blast-radius",
+          "assertions": 6,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "retire-cloud-resources-negative-still-serving",
+          "path": "tier-2/scenarios/retire-cloud-resources-negative-still-serving.md",
+          "skill_under_test": "infra-sre",
+          "assertions": 6,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "retire-cloud-resources-negative-provider-cost",
+          "path": "tier-2/scenarios/retire-cloud-resources-negative-provider-cost.md",
+          "skill_under_test": "manage-finops",
+          "assertions": 6,
+          "cost": "~50K tokens",
+          "duration": "~2min"
         }
       ]
     },

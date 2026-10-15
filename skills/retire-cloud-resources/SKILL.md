@@ -80,7 +80,7 @@ Work `references/runbook.md` in order. Record each phase below before leaving it
 | "The list call failed, so nothing references this." | A failed read is an unknown. Unknown means keep, and the run aborts. |
 | "The last interval is inside a window we already checked." | Anchored intervals include the final elapsed probe slot and the final metric interval. |
 | "The old app is healthy, so it is idle." | Healthy and still serving is not drained. Unknown metric coverage blocks deletion. |
-| "The CLI returned non-zero, so the resource is gone." | Gone requires a target not-found code for that exact id. Account, subscription, auth, and dependency errors are not gone. |
+| "The CLI returned non-zero, so the resource is gone." | Gone requires a structured error whose not-found code is bound to that exact resource id. Standalone text, and dependency or account errors, are not gone. |
 | "A failed soak gate can be ignored if `errors` was empty." | Every required gate for the mode must pass, or the exit is non-zero. |
 | "We can schedule it and approve in the morning." | The approver, the human approval, and a matching digest are recorded before the timer exists. Apply recomputes the digest. |
 | "Commit the resource ids so the receipt is auditable." | Committed artifacts store aliases, hashes, and gate outcomes. |
@@ -103,7 +103,7 @@ Do not restate these skills. Route there instead: `plan-blast-radius`, `plan-cha
 |---|-------|-----|-----------|
 | 1 | Committed allow-list and receipt have aliases and hashes only | Read the committed files and confirm no provider resource id | |
 | 2 | Phase 5 soak was consumed and the extra guards passed | Report shows anchored intervals, a non-empty probe matrix, and drain evidence | |
-| 3 | Not-found matches the requested id and required gates passed | Failed or missing gates are errors; substring not-found is not success | |
+| 3 | Not-found is a structured code for the exact id | The error object binds ResourceNotFound, NotFound, or 404 to that resource id. Standalone text and dependency or account errors are rejects. Required gates passed. | |
 | 4 | Approval digest matched before schedule and again before apply | Compare `allowListSha256` with the digest of the current allow-list at both points | |
 | 5 | Adversarial template fails closed | `python3 skills/retire-cloud-resources/references/deletion-gate.py` exits 0 | |
 | 6 | Receipt links the sanitized report | `docs/specs/migrations/<slug>/decommission-receipt.md` names the report path and Self-Verify is PASS | |

@@ -11,8 +11,11 @@ import re
 import tempfile
 from pathlib import Path
 
-PROVIDER_ID = re.compile(
-    r"/subscriptions/[0-9A-Fa-f-]{8,}|arn:[A-Za-z0-9][A-Za-z0-9:._/-]{8,}"
+# Azure subscription paths, AWS ARNs, and GCP full resource names.
+RESTRICTED_IDS = (
+    re.compile(r"/subscriptions/[0-9A-Fa-f-]{8,}(?:/[A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]*)?"),
+    re.compile(r"arn:[A-Za-z0-9][A-Za-z0-9:._/-]{8,}"),
+    re.compile(r"//[a-z0-9.-]+\.googleapis\.com/[A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]+"),
 )
 TARGET_NOT_FOUND = {"ResourceNotFound", "NotFound", "404"}
 REJECT_CODES = {
@@ -45,7 +48,48 @@ REQUIRED_GATES = {
     "self-test": ("adversarial",),
 }
 VOLATILE = {"etag", "lastModified", "provisioningState", "systemData"}
+AMBIGUOUS_SUBJECTS = {
+    "account",
+    "dependency",
+    "dependencies",
+    "details",
+    "lookup",
+    "parent",
+    "resource",
+    "resourceName",
+    "subscription",
+    "target",
+}
+PUBLIC_REPORT_KEYS = (
+    "mode",
+    "ok",
+    "gates",
+    "deleted",
+    "keep_unknown",
+    "errors",
+    "protected",
+    "postDeleteSmoke",
+    "deferred",
+)
 METRIC_STEP = dt.timedelta(hours=1)
+
+
+def contains_restricted_id(text):
+    return any(pattern.search(text) for pattern in RESTRICTED_IDS)
+
+
+def replace_restricted(text):
+    """Replace each restricted id with sha256 of that exact span."""
+    replaced = False
+
+    def repl(match):
+        nonlocal replaced
+        replaced = True
+        return "sha256:" + hashlib.sha256(match.group(0).encode()).hexdigest()
+
+    for pattern in RESTRICTED_IDS:
+        text = pattern.sub(repl, text)
+    return text, replaced
 
 
 class GateError(Exception):
@@ -72,7 +116,7 @@ def stable_hash(value):
 def assert_public_safe(payload):
     """Committed artifacts may contain aliases and hashes, never a resource id."""
     text = payload if isinstance(payload, str) else json.dumps(payload, sort_keys=True, default=_json_default)
-    if PROVIDER_ID.search(text):
+    if contains_restricted_id(text):
         raise GateError("redaction", "committed artifact contains a resource id")
     return text
 
@@ -88,7 +132,7 @@ def commit_allow_entry(entry):
         raise GateError("redaction", "restricted allow-list entry needs an exact id")
     if not isinstance(alias, str) or not alias.strip():
         raise GateError("redaction", "committed allow-list entry needs an alias")
-    if PROVIDER_ID.search(alias) or alias.strip() == resource_id.strip():
+    if contains_restricted_id(alias) or alias.strip() == resource_id.strip():
         raise GateError("redaction", "alias must not be a full resource id")
     if not isinstance(kind, str) or not kind.strip():
         raise GateError("redaction", "kind is required")
@@ -193,15 +237,7 @@ def _metric_providers(names, substitutions):
     return providers
 
 
-def _interval_covered(rows, start, end, apps, names, thresholds, providers):
-    for app in apps:
-        for name in names:
-            if not any(_metric_hit(row, start, end, app, providers[name], thresholds[name]) for row in rows):
-                return False
-    return True
-
-
-def _metric_hit(row, start, end, app, accepted, limit):
+def _matching_metric(row, start, end, app, accepted):
     at = row.get("at")
     return (
         row.get("kind") == "metrics"
@@ -210,8 +246,21 @@ def _metric_hit(row, start, end, app, accepted, limit):
         and start <= at < end
         and row.get("app") == app
         and row.get("metric") in accepted
-        and _under_threshold(row.get("value"), limit)
     )
+
+
+def _interval_covered(rows, start, end, apps, names, thresholds, providers):
+    """Every app and metric needs coverage, and every matching sample must be idle."""
+    for app in apps:
+        for name in names:
+            values = [
+                row.get("value")
+                for row in rows
+                if _matching_metric(row, start, end, app, providers[name])
+            ]
+            if not values or any(not _under_threshold(value, thresholds[name]) for value in values):
+                return False
+    return True
 
 
 def _slot_probes_ok(rows, slot, probes):
@@ -304,35 +353,47 @@ def require_list(returncode, payload, stderr=""):
     return payload
 
 
-def parse_provider_error(stderr):
-    text = stderr or ""
-    paren = re.search(r"\(([A-Za-z][A-Za-z0-9]+)\)", text)
-    if paren:
-        return paren.group(1)
-    prefixed = re.match(r"\s*([A-Za-z][A-Za-z0-9]+)\s*:", text)
-    if prefixed:
-        return prefixed.group(1)
-    bare = re.fullmatch(r"\s*([A-Za-z][A-Za-z0-9]+)\s*", text)
-    return bare.group(1) if bare else ""
+def _code_name(value):
+    if value == 404 and not isinstance(value, bool):
+        return "404"
+    if isinstance(value, str):
+        return value
+    return ""
 
 
-def mentions_exact(text, resource_id):
-    if not isinstance(resource_id, str) or not resource_id:
-        return False
-    pattern = re.compile(
-        r"(?<![A-Za-z0-9_./:-])" + re.escape(resource_id) + r"(?![A-Za-z0-9_./:-])"
-    )
-    return pattern.search(text or "") is not None
+def _error_body(stderr):
+    """One JSON object. Identity is the resourceId field, never text inside a message."""
+    if not isinstance(stderr, str):
+        return None
+    try:
+        payload = json.loads(stderr)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict) or any(key in payload for key in AMBIGUOUS_SUBJECTS):
+        return None
+    body = payload
+    wrapper = payload.get("error", payload.get("Error"))
+    if isinstance(wrapper, dict):
+        if "code" in payload or "Code" in payload or "resourceId" in payload:
+            return None
+        if any(key in wrapper for key in AMBIGUOUS_SUBJECTS):
+            return None
+        body = wrapper
+    return body
 
 
 def is_gone(returncode, stderr, resource_id):
-    """Not-found counts only for the requested resource. Dependency and auth errors do not."""
+    """Gone only when a not-found code's structured resourceId is the requested id."""
     if returncode == 0 or not isinstance(resource_id, str) or not resource_id:
         return False
-    code = parse_provider_error(stderr)
-    if not code or code in REJECT_CODES or code not in TARGET_NOT_FOUND:
+    body = _error_body(stderr)
+    if body is None:
         return False
-    return mentions_exact(stderr, resource_id)
+    code = _code_name(body.get("code", body.get("Code")))
+    if code in REJECT_CODES or code not in TARGET_NOT_FOUND:
+        return False
+    subject = body.get("resourceId")
+    return isinstance(subject, str) and subject == resource_id
 
 
 def require_gone(returncode, stderr, name):
@@ -475,6 +536,42 @@ def _fallback_report(mode, gate, why):
     }
 
 
+def _sanitize_node(node, state):
+    if isinstance(node, str):
+        cleaned, hit = replace_restricted(node)
+        if hit:
+            state["hit"] = True
+        return cleaned
+    if isinstance(node, list):
+        return [_sanitize_node(item, state) for item in node]
+    if isinstance(node, dict):
+        cleaned = {}
+        for key in sorted(node, key=str):
+            new_key, hit = replace_restricted(str(key))
+            if hit:
+                state["hit"] = True
+            cleaned[new_key] = _sanitize_node(node[key], state)
+        return cleaned
+    if node is None or isinstance(node, (bool, int, float, dt.datetime)):
+        return node
+    return None
+
+
+def to_public_report(report):
+    """Copy the public schema and replace restricted ids before serialization."""
+    if not isinstance(report, dict):
+        raise GateError("redaction", "report must be an object")
+    state = {"hit": False}
+    public = {}
+    for key in PUBLIC_REPORT_KEYS:
+        if key in report:
+            public[key] = _sanitize_node(report[key], state)
+    for key, value in report.items():
+        if key not in PUBLIC_REPORT_KEYS:
+            _sanitize_node(value, state)
+    return public, state["hit"]
+
+
 def execute(report_path, body):
     """Every exit writes a public report. Write and serialization failures stay non-zero."""
     report = {"ok": False, "errors": [], "gates": {}}
@@ -491,6 +588,15 @@ def execute(report_path, body):
         report["ok"] = False
     mode = report.get("mode")
     try:
+        public, redacted = to_public_report(report)
+        if redacted:
+            errors = public.get("errors")
+            if not isinstance(errors, list):
+                errors = []
+            errors.append({"gate": "redaction", "why": "restricted identifier replaced with sha256"})
+            public["errors"] = errors
+            public["ok"] = False
+        report = public
         payload = json.dumps(report, indent=2, default=_json_default) + "\n"
         assert_public_safe(payload)
     except GateError as err:
@@ -593,6 +699,13 @@ def adversarial_cases():
     ]
     if check_soak(loud, start, hour_last, interval, ["new-root"], apps, contract, drain_ok)["ok"]:
         problems.append("threshold")
+    mixed = _probe_rows(start, hour_last, interval, "new-root")
+    for at in (start, start + dt.timedelta(hours=1)):
+        mixed.extend([_metric(at, "app-a"), _metric(at, "app-b")])
+    mixed.append(_metric(start, "app-a", 500))
+    mixed_soak = check_soak(mixed, start, hour_last, interval, ["new-root"], apps, contract, drain_ok)
+    if mixed_soak["ok"] or mixed_soak["metricHours"] != 1 or mixed_soak["expectedMetricHours"] != 2:
+        problems.append("mixed-idle-active")
     unknown = _probe_rows(start, hour_last, interval, "new-root") + [
         {"at": start, "kind": "metrics", "app": "app-a", "metric": "cpu", "value": 0},
         {"at": start, "kind": "metrics", "app": "app-b", "metric": "cpu", "value": 0},
@@ -607,21 +720,40 @@ def adversarial_cases():
 
     _expect_error(problems, "errored-read", lambda: require_list(1, [], "throttled"))
     target = "old-prod-group"
-    gone_text = f"(ResourceNotFound) {target} could not be found"
+    gone_text = json.dumps({"code": "ResourceNotFound", "resourceId": target})
+    dependency_text = (
+        "(ResourceNotFound) dependency 'missing-child' could not be found while looking up 'old-prod-group'"
+    )
     ambiguous = False
     if is_gone(1, "AuthorizationFailed", target) or is_gone(0, "", target) or not is_gone(1, gone_text, target):
+        ambiguous = True
+    if is_gone(1, dependency_text, target):
+        ambiguous = True
+    if is_gone(1, f"(ResourceNotFound) {target} could not be found", target):
         ambiguous = True
     if is_gone(1, "SubscriptionNotFound: subscription could not be found", target):
         ambiguous = True
     if is_gone(1, "(ResourceNotFound) other-group could not be found", target):
         ambiguous = True
-    if is_gone(1, f"(AccountNotFound) account could not be found", target):
+    if is_gone(1, "(AccountNotFound) account could not be found", target):
         ambiguous = True
-    if is_gone(1, f"(AuthenticationFailed) token rejected", target):
+    if is_gone(1, "(AuthenticationFailed) token rejected", target):
         ambiguous = True
     if is_gone(1, f"(DependencyNotFound) {target} could not be found", target):
         ambiguous = True
     if is_gone(1, "could not be found", target):
+        ambiguous = True
+    if is_gone(1, json.dumps({"code": "ResourceNotFound", "resourceId": "missing-child", "lookup": target}), target):
+        ambiguous = True
+    if is_gone(1, json.dumps({"code": "ResourceNotFound", "resourceId": target, "dependency": "missing-child"}), target):
+        ambiguous = True
+    if is_gone(1, json.dumps({"code": "DependencyNotFound", "resourceId": target}), target):
+        ambiguous = True
+    if is_gone(1, json.dumps({"code": "AccountNotFound", "resourceId": target}), target):
+        ambiguous = True
+    if is_gone(1, json.dumps({"code": "ResourceNotFound", "resourceId": target + "-extra"}), target):
+        ambiguous = True
+    if is_gone(1, json.dumps({"message": dependency_text, "resourceId": target}), target):
         ambiguous = True
     try:
         require_list(0, None, "")
@@ -741,6 +873,39 @@ def adversarial_cases():
 
     if execute(leaked, leaked_body) == 0 or "/subscriptions/" in leaked.read_text():
         problems.append("report-leaks-id")
+
+    provider_ids = {
+        "azure": synthetic,
+        "aws": "arn:aws:ec2:us-east-1:123456789012:instance/i-exampleold",
+        "gcp": "//compute.googleapis.com/projects/example-project/zones/example-zone/instances/old-app",
+    }
+    for label, ident in provider_ids.items():
+        dest_provider = Path(tempfile.mkdtemp()) / f"{label}.json"
+
+        def provider_body(report, ident=ident):
+            report["mode"] = "self-test"
+            report["gates"]["adversarial"] = {"ok": True}
+            report["errors"].append({"gate": "x", "why": f"lookup failed for {ident}"})
+
+        written_provider = ""
+        try:
+            code_provider = execute(dest_provider, provider_body)
+            written_provider = dest_provider.read_text()
+        except OSError:
+            code_provider = 0
+        digest = hashlib.sha256(ident.encode()).hexdigest()
+        if code_provider == 0 or ident in written_provider or digest not in written_provider:
+            problems.append(f"provider-id-{label}")
+        if label != "azure":
+            _expect_error(
+                problems,
+                f"receipt-leaks-{label}",
+                lambda ident=ident: decommission_receipt(
+                    "cutover",
+                    "docs/plans/cutover/retirement-report.json",
+                    {"mode": "dry-run", "id": ident},
+                ),
+            )
 
     blocked = Path(tempfile.mkdtemp())
 

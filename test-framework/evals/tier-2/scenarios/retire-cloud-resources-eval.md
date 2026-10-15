@@ -4,6 +4,16 @@
 
 `retire-cloud-resources`
 
+## Workspace
+
+Copy the router and the competing skills into `.claude/skills/` before the prompt:
+
+- `route-workflow`
+- `retire-cloud-resources`
+- `plan-blast-radius`
+- `infra-sre`
+- `manage-finops`
+
 ## Setup
 
 A consumer email app finished cutover. Health probes on the new stack have passed on every slot, including the final slot. The operator wants the old resources removed and the neighbouring shared account left untouched.
@@ -18,6 +28,7 @@ Route this request: The new consumer email app has soaked since cutover. Delete 
 
 - The reply independently selects `retire-cloud-resources`.
 - The prompt does not name the skill or the required answer.
+- Adjacent requests are separate scenarios: `retire-cloud-resources-negative-plan-severity`, `retire-cloud-resources-negative-still-serving`, and `retire-cloud-resources-negative-provider-cost`.
 
 ## Assertions
 
@@ -27,31 +38,3 @@ Route this request: The new consumer email app has soaked since cutover. Delete 
   {"type":"output_regex","regex":"retire-cloud-resources","label":"independently selects retire-cloud-resources"}
 ]
 ```
-
-## Adjacent negatives
-
-Each block is a separate request. None of them names the skill to select.
-
-### Prompt — plan severity before apply
-
-```
-Route this request: Read the terraform plan and classify its severity before anyone applies it.
-```
-
-Expected selection: `plan-blast-radius`.
-
-### Prompt — old app still serving
-
-```
-Route this request: The old app is still serving users and the SLO is at risk.
-```
-
-Expected selection: `infra-sre`.
-
-### Prompt — cost and provider switch
-
-```
-Route this request: What will the provider switch cost, and which provider should we pick?
-```
-
-Expected selection: `manage-finops`.

@@ -28,7 +28,7 @@ Use the Phase 5 soak record as the window. Then apply these guards. Validate the
 |---|---|
 | Window | Duration or probe interval is missing or not positive. |
 | Probes | The matrix is missing or empty, or any elapsed slot lacks a pass for every probe. A slot counts when `slot + interval <= window_end`, including the final fully elapsed slot. Zero checked slots is a miss. |
-| Metrics | The cutover plan names the approved metrics, a non-negative inactivity threshold for each, and any substitution from a source name to an approved name. Hours are anchored at `window_start`, step one hour, and a shorter remainder is its own interval. A sample counts when `start <= at < end`, the app matches, the metric is approved or a listed substitution, and the value is at or below that threshold. A bool is not a value. `ok: true` or "healthy" is not a sample. Every approved metric for every old app must appear in each interval. |
+| Metrics | The cutover plan names the approved metrics, a non-negative inactivity threshold for each, and any substitution from a source name to an approved name. Hours are anchored at `window_start`, step one hour, and a shorter remainder is its own interval. A sample matches when `start <= at < end`, the app matches, and the metric is approved or a listed substitution. Every approved metric for every old app must have at least one matching sample in each interval, and every matching sample must be at or below that threshold. One idle sample does not hide a sample above the threshold. A bool is not a value. `ok: true` or "healthy" is not a sample. |
 | Unknown coverage | A missing row, an unknown metric, or a gap does not pass. Do not interpolate. |
 | Drain | Every serving dependency named in the cutover plan has `drained: true` and non-empty evidence. Healthy and still serving is not drained. An empty drain list fails. |
 
@@ -54,16 +54,22 @@ Scan values in memory. Do not print secret values. A hit on a surviving resource
 
 ## Gone
 
-Parse a provider error code from a parenthesized code, a leading `Code:` label, or a bare code. A target is gone only when the code is `ResourceNotFound`, `NotFound`, or `404`, and the stderr names the exact requested id on token boundaries. Return code 0 is not gone.
+A target is gone only when stderr is one JSON object that binds the code to `resourceId`:
 
-Reject account, subscription, authentication, authorization, and dependency errors, including `SubscriptionNotFound`, even when the text contains "could not be found". Unstructured "could not be found" without a target not-found code is not gone. Do not retry an ambiguous lookup into a success.
+```json
+{"code": "ResourceNotFound", "resourceId": "<exact requested id>"}
+```
+
+`code` is `ResourceNotFound`, `NotFound`, or `404`. `resourceId` must equal the requested id. An `error` wrapper with those two fields is the same object. Return code 0 is not gone.
+
+Do not search the message text. A parenthesized code, a leading label, a bare code, or the sentence "could not be found" is not gone, even when the requested id appears in that sentence. Reject a dependency, lookup, account, subscription, parent, or other subject field, including when the not-found code names a dependency while the text mentions the requested id: `(ResourceNotFound) dependency 'missing-child' could not be found while looking up 'old-prod-group'` is not gone for `old-prod-group`. Reject `SubscriptionNotFound`, `AccountNotFound`, authentication, and authorization the same way. Do not retry an ambiguous lookup into a success.
 
 After a parent is deleted, wait for managed or child groups that the provider creates beside it. If one is still present when the wait ends, record an error and exit non-zero.
 
 ## Dry run and adversarial cases
 
 1. Dry-run the same binary against live inventory. Apply stays off. Confirm the plan lists only allow-list targets, and that protected hashes were computed.
-2. Run `python3 skills/retire-cloud-resources/references/deletion-gate.py` and require exit 0. The in-memory cases must fail closed for: an anchored hour with samples that leave the final interval uncovered, a nonpositive window or interval, an empty probe matrix, subjects rejected before evidence is read, `SubscriptionNotFound` and a not-found code for a different id, an approval with no approver or a different digest, a changed allow-list at apply time, a failed or missing gate, a missing-slot report that still serializes, and a committed payload that contains a resource id.
+2. Run `python3 skills/retire-cloud-resources/references/deletion-gate.py` and require exit 0. The in-memory cases must fail closed for: an anchored hour with samples that leave the final interval uncovered, a nonpositive window or interval, an empty probe matrix, subjects rejected before evidence is read, an idle sample mixed with 500 requests, `SubscriptionNotFound`, unstructured not-found text, a dependency error that names the requested id, an approval with no approver or a different digest, a changed allow-list at apply time, a failed or missing gate, a missing-slot report that still serializes, and a committed payload that contains an Azure, AWS, or GCP resource id.
 3. A case that returns success is a broken gate. Fix the gate before scheduling.
 
 ## Approval, backup, schedule
@@ -76,7 +82,7 @@ Run from a timer with a lock and an append-only log. After the scheduled time, r
 
 ## Post-delete
 
-1. Prove each allow-list id is gone with a target not-found code for that exact id.
+1. Prove each allow-list id is gone with the structured not-found object for that exact id.
 2. Recompute protected hashes. They match, except the one pre-declared child removal.
 3. Smoke the new stack with the same probe matrix. A smoke failure is an error. Still run the protected comparison, then exit non-zero.
 4. Write the sanitized report and the decommission receipt. Do not commit exact ids.
@@ -96,7 +102,9 @@ Some targets stay on purpose. Track them in `deferred-deletions.md` with the rea
 
 ## Report and receipt
 
-`docs/plans/<cutover>/retirement-report.json` (sanitized):
+`docs/plans/<cutover>/retirement-report.json` is built only from `mode`, `ok`, `gates`, `deleted`, `keep_unknown`, `errors`, `protected`, `postDeleteSmoke`, and `deferred`. Before that file is written, Azure subscription paths, AWS ARNs, and GCP full resource names are replaced with `sha256:<digest>` of the exact id. A replacement makes the run fail. Other committed artifacts reject those identifiers instead of rewriting them.
+
+Example shape:
 
 ```json
 {

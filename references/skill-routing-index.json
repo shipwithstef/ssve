@@ -1479,7 +1479,7 @@
     {
       "skill": "retire-cloud-resources",
       "path": "skills/retire-cloud-resources/SKILL.md",
-      "content_hash": "1dd36372656d3ec6977c4dc7c09cc9ebac808825d627fe26a03cd846b0c92da1",
+      "content_hash": "d8c39d783ac833ba1666538cd95b594c9e91b489795356fb2f915f008d6ee137",
       "description": "Permanently delete old cloud resources after a cutover has soaked, and only through an exact allow-list that fails closed. Use when: \"delete the old resources\", \"clean up after migration\", \"decommission the old stack\", or the new stack has soaked and the old estate must go. Not for: routine scaling or resources still serving (infra-sre), threat review (security-ops), cost and provider choice (manage-finops), classifying a plan before apply (plan-blast-radius), proving a merged branch matches its spec (verify-promotion), a codebase rename or token sweep (plan-changeset), or adopting a repo (onboard-repo).",
       "aliases": [
         "delete the old resources",

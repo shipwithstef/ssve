@@ -59,7 +59,23 @@ function hasPhaseReceipt(workspace, skill, phase) {
   return false;
 }
 
-function check(assertion, workspace, outputText) {
+function promptBody(markdown) {
+  const match = markdown.match(/^## Prompt\s*\n```[^\n]*\n([\s\S]*?)\n```/m);
+  return match ? match[1] : "";
+}
+
+function selectsSkill(outputText, skill) {
+  const labeled = [...outputText.matchAll(/^[ \t]*selected\s*:\s*`?([a-z0-9]+(?:-[a-z0-9]+)*)`?/gim)].map((item) => item[1]);
+  if (labeled.length > 0) return labeled[labeled.length - 1] === skill;
+  const named = new RegExp(`(?<![A-Za-z0-9-])${skill}(?![A-Za-z0-9-])`);
+  if (!named.test(outputText)) return false;
+  const rejection = new RegExp(`\\bnot\\s+${skill}\\b`, "i");
+  const affirmative = new RegExp(`\\b(?:use|using|select(?:ed|ion)?|route)\\b[^\\n]{0,80}\\b${skill}\\b`, "i");
+  if (rejection.test(outputText) && !affirmative.test(outputText)) return false;
+  return true;
+}
+
+function check(assertion, workspace, outputText, scenario) {
   switch (assertion.type) {
     case "artifact_exists": {
       return matchGlob(workspace, assertion.glob).length > 0;
@@ -76,6 +92,12 @@ function check(assertion, workspace, outputText) {
     }
     case "output_regex": {
       return new RegExp(assertion.regex, assertion.flags || "i").test(outputText);
+    }
+    case "expected_selection": {
+      const skill = assertion.skill;
+      if (typeof skill !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(skill)) return false;
+      if (promptBody(scenario).includes(skill)) return false;
+      return selectsSkill(outputText, skill);
     }
     case "phase_receipt": {
       return hasPhaseReceipt(workspace, assertion.skill, assertion.phase);
@@ -103,7 +125,7 @@ function main() {
   let pass = 0;
   let fail = 0;
   for (const assertion of assertions) {
-    const ok = check(assertion, workspace, outputText);
+    const ok = check(assertion, workspace, outputText, scenario);
     const label = assertion.label || `${assertion.type}:${assertion.glob || assertion.phase || assertion.regex}`;
     if (ok) {
       pass++;
