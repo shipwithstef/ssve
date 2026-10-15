@@ -179,7 +179,7 @@ visible in the task graph.
    └──────┬───────┘  proposes 1-2 week builds. Aspirational target only.
           │
           ▼
-   ┌──────────────┐  9 phases. 7 review gates. 106 skills.
+   ┌──────────────┐  9 phases. 7 review gates. 107 skills.
    │ Progressive   │  Vision → Personas → Spec → UX → UI →
    │ Narrowing     │  Tech Design → Code → Promote → Verify.
    └──────┬───────┘  Planning on the canonical checkout; execute in a worktree.
@@ -202,7 +202,7 @@ visible in the task graph.
 |---|---|
 | Builder profile mining | Built — financial, time, skills, team, social/distribution, tools, entity, goals, project history, failure patterns; updates after every project; persists globally |
 | Find what to build | Built — reverse-engineers current market winners, matches to builder skills/distribution, 1-2 week builds on free-tier infra, staging strategy for big ideas, $1K/mo target within month 1 |
-| Progressive narrowing (vision → verified merge) | Built — 9 delivery phases (16 pipeline stages), 7 review gates, 106 skills across 7 lanes |
+| Progressive narrowing (vision → verified merge) | Built — 9 delivery phases (16 pipeline stages), 7 review gates, 107 skills across 7 lanes |
 | One prompt to product (`--autorun`) | Built — P0 decides at human checkpoints; only hard stops are NO-SHIP, test failure, security, merge conflict |
 | Reject/pivot on infeasible intent | Built — 7 kill signals with evidence scoring; NO-SHIP produces structured rejection + alternative directions |
 | Multi-host universal runtime | Built — content-addressed zero-drift convergence across 9 hosts: Claude Code, Kimi CLI, OpenAI Codex CLI, Google Gemini CLI, OpenCode CLI, Google Antigravity (AGY), MiMo-Code, Cursor Agent, and Grok Build CLI |
@@ -782,7 +782,7 @@ cd ~/.claude/skills/svc && ./setup
 cd your-project && claude
 ```
 
-The `setup` script symlinks all 106 skills + framework infrastructure
+The `setup` script symlinks all 107 skills + framework infrastructure
 (DOCTRINE.md, REPO_MODES.md, scripts/, etc.) into `~/.claude/skills/`.
 Symlinks mean `git pull && ./setup` updates everything in place.
 
@@ -934,6 +934,7 @@ Mode contract and detection logic: [`REPO_MODES.md`](REPO_MODES.md)
 - `recall-stack-knowledge` — Knowledge Spine recall gate (see WI-SPINE-001)
 - `refresh-competitors` — Weekly diff-based refresh of tracked competitor state
 - `research` — Resolve uncertainty about APIs, libraries, patterns
+- `retire-cloud-resources` — Lane 10 Phase 20+ executor for old-cloud deletion after cutover soak
 - `reverse-engineer` — Deconstruct any company/product/tweet/technique, produce teardown + build brief with unique twist
 - `review-cross-model` — Adversarial review via a second model
 - `review-exec` — G5-enforcing gate: self-review + adversarial review of executed diff before land (mandatory-chain plan)

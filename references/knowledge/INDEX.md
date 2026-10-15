@@ -35,7 +35,7 @@ NEVER launch an explore agent to re-read a source that's already indexed here.
 
 | Source | What it is | Summary | Version | Layer 2 |
 |---|---|---|---|---|
-| [svc](svc/) | This framework — progressive deterministic dev | 105 skills, 7 gates, 7 lanes, 34 APs, 9 provisioned hosts, Landlock containment, runtime v2 | `v2.0.0` | [CAPABILITIES.md](svc/CAPABILITIES.md) |
+| [svc](svc/) | This framework — progressive deterministic dev | 107 skills, 7 gates, 7 lanes, 34 APs, 9 provisioned hosts, Landlock containment, runtime v2 | `v2.0.0` | [CAPABILITIES.md](svc/CAPABILITIES.md) |
 
 ## Open Source Repos
 

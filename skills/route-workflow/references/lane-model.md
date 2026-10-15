@@ -579,7 +579,7 @@ These 5 lanes catch infra-class work — Terraform, Kubernetes, CI/CD, IAM, obse
 - **Phase 5b — Target design** — `target-state.md` + `mapping.md` (resource-by-resource).
 - **Phase 5c — Cutover plan** (`design-ui` cutover-runbook variant) — phased cutover (typically dual-run → shadow → percentage rollout → flip → decommission), each phase with rollback procedure.
 - Phases 8-19 (review through audit) as Lane 8.
-- **Phase 20+ — Decommission** (migration-only, after drift watch). Removes source system, archives final state. `decommission-receipt.md` archived. Required to close the WI.
+- **Phase 20+ — Decommission** (migration-only, after drift watch). Removes source system, archives final state. `decommission-receipt.md` archived. Required to close the WI. Executor: `retire-cloud-resources`.
 
 ### Lane 11: Infra Incident
 

@@ -81,18 +81,47 @@ run_scenario() {
   cp "$REPO_ROOT"/*.md "$work_dir/" 2>/dev/null || true
 
   # Exercise the branch source under test, not a potentially stale global
-  # install. Scenario files name one skill under `## Skill Under Test`; expose
-  # that exact contract through Claude's project-local skill directory.
+  # install. Scenario files name one skill under `## Skill Under Test`.
+  # `## Workspace` lists more skills, including the router and competitors,
+  # that the same workspace must expose before the prompt runs.
+  mkdir -p "$work_dir/.claude/skills"
+  declare -A copied_skills=()
+  copy_skill() {
+    local name="$1"
+    if [[ -n "${copied_skills[$name]:-}" ]]; then
+      return 0
+    fi
+    if [[ ! "$name" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ || ! -f "$REPO_ROOT/skills/$name/SKILL.md" ]]; then
+      echo "  ERROR: workspace skill is missing: $name" >&2
+      return 1
+    fi
+    rm -rf "$work_dir/.claude/skills/$name"
+    cp -R "$REPO_ROOT/skills/$name" "$work_dir/.claude/skills/$name"
+    copied_skills["$name"]=1
+  }
   local skill_under_test
   skill_under_test=$(awk '
     /^## Skill Under Test/ { in_section=1; next }
     in_section && /^## / { exit }
     in_section && /`[^`]+`/ { match($0, /`[^`]+`/); print substr($0, RSTART + 1, RLENGTH - 2); exit }
   ' "$scenario_file")
-  if [[ -n "$skill_under_test" && -f "$REPO_ROOT/skills/$skill_under_test/SKILL.md" ]]; then
-    mkdir -p "$work_dir/.claude/skills"
-    cp -R "$REPO_ROOT/$skill_under_test" "$work_dir/.claude/skills/$skill_under_test"
+  if [[ -n "$skill_under_test" ]]; then
+    copy_skill "$skill_under_test"
   fi
+  while IFS= read -r extra_skill; do
+    [[ -z "$extra_skill" ]] && continue
+    copy_skill "$extra_skill"
+  done < <(awk '
+    /^## Workspace/ { in_section=1; next }
+    in_section && /^## / { exit }
+    in_section && /`[a-z0-9]+(-[a-z0-9]+)*`/ {
+      line = $0
+      while (match(line, /`[a-z0-9]+(-[a-z0-9]+)*`/)) {
+        print substr(line, RSTART + 1, RLENGTH - 2)
+        line = substr(line, RSTART + RLENGTH)
+      }
+    }
+  ' "$scenario_file")
 
   # Copy fixtures based on scenario setup section
   if grep -q "examples/todo-api" "$scenario_file"; then

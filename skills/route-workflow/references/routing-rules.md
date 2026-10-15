@@ -220,6 +220,7 @@ These skills are not in any lane's linear pipeline. They auto-insert into the ta
 | `mine-builder` | `route-workflow`, `verify-promotion` | First interaction and missing `~/.svc/builder-profile.md`; or post-project update needed | At session start if profile missing; or after project ships | Pipeline initialization until profile exists |
 | `platform-operating-architect` | `route-workflow`, `onboard-repo` | Platform signals detected (Base44, Vercel, Supabase, Firebase, etc.) and no `docs/specs/platform-operating-model.md` | Before first lane execution if platform-heavy | Downstream work until operating model exists |
 | `evaluate-rule` | `blend-external`, `improve-framework` | Blended rule has stale `source_sha` or `last_evaluated` > 90 days; or new rule pack proposed | After blend phase 4.5 or rule pack proposal | Rule registration until evaluation passes |
+| `retire-cloud-resources` | `plan-blast-radius`, `route-workflow` | Cutover has soaked and the operator asks to delete, clean up, or decommission the old cloud resources | Lane 10 Phase 20+ after Phase 5 soak, a recorded human approval, and a passing dry run | Irreversible deletes until `docs/specs/migrations/<slug>/decommission-receipt.md` links a passing sanitized report |
 
 ### Company operating fleet triggers
 

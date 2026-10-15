@@ -1,0 +1,10 @@
+Skill: retire-cloud-resources
+
+Q: What does a failed reference-check query mean, and what must the run do?
+A: Expected pattern: A failed read (nonzero CLI, auth expiry, or throttling) aborts the run. It is not evidence that nothing references the target.
+
+Q: Which soak-window slots must pass, and what off-by-one mistake skips a real slot?
+A: Expected pattern: Every slot whose interval has elapsed, including the final slot. The condition `slot < window_end - interval` skips the last slot.
+
+Q: When is a resource gone, and how are protected resources checked?
+A: Expected pattern: Gone only when a structured provider error binds a recognized target-not-found code (ResourceNotFound, NotFound, or 404) to the exact requested resource id. Standalone text such as "could not be found", and dependency or account errors, are not proof. Protected values are hashed before and after and must be unchanged, apart from a pre-declared child removal.

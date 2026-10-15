@@ -58,6 +58,7 @@
         "track-visuals",
         "review-security",
         "plan-blast-radius",
+        "retire-cloud-resources",
         "track-topology-diff",
         "review-exec"
       ],

@@ -19,7 +19,7 @@ machinery.
    same commit that changes the framework.
 
 Derived-at for all blocks: **2026-09-14** unless stated otherwise
-(WI-FW-ADVISOR-KNOWLEDGE-02: Cursor CLI x-high review transport, 105 skills, 329 tier-1 validators, WI-566 bounded review receipts, Landlock containment, session recovery).
+(WI-FW-ADVISOR-KNOWLEDGE-02: Cursor CLI x-high review transport, 329 tier-1 validators, WI-566 bounded review receipts, Landlock containment, session recovery). Skill count restamped 2026-10-15: 107 in `includedSkills`.
 
 ---
 
@@ -27,7 +27,7 @@ Derived-at for all blocks: **2026-09-14** unless stated otherwise
 
 | Fact | Value | Authority | Verify |
 |---|---|---|---|
-| First-party skills | 105 in `includedSkills`; 59 in router core pack | `skills-manifest.json` | `node -e "console.log(require('./skills-manifest.json').includedSkills.length)"` |
+| First-party skills | 107 in `includedSkills`; 59 in router core pack | `skills-manifest.json` | `node -e "console.log(require('./skills-manifest.json').includedSkills.length)"` |
 | Review gates | G1–G7 (write-spec, design-ux, design-ui, design-tech, execute-changeset, land-changeset, verify-promotion) | `skills-manifest.json` `gates` | `node -e "const m=require('./skills-manifest.json');console.log(Object.keys(m.reviewGates\|\|m.gates))"` |
 | Workflow lanes | 7: greenfield, brownfield-conversion, brownfield-feature, bugfix, drift, refactor, framework | `skills-manifest.json` `laneDefinitions` | `node -e "console.log(Object.keys(require('./skills-manifest.json').laneDefinitions).join(','))"` |
 | Anti-patterns | 34 APs in the reference doc | `references/anti-patterns.md` | `grep -cE '^###? AP-[0-9]+' references/anti-patterns.md` |
@@ -36,9 +36,9 @@ Derived-at for all blocks: **2026-09-14** unless stated otherwise
 | Bootstrap sequence | 26 steps (greenfield minimal order) | `skills-manifest.json` `bootstrapStartSequence` | read manifest |
 
 > ✅ Knowledge surfaces restamped: `references/knowledge/svc/CAPABILITIES.md` and
-> `references/knowledge/svc/details/infrastructure.md` restamped to 105 skills, 9 provisioned hosts,
+> `references/knowledge/svc/details/infrastructure.md` restamped to 107 skills, 9 provisioned hosts,
 > Landlock containment, and Cursor x-high review transport on 2026-09-14 (WI-FW-ADVISOR-KNOWLEDGE-02).
-> ⚠️ Warning on adjacent surfaces: `references/knowledge/svc/CAPABILITIES.md` and `references/knowledge/INDEX.md` were historically frozen at 77 skills (now updated to 105); legacy sections of `AGENTS.md` and `CLAUDE.md` previously mentioned 24 APs (now 34). Live framework truth is strictly governed by `skills-manifest.json` (105 skills), `references/anti-patterns.md` (34 APs), and this index.
+> ⚠️ Warning on adjacent surfaces: `references/knowledge/svc/CAPABILITIES.md` and `references/knowledge/INDEX.md` were historically frozen at 77 skills (now updated to 107); legacy sections of `AGENTS.md` and `CLAUDE.md` previously mentioned 24 APs (now 34). Live framework truth is strictly governed by `skills-manifest.json` (107 skills), `references/anti-patterns.md` (34 APs), and this index.
 
 ## 2. Lanes, pipeline, pre-lane
 
@@ -157,4 +157,4 @@ Verify with `node --test test-framework/tests/session-recovery.test.mjs`.
 
 ---
 
-*Restamp log:* initial extraction 2026-08-26 (WI-FW-ADVISOR-KNOWLEDGE-01); refreshed 2026-09-14 (WI-FW-ADVISOR-KNOWLEDGE-02: Cursor CLI x-high review transport, 105 skills, 329 tier-1 validators, WI-566 bounded review receipts, Landlock containment, WI-FW-SESSION-RECOVERY-01/02 & WI-FW-READONLY-OBSERVATION-01, Section 8 Change Discipline & Execution Governance).
+*Restamp log:* initial extraction 2026-08-26 (WI-FW-ADVISOR-KNOWLEDGE-01); refreshed 2026-09-14 (WI-FW-ADVISOR-KNOWLEDGE-02: Cursor CLI x-high review transport, 105 skills, 329 tier-1 validators, WI-566 bounded review receipts, Landlock containment, WI-FW-SESSION-RECOVERY-01/02 & WI-FW-READONLY-OBSERVATION-01, Section 8 Change Discipline & Execution Governance); skill count restamped 2026-10-15 to 107 with `retire-cloud-resources`.
