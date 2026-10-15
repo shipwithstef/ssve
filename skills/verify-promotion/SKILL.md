@@ -27,7 +27,7 @@ chain:
     refactor: { position: 7, prev: land-changeset, next: null }
   progressive: true
   self_verify: true
-  human_checkpoint: true
+  human_checkpoint: false  # conditional: an improvement claim needs a SHA-bound human stage pass (body + land-changeset); everything else continues
 ---
 
 > **Cognitive routing:** 🛡️ [REVIEW-SONNET] — checking deployed artifacts match specs and ACs is verification, not planning. Sonnet 4.6 against the Opus blueprint. See `references/model-routing.md`.
