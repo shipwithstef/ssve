@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "compiled_from": {
-    "manifest_sha256": "cf20a8afed57ca43b130256647c602868417aa9914d5dbf4e5ac077c63af460a",
+    "manifest_sha256": "b2f72afe41622b85f3e7ba4ef25ecb20bd918aa2c535a533900120a3c64cc828",
     "overrides_sha256": "41fc5f14b5e71f101e00f413499438495409b1bc35f4901479fe492f8144c054",
     "concern_registry_sha256": "6c336c8832c4907ee78413a2b7d377b790bb55bba180783d2164892a130ea507"
   },
@@ -1430,6 +1430,24 @@
       "path": "skills/refresh-competitors/SKILL.md",
       "content_hash": "b55ab7a46d96eee6d210081c8627b881e18bcc36d5bd9d6f57d521130b3ae472",
       "description": "Refresh the competitive knowledge base by diffing tracked competitors against their live public state. Triggers on scheduled weekly routine or manual invocation. NOT for adding new competitors — use analyze-competitors for that. Use when the user says \"refresh competitors\", \"update competitive landscape\", \"what changed this week\", \"competitor watch\", \"run competitor diff\", or when the scheduled weekly routine fires.",
+      "aliases": [],
+      "positive_triggers": [],
+      "negative_triggers": [],
+      "domains": [],
+      "actions": [],
+      "objects": [],
+      "repo_signals": [],
+      "lane_roles": [],
+      "invocation_policy": "suggest-only",
+      "risk": "low",
+      "requires": [],
+      "required_rules": []
+    },
+    {
+      "skill": "rename-product",
+      "path": "skills/rename-product/SKILL.md",
+      "content_hash": "19933ddbba8b0fb85c6de08e9f8e6ed6a20bbc1aa5538b0c498a2a5c36f400c0",
+      "description": "Run a Lane 10 infra migration that renames a live product across copy, identifiers, cloud resources, domains, docs, local folders, and agent memory. Use when: \"rename the product\", \"rebrand\", \"move everything to the new name\", after the new name is chosen and its domain and trademark are checked. A code-only rename stays a plan-changeset Migration / sweep.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],

@@ -1,7 +1,7 @@
 {
   "default_min_score": 7,
   "estimated_tokens_per_judgment": 20000,
-  "max_judgments": 120,
+  "max_judgments": 123,
   "dimensions": [
     "completeness",
     "actionability",

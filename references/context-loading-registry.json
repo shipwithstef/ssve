@@ -47,6 +47,7 @@
         "explore-ux",
         "propose-ux-improvements",
         "plan-changeset",
+        "rename-product",
         "execute-changeset",
         "write-e2e",
         "review-gate",

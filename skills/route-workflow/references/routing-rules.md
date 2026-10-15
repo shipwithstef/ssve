@@ -221,6 +221,7 @@ These skills are not in any lane's linear pipeline. They auto-insert into the ta
 | `platform-operating-architect` | `route-workflow`, `onboard-repo` | Platform signals detected (Base44, Vercel, Supabase, Firebase, etc.) and no `docs/specs/platform-operating-model.md` | Before first lane execution if platform-heavy | Downstream work until operating model exists |
 | `evaluate-rule` | `blend-external`, `improve-framework` | Blended rule has stale `source_sha` or `last_evaluated` > 90 days; or new rule pack proposed | After blend phase 4.5 or rule pack proposal | Rule registration until evaluation passes |
 | `retire-cloud-resources` | `plan-blast-radius`, `route-workflow` | Cutover has soaked and the operator asks to delete, clean up, or decommission the old cloud resources | Lane 10 Phase 20+ after Phase 5 soak, a recorded human approval, and a passing dry run | Irreversible deletes until `docs/specs/migrations/<slug>/decommission-receipt.md` links a passing sanitized report |
+| `rename-product` | `route-workflow` | "rename the product", "rebrand", or "move everything to the new name", after the new name is chosen and its domain and trademark are checked | Lane 10 infra migration. Does not enter a product lane | The code sweep stays a `plan-changeset` Migration / sweep. Phase 20+ deletion is `retire-cloud-resources`; docs and domain are not blocked when that retirement is deferred |
 
 ### Company operating fleet triggers
 
