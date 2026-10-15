@@ -1,14 +1,17 @@
 ---
 name: assess-market-readiness
-version: "1.0"
+version: "1.1"
 description: >-
   Multi-role readiness judge that reads project artifacts and scores whether the product
   is ready for its next milestone — launch, hackathon, VC pitch, or product-market-fit.
-  Never asks the user "is it ready?" — the pipeline knows. Produces a 0-100 readiness
-  score with blocking gaps, non-blocking gaps, and a routing decision (GTM vs features).
+  Launch panel mode fans out a read-only multi-family review before strangers or money
+  touch the product, then scores from that evidence. Never asks the user "is it ready?"
+  — the pipeline knows. Produces a 0-100 readiness score with blocking gaps, non-blocking
+  gaps, and a routing decision (GTM vs features).
   Use when: "is this ready?", "should I launch?", "what's next?" after all WIs close,
-  "hackathon judge", "VC review", "market fit check", "assess readiness", or automatically
-  from route-workflow when no active task graphs remain and no critical WIs exist.
+  "hackathon judge", "VC review", "market fit check", "assess readiness", "launch panel",
+  "before the waitlist", "before the first paid test", "before public launch",
+  or automatically from route-workflow when no active task graphs remain and no critical WIs exist.
 inputs:
   required:
     - { path: "docs/specs/vision.md", artifact: vision }
@@ -94,17 +97,50 @@ for information the pipeline already has.
 2. **Explicitly:** user says "is this ready?", "should I launch?", "hackathon
    judge", "VC review", "assess readiness", "market fit"
 3. **After `verify-promotion`:** when the last WI in a milestone closes
+4. **Before first traffic:** "launch panel", "before the waitlist", "before the
+   first paid test", "before public launch", or a landing change about to get
+   traffic. Use `--stage launch-panel`.
 
 ## Modes
 
 | Mode | Flag | What it judges | Who it simulates |
 |---|---|---|---|
 | **Launch** | `--stage launch` (default) | Ready for first paying customers? | Synthetic target user + YC partner |
+| **Launch panel** | `--stage launch-panel` | Ready for the first moment strangers or money arrive? | Independent multi-family panel; the launch score uses that evidence |
 | **Hackathon** | `--stage hackathon` | Would this win? | 3-person hackathon judge panel |
 | **VC** | `--stage vc` | Would a seed investor take a meeting? | Seed-stage VC partner |
 | **PMF** | `--stage pmf` | Does it have product-market-fit? | Retention analyst + power user |
 
-Default mode is `launch` if not specified.
+Default mode is `launch` if not specified. Launch panel is opt-in.
+
+## Launch panel mode
+
+`--stage launch-panel` runs before strangers or money first touch the product:
+a waitlist, a first paid test, a public launch, or a marketplace listing. Run it
+again after a major positioning or landing change, before that change gets
+traffic. Do not run it on an ordinary commit or feature. Default `launch` mode
+stays the single-judge score when nobody is opening that door.
+
+Roster, briefs, waves, and consolidation are in `references/launch-panel.md`.
+Do not restate them.
+
+1. Commit every plan, brief, and screenshot the agents must read. They see only committed files.
+2. Dispatch that roster read-only, in waves, with a memory cap and a time cap. Resolve r1 and r2 through the owner reviewer policy before dispatch. Call `build-personas` and `analyze-competitors` when their artifacts are missing. Route missing legal, privacy, growth, marketing, and finance work through `counsel`, `privacy-dpo`, `growth-lead`, `analyze-marketing`, and `fin-analyst`, and keep each skill's preflight and human checkpoint. The perception check is `benchmark-landing`'s visitor panel. Do not invent that panel's steps.
+3. Keep a consensus blocker only with two independent sources, or one source plus your own re-verification. Sort blockers into gates. Turn each into a decision, a founder task, or a build task. Run the budget realism check in the reference.
+4. Write one founder page: verdict, blockers, decisions with the reviewers' recommendation, and a manual pass/fail test kit. Commit the answers where the next session can read them. If the coverage gate failed, the page says the panel is incomplete and gives no readiness verdict.
+5. Compute the existing 8-dimension launch score, the judge verdicts, and `docs/specs/readiness-assessment.md` from the panel reports only after the coverage gate passes. Do not invent a second score. For each L0 build task, create or reuse a WI and route it through `route-workflow`. Name `plan-changeset` only when its prerequisites are already satisfied. Founder tasks stay with the founder.
+
+In this mode, Step 2 and Step 3 cite those reports only when the coverage gate
+passed. Otherwise record the panel incomplete and do not emit a score or a
+ready/not-ready verdict. An incomplete panel leaves the task **blocked**, not
+completed: write receipts only for the phases that actually ran, record the
+missing seats and the approval they need, and skip the completion continuation
+and the Self-Verify rows that need a score. Resume at Step 2 once coverage passes. An open L0 blocker is a blocking gap in Step 4.
+Monetization still awards 25 points for each of the four Step 2 checks. A
+missing payment flow is a blocking gap only when the gate being opened takes
+payment. Traction-locked gaps stay non-blocking under the existing rule. Skip
+Step 5; record `P5-ICPSimulation` as skipped. Do not emit GTM first while any
+L0 blocker is still open or while the panel is incomplete.
 
 ## Process
 
@@ -377,7 +413,7 @@ Produce `docs/specs/readiness-assessment.md`:
 # Readiness Assessment — [Stage]
 
 **Generated:** YYYY-MM-DD
-**Stage:** [launch / hackathon / vc / pmf]
+**Stage:** [launch / launch-panel / hackathon / vc / pmf]
 **Overall score:** [0-100]
 **Verdict:** [GTM first / Fix gaps then GTM / Build more]
 
@@ -480,6 +516,10 @@ a routine re-assessment mid-build.
 | 7 | No user input was requested for data the pipeline already has | review tool calls — no AskUserQuestion for artifact data | |
 | 8 | Assessment committed to git | `git log --oneline docs/specs/readiness-assessment.md \| head -1` returns a commit | |
 | 9 | Score Evolution Roadmap present in output | grep for "Score Evolution Roadmap" in readiness-assessment.md | |
+| 10 | Launch-panel consensus held | Stage is not launch-panel, or the panel is recorded incomplete with no readiness verdict, or every L0 blocker in the review index has two independent sources or an orchestrator re-verification note | |
+| 11 | Score cites panel evidence | Stage is not launch-panel, or the panel is recorded incomplete with no score, or each dimension key finding cites a report in the review directory | |
+| 12 | Coverage gate before a verdict | Stage is not launch-panel, or the index shows a successful nonempty report for every required seat, distinct actual families for r1 and r2, and at least five persona reports when a public surface is in scope. Otherwise the assessment says the panel is incomplete and has no readiness verdict | |
+| 13 | L0 routing respects plan prerequisites | Stage is not launch-panel, or `**Next:**` names `plan-changeset` only when the WI already has a baselined feature spec. Otherwise it names the lane skill still required | |
 
 ## Phase Receipt Contract
 
@@ -555,6 +595,14 @@ These rules apply to every judge simulation in this skill:
 
 This skill routes to the next action based on its readiness score.
 The `**Next:**` trailer names the exact next skill or WI.
+
+Launch-panel mode creates or reuses a WI for each L0 build task and routes it
+through `route-workflow`. It names `plan-changeset` only when that WI already
+has the baselined feature spec `plan-changeset` requires. Founder-owned L0
+items stay with the founder. The verdict is not GTM while any L0 blocker is
+open or while required coverage is missing. An incomplete panel has no
+readiness verdict. Otherwise the routing table stands. The panel is the
+evidence for the score.
 
 ## Post-Compaction Recovery
 

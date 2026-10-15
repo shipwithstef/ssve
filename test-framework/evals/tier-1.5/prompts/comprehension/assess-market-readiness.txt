@@ -8,3 +8,6 @@ A: Expected pattern: Product completeness, user value clarity, competitive posit
 
 Q: What is the required input artifact for assess-market-readiness, and what output file does it produce?
 A: Expected pattern: Required input is `docs/specs/vision.md`. Output is `docs/specs/readiness-assessment.md`.
+
+Q: When does launch-panel mode run, and where does its readiness score come from?
+A: Expected pattern: Before strangers or money first touch the product (waitlist, first paid test, public launch, marketplace listing), or after a major landing change before it gets traffic. Not on an ordinary commit. The existing 0-100 score is computed from the panel evidence in references/launch-panel.md only after every required seat has a successful nonempty report. L0 build tasks create or reuse a WI and route through the matching lane. plan-changeset is next only when its baselined feature-spec prerequisites are already satisfied.
