@@ -1,13 +1,15 @@
 ---
 name: benchmark-landing
-version: "1.0"
+version: "1.1"
 description: >
   Score a landing page against the curated sector reference bank on 8 measurable
   dimensions. Emits a 1-10 score per dimension + weighted aggregate. Blocks
   promotion below 7 unless orchestrator provides written override. Runs at every
   production viewport the page ships at, not only the design canvas. Use when
   the marketing page has been implemented and rendered after `execute-changeset`,
-  before promotion; deployed conversion-journey proof is a separate required check.
+  before promotion, or when a hero, copy, or mascot change needs a visitor
+  panel before paid traffic. Deployed conversion-journey proof is a separate
+  required check.
 phases:
   - id: P1-SampleBankPrecondition
     trigger: always
@@ -57,9 +59,11 @@ inputs:
     - { path: "references/landing-bank/<sector>/", artifact: sector-bank, note: "must supply three relevant captured marketing-page anchors with pattern.md for scoring" }
   optional:
     - { path: "docs/specs/marketing-context.md", artifact: marketing-context }
+    - { path: "docs/specs/personas/", artifact: personas, note: "Step 1b sample source; cold traffic fills empty seats" }
 outputs:
   produces:
     - { path: "docs/specs/benchmark/<date>-<candidate>.yaml", artifact: benchmark-score }
+    - { path: "docs/specs/benchmark/<date>-<candidate>-visitor-panel.md", artifact: visitor-panel, note: "optional Step 1b; written beside the benchmark YAML" }
 chain:
   lanes:
     greenfield: { position: 21, prev: track-visuals, next: review-gate }
@@ -88,7 +92,7 @@ Each dimension scored 1-10. Weighted aggregate = weighted mean. Rubric v1 (8 dim
 4. **Illustration craft and product evidence** — judge whether the chosen photography, illustration, screenshot, live UI, or absence of imagery helps this visitor trust and understand the actual product. Sector convention is context, not a required asset tier. Weight 1.0.
 5. **Viewport responsiveness** — does the scene REFLOW (not just scale) at every shipping viewport? Weight 1.0.
 6. **Left-right balance** — if split-hero, does the composition direct attention to the claim, product evidence, and action without crowding? Weight 0.5 (sector-dependent).
-7. **First-5-sec comprehension** — can a cold visitor name the product's purpose in 5s looking at the hero alone? Weight 1.0.
+7. **First-5-sec comprehension** — can a cold visitor name the product's purpose in 5s looking at the hero alone? Weight 1.0. When Step 1b ran, its five-second correct rates are evidence for this score. The weight does not change.
 8. **Vs. relevant captured anchors** — select the strongest captured pages serving a comparable visitor decision; score this page against their clarity, trust, and product evidence, and explain which choice transfers to this product. Weight 1.5. **Requires captured `hero.png` + `hero.webm` + `pattern.md` for each selected anchor** (see Step 0 precondition). If comparable captures are missing, this dimension cannot be scored and the skill HALTS — no asserted-without-evidence anchoring.
 9. **Design delta vs baseline** — on a shipped-page iteration, compare `predecessor.png` and `candidate.png` side by side and record whether a cold visitor would notice the intended hierarchy or content change. Weight 0.75. A large visual delta is not inherently better: an effective small repair may retain the silhouette. Explain how the visible difference, or deliberate continuity, supports the visitor decision. **Not applicable on greenfield first-pass**; keep the predecessor capture mandatory for shipped-page iterations.
 
@@ -158,6 +162,31 @@ Invoke `scripts/benchmark-landing-capture.sh <url-or-local-path>` which screensh
 **Iteration case (F-015):** if `docs/specs/benchmark/<prev>.yaml` exists AND references a predecessor candidate, additionally capture the predecessor hero at 1600×900 as `/tmp/benchmark-<ts>/predecessor.png` (from the predecessor's deployed URL or a git-worktree of the pre-iteration commit). This is the evidence input for dimension 9 (Design delta vs baseline). If no predecessor is declared, dimension 9 is skipped and its 0.75 weight is redistributed proportionally across remaining dimensions.
 
 **Hard rule (F-003 cross-reference):** every viewport is scored independently. If mobile 390 scores < 7 but desktop 1600 scores 9, the aggregate is capped at min(viewport scores). No mobile-amnesia.
+
+### Step 1b — Visitor panel (optional)
+
+Recommend this step whenever the hero, copy, or mascot changed, and before any paid traffic. Skip it only on a mechanical-only rescore, and record the skip in the benchmark YAML. Protocol, scoring, cultural prompts, and the report template are in `references/visitor-panel.md`.
+
+| Run it | Skip it |
+|---|---|
+| Hero, headline, or body copy changed | Density, type ratio, or viewport math only |
+| Mascot, illustration, or motion story changed | No visitor-facing picture or sentence changed |
+| Before paid traffic | Paid traffic is already waived in writing for this run |
+| Predecessor vs candidate, or two captured variants | No second capture exists yet; record that, and do not invent one |
+
+**Inputs.** Reuse this run's captures. Do not recapture, and do not score a mock or a design frame. The five-second test uses only the above-the-fold image. Phone is the 390 capture and is always reported on its own. Desktop is the 1600 capture. Score 1280, 1024, and 768 when those captures exist. Full-page scores use the rest of the bundle this run already wrote. Use `1600-motion.webm` for the story check when the page has an interactive or mascot moment.
+
+**Panel.** About 12 simulated visitors per model family, drawn from the project's personas plus cold traffic. Include a skeptic, a non-native reader, phone-first visitors, an older visitor, one person from each target market, and at least three cold arrivals. Each visitor gets a one-line profile and an arrival channel: an ad, a search, or a friend's link. If no personas exist, fill the seats from cold traffic and name `build-personas` as the missing upstream. Do not write a persona file here.
+
+**Two families.** Two model families score independently. They share the seat rules, not the sheets, and neither sees the other's table before it finishes. Report agreement, including the gap. If only one family can run, mark the report `single-family` and omit agreement.
+
+**Scores.** Five-second answers are: what is this, who is it for, what would I do next. Then score clarity, likeability, and trust out of 10, a join probability, the story-understood rate, and the top confusions. Run the cultural and scam-pattern check once per target market.
+
+**Honesty.** Use the panel for ranking and regression only. It is not a conversion, revenue, or cost forecast. Recommend a human five-second test, with the same fold images and the same three questions, before spend.
+
+**Fix list and output.** Every confusion maps to one concrete copy or visual change. Write `docs/specs/benchmark/<date>-<candidate>-visitor-panel.md` beside the benchmark YAML.
+
+**How it meets the rubric.** When the panel ran, cite its five-second rates as evidence for dimension 7. Do not change weights, add a dimension, or move the gate. On a shipped-page iteration, run this same panel on the predecessor captures and the candidate.
 
 ### Step 2 — Mechanical measurement (scripted, model-free)
 
@@ -235,6 +264,7 @@ override: null           # orchestrator writes here if blocking is explicitly ac
 | 8 | Gate decision written | `grep gate_decision <output.yaml>` returns BLOCK/PASS | |
 | 9 | If BLOCK without override, skill emits non-zero exit | CI can halt | |
 | 10 | Rubric version recorded in output yaml | `grep rubric_version <output.yaml>` returns `v2` or later | |
+| 11 | Visitor panel, when it runs, is evidence only | Report sits beside the benchmark YAML; phone five-second rate is separate; dimension weights are unchanged. A skip records why. | |
 
 ## Phase Receipt Contract
 
