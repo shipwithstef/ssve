@@ -1035,7 +1035,7 @@
     {
       "skill": "land-changeset",
       "path": "skills/land-changeset/SKILL.md",
-      "content_hash": "513ec06e306a2b66cdd3b6f890bdf6d9f69cfc4e2ca24fceb38c927facd36740",
+      "content_hash": "c1ac5159817c621f39483e685e83d2588ed3afa3d58314ffa4907d0d9e9efa56",
       "description": "Use when an executed change set has been validated (tests, E2E, review all pass in the worktree) and is ready to land on main — validates manifest coverage, pushes branch, opens PR, merges via squash, cleans up worktree",
       "aliases": [],
       "positive_triggers": [],
@@ -1936,8 +1936,8 @@
     {
       "skill": "verify-promotion",
       "path": "skills/verify-promotion/SKILL.md",
-      "content_hash": "79dcd9d93293c501e60e6202d12d951d3aaa904de45c0581cc632c1d2e6fc756",
-      "description": "Use after a reviewed branch has been promoted to verify that the promoted implementation matches specs, passes tests, satisfies acceptance criteria, and closes the loop back into spec/journey state — triggers G7 review",
+      "content_hash": "f336992c155f52b04d78f8d5183c31ec007d71a31a0f6e38529473c06117e152",
+      "description": "Use after a reviewed branch has been promoted to verify that the promoted implementation matches specs, passes tests, satisfies acceptance criteria, and closes the loop back into spec/journey state — triggers G7 review. For an improvement claim, consume the pre-production stage-acceptance receipt and leave live outcome metrics pending on the observation lifecycle.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],
