@@ -62,7 +62,7 @@ Record one gate decision on the decision card. Before evidence exists, the decis
 
 ## Red Flags
 
-Reject invented baselines, vanity metrics, undefined cohorts, unbounded spend, or requests to execute the experiment. On the pre-revenue ladder, also reject an L1 opened while an L0 row is unfinished, an advance on a test that only ran or that missed its thresholds or fired a kill rule, a zero-budget L1 with neither an evidenced organic or referral test nor an explicit justified skip, a weekly-return kill rule on an occasional job, ad-platform clicks counted as confirmed sign-ups, and a ref code that can reject the form.
+Reject invented baselines, vanity metrics, undefined cohorts, unbounded spend, or requests to execute the experiment. On the pre-revenue ladder, also reject an L1 opened while an L0 row is unfinished, an advance on a test that only ran or that missed its thresholds or fired a kill rule, advancement beyond a zero-budget L1 with neither an evidenced organic or referral test nor an explicit justified skip (a proposed organic or referral test marked "awaiting evidence" is allowed), a weekly-return kill rule on an occasional job, ad-platform clicks counted as confirmed sign-ups, and a ref code that can reject the form.
 
 Live evidence: not-applicable (no visible artifact).
 
