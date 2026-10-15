@@ -1,13 +1,15 @@
 ---
 name: benchmark-landing
-version: "1.0"
+version: "1.1"
 description: >
   Score a landing page against the curated sector reference bank on 8 measurable
   dimensions. Emits a 1-10 score per dimension + weighted aggregate. Blocks
   promotion below 7 unless orchestrator provides written override. Runs at every
   production viewport the page ships at, not only the design canvas. Use when
   the marketing page has been implemented and rendered after `execute-changeset`,
-  before promotion; deployed conversion-journey proof is a separate required check.
+  before promotion, or when a hero, copy, or mascot change needs a visitor
+  panel before paid traffic. Deployed conversion-journey proof is a separate
+  required check.
 phases:
   - id: P1-SampleBankPrecondition
     trigger: always
@@ -23,7 +25,7 @@ phases:
     required_for_completion: true
   - id: P3-ViewportAndMotionCapture
     trigger: always
-    reads: ["candidate URL or local path", "predecessor benchmark yaml when iterating"]
+    reads: ["candidate URL or local path", "predecessor benchmark yaml when iterating", "predecessor source when regression testing is selected"]
     writes: ["/tmp/benchmark-<ts>/*.png", "/tmp/benchmark-<ts>/1600-motion.webm"]
     evidence_kind: command_output
     required_for_completion: true
@@ -35,13 +37,13 @@ phases:
     required_for_completion: true
   - id: P5-OmniAnchorScoring
     trigger: always
-    reads: ["candidate captures", "top-3 captured bank samples", "predecessor.png when iterating"]
+    reads: ["candidate captures", "top-3 captured bank samples", "predecessor.png when iterating", "docs/specs/benchmark/<date>-<candidate>-visitor-panel.md when Step 1b wrote it"]
     writes: [".svc/benchmark-landing-omni.yaml"]
     evidence_kind: file
     required_for_completion: true
   - id: P6-AggregateGateOutput
     trigger: always
-    reads: ["mechanical measurements", ".svc/benchmark-landing-omni.yaml", "side-by-side artifact"]
+    reads: ["mechanical measurements", ".svc/benchmark-landing-omni.yaml", "side-by-side artifact", "docs/specs/benchmark/<date>-<candidate>-visitor-panel.md when Step 1b wrote it"]
     writes: ["docs/specs/benchmark/<date>-<candidate>.yaml"]
     evidence_kind: file
     required_for_completion: true
@@ -57,9 +59,11 @@ inputs:
     - { path: "references/landing-bank/<sector>/", artifact: sector-bank, note: "must supply three relevant captured marketing-page anchors with pattern.md for scoring" }
   optional:
     - { path: "docs/specs/marketing-context.md", artifact: marketing-context }
+    - { path: "docs/specs/personas/", artifact: personas, note: "Step 1b sample source; cold traffic fills empty seats" }
 outputs:
   produces:
     - { path: "docs/specs/benchmark/<date>-<candidate>.yaml", artifact: benchmark-score }
+    - { path: "docs/specs/benchmark/<date>-<candidate>-visitor-panel.md", artifact: visitor-panel, note: "optional Step 1b; written beside the benchmark YAML" }
 chain:
   lanes:
     greenfield: { position: 21, prev: track-visuals, next: review-gate }
@@ -88,7 +92,7 @@ Each dimension scored 1-10. Weighted aggregate = weighted mean. Rubric v1 (8 dim
 4. **Illustration craft and product evidence** — judge whether the chosen photography, illustration, screenshot, live UI, or absence of imagery helps this visitor trust and understand the actual product. Sector convention is context, not a required asset tier. Weight 1.0.
 5. **Viewport responsiveness** — does the scene REFLOW (not just scale) at every shipping viewport? Weight 1.0.
 6. **Left-right balance** — if split-hero, does the composition direct attention to the claim, product evidence, and action without crowding? Weight 0.5 (sector-dependent).
-7. **First-5-sec comprehension** — can a cold visitor name the product's purpose in 5s looking at the hero alone? Weight 1.0.
+7. **First-5-sec comprehension** — can a cold visitor name the product's purpose in 5s looking at the hero alone? Weight 1.0. When Step 1b wrote a report, that report is evidence for this score, and the dimension-7 rationale and the benchmark YAML both cite its path. Phone rates count only when that report's status is complete. The weight does not change.
 8. **Vs. relevant captured anchors** — select the strongest captured pages serving a comparable visitor decision; score this page against their clarity, trust, and product evidence, and explain which choice transfers to this product. Weight 1.5. **Requires captured `hero.png` + `hero.webm` + `pattern.md` for each selected anchor** (see Step 0 precondition). If comparable captures are missing, this dimension cannot be scored and the skill HALTS — no asserted-without-evidence anchoring.
 9. **Design delta vs baseline** — on a shipped-page iteration, compare `predecessor.png` and `candidate.png` side by side and record whether a cold visitor would notice the intended hierarchy or content change. Weight 0.75. A large visual delta is not inherently better: an effective small repair may retain the silhouette. Explain how the visible difference, or deliberate continuity, supports the visitor decision. **Not applicable on greenfield first-pass**; keep the predecessor capture mandatory for shipped-page iterations.
 
@@ -157,7 +161,33 @@ Invoke `scripts/benchmark-landing-capture.sh <url-or-local-path>` which screensh
 
 **Iteration case (F-015):** if `docs/specs/benchmark/<prev>.yaml` exists AND references a predecessor candidate, additionally capture the predecessor hero at 1600×900 as `/tmp/benchmark-<ts>/predecessor.png` (from the predecessor's deployed URL or a git-worktree of the pre-iteration commit). This is the evidence input for dimension 9 (Design delta vs baseline). If no predecessor is declared, dimension 9 is skipped and its 0.75 weight is redistributed proportionally across remaining dimensions.
 
+**Regression testing:** when a predecessor-versus-candidate or two-variant comparison is selected, also capture the predecessor at the same widths as the candidate, including 390, as `/tmp/benchmark-<ts>/predecessor-<viewport>.png`. If a matching phone capture cannot be produced, the visitor panel marks the phone comparison unavailable and must not state a regression conclusion. Do not invent the missing file.
+
 **Hard rule (F-003 cross-reference):** every viewport is scored independently. If mobile 390 scores < 7 but desktop 1600 scores 9, the aggregate is capped at min(viewport scores). No mobile-amnesia.
+
+### Step 1b — Visitor panel (optional)
+
+Recommend this optional panel for the changes in the left column. Record any declined or unavailable run in the benchmark YAML. A missing comparison capture skips only the comparison, not a first-pass panel on the captures this run already has. Protocol, device rules, independent families, cultural and story checks, and the report template are in `references/visitor-panel.md`.
+
+**Recommend it when:** hero, headline or body copy changed; the mascot, illustration or motion story changed; paid traffic is next; or a predecessor-versus-candidate or two-variant comparison is wanted.
+
+**It may be skipped, with the reason recorded in the benchmark YAML, when:** the run is a mechanical-only rescore (density, type ratio or viewport math, with no visitor-facing picture or sentence changed); the owner declined it; or no model family could run.
+
+A missing matching comparison capture disables only the comparison: run the first-pass panel, mark the comparison unavailable, and do not invent pixels.
+
+**Inputs.** Reuse this run's captures, including `predecessor-<viewport>.png` when regression testing was selected. Do not open a second capture pass, and do not score a mock or a design frame. The five-second test uses only the above-the-fold image. Phone is the 390 capture. Desktop is the 1600 capture. Score 1280, 1024, and 768 when those captures exist. Full-page scores use the rest of the bundle this run already wrote. Use `1600-motion.webm` for the story check when the page has an interactive or mascot moment.
+
+**Panel.** About 12 simulated visitors per model family, drawn from the project's personas plus cold traffic. Include a skeptic, a non-native reader, phone-first visitors, an older visitor, one person from each target market, and at least three cold arrivals. Each visitor gets a one-line profile and an arrival channel: an ad, a search, or a friend's link. If no personas exist, fill the seats from cold traffic and name `build-personas` as the missing upstream. Do not write a persona file here.
+
+**Two families.** Two model families score independently. They share the seat rules, not the sheets, and neither sees the other's table before it finishes. Rank a variant only when the families agree on the paired phone-rate direction. Absolute-rate gaps are descriptive. If only one family can run, mark the report `single-family` and omit agreement.
+
+**Scores.** Buyer interrogation and fix priority stay in `analyze-marketing` (`skills/analyze-marketing/references/persona-validation.md`). Apply the frozen verdicts in `references/visitor-panel.md` to the rendered captures. Run the cultural and story checks there. Do not restate that interrogation.
+
+**Honesty.** Use the panel for ranking and regression only. It is not a conversion, revenue, or cost forecast. The report may include an owner-run test proposal. Contacting participants, or spending on recruitment or compensation, requires explicit human authorization. This skill does not grant it.
+
+**Output.** Write `docs/specs/benchmark/<date>-<candidate>-visitor-panel.md` beside the benchmark YAML.
+
+**How it meets the rubric.** When that report is present, the dimension-7 rationale and the benchmark YAML cite its path. Do not change weights, add a dimension, or move the gate. On a comparison, use the matching predecessor viewports from Step 1. If the matching phone capture is missing or unreadable, mark the phone comparison unavailable and do not state a regression conclusion.
 
 ### Step 2 — Mechanical measurement (scripted, model-free)
 
@@ -185,8 +215,9 @@ Dimensions 3b (liveness perceptibility), 4 (craft), 6 (balance), 7 (comprehensio
 - candidate screenshots (all viewports) + candidate motion capture (`1600-motion.webm`)
 - three selected relevant bank samples (captured `hero.png` + `hero.webm` + `pattern.md` — mandatory per Step 0)
 - predecessor screenshot (if iterating — `predecessor.png`)
+- optional visitor panel report when Step 1b wrote one (`docs/specs/benchmark/<date>-<candidate>-visitor-panel.md`)
 
-Emits structured YAML per the review-plan protocol format. The prompt MUST explicitly instruct Omni that: (a) dimension 3b applies perceptibility thresholds only to motion actually used and accepts purposeful static design; (b) dimension 8 compares only captured pages with a stated visitor-decision match and refuses asserted archetypes; (c) dimension 9 compares predecessor and candidate for the intended user-facing change, not novelty alone.
+Emits structured YAML per the review-plan protocol format. The prompt MUST explicitly instruct Omni that: (a) dimension 3b applies perceptibility thresholds only to motion actually used and accepts purposeful static design; (b) dimension 8 compares only captured pages with a stated visitor-decision match and refuses asserted archetypes; (c) dimension 9 compares predecessor and candidate for the intended user-facing change, not novelty alone; (d) when the visitor panel report is present, the dimension-7 rationale cites that report path and does not treat an unavailable or incomplete phone metric as a passing rate.
 
 ### Step 5 — Aggregate + gate
 
@@ -205,7 +236,7 @@ per_viewport_scores:
     illustration_craft: 5           # weight 1.0
     viewport_responsiveness: 5      # weight 1.0
     left_right_balance: 7           # weight 0.5
-    first_5_sec_comprehension: 5    # weight 1.0
+    first_5_sec_comprehension: 5    # weight 1.0; rationale cites visitor_panel.report when that report is present
     vs_best_in_class: 4             # weight 1.5 — requires captured anchors
     design_delta_vs_baseline: 3     # weight 0.75 — NEW v2 (F-015); skipped if no predecessor
     weighted: 5.1
@@ -216,7 +247,15 @@ aggregate: 3.8           # min across viewports (capped by worst)
 gate_threshold: 7
 gate_decision: BLOCK     # aggregate < 7 → BLOCK
 override: null           # orchestrator writes here if blocking is explicitly accepted
+visitor_panel:
+  report: docs/specs/benchmark/<date>-<candidate>-visitor-panel.md  # cite when Step 1b wrote the report
+  skipped: false
+  status: complete       # incomplete when phone evidence is unavailable; then dimension_7_evidence is false
+  dimension_7_evidence: true
+  weights_changed: false
 ```
+
+When the visitor panel report is present, the dimension-7 rationale and this YAML cite `visitor_panel.report`. `dimension_7_evidence` is true only when that report's status is `complete`. A declined or unavailable panel sets `skipped: true` and a reason, and does not cite a report that was not written. A missing comparison capture does not set `skipped: true`.
 
 - `aggregate < 7` → BLOCK promotion. Orchestrator must either iterate the design OR write an `override` entry with justification (logged in FRAMEWORK-STATE for longitudinal audit).
 - `aggregate ≥ 7` → PASS. Still writes the score for the time series.
@@ -229,12 +268,13 @@ override: null           # orchestrator writes here if blocking is explicitly ac
 | 2 | Motion capture exists for desktop hero | `test -f /tmp/benchmark-<ts>/1600-motion.webm` | |
 | 3 | Mechanical measurements present | JSON exists per viewport | |
 | 4 | Three selected anchors have captures and a comparable visitor decision (Step 0) | Report cites each page/capture and job match; `hero.png` + `pattern.md` exist for the selected anchors | |
-| 5 | Predecessor captured IFF iterating | if previous benchmark yaml exists → `test -f /tmp/benchmark-<ts>/predecessor.png`; else skip | |
+| 5 | Predecessor captured IFF iterating | if previous benchmark yaml exists → `test -f /tmp/benchmark-<ts>/predecessor.png`; else skip. Regression testing also requires `predecessor-390.png`, or the panel marks the phone comparison unavailable and states no regression conclusion | |
 | 6 | Omni analysis ran, emitted valid YAML | parse-check; dimensions 3b + 9 present in output unless greenfield-first-pass | |
 | 7 | Aggregate = min of viewport scores (not mean) | sanity check | |
 | 8 | Gate decision written | `grep gate_decision <output.yaml>` returns BLOCK/PASS | |
 | 9 | If BLOCK without override, skill emits non-zero exit | CI can halt | |
 | 10 | Rubric version recorded in output yaml | `grep rubric_version <output.yaml>` returns `v2` or later | |
+| 11 | Visitor panel, when it runs, is evidence only | Report path is cited by the dimension-7 rationale and `visitor_panel.report` when the file exists. Phone evidence requires a readable 390 capture and scored phone visitors; otherwise status is incomplete, metrics are unavailable, and holds stay open. A decline or unavailable run is `skipped: true` with a reason. Weights unchanged. | |
 
 ## Phase Receipt Contract
 

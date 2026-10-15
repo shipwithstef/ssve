@@ -225,8 +225,8 @@
     {
       "skill": "benchmark-landing",
       "path": "skills/benchmark-landing/SKILL.md",
-      "content_hash": "1519dfcae61596b775ccfb8a8c39f3e12423b49b146a17622cad617f6a8e721e",
-      "description": "Score a landing page against the curated sector reference bank on 8 measurable dimensions. Emits a 1-10 score per dimension + weighted aggregate. Blocks promotion below 7 unless orchestrator provides written override. Runs at every production viewport the page ships at, not only the design canvas. Use when the marketing page has been implemented and rendered after `execute-changeset`, before promotion; deployed conversion-journey proof is a separate required check.",
+      "content_hash": "ab042965f68f33cce514baff45c29752a3ff41c6e9ecfa89ca8205c220eea530",
+      "description": "Score a landing page against the curated sector reference bank on 8 measurable dimensions. Emits a 1-10 score per dimension + weighted aggregate. Blocks promotion below 7 unless orchestrator provides written override. Runs at every production viewport the page ships at, not only the design canvas. Use when the marketing page has been implemented and rendered after `execute-changeset`, before promotion, or when a hero, copy, or mascot change needs a visitor panel before paid traffic. Deployed conversion-journey proof is a separate required check.",
       "aliases": [],
       "positive_triggers": [],
       "negative_triggers": [],

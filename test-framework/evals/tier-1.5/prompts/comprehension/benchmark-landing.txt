@@ -8,3 +8,6 @@ A: Expected pattern: Gate threshold is 7. Aggregate < 7 → BLOCK promotion. Orc
 
 Q: How many dimensions are scored in the v2 rubric, and what is the heaviest-weighted dimension?
 A: Expected pattern: 10 dimensions in v2 rubric. Dimension 8 (vs. best-in-class anchor) is heaviest at weight 1.5.
+
+Q: When does the optional visitor panel run, what does it reuse, and how does it affect dimension 7?
+A: Expected pattern: Recommend it when the hero, copy, or mascot changed, and before paid traffic. It reuses this run's viewport captures. Its five-second rates are evidence for dimension 7. Weights do not change.
