@@ -62,6 +62,17 @@ Build a bounded context plan:
 
 Skip when the request belongs to another skill named in the description above.
 
+## Preflight
+
+Stop before any provider call unless all of these hold:
+
+- The cutover plan names the old estate, the new stack, and a completed Phase 5 soak record.
+- The restricted allow-list exists outside git (mode 0600), and its sha256 matches the committed alias copy.
+- The protected list exists and every protected value can be read and hashed now.
+- Every reference source in `references/runbook.md` can be queried with current credentials. An auth or throttling error is a stop, not "no references".
+- `docs/specs/migrations/<slug>/` and the report path are writable.
+- Apply mode only: a recorded human approval whose digest equals the current allow-list sha256.
+
 ## Procedure
 
 Work `references/runbook.md` in order. Record each phase below before leaving it.
