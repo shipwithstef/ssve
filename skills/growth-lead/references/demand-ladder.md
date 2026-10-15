@@ -4,7 +4,7 @@ Worksheet for the growth-lead mode of the same name. Reflect every filled sectio
 
 Baseline, target, sample window, cost ceiling, and kill rule stay the fields required by the skill procedure. This file is the gate those fields attach to before any payment exists.
 
-Leave a section blank only when the open gate has not reached it.
+Leave a section blank only when the open gate has not reached it, or when a zero budget makes the spend arithmetic and the spend calendar not apply.
 
 ## Promise
 
@@ -16,12 +16,12 @@ Leave a section blank only when the open gate has not reached it.
 
 ## Open gate
 
-The open gate is the first row whose exit evidence is missing.
+The open gate is the first row whose exit evidence is missing. Paid acquisition (L1) is conditional. A zero budget may close L1 with an evidenced organic or referral acquisition test, or with an explicit justified skip recorded on the card. A test that only ran does not close L1. A justified skip closes only L1. The next open gate still starts at propose / awaiting evidence.
 
 | Gate | Exit evidence present? | Notes |
 |---|---|---|
 | L0 Waitlist | yes / no | |
-| L1 Paid test | yes / no | |
+| L1 Acquisition | yes / no | Paid or organic/referral exit is an aged pass, not a test that only ran. A justified skip is a recorded reason |
 | L2 Concierge | yes / no | |
 | L3 Usage | yes / no | |
 | L4 First payment | yes / no | |
@@ -32,9 +32,9 @@ Every row is true before L1. A miss keeps admission closed and slides the calend
 
 | # | Minimum | Evidence |
 |---|---|---|
-| 1 | A confirm message arrives at an address the operator controls. The address is confirmed only after that person confirms | |
-| 2 | The privacy notice is the published page, not a draft. It names the controller, the purpose, the processors, a finite retention period, and how to withdraw and erase. The notice version is stored on the confirmed record. "Keep forever" and an unset period both fail | |
-| 3 | Withdraw and erase were run once. No later message is sent. No link contains the email address | |
+| 1 | Opt-in: a confirm message arrives at an address the operator controls. The address is confirmed only after that person confirms | |
+| 2 | The privacy notice is the published page, not a draft. The notice version is stored on the confirmed record. Cite `privacy-dpo` review evidence for the purpose, processor, retention, deletion, and rights inventory. Do not restate that inventory | |
+| 3 | Erasure: withdraw and erase were run once. No later message is sent. No link contains the email address | |
 | 4 | Every language the build ships is finished: page, mail, and notice. Do not buy traffic in a draft language | |
 | 5 | Public copy, including ad drafts, states only what exists today | |
 | 6 | Admission fails closed. A missed flag keeps sign-up off. While closed, no control opens account recovery, an inbox, or checkout that does not exist | |
@@ -47,52 +47,60 @@ Funnel: impression → click → visit → submit → confirmed. Confirmed is th
 
 | Count | Source | Called by the live page or server? |
 |---|---|---|
-| Impression | first-party counter | |
-| Click | first-party counter | |
+| Impression | platform-reported export, labeled platform-reported. A first-party counter only when the impression is on our page | no for a platform export |
+| Click | platform-reported export, labeled platform-reported. A first-party counter only when the click is on our page | no for a platform export |
 | Visit | first-party counter | |
 | Submit | first-party counter | |
 | Confirmed | server row, with the campaign code stored | |
 
 - Campaign code scheme (UTM fields plus a short ref code):
 - Unknown or malformed ref: accept the sign-up, store the raw code as noise, credit no campaign. Never blame the email field or the consent box for a bad code
-- Pixels and third-party tags: off. Ad-platform exports are the spend source, not the confirm source
+- Pixels and third-party tags: off. A platform export may supply labeled impressions, clicks, and spend. It is not the visit, submit, or confirm source
 - Aged-spend floor before a kill rule applies: 48 hours, unless this record justifies another delay
 - Organic and referral column: confirmed people only. Do not credit the operator's own code or an unknown code
+- Organic or referral acquisition test: that column, aged, meeting the pre-registered success thresholds, with no fired kill rule and a recorded gate decision. It does not close L1 until that aged pass is recorded. A justified L1 skip names why paid acquisition does not apply and closes L1 only when that reason is recorded on the card
 
 A counter that exists in code and is never called measures nothing. A confirmed row with no campaign code measures nothing. Ask `growth-eng` for an instrumentation proposal when the page does not call the counters. Do not deploy that proposal from this mode.
 
 ## Budget worksheet
 
-Write this before any spend recommendation. Use the operator's own CPC and confirm-rate range.
+Write this before any spend recommendation. Use this experiment's own sourced CPC and confirm ratio. Leave it blank when the budget ceiling is zero.
 
 ```
+confirm_rate = confirmed / clicks
 cost_per_confirmed = CPC / confirm_rate
 expected_confirmed = budget / cost_per_confirmed
 ```
 
-Worked teaching range, not a target: a budget of 400 currency units, a CPC of 0.50 to 1.50, and a confirm rate of 5% to 15% produces about 13 confirmed sign-ups at the expensive end and about 120 at the cheap end. A few hundred currency units buy tens of confirmed sign-ups, not thousands. If the plan needs thousands, change the plan.
+If the sourced confirm rate is confirmed/visits, also source visits/clicks. Do not divide CPC by confirmed/visits alone.
+
+```
+cost_per_confirmed = CPC / ((visits/clicks) × (confirmed/visits))
+```
+
+Worked example from these inputs only: a budget of 400 currency units, a CPC of 0.50 to 1.50, and a confirmed/clicks rate of 5% to 15% produces about 13 confirmed sign-ups at the expensive end and about 120 at the cheap end. Another budget, CPC, rate, or currency produces a different yield.
 
 | Input | Low | High |
 |---|---|---|
 | Budget | | |
 | CPC | | |
-| Confirm rate (name the ratio: confirmed/visits or confirmed/clicks) | | |
+| Confirm rate (confirmed/clicks). If the source is confirmed/visits, also record visits/clicks and use the product formula. Do not use confirmed/visits alone | | |
 | Cost per confirmed | | |
 | Expected confirmed | | |
 
 Pre-registered thresholds. They sit above any spend recommendation:
 
 - Maximum cost per confirmed sign-up:
-- Minimum confirm rate, and which ratio:
+- Minimum confirm rate, as confirmed/clicks, or as confirmed/visits together with visits/clicks:
 - Five-second comprehension: a stranger can say what the product does and one thing it does not do
 - Aged-spend floor for a zero-confirm kill:
 - Unspent money on a killed channel stays unspent: yes
 
-A passed test authorizes more unpaid distribution time. It does not authorize more spend.
+A passed test supports an unpaid-distribution proposal only; it grants no authority to send, contact people, or publish.
 
 ## Day-by-day calendar
 
-Day 0 is the first morning the L0 checklist is true. If it is not true, slide every later day by the same amount. Do not shorten a kill window to fit a date.
+Day 0 is the first morning the L0 checklist is true. If it is not true, slide every later day by the same amount. Do not shorten a kill window to fit a date. This calendar applies only when the card proposes spend. A zero budget does not open Day 1. Record the organic or referral acquisition test, or the explicit justified L1 skip, and do not invent a spend morning.
 
 | Day | Action | Kill rule that may fire |
 |---|---|---|
@@ -102,7 +110,7 @@ Day 0 is the first morning the L0 checklist is true. If it is not true, slide ev
 | 3 | Apply rules only to spend at least 48 hours old | Zero confirmed on aged spend, or cost per confirmed above the cap, or confirm rate below the floor |
 | 4 | Keep or stop the aged slice. Leave unspent budget unspent if a rule fired | Same rules, still only on aged spend |
 | 5 | Five-second comprehension on the live page, with people outside the team | Fail the sentence: pivot the message. Do not raise the budget |
-| 6 | Write the gate decision from aged counts only | A passed slice authorizes unpaid distribution time. It does not authorize more spend |
+| 6 | Write the gate decision from aged counts only | A passed test supports an unpaid-distribution proposal only; it grants no authority to send, contact people, or publish. |
 
 ## Metric fit
 
@@ -125,14 +133,17 @@ Empty supply is a supply failure. Do not average it into retention, and do not k
 
 ## Decision
 
-One of: continue / pivot the message / pivot the segment / stop.
+Before a completed evaluation, the only decision is: propose current-gate experiment / awaiting evidence.
+
+After a completed evaluation, one of: continue / pivot the message / pivot the segment / stop. Those four are advancement decisions. They are not valid while the gate is awaiting evidence.
 
 | Decision | When |
 |---|---|
-| Continue | Exit evidence for this gate is present and the next gate's entrance is honest |
-| Pivot the message | The segment responded. The sentence did not survive five-second comprehension or the claim check |
-| Pivot the segment | The mechanism worked. This audience did not |
-| Stop | A pre-registered kill rule fired, or the arithmetic cannot reach a useful sample inside the ceiling |
+| propose current-gate experiment / awaiting evidence | The gate is fresh or incomplete. No exit evidence yet. This is the decision before execution |
+| Continue | A completed evaluation shows exit evidence for this gate, and the next gate's entrance is honest |
+| Pivot the message | A completed evaluation: the segment responded. The sentence did not survive five-second comprehension or the claim check |
+| Pivot the segment | A completed evaluation: the mechanism worked. This audience did not |
+| Stop | A completed evaluation: a pre-registered kill rule fired, or the arithmetic cannot reach a useful sample inside the ceiling |
 
 - Decision:
 - Counts:
@@ -146,4 +157,4 @@ One decision. Do not offer a menu.
 Spend, campaign publication, and payment changes stay blank until a person writes an explicit approval. This card does not launch them.
 
 - Human approval (who, when, and the exact action approved), or "none":
-- After L4 has passed, the next skill is `stage-revenue`. Channel work before that stays a later growth-lead proposal and still needs approval.
+- Channel work stays a later growth-lead proposal and still needs approval. Refer to `stage-revenue` only when that skill's decision matrix applies. Passing L4 is not that trigger. This skill stays terminal.
