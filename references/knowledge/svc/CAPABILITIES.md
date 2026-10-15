@@ -1,13 +1,13 @@
 # svc (Serious Vibe Coding) — Capabilities
 
 Source: this repo (seriousvibecoding / ssve)
-Version: current framework state (105 skills, 34 APs, 91 references, 7 lanes, 7 gates, 9 provisioned hosts)
-Last updated: 2026-09-14
+Version: current framework state (107 skills, 34 APs, 91 references, 7 lanes, 7 gates, 9 provisioned hosts)
+Last updated: 2026-10-15
 Self-extracted: full L3 analysis (WI-FW-ADVISOR-KNOWLEDGE-02)
 
 ## What It Is
 
-Progressive deterministic development framework and governed autonomous operating system — vision to verified code in one prompt. Builder-aware: mines who you are before deciding what to build. Rejects bad ideas with evidence. Self-assesses market readiness instead of asking. 105 first-party skills, 7 review gates (G1-G7), 7 workflow lanes, 34 anti-patterns, 91 reference docs, 9 provisioned hosts (Claude Code, Kimi Code CLI, OpenAI Codex CLI, Google Gemini CLI, OpenCode CLI, MiMo-Code, Google Antigravity, Cursor Agent, xAI Grok Build CLI).
+Progressive deterministic development framework and governed autonomous operating system — vision to verified code in one prompt. Builder-aware: mines who you are before deciding what to build. Rejects bad ideas with evidence. Self-assesses market readiness instead of asking. 107 first-party skills, 7 review gates (G1-G7), 7 workflow lanes, 34 anti-patterns, 91 reference docs, 9 provisioned hosts (Claude Code, Kimi Code CLI, OpenAI Codex CLI, Google Gemini CLI, OpenCode CLI, MiMo-Code, Google Antigravity, Cursor Agent, xAI Grok Build CLI).
 
 ## Pre-Pipeline (builder-aware)
 
@@ -210,6 +210,7 @@ Progressive deterministic development framework and governed autonomous operatin
 | `manage-learnings` | Persistent learning store with 3-question quality gate |
 | `teach-project` | Owner guide calibrated to builder's knowledge gap |
 | `plan-capabilities` | Classify project type, recommend MCPs/skills/research |
+| `retire-cloud-resources` | Fail-closed permanent deletion of old cloud resources after a soaked cutover: exact allow-list, protected hashes, soak window including the final slot, and a report on every exit |
 | `platform-operating-architect` | Classify platform operating model, split local/dev/staging/prod, define integration boundaries, and encode how svc should coexist with hosted platforms |
 | `analyze-marketing` | Feature mining for product marketing context |
 | `onboard-repo` | Convert existing repo to svc conventions |

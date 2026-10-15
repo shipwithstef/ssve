@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "compiled_from": {
-    "manifest_sha256": "3c9a65ce9815a56397098d7ed093637b7c8c9b8952c566314ea68fcd756066b7",
-    "overrides_sha256": "14fa674603c6a84ddf5b2673fe072778aa69cfd415d3d58e55adf4486a685249",
+    "manifest_sha256": "cf20a8afed57ca43b130256647c602868417aa9914d5dbf4e5ac077c63af460a",
+    "overrides_sha256": "41fc5f14b5e71f101e00f413499438495409b1bc35f4901479fe492f8144c054",
     "concern_registry_sha256": "6c336c8832c4907ee78413a2b7d377b790bb55bba180783d2164892a130ea507"
   },
   "skills": [
@@ -1473,6 +1473,46 @@
       "lane_roles": [],
       "invocation_policy": "suggest-only",
       "risk": "low",
+      "requires": [],
+      "required_rules": []
+    },
+    {
+      "skill": "retire-cloud-resources",
+      "path": "skills/retire-cloud-resources/SKILL.md",
+      "content_hash": "919b57eaad85ea6262b488e4b0e7e417d496619d419468f70ac2d5443204b3e9",
+      "description": "Permanently delete old cloud resources after a cutover has soaked, and only through an exact allow-list that fails closed. Use when: \"delete the old resources\", \"clean up after migration\", \"decommission the old stack\", or the new stack has soaked and the old estate must go. Not for: routine scaling or resources still serving (infra-sre), threat review (security-ops), cost and provider choice (manage-finops), classifying a plan before apply (plan-blast-radius), proving a merged branch matches its spec (verify-promotion), a codebase rename or token sweep (plan-changeset), or adopting a repo (onboard-repo).",
+      "aliases": [
+        "delete the old resources",
+        "clean up after migration",
+        "decommission the old stack"
+      ],
+      "positive_triggers": [
+        "old cloud resources after a soaked cutover"
+      ],
+      "negative_triggers": [
+        "resources still serving traffic",
+        "routine scaling",
+        "classify a plan before apply",
+        "estimate cloud cost",
+        "rename identifiers across the codebase",
+        "adopt this repo into the framework"
+      ],
+      "domains": [
+        "cloud-operations"
+      ],
+      "actions": [
+        "decommission",
+        "delete"
+      ],
+      "objects": [
+        "cloud-resources",
+        "dns",
+        "secrets"
+      ],
+      "repo_signals": [],
+      "lane_roles": [],
+      "invocation_policy": "suggest-only",
+      "risk": "high",
       "requires": [],
       "required_rules": []
     },

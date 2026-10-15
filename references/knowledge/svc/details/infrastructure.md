@@ -60,7 +60,7 @@ Judge scoring for completeness (0-10), consistency (0-10), actionability (0-10).
 
 ## Framework Governance Files
 - `DOCTRINE.md`: Complete methodology documentation.
-- `skills-manifest.json`: 105 skills, 59 routing-core entries, 7 lanes with skill lists, 26-step bootstrap sequence.
+- `skills-manifest.json`: 107 skills, 59 routing-core entries, 7 lanes with skill lists, 26-step bootstrap sequence.
 - `REPO_MODES.md`: bootstrap/convert/operate modes for different repo states.
 - `EXTERNAL_ADDONS.md`: Non-core skill pack listing.
 - `FRAMEWORK-STATE.md`: Living state — blend history, analysis history, known gaps, locked decisions.

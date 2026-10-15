@@ -99,7 +99,7 @@
           "name": "skill-comprehension",
           "path": "tier-1.5/test-skill-comprehension.sh",
           "checks": "Asks Claude factual questions about skill rules (chain order, lifecycle states, TDD enforcement, self-verify gating). Verifies answers contain expected patterns.",
-          "skills_tested": ["write-vision", "write-spec", "plan-changeset", "execute-changeset", "validate-feature", "sync-spec-code", "analyze-domain", "analyze-competitors", "build-personas", "audit-ac", "audit-coverage", "audit-implementation", "create-skill", "define-code-style", "design-ux", "design-ui", "design-tech", "evaluate-rule", "explore-solutions", "find-opportunity", "land-changeset", "onboard-repo", "quick-fix", "research", "review-cross-model", "review-gate", "review-plan", "review-security", "roadmap-evaluation", "stage-revenue", "sync-work-items", "verify-promotion", "write-e2e", "analyze-marketing", "assess-market-readiness", "audit-session-execution", "benchmark-landing", "blend-private", "capture-idea", "discover-skills", "extract-bootstrap", "list-work-items", "manage-finops", "manage-learnings", "mine-builder", "monetization-architecture", "plan-capabilities", "platform-operating-architect", "reverse-engineer", "strategic-decision", "svc-advisor", "teach-project", "test-journeys", "track-visuals", "wsl2-audio", "route-workflow"],
+          "skills_tested": ["write-vision", "write-spec", "plan-changeset", "execute-changeset", "validate-feature", "sync-spec-code", "analyze-domain", "analyze-competitors", "build-personas", "audit-ac", "audit-coverage", "audit-implementation", "create-skill", "define-code-style", "design-ux", "design-ui", "design-tech", "evaluate-rule", "explore-solutions", "find-opportunity", "land-changeset", "onboard-repo", "quick-fix", "research", "review-cross-model", "review-gate", "review-plan", "review-security", "roadmap-evaluation", "stage-revenue", "sync-work-items", "verify-promotion", "write-e2e", "analyze-marketing", "assess-market-readiness", "audit-session-execution", "benchmark-landing", "blend-private", "capture-idea", "discover-skills", "extract-bootstrap", "list-work-items", "manage-finops", "manage-learnings", "mine-builder", "monetization-architecture", "plan-capabilities", "platform-operating-architect", "retire-cloud-resources", "reverse-engineer", "strategic-decision", "svc-advisor", "teach-project", "test-journeys", "track-visuals", "wsl2-audio", "route-workflow"],
           "cost": "~290K tokens total",
           "duration": "~45min"
         },
@@ -405,6 +405,14 @@
           "path": "tier-2/scenarios/quick-fix-typo.md",
           "skill_under_test": "quick-fix",
           "assertions": 4,
+          "cost": "~50K tokens",
+          "duration": "~2min"
+        },
+        {
+          "name": "retire-cloud-resources-eval",
+          "path": "tier-2/scenarios/retire-cloud-resources-eval.md",
+          "skill_under_test": "retire-cloud-resources",
+          "assertions": 2,
           "cost": "~50K tokens",
           "duration": "~2min"
         }

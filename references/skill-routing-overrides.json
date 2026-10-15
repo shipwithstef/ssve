@@ -210,6 +210,37 @@
       ],
       "risk": "low"
     },
+    "retire-cloud-resources": {
+      "aliases": [
+        "delete the old resources",
+        "clean up after migration",
+        "decommission the old stack"
+      ],
+      "positive_triggers": [
+        "old cloud resources after a soaked cutover"
+      ],
+      "negative_triggers": [
+        "resources still serving traffic",
+        "routine scaling",
+        "classify a plan before apply",
+        "estimate cloud cost",
+        "rename identifiers across the codebase",
+        "adopt this repo into the framework"
+      ],
+      "domains": [
+        "cloud-operations"
+      ],
+      "actions": [
+        "decommission",
+        "delete"
+      ],
+      "objects": [
+        "cloud-resources",
+        "dns",
+        "secrets"
+      ],
+      "risk": "high"
+    },
     "grow-social": {
       "invocation_policy": "explicit-only",
       "aliases": [
